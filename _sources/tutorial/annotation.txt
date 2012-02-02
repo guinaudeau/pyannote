@@ -76,3 +76,45 @@ and then loop on annotated segments::
 Translation
 -----------
     
+
+
+
+    # Add new track named name to segment
+    segment = Segment( start_time, end_time )
+    name = 'track name'
+    track = TrackClass( args )    
+    A[segment, name] = track
+    
+    # Add multiple new named tracks to segment
+    named_tracks = {'first track name': track1, 
+                    'other track name': track2, 
+                    'final track name': track3}
+    A[segment] = named_tracks
+    
+    # Get just added track back
+    track = A[segment, name]
+    
+    # Get all tracks for segment
+    # as a dictionary {'name': track}
+    tracks = A[segment]
+    
+    # Remove just added track
+    del A[segment, name]
+    
+    # Remove all tracks for segment
+    del A[segment]
+
+    # Remove all tracks for all segments
+    A.clear()
+    
+    # Iterate through segments
+    for s, segment in enumerate(A):
+        # do something with A and segment
+        pass
+        
+    A(segment)
+    A(timeline)
+    
+    A ** timeline
+    abs(A)
+    

@@ -25,7 +25,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="pyannote 1 documentation" href="../index.html" /> 
+    <link rel="top" title="pyannote 1 documentation" href="../index.html" />
+    <link rel="up" title="API Documentation" href="../api.html" />
+    <link rel="prev" title="Timeline" href="timeline.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,7 +36,11 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" accesskey="U">API Documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -48,122 +54,364 @@
 <dl class="class">
 <dt id="pyannote.TrackAnnotation">
 <em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">TrackAnnotation</tt><big>(</big><em>track_class=None</em>, <em>video=None</em>, <em>modality=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation" title="Permalink to this definition">¶</a></dt>
-<dd><p># Create annotation for video &#8216;video&#8217; on modality &#8216;modality&#8217;
-# Tracks must be instances of class TrackClass
-A = TrackAnnotation(TrackClass, modality=&#8217;modality&#8217;,</p>
-<blockquote>
-<div>video=&#8217;video&#8217;)</div></blockquote>
-<p># Add new track named name to segment
-segment = Segment( start_time, end_time )
-name = &#8216;track name&#8217;
-track = TrackClass( args )    
-A[segment, name] = track</p>
-<p># Add multiple new named tracks to segment
-named_tracks = {&#8216;first track name&#8217;: track1,</p>
-<blockquote>
-<div>&#8216;other track name&#8217;: track2, 
-&#8216;final track name&#8217;: track3}</div></blockquote>
-<p>A[segment] = named_tracks</p>
-<p># Get just added track back
-track = A[segment, name]</p>
-<p># Get all tracks for segment
-# as a dictionary {&#8216;name&#8217;: track}
-tracks = A[segment]</p>
-<p># Remove just added track
-del A[segment, name]</p>
-<p># Remove all tracks for segment
-del A[segment]</p>
-<p># Remove all tracks for all segments
-A.clear()</p>
-<p># Iterate through segments
-for s, segment in enumerate(A):</p>
-<blockquote>
-<div># do something with A and segment
-pass</div></blockquote>
-<p>A(segment)
-A(timeline)</p>
-<p>A ** timeline
-abs(A)</p>
+<dd><p>TrackAnnotation is a generic class for storing and accessing 
+timestamped multi-track annotations of multimedia content.</p>
+<ul>
+<li><dl class="first docutils">
+<dt>What is an annotation?</dt>
+<dd><p class="first last">It can be anything &#8211; from speaker identifier, to the position
+of its mouth... The sky is the limit!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Timestamped?</dt>
+<dd><p class="first last">Each annotation is temporally located using a <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>.
+Following the previous example of speaker identification, each
+segment corresponds to a speech turn.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Multi-track?</dt>
+<dd><p class="first last">You might want to store multiple annotations for a single segment...
+Say, for instance, there are two faces appearing during one
+shot: it is possible to annotate the shot segment with two tracks &#8211;
+one for each face. Sweeet :)</p>
+</dd>
+</dl>
+</li>
+</ul>
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__abs__">
 <tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__abs__" title="Permalink to this definition">¶</a></dt>
-<dd><p>abs(annotation) = annotation ** abs(annotation.timeline)</p>
+<dd><p>Force alignment of annotation on the partition of its own timeline.</p>
+<dl class="docutils">
+<dt>In other words, the following two lines have the same effect:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">**</span> <span class="nb">abs</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">timeline</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>See <a class="reference internal" href="timeline.html#pyannote.Timeline.__abs__" title="pyannote.Timeline.__abs__"><tt class="xref py py-meth docutils literal"><span class="pre">Timeline.__abs__()</span></tt></a> and <a class="reference internal" href="#pyannote.TrackAnnotation.__pow__" title="pyannote.TrackAnnotation.__pow__"><tt class="xref py py-meth docutils literal"><span class="pre">__pow__()</span></tt></a> for more details.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__call__">
-<tt class="descname">__call__</tt><big>(</big><em>requested</em>, <em>mode='strict'</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p># Create sub-annotation. Default mode is &#8216;loose&#8217;.
-# ... made of segments fully included in requested segment
-sub_annotation = ann(requested_segment, mode=&#8217;strict&#8217;)</p>
-<p># ... made of segments with non-emtpy intersection with requested segment 
-sub_annotation = ann(requested_segment, mode=&#8217;loose&#8217;)</p>
-<p># ... same as loose, except segments that are not fully included 
-#     in requested segment are trimmed to be fully included 
-sub_annotation = ann(requested_segment, mode=&#8217;intersection&#8217;)</p>
-<p># ... made of segments fully included in requested timeline coverage
-#     i.e. tl(timeline, mode) == tl(timeline.coverage(), mode)  
-sub_annotation = ann(timeline, mode=&#8217;strict&#8217;)</p>
-<p># ... made of segments with non-empty intersection with requested timeline coverage
-sub_annotation = ann(timeline, mode=&#8217;loose&#8217;)</p>
-<p># ... same as loose, excepet segments that are not fully included
-#     in requested timeline coverage are trimmed to be fully included 
-sub_annotation = ann(timeline, mode=&#8217;intersection&#8217;)</p>
+<tt class="descname">__call__</tt><big>(</big><em>subset</em>, <em>mode='strict'</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a subset of annotations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>subset</strong> &#8211; <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a> or <a class="reference internal" href="timeline.html#pyannote.Timeline" title="pyannote.Timeline"><tt class="xref py py-class docutils literal"><span class="pre">Timeline</span></tt></a></li>
+<li><strong>mode</strong> &#8211; choose between &#8216;strict&#8217;, &#8216;loose&#8217; and &#8216;intersection&#8217;</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span> <span class="o">|</span> <span class="s">&#39;loose&#39;</span> <span class="o">|</span> <span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;strict&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments fully included in <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;loose&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments with a non-empty intersection with <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;intersection&#8217;</dt>
+<dd><p class="first last">same as &#8216;loose&#8217; except segments are trimmed
+down to their intersection with <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span> <span class="o">|</span> <span class="s">&#39;loose&#39;</span> <span class="o">|</span> <span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;strict&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments fully included in <a class="reference internal" href="#pyannote.TrackAnnotation.timeline" title="pyannote.TrackAnnotation.timeline"><tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt></a> coverage</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;loose&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments with a non-empty intersection with <a class="reference internal" href="#pyannote.TrackAnnotation.timeline" title="pyannote.TrackAnnotation.timeline"><tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt></a> coverage</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;intersection&#8217;</dt>
+<dd><p class="first last">same as &#8216;loose&#8217; except segments are trimmed
+down to their intersection with <a class="reference internal" href="#pyannote.TrackAnnotation.timeline" title="pyannote.TrackAnnotation.timeline"><tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt></a> coverage</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>segment</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test whether segment is annotated &#8211; <strong>in</strong> operator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">A</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;There is at least one annotated track for segment </span><span class="si">%s</span><span class="s">.&#39;</span> <span class="o">%</span> <span class="n">segment</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The <strong>in</strong> operator looks for exact segment matches. 
+Even if segment <strong>[0 &#8211;&gt; 3]</strong> is annotated, asking for segment <strong>[1 &#8211;&gt; 2]</strong> will return False.</p>
+<p class="last">See <a class="reference internal" href="#pyannote.TrackAnnotation.__call__" title="pyannote.TrackAnnotation.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt></a> for more advanced functionalities.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__delitem__">
 <tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove all annotations for segment: del A[segment]
-Remove annotation called name for segment: del A[segment, name]</p>
+<dd><dl class="docutils">
+<dt>Delete all tracks for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Delete a track by its name for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>If segment no longer has any track, it is also deleted.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated or if no track called <tt class="xref py py-data docutils literal"><span class="pre">name</span></tt>
+exists for this <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt>.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__getitem__">
 <tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>A[segment, name]
-A[segment]</p>
+<dd><dl class="docutils">
+<dt>Get all tracks for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tracks</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Get a track by its name for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">track</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated or if no track called <tt class="xref py py-data docutils literal"><span class="pre">name</span></tt>
+exists for this <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt>.</p>
+<p class="last">See <a class="reference internal" href="#pyannote.TrackAnnotation.__call__" title="pyannote.TrackAnnotation.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt></a> for more advanced functionalities.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__init__">
 <tt class="descname">__init__</tt><big>(</big><em>track_class=None</em>, <em>video=None</em>, <em>modality=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Create an empty <a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>track_class</strong> (<em>type</em>) &#8211; the type of tracks</li>
+<li><strong>video</strong> (<em>string</em>) &#8211; name of (or path to) annotated <a class="reference internal" href="#pyannote.TrackAnnotation.video" title="pyannote.TrackAnnotation.video"><tt class="xref py py-attr docutils literal"><span class="pre">video</span></tt></a></li>
+<li><strong>modality</strong> (<em>string</em>) &#8211; name of annotated <a class="reference internal" href="#pyannote.TrackAnnotation.modality" title="pyannote.TrackAnnotation.modality"><tt class="xref py py-attr docutils literal"><span class="pre">modality</span></tt></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<blockquote>
+<div><p>The following code creates an instance A of <a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a> that is meant to store annotations
+of type <strong>HeadPosition</strong> and described <a class="reference internal" href="#pyannote.TrackAnnotation.modality" title="pyannote.TrackAnnotation.modality"><tt class="xref py py-attr docutils literal"><span class="pre">modality</span></tt></a> &#8216;head&#8217; of <a class="reference internal" href="#pyannote.TrackAnnotation.video" title="pyannote.TrackAnnotation.video"><tt class="xref py py-attr docutils literal"><span class="pre">video</span></tt></a> &#8216;MyVideo.avi&#8217;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">modality</span> <span class="o">=</span> <span class="s">&#39;head&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">video</span> <span class="o">=</span> <span class="s">&#39;MyVideo.avi&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">track_class</span> <span class="o">=</span> <span class="n">HeadPosition</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">TrackAnnotation</span><span class="p">(</span><span class="n">track_class</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="n">modality</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="n">video</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enumerate all annotated segments in chronological order</p>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Do something with segment </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">segment</span>
+</pre></div>
+</div>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__len__">
 <tt class="descname">__len__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__len__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return number of annotated segments
-Use the expression &#8216;len(annotation)&#8217;</p>
+<dd><p>Get number of annotated segments &#8211; <strong>len()</strong> operator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;There are </span><span class="si">%d</span><span class="s"> annotated segments in A.&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__nonzero__">
 <tt class="descname">__nonzero__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__nonzero__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return True if annotation is not empty, False otherwise.
-Use the expression &#8216;if annotation&#8217;</p>
+<dd><p>Test whether annotation has at least one annotation segment (is not empty).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">A</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Annotation is not empty.&#39;</span>        
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__pow__">
 <tt class="descname">__pow__</tt><big>(</big><em>timeline</em>, <em>modulo=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__pow__" title="Permalink to this definition">¶</a></dt>
-<dd><p>annotation ** timeline</p>
+<dd><p>Force alignment of annotation with timeline and return a new instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeline</strong> (<a class="reference internal" href="timeline.html#pyannote.Timeline" title="pyannote.Timeline"><tt class="xref py py-class docutils literal"><span class="pre">Timeline</span></tt></a>) &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">**</span> <span class="n">timeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">timeline</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;Yes!&#39;</span>
+<span class="go">Yes!</span>
+</pre></div>
+</div>
+<p>For each segment in <a class="reference internal" href="#pyannote.TrackAnnotation.timeline" title="pyannote.TrackAnnotation.timeline"><tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt></a>, all annotations of intersecting segments
+are added to the new <a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a> instance <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__reversed__">
+<tt class="descname">__reversed__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__reversed__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enumerate all annotated segments in reversed chronological order</p>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Do something with segment </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">segment</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackAnnotation.__setitem__">
 <tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p># Add new track named name to segment
-$ segment = Segment( start_time, end_time )
-$ name = &#8216;track name&#8217;
-$ track = TrackClass( args )    
-$ A[segment, name] = track</p>
-<p># Add multiple new named tracks to segment
-$ named_tracks = {&#8216;first track name&#8217;: track1,</p>
-<blockquote>
-<div>&#8216;other track name&#8217;: track2, 
-&#8216;final track name&#8217;: track3}</div></blockquote>
-<p>$ A[segment] = named_tracks</p>
+<dd><dl class="docutils">
+<dt>Add multiple tracks at once for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tracks</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;first track name&#39;</span><span class="p">:</span> <span class="n">track1</span><span class="p">,</span> 
+<span class="gp">... </span>          <span class="s">&#39;other track name&#39;</span><span class="p">:</span> <span class="n">track2</span><span class="p">,</span> 
+<span class="gp">... </span>          <span class="s">&#39;final track name&#39;</span><span class="p">:</span> <span class="n">track3</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">tracks</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>tracks</strong> (dictionary of tracks, see <a class="reference internal" href="#pyannote.TrackAnnotation.track_class" title="pyannote.TrackAnnotation.track_class"><tt class="xref py py-attr docutils literal"><span class="pre">track_class</span></tt></a>) &#8211; named tracks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Add track called name to segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">track</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; track name</li>
+<li><strong>track</strong> (track class, see <a class="reference internal" href="#pyannote.TrackAnnotation.track_class" title="pyannote.TrackAnnotation.track_class"><tt class="xref py py-attr docutils literal"><span class="pre">track_class</span></tt></a>) &#8211; track</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a TypeError if added tracks do not follow the track type provided in <a class="reference internal" href="#pyannote.TrackAnnotation.track_class" title="pyannote.TrackAnnotation.track_class"><tt class="xref py py-attr docutils literal"><span class="pre">track_class</span></tt></a>.</p>
+</div>
 </dd></dl>
 
 <dl class="attribute">
@@ -172,22 +420,76 @@ $ named_tracks = {&#8216;first track name&#8217;: track1,</p>
 <dd><p>list of weak references to the object (if defined)</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.auto_track_name">
+<tt class="descname">auto_track_name</tt><big>(</big><em>segment</em>, <em>prefix='track'</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.auto_track_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically generate name for a new track on a given <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt>.
+Make sure that returned name does not already exist by appending
+a number (starting at 0) at the end of <tt class="xref py py-data docutils literal"><span class="pre">prefix</span></tt>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; segment to be annotated</li>
+<li><strong>prefix</strong> (<em>string</em>) &#8211; track name prefix</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">TrackAnnotation</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;audio&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">A</span><span class="o">.</span><span class="n">auto_track_name</span><span class="p">(</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
+<span class="go">speaker0</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="pyannote.TrackAnnotation.modality">
 <tt class="descname">modality</tt><a class="headerlink" href="#pyannote.TrackAnnotation.modality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Annotated modality.</p>
+<dd><p>Annotated modality (mutable attribute)</p>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">modality</span> <span class="o">!=</span> <span class="s">&#39;head&#39;</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="n">A</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="s">&#39;head&#39;</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyannote.TrackAnnotation.timeline">
 <tt class="descname">timeline</tt><a class="headerlink" href="#pyannote.TrackAnnotation.timeline" title="Permalink to this definition">¶</a></dt>
-<dd><p>Annotation timeline.</p>
+<dd><p>Annotation timeline (containing all segments with at least one track)
+Read-only attribute.</p>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">timeline</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.TrackAnnotation.track_class">
+<tt class="descname">track_class</tt><a class="headerlink" href="#pyannote.TrackAnnotation.track_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class of tracks</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Tracks stored in a TrackAnnotation instance must be instances of this class.</p>
+</div>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyannote.TrackAnnotation.video">
 <tt class="descname">video</tt><a class="headerlink" href="#pyannote.TrackAnnotation.video" title="Permalink to this definition">¶</a></dt>
-<dd><p>Annotated video.</p>
+<dd><p>Annotated video (mutable attribute)</p>
+<p><strong>Usage</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">video</span> <span class="o">!=</span> <span class="s">&#39;MyVideo.avi&#39;</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="n">A</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="s">&#39;MyVideo.avi&#39;</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -195,67 +497,310 @@ $ named_tracks = {&#8216;first track name&#8217;: track1,</p>
 <dl class="class">
 <dt id="pyannote.TrackIDAnnotation">
 <em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">TrackIDAnnotation</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation" title="Permalink to this definition">¶</a></dt>
-<dd><p>A[segment, name, identifier] = data
-A[segment, name] = data_dict
-A[segment] = track_dict</p>
-<p>del A[segment, name, identifier]
-del A[segment, name]
-del A[segment]</p>
-<p>data = A[segment, name, identifier]
-data_dict = A[segment, name]
-track_dict = A[segment]</p>
-<p>A.IDs</p>
-<p>A(identifier)
-A(segment,  mode=&#8217;strict | loose | intersection&#8217;)
-A(timeline, mode=&#8217;strict | loose | intersection&#8217;)</p>
-<p>B = A % translation</p>
+<dd><p>TrackIDAnnotation is an extension of <a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a> to store identifiers.</p>
+<ul>
+<li><dl class="first docutils">
+<dt>What is an identifier?</dt>
+<dd><p class="first last">It can be anything but <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt> or <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>. 
+Usually, you might want to use a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> to store
+the name of a person, for instance.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Data can be associated to each (segment, track, identifier) tuple.</dt>
+<dd><p class="first">For instance, you can use the following to store some kind of probability
+for face #1 in segment to be &#8216;Paul&#8217;:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="s">&#39;face1&#39;</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.85</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Each track can have multiple identifiers.</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Paul&#39;</span><span class="p">:</span> <span class="mf">0.85</span><span class="p">,</span> <span class="s">&#39;Jean&#39;</span><span class="p">:</span> <span class="mf">0.23</span><span class="p">,</span> <span class="s">&#39;Nicholas&#39;</span><span class="p">:</span> <span class="mf">0.11</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
 <dl class="attribute">
 <dt id="pyannote.TrackIDAnnotation.IDs">
 <tt class="descname">IDs</tt><a class="headerlink" href="#pyannote.TrackIDAnnotation.IDs" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of identifiers.</p>
+<dd><p>Get list of identifiers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>subset</em>, <em>mode='strict'</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a subset of annotations:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>subset</strong> &#8211; <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>, <a class="reference internal" href="timeline.html#pyannote.Timeline" title="pyannote.Timeline"><tt class="xref py py-class docutils literal"><span class="pre">Timeline</span></tt></a> or any valid identifier</li>
+<li><strong>mode</strong> &#8211; choose between &#8216;strict&#8217;, &#8216;loose&#8217; and &#8216;intersection&#8217;</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span> <span class="o">|</span> <span class="s">&#39;loose&#39;</span> <span class="o">|</span> <span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;strict&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments fully included in <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;loose&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments with a non-empty intersection with <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;intersection&#8217;</dt>
+<dd><p class="first last">same as &#8216;loose&#8217; except segments are trimmed
+down to their intersection with <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span> <span class="o">|</span> <span class="s">&#39;loose&#39;</span> <span class="o">|</span> <span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;strict&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments fully included in <tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt> coverage</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;loose&#8217;</dt>
+<dd><p class="first last">subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations of 
+segments with a non-empty intersection with <tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt> coverage</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> = &#8216;intersection&#8217;</dt>
+<dd><p class="first last">same as &#8216;loose&#8217; except segments are trimmed
+down to their intersection with <tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt> coverage</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">valid_identifier</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>Subset <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt> only contains annotations with the provided identifier.</p>
+<p><tt class="xref py py-data docutils literal"><span class="pre">mode</span></tt> has no effect here.</p>
+</div></blockquote>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__delitem__">
 <tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>del A[segment, name, identifier]
-INHERITED: del A[segment, name]
-INHERITED: del A[segment]</p>
+<dd><dl class="docutils">
+<dt>Delete all tracks for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Delete a track by its name for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>If segment no longer has any track, it is also deleted.</p>
+<dl class="docutils">
+<dt>Delete an identifier for given track and segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>If track no longer has any segment, it is also deleted.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated, if no track called <tt class="xref py py-data docutils literal"><span class="pre">name</span></tt>
+exists for this <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> or if such an identifier does not exist here.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__getitem__">
 <tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>A[segment, name, identifier]
-INHERITED: A[segment, name]
-INHERITED: A[segment]</p>
+<dd><dl class="docutils">
+<dt>Get all tracks for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tracks</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Get a track by its name for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">track</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Get data for a given identifier on the track called name for a given segment</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated, if no track called <tt class="xref py py-data docutils literal"><span class="pre">name</span></tt>
+exists for this <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> or if no such identifier for this track exists.</p>
+<p class="last">See <a class="reference internal" href="#pyannote.TrackIDAnnotation.__call__" title="pyannote.TrackIDAnnotation.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt></a> for more advanced functionalities.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__init__">
 <tt class="descname">__init__</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Create an empty <a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>video</strong> (<em>string</em>) &#8211; name of (or path to) annotated <tt class="xref py py-attr docutils literal"><span class="pre">video</span></tt></li>
+<li><strong>modality</strong> (<em>string</em>) &#8211; name of annotated <tt class="xref py py-attr docutils literal"><span class="pre">modality</span></tt></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<blockquote>
+<div><p>The following code creates an instance A of <a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a> that is meant to store 
+identifier annotations for <tt class="xref py py-attr docutils literal"><span class="pre">modality</span></tt> &#8216;head&#8217; of <tt class="xref py py-attr docutils literal"><span class="pre">video</span></tt> &#8216;MyVideo.avi&#8217;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">modality</span> <span class="o">=</span> <span class="s">&#39;head&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">video</span> <span class="o">=</span> <span class="s">&#39;MyVideo.avi&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">TrackIDAnnotation</span><span class="p">(</span><span class="n">modality</span><span class="o">=</span><span class="n">modality</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="n">video</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__mod__">
 <tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
-<dd><p>annotation % translation</p>
+<dd><p>Create a copy of the annotation with identifiers translated according to <tt class="xref py py-data docutils literal"><span class="pre">translation</span></tt></p>
+<p>Identifiers with no available translation are left unchanged.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>translation</strong> (<em>dictionary</em>) &#8211; translation (see example below)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a><div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">translation</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Jean&#39;</span><span class="p">:</span> <span class="s">&#39;John&#39;</span><span class="p">,</span> <span class="s">&#39;Mathieu&#39;</span><span class="p">:</span> <span class="s">&#39;Matthew&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">A</span><span class="o">.</span><span class="n">IDs</span>
+<span class="go">[&#39;Jean&#39;, &#39;Mathieu&#39;, &#39;Paul&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">%</span> <span class="n">translation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">a</span><span class="o">.</span><span class="n">IDs</span>
+<span class="go">[&#39;John&#39;, &#39;Matthew&#39;, &#39;Paul&#39;]</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__setitem__">
 <tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p># Add new track named name to segment
-$ segment = Segment( start_time, end_time )
-$ name = &#8216;track name&#8217;
-$ track = TrackClass( args )    
-$ A[segment, name] = track</p>
-<p># Add multiple new named tracks to segment
-$ named_tracks = {&#8216;first track name&#8217;: track1,</p>
-<blockquote>
-<div>&#8216;other track name&#8217;: track2, 
-&#8216;final track name&#8217;: track3}</div></blockquote>
-<p>$ A[segment] = named_tracks</p>
+<dd><dl class="docutils">
+<dt>Add multiple tracks at once for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tracks</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;first track name&#39;</span><span class="p">:</span> <span class="n">track1</span><span class="p">,</span> 
+<span class="gp">... </span>          <span class="s">&#39;other track name&#39;</span><span class="p">:</span> <span class="n">track2</span><span class="p">,</span> 
+<span class="gp">... </span>          <span class="s">&#39;final track name&#39;</span><span class="p">:</span> <span class="n">track3</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>tracks</strong> (<em>dictionary of dictionaries {identifier: data}</em>) &#8211; named tracks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Add track called name to segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">identifier1</span><span class="p">:</span> <span class="n">data1</span><span class="p">,</span> 
+<span class="go">                        identifier2: data2, </span>
+<span class="go">                        ...}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; track name</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Add data for identifier on track called name to segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; track name</li>
+<li><strong>identifier</strong> (any valid identifier type (not <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt> nor <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>)) &#8211; identifier</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a TypeError if identifier is not valid.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -263,31 +808,121 @@ $ named_tracks = {&#8216;first track name&#8217;: track1,</p>
 <dl class="class">
 <dt id="pyannote.IDAnnotation">
 <em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">IDAnnotation</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p><a class="reference internal" href="#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a> is the mono-track version of  <a class="reference internal" href="#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a>.</p>
+<p>A segment can have only one track. A track still can have multiple identifiers.</p>
+<dl class="method">
 <dt id="pyannote.IDAnnotation.__delitem__">
 <tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>del A[segment, identifier]
-del A[segment]</p>
+<dd><dl class="docutils">
+<dt>Delete all identifiers for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Delete an identifier for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>If segment no longer has any identifier, it is also deleted.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated, 
+or if such an identifier does not exist here.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.IDAnnotation.__getitem__">
 <tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>A[segment, identifier]
-A[segment]</p>
+<dd><dl class="docutils">
+<dt>Get all identifiers for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">identifiers</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>Get data for a given identifier for a given segment</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated or if no such identifier for this segment exists.</p>
+<p class="last">See <tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt> for more advanced functionalities.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.IDAnnotation.__mod__">
 <tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
-<dd><p>annotation % translation</p>
+<dd><p>Create a copy of the annotation with identifiers translated according to <tt class="xref py py-data docutils literal"><span class="pre">translation</span></tt></p>
+<p>Identifiers with no available translation are left unchanged.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>translation</strong> (<em>dictionary</em>) &#8211; translation (see example below)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a><div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">translation</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Jean&#39;</span><span class="p">:</span> <span class="s">&#39;John&#39;</span><span class="p">,</span> <span class="s">&#39;Mathieu&#39;</span><span class="p">:</span> <span class="s">&#39;Matthew&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">A</span><span class="o">.</span><span class="n">IDs</span>
+<span class="go">[&#39;Jean&#39;, &#39;Mathieu&#39;, &#39;Paul&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">%</span> <span class="n">translation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">a</span><span class="o">.</span><span class="n">IDs</span>
+<span class="go">[&#39;John&#39;, &#39;Matthew&#39;, &#39;Paul&#39;]</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyannote.IDAnnotation.__setitem__">
 <tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
-<dd><p>A[segment, identifier] = value
-A[segment] = values</p>
+<dd><dl class="docutils">
+<dt>Add multiple identifiers at once for a given segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">identifier1</span><span class="p">:</span> <span class="n">data1</span><span class="p">,</span> 
+<span class="go">                  identifier2: data2, </span>
+<span class="go">                   ...}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Add data for identifier to segment:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>segment</strong> (<a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>) &#8211; annotated segment</li>
+<li><strong>identifier</strong> (any valid identifier type (not <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt> nor <a class="reference internal" href="segment.html#pyannote.Segment" title="pyannote.Segment"><tt class="xref py py-class docutils literal"><span class="pre">Segment</span></tt></a>)) &#8211; identifier</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Raises a TypeError if identifier is not valid.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -300,6 +935,9 @@ A[segment] = values</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="timeline.html"
+                        title="previous chapter">Timeline</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/api/annotation.txt"
@@ -328,7 +966,11 @@ A[segment] = values</p>
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
-        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" >API Documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

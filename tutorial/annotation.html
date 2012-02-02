@@ -25,7 +25,10 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="pyannote 1 documentation" href="../index.html" /> 
+    <link rel="top" title="pyannote 1 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="../tutorial.html" />
+    <link rel="next" title="API Documentation" href="../api.html" />
+    <link rel="prev" title="Timeline" href="timeline.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,7 +37,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="../api.html" title="API Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" accesskey="U">Tutorial</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -114,6 +124,39 @@
 </div>
 <div class="section" id="translation">
 <h2>Translation<a class="headerlink" href="#translation" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p># Add new track named name to segment
+segment = Segment( start_time, end_time )
+name = &#8216;track name&#8217;
+track = TrackClass( args )
+A[segment, name] = track</p>
+<p># Add multiple new named tracks to segment
+named_tracks = {&#8216;first track name&#8217;: track1,</p>
+<blockquote>
+<div>&#8216;other track name&#8217;: track2,
+&#8216;final track name&#8217;: track3}</div></blockquote>
+<p>A[segment] = named_tracks</p>
+<p># Get just added track back
+track = A[segment, name]</p>
+<p># Get all tracks for segment
+# as a dictionary {&#8216;name&#8217;: track}
+tracks = A[segment]</p>
+<p># Remove just added track
+del A[segment, name]</p>
+<p># Remove all tracks for segment
+del A[segment]</p>
+<p># Remove all tracks for all segments
+A.clear()</p>
+<p># Iterate through segments
+for s, segment in enumerate(A):</p>
+<blockquote>
+<div># do something with A and segment
+pass</div></blockquote>
+<p>A(segment)
+A(timeline)</p>
+<p>A ** timeline
+abs(A)</p>
+</div></blockquote>
 </div>
 </div>
 
@@ -132,6 +175,12 @@
 </li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="timeline.html"
+                        title="previous chapter">Timeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../api.html"
+                        title="next chapter">API Documentation</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/tutorial/annotation.txt"
@@ -160,7 +209,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
-        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="../api.html" title="API Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" >Tutorial</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
