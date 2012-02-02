@@ -4,7 +4,7 @@
 Annotation
 ==========
 
-Create empty annotation for video 'MyMovie.avi' and modality 'speaker'::
+Create empty :class:`IDAnnotation` for video 'MyMovie.avi' and modality 'speaker'::
 
 	>>> from pyannote import *
 	>>> confidence = IDAnnotation(video='MyVideo.avi', modality='speaker')
@@ -28,7 +28,6 @@ Add annotation for given speech turn::
 	>>> confidence[speech_turn, 'Paul'] = 0.99 
 	>>> confidence[speech_turn, 'Patrick'] = 0.88
 	>>> confidence[speech_turn, 'Bernard'] = 0.37
-	
 
 Get list of identifiers with at least one occurrence::
 
@@ -66,7 +65,9 @@ Sub-annotations can be obtained the same way sub-timelines are (see timeline tut
 Additionnaly, one can get annotation for a given identifier::
 
     >>> paul = confidence('Paul')
-	
+
+See :meth:`IDAnnotation.__call__` for more details.
+
 and then loop on annotated segments::	
 	
 	>>> for s, segment in enumerate(paul):
