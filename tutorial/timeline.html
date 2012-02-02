@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Timeline &mdash; pyannote 1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyannote 1 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="../tutorial.html" />
+    <link rel="next" title="Annotation" href="annotation.html" />
+    <link rel="prev" title="Segment" href="segment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="segment.html" title="Segment"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" accesskey="U">Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="timeline">
+<h1>Timeline<a class="headerlink" href="#timeline" title="Permalink to this headline">¶</a></h1>
+<p>Create empty timeline for video &#8216;MyMovie.avi&#8217;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyMovie.avi&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Get/update video attribute:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">video</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">video</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="s">&#39;video.mpg&#39;</span>
+</pre></div>
+</div>
+<p>A timeline is said to be empty in case it contains no segment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="ow">not</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Timeline is empty.&#39;</span>
+<span class="go">Timeline is empty.</span>
+</pre></div>
+</div>
+<p>Add three segments to timeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One can get the number of segments using <strong>len()</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;Timeline has </span><span class="si">%d</span><span class="s"> segments.&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+<span class="go">Timeline has 3 segments.</span>
+</pre></div>
+</div>
+<p>A segment <strong>cannot</strong> be added twice to a timeline. If it already exists, it is simply not added a second time:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;Timeline still has </span><span class="si">%d</span><span class="s"> segments.&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+<span class="go">Timeline still has 3 segments.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [2 --&gt; 4]</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>One can add all segments of another timeline at once:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">other_segments</span> <span class="o">=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">segments</span><span class="o">=</span><span class="n">other_segments</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="s">&#39;MyMovie.avi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">other_timeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [2 --&gt; 4]</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">   [6 --&gt; 7]</span>
+<span class="go">   [8 --&gt; 9]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>In case something had to be done for each segment in timeline, it is possible to iterate through all segments in timeline, in chronological order (i.e. sorted with &lt; comparison operator):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">timeline</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Segment </span><span class="si">%d</span><span class="s"> is </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">segment</span><span class="p">)</span>
+<span class="go">Segment 1 is [0 --&gt; 1]</span>
+<span class="go">Segment 2 is [2 --&gt; 4]</span>
+<span class="go">Segment 3 is [3 --&gt; 5]</span>
+<span class="go">Segment 4 is [6 --&gt; 7]</span>
+<span class="go">Segment 5 is [8 --&gt; 9]</span>
+</pre></div>
+</div>
+<p>Segments can be accessed either individually or as slices.</p>
+<ul>
+<li><p class="first">Get 3rd segment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">third_segment</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">third_segment</span>
+<span class="go">[3 --&gt; 5]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Get segments 3, 4 and 5 in a list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segments</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Combined with <strong>in</strong> operator, <strong>index()</strong> method can be used to retrieve the position of a segment in a timeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">look_for</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">look_for</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">i</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">look_for</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Segment </span><span class="si">%s</span><span class="s"> is at index </span><span class="si">%d</span><span class="s">.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">look_for</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+<span class="go">Segment [3 --&gt; 5] is at index 2.</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">note:</th><td class="field-body"><p class="first">index() raises an error if timeline does not contain requested segment:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="go">ValueError: segment [2 --&gt; 3] is not in timeline</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The extent of a timeline is defined as the segment of minimum duration that contains the whole timeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">extent</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">extent</span>
+<span class="go">[0 --&gt; 9]</span>
+</pre></div>
+</div>
+<p>The coverage of a timeline is defined as the timeline of minimum length (ie. minimum number of segments) that covers exactly the same time ranges as the original timeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">coverage</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">coverage</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [2 --&gt; 5]</span>
+<span class="go">   [6 --&gt; 7]</span>
+<span class="go">   [8 --&gt; 9]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>The duration of a timeline is defined as the sum of the duration of all segments in timeline coverage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">duration</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">duration</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;Timeline has a duration of </span><span class="si">%g</span><span class="s"> seconds.&#39;</span> <span class="o">%</span> <span class="n">duration</span>
+<span class="go">Timeline has a duration of 6 seconds.</span>
+</pre></div>
+</div>
+<p>Get duplicate timeline:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="sub-timelines">
+<h2>Sub-timelines<a class="headerlink" href="#sub-timelines" title="Permalink to this headline">¶</a></h2>
+<p>Timeline objects are <em>callable</em> and this property can be used to get sub-timelines in multiple ways (depending on the <strong>mode</strong> parameter)</p>
+<ul>
+<li><p class="first">Sub-timeline made of segments fully included in requested segment (<strong>strict</strong> mode):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">requested_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">6.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Sub-timeline made of segments with non-emtpy intersection with requested segment (<strong>loose</strong> mode):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [2 --&gt; 4]</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">   [6 --&gt; 7]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>intersection</strong> mode &#8211; same as <strong>loose</strong> mode, except segments that are not fully included in requested segment are trimmed to be fully included:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [2.5 --&gt; 4]</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">   [6 --&gt; 6.5]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Sub-timeline based on another timeline can also be computed.</p>
+<ul>
+<li><p class="first">Sub-timeline made of segments fully included in requested timeline coverage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">requested_timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">requested_timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">requested_timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [8 --&gt; 9]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Sub-timeline made of segments with non-empty intersection with requested timeline coverage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [8 --&gt; 9]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>intersection</strong> mode &#8211; same as <strong>loose</strong>, except segments that are not fully included in requested timeline coverage are trimmed to be fully included:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sub_timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="p">(</span><span class="n">requested_timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;intersection&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sub_timeline</span>
+<span class="go">[</span>
+<span class="go">   [0.5 --&gt; 1]</span>
+<span class="go">   [8 --&gt; 9]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="partitions-and-gaps">
+<h2>Partitions and gaps<a class="headerlink" href="#partitions-and-gaps" title="Permalink to this headline">¶</a></h2>
+<p>A timeline is a partition if it contains no overlapping segments.</p>
+<p>Using the <strong>abs()</strong> operator, one can create a partition from a timeline with the same set of segment boundaries and the same coverage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">partition</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">partition</span>
+<span class="go">[</span>
+<span class="go">   [1 --&gt; 2]</span>
+<span class="go">   [2 --&gt; 3]</span>
+<span class="go">   [3 --&gt; 4]</span>
+<span class="go">   [5 --&gt; 6]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>Check whether timeline is a partition:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Timeline is a partition.&quot;</span>
+<span class="gp">... </span><span class="k">else</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Timeline is not a partition.&quot;</span>
+<span class="go">Timeline is not a partitiion.</span>
+</pre></div>
+</div>
+<p>A timeline might contains gaps (or holes) in its coverage.
+Use inversion (~) operator to get them:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">gaps</span> <span class="o">=</span> <span class="o">~</span><span class="n">timeline</span> <span class="c"># or gaps = 1 / timeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">gaps</span>
+<span class="go">[</span>
+<span class="go">   [4 --&gt; 5]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>More generally, it is possible to get the minimum length timeline necessary to fill timeline (at least) up to a provided coverage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">requested_coverage</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gaps</span> <span class="o">=</span> <span class="n">requested_coverage</span> <span class="o">/</span> <span class="n">timeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">gaps</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [4 --&gt; 5]</span>
+<span class="go">   [6 --&gt; 30]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="p">(</span><span class="n">timeline</span> <span class="o">+</span> <span class="n">gaps</span><span class="p">)</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 30]</span>
+<span class="go">]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">requested_coverage</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">requested_coverage</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">requested_coverage</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gaps</span> <span class="o">=</span> <span class="n">requested_coverage</span> <span class="o">/</span> <span class="n">timeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">gaps</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [4 --&gt; 5]</span>
+<span class="go">   [10 --&gt; 30]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="p">(</span><span class="n">gaps</span><span class="o">+</span><span class="n">timeline</span><span class="p">)</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 6]</span>
+<span class="go">   [10 --&gt; 30]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Timeline</a><ul>
+<li><a class="reference internal" href="#sub-timelines">Sub-timelines</a></li>
+<li><a class="reference internal" href="#partitions-and-gaps">Partitions and gaps</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="segment.html"
+                        title="previous chapter">Segment</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="annotation.html"
+                        title="next chapter">Annotation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/tutorial/timeline.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="segment.html" title="Segment"
+             >previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" >Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Hervé BREDIN.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

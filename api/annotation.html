@@ -1,0 +1,353 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Annotation &mdash; pyannote 1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyannote 1 documentation" href="../index.html" />
+    <link rel="up" title="API Documentation" href="../api.html" />
+    <link rel="prev" title="Timeline" href="timeline.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" accesskey="U">API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="annotation">
+<h1>Annotation<a class="headerlink" href="#annotation" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyannote.TrackAnnotation">
+<em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">TrackAnnotation</tt><big>(</big><em>track_class=None</em>, <em>video=None</em>, <em>modality=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p># Create annotation for video &#8216;video&#8217; on modality &#8216;modality&#8217;
+# Tracks must be instances of class TrackClass
+A = TrackAnnotation(TrackClass, modality=&#8217;modality&#8217;,</p>
+<blockquote>
+<div>video=&#8217;video&#8217;)</div></blockquote>
+<p># Add new track named name to segment
+segment = Segment( start_time, end_time )
+name = &#8216;track name&#8217;
+track = TrackClass( args )    
+A[segment, name] = track</p>
+<p># Add multiple new named tracks to segment
+named_tracks = {&#8216;first track name&#8217;: track1,</p>
+<blockquote>
+<div>&#8216;other track name&#8217;: track2, 
+&#8216;final track name&#8217;: track3}</div></blockquote>
+<p>A[segment] = named_tracks</p>
+<p># Get just added track back
+track = A[segment, name]</p>
+<p># Get all tracks for segment
+# as a dictionary {&#8216;name&#8217;: track}
+tracks = A[segment]</p>
+<p># Remove just added track
+del A[segment, name]</p>
+<p># Remove all tracks for segment
+del A[segment]</p>
+<p># Remove all tracks for all segments
+A.clear()</p>
+<p># Iterate through segments
+for s, segment in enumerate(A):</p>
+<blockquote>
+<div># do something with A and segment
+pass</div></blockquote>
+<p>A(segment)
+A(timeline)</p>
+<p>A ** timeline
+abs(A)</p>
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__abs__">
+<tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>abs(annotation) = annotation ** abs(annotation.timeline)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>requested</em>, <em>mode='strict'</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p># Create sub-annotation. Default mode is &#8216;loose&#8217;.
+# ... made of segments fully included in requested segment
+sub_annotation = ann(requested_segment, mode=&#8217;strict&#8217;)</p>
+<p># ... made of segments with non-emtpy intersection with requested segment 
+sub_annotation = ann(requested_segment, mode=&#8217;loose&#8217;)</p>
+<p># ... same as loose, except segments that are not fully included 
+#     in requested segment are trimmed to be fully included 
+sub_annotation = ann(requested_segment, mode=&#8217;intersection&#8217;)</p>
+<p># ... made of segments fully included in requested timeline coverage
+#     i.e. tl(timeline, mode) == tl(timeline.coverage(), mode)  
+sub_annotation = ann(timeline, mode=&#8217;strict&#8217;)</p>
+<p># ... made of segments with non-empty intersection with requested timeline coverage
+sub_annotation = ann(timeline, mode=&#8217;loose&#8217;)</p>
+<p># ... same as loose, excepet segments that are not fully included
+#     in requested timeline coverage are trimmed to be fully included 
+sub_annotation = ann(timeline, mode=&#8217;intersection&#8217;)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__delitem__">
+<tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all annotations for segment: del A[segment]
+Remove annotation called name for segment: del A[segment, name]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A[segment, name]
+A[segment]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>track_class=None</em>, <em>video=None</em>, <em>modality=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__len__">
+<tt class="descname">__len__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__len__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return number of annotated segments
+Use the expression &#8216;len(annotation)&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__nonzero__">
+<tt class="descname">__nonzero__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__nonzero__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if annotation is not empty, False otherwise.
+Use the expression &#8216;if annotation&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__pow__">
+<tt class="descname">__pow__</tt><big>(</big><em>timeline</em>, <em>modulo=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotation ** timeline</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackAnnotation.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p># Add new track named name to segment
+$ segment = Segment( start_time, end_time )
+$ name = &#8216;track name&#8217;
+$ track = TrackClass( args )    
+$ A[segment, name] = track</p>
+<p># Add multiple new named tracks to segment
+$ named_tracks = {&#8216;first track name&#8217;: track1,</p>
+<blockquote>
+<div>&#8216;other track name&#8217;: track2, 
+&#8216;final track name&#8217;: track3}</div></blockquote>
+<p>$ A[segment] = named_tracks</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.TrackAnnotation.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.TrackAnnotation.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.TrackAnnotation.modality">
+<tt class="descname">modality</tt><a class="headerlink" href="#pyannote.TrackAnnotation.modality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotated modality.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.TrackAnnotation.timeline">
+<tt class="descname">timeline</tt><a class="headerlink" href="#pyannote.TrackAnnotation.timeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotation timeline.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.TrackAnnotation.video">
+<tt class="descname">video</tt><a class="headerlink" href="#pyannote.TrackAnnotation.video" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotated video.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.TrackIDAnnotation">
+<em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">TrackIDAnnotation</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>A[segment, name, identifier] = data
+A[segment, name] = data_dict
+A[segment] = track_dict</p>
+<p>del A[segment, name, identifier]
+del A[segment, name]
+del A[segment]</p>
+<p>data = A[segment, name, identifier]
+data_dict = A[segment, name]
+track_dict = A[segment]</p>
+<p>A.IDs</p>
+<p>A(identifier)
+A(segment,  mode=&#8217;strict | loose | intersection&#8217;)
+A(timeline, mode=&#8217;strict | loose | intersection&#8217;)</p>
+<p>B = A % translation</p>
+<dl class="attribute">
+<dt id="pyannote.TrackIDAnnotation.IDs">
+<tt class="descname">IDs</tt><a class="headerlink" href="#pyannote.TrackIDAnnotation.IDs" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of identifiers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__delitem__">
+<tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>del A[segment, name, identifier]
+INHERITED: del A[segment, name]
+INHERITED: del A[segment]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A[segment, name, identifier]
+INHERITED: A[segment, name]
+INHERITED: A[segment]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__mod__">
+<tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotation % translation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p># Add new track named name to segment
+$ segment = Segment( start_time, end_time )
+$ name = &#8216;track name&#8217;
+$ track = TrackClass( args )    
+$ A[segment, name] = track</p>
+<p># Add multiple new named tracks to segment
+$ named_tracks = {&#8216;first track name&#8217;: track1,</p>
+<blockquote>
+<div>&#8216;other track name&#8217;: track2, 
+&#8216;final track name&#8217;: track3}</div></blockquote>
+<p>$ A[segment] = named_tracks</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.IDAnnotation">
+<em class="property">class </em><tt class="descclassname">pyannote.</tt><tt class="descname">IDAnnotation</tt><big>(</big><em>video=None</em>, <em>modality=None</em>, <em>**keywords</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pyannote.IDAnnotation.__delitem__">
+<tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>del A[segment, identifier]
+del A[segment]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.IDAnnotation.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A[segment, identifier]
+A[segment]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.IDAnnotation.__mod__">
+<tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotation % translation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.IDAnnotation.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A[segment, identifier] = value
+A[segment] = values</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="timeline.html"
+                        title="previous chapter">Timeline</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/annotation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../api.html" >API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Hervé BREDIN.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

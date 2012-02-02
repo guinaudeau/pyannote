@@ -1,0 +1,236 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Segment &mdash; pyannote 1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyannote 1 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="../tutorial.html" />
+    <link rel="next" title="Timeline" href="timeline.html" />
+    <link rel="prev" title="Tutorial" href="../tutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../tutorial.html" title="Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" accesskey="U">Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="segment">
+<h1>Segment<a class="headerlink" href="#segment" title="Permalink to this headline">¶</a></h1>
+<p>A segment is uniquely defined by its start and end times (in seconds):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="n">Segment</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">13.</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">37</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span>
+<span class="go">[13 --&gt; 37]</span>
+</pre></div>
+</div>
+<p><strong>start</strong> and <strong>end</strong> attributes can be used directly to read or modify a segment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span><span class="o">.</span><span class="n">start</span>
+<span class="go">13.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="mf">14.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span>
+<span class="go">[13 --&gt; 14]</span>
+</pre></div>
+</div>
+<p>The duration (in seconds) of a segment can be obtained via the <strong>abs()</strong> operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="nb">abs</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+<span class="go">1.0</span>
+</pre></div>
+</div>
+<p>Read-only <strong>middle</strong> attribute can be used to get the segment middle time:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span><span class="o">.</span><span class="n">middle</span>
+<span class="go">13.5</span>
+</pre></div>
+</div>
+<p>A segment is empty in case start time is greater than (or equals) end time.
+One can check if a segment is <strong>empty</strong> using the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">segment</span><span class="p">:</span>
+<span class="go">        print &quot;Segment is not empty.&quot;</span>
+<span class="go">    else:</span>
+<span class="go">        print &quot;Segment is empty.&quot;</span>
+<span class="go">    Segment is not empty.</span>
+</pre></div>
+</div>
+<div class="section" id="comparison">
+<h2>Comparison<a class="headerlink" href="#comparison" title="Permalink to this headline">¶</a></h2>
+<p>Two segments can be compared for equality as expected:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment1</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment2</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">segment1</span> <span class="o">==</span> <span class="n">segment2</span><span class="p">:</span>
+<span class="go">        print &quot;Segments are identical&quot;</span>
+</pre></div>
+</div>
+<p>Other <strong>comparison</strong> operators &lt;, &gt;, &lt;= and &gt;= are also available.
+Segment A is smaller than segment B if (and only if)</p>
+<ul>
+<li><p class="first">A starts before B</p>
+</li>
+<li><p class="first">or A and B starts simultaneously and A ends before B.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Inclusion of one segment into another can be tested with the <strong>in</strong> operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">big_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">small_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">small_segment</span> <span class="ow">in</span> <span class="n">big_segment</span><span class="p">:</span>
+<span class="go">       print &quot;Small segment is fully included in big segment.&quot;</span>
+<span class="go">Small segment is fully included in big segment.</span>
+</pre></div>
+</div>
+<p><strong>Intersection</strong> of two segments is obtained with the <strong>&amp;</strong> operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment1</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment2</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment1</span> <span class="o">&amp;</span> <span class="n">segment2</span>
+<span class="go">[4 --&gt; 5]</span>
+</pre></div>
+</div>
+<p><strong>Union</strong> (operator <a href="#id1"><span class="problematic" id="id2">|</span></a>) of two segments returns the minimum-duration segment that contains both of them:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment1</span> <span class="o">|</span> <span class="n">segment2</span>
+<span class="go">[3 --&gt; 6]</span>
+</pre></div>
+</div>
+<p>Operator ^ returns the gap between two segments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment1</span> <span class="o">^</span> <span class="n">segment2</span>
+<span class="go">∅</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+<span class="go">[10 --&gt; 15]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="other-operations">
+<h2>Other operations<a class="headerlink" href="#other-operations" title="Permalink to this headline">¶</a></h2>
+<p>Segments can be modified in many ways. Here are a few examples:</p>
+<ul>
+<li><p class="first">Shift the whole segment by 4 seconds in the future:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">+=</span> <span class="mf">4.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span>
+<span class="go">[17 --&gt; 18]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Make segment last longer by 8 seconds:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">new_segment</span> <span class="o">=</span> <span class="n">segment</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">new_segment</span>
+<span class="go">[17 --&gt; 26]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Shorten segment by 0.1 second on each side:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">new_segment</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span> <span class="o">&gt;&gt;</span> <span class="n">segment</span> <span class="o">&lt;&lt;</span> <span class="o">.</span><span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">new_segment</span>
+<span class="go">[17.1 --&gt; 17.9]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Segment</a><ul>
+<li><a class="reference internal" href="#comparison">Comparison</a></li>
+<li><a class="reference internal" href="#other-operations">Other operations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../tutorial.html"
+                        title="previous chapter">Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="timeline.html"
+                        title="next chapter">Timeline</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/tutorial/segment.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../tutorial.html" title="Tutorial"
+             >previous</a> |</li>
+        <li><a href="../index.html">pyannote 1 documentation</a> &raquo;</li>
+          <li><a href="../tutorial.html" >Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Hervé BREDIN.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
