@@ -10,7 +10,7 @@ class MDTMParser(GenericParser):
     def __init__(self, path2mdtm):
         
         # source 1 start duration modality confidence subtype identifier
-        format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {CONFIDENCE} {NA} {ID}' 
+        format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {NA} {ID}' 
         super(MDTMParser, self).__init__(path2mdtm, \
                                          format, \
                                          multitrack = False)
