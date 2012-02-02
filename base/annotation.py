@@ -719,7 +719,7 @@ class TrackAnnotation(object):
         else:
             raise ValueError('')
 
-        sub_annotation = self.__class__(self.__track_class, \
+        sub_annotation = self.__class__(track_class=self.__track_class, \
                                         video=self.video, \
                                         modality=self.modality)
                                                  
