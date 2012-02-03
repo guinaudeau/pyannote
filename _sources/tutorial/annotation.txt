@@ -4,55 +4,66 @@
 Annotation
 ==========
 
-Create empty annotation for video 'MyMovie.avi' and modality 'speaker'::
+Let us start with a simple type of annotations: :class:`IDAnnotation`.
+It can be used, for instance, to store the output of a speaker identification system.
+
+Here is how to create an empty :class:`IDAnnotation` for video 'MyMovie.avi' and modality 'speaker'::
 
 	>>> from pyannote import *
-	>>> confidence = IDAnnotation(video='MyVideo.avi', modality='speaker')
+	>>> S = IDAnnotation(video='MyVideo.avi', modality='speaker')
 
-An annotation is said to be empty in case it contains no annotated segment::
+The most basic way of using is to store one segment per speech turn and annotate
+it with the recognized speaker identifier.
 
-	>>> if not confidence:
-	...     print 'Annotation is empty.'
-	Annotation is empty.
-
-Get/update video and modality attributes::
-
-	>>> video = confidence.video
-	>>> confidence.video = 'MyVideo.avi'
-	>>> print confidence.modality
-	speaker
-   
 Add annotation for given speech turn::
    
 	>>> speech_turn = Segment(0, 10)
-	>>> confidence[speech_turn, 'Paul'] = 0.99 
-	>>> confidence[speech_turn, 'Patrick'] = 0.88
-	>>> confidence[speech_turn, 'Bernard'] = 0.37
-	
+	>>> S[speech_turn, 'Paul'] = 0.99 
 
-Get list of identifiers with at least one occurrence::
+As you can see above, speaker called 'Paul' was recognized with a probability of 0.99.
+Obviously, you are not restricted to store only one of those probabilities. 
 
-    >>> print confidence.IDs
+	>>> S[speech_turn, 'Patrick'] = 0.88
+	>>> S[speech_turn, 'Bernard'] = 0.37
+ 
+If necessary, you can get back the list of identifiers appearing at least once
+in the whole annotation.
+
+    >>> print S.IDs
 	['Patrick', 'Paul', 'Bernard']
 
-Add a few other occurrences of 'Paul' speaker::
+Here is how to get the data back from S::
 
-	>>> confidence[Segment(15, 20), 'Paul'] = 0.78
-	>>> confidence[Segment(40, 51), 'Paul'] = 0.89
+	>>> S[speech_turn]
+	{'Patrick': 0.88, 'Paul': 0.99, 'Bernard': 0.37}
+ 
+Also, we could have stored any other information using a dictionary::
+
+	>>> S[speech_turn, 'Paul'] = {'confidence':0.99, 'gender': 'male'}
+
+For the purpose of this tutorial, we will keep it simple::
+
+	>>> S[speech_turn, 'Paul'] = 0.99
+	>>> del S[speech_turn, 'Patrick']
+	>>> del S[speech_turn, 'Bernard']
+
+Add a few other occurrences of 'Paul' speaker and others::
+
+	>>> S[Segment(15, 20), 'Paul'] = 0.78
+	>>> S[Segment(20, 30), 'Bernard'] = 0.89
+	>>> S[Segment(30, 38), 'Patrick'] = 0.67
+	>>> S[Segment(40, 51), 'Paul'] = 0.89
 
 Get annotation timeline::
 
-	>>> print confidence.timeline
+	>>> print S.timeline
 	[
 	   [0 --> 10]
 	   [15 --> 20]
+	   [20 --> 30]
+	   [30 --> 38]
 	   [40 --> 51]
 	]
-
-Get annotation for a given segment::
-
-    >>> print confidence[speech_turn]
-	{'Patrick': 0.88, 'Paul': 0.99, 'Bernard': 0.37}
 
 Sub-annotations
 ---------------
@@ -60,61 +71,78 @@ Sub-annotations
 Sub-annotations can be obtained the same way sub-timelines are (see timeline tutorial)::
 
     >>> requested_segment = Segment(20, 45)
-	>>> mode = 'loose' # or 'strict' or 'intersection'
-    >>> subannotation = confidence(requested_segment, mode=mode)
+    >>> s = S(requested_segment, mode='loose')
+	>>> for segment in s:
+	...     print segment, s[segment]
+	[20 --> 30] {'Bernard': 0.89}
+	[30 --> 38] {'Patrick': 0.67}
+	[40 --> 51] {'Paul': 0.89}
 
 Additionnaly, one can get annotation for a given identifier::
 
-    >>> paul = confidence('Paul')
+    >>> p = S('Paul')
+	>>> for segment in p:
+	...     print segment, p[segment]
+	[0 --> 10] {'Paul': 0.99}
+	[15 --> 20] {'Paul': 0.78}
+	[40 --> 51] {'Paul': 0.89}
+	>>> print 'Paul speaks during %g seconds.' % S('Paul').timeline.duration()
+	Paul speaks during 26 seconds.
+
+Have a look at :meth:`TrackIDAnnotation.__call__` for more details on sub-annotations.
+
+Confusion, translation and tagging
+----------------------------------
+
+Confusion (or cooccurrence) matrix between two annotations can be obtained easily
+via the * operator::
 	
-and then loop on annotated segments::	
-	
-	>>> for s, segment in enumerate(paul):
-	...     print segment, paul[segment, 'Paul']
+	>>> T = IDAnnotation(video='MyVideo.avi', modality='speaker')
+	>>> T[Segment(0,20), 'Paul'] = 0.34
+	>>> T[Segment(20, 60), 'Bernard'] = 0.89
+	>>> confusion = T * S
+	>>> confusion('Bernard')
+	{'Bernard': 10.0, 'Paul': 11.0, 'Patrick': 8.0}
+	>>> confusion['Bernard', 'Patrick']
+	8.0
+
+Identifiers can be translated easily. For instance, this can be useful to give
+proper name to speaker clusters output by a speaker diarization system -- once
+they are recognized::
+
+	>>> translation = {'Bernard': 'Bernard_PIVOT', 'Paul': 'Paul_SIMON'}
+	>>> Z = S % translation
+	>>> print Z.IDs
+	['Patrick', 'Bernard_PIVOT', 'Paul_SIMON']
+
+Identifiers with no translation are kept as is.
+
+Tagging is not yet correctly implemented... It is coming!
+
+Multiple tracks
+---------------
+
+Class :class:`TrackIDAnnotation` can be seen as an extension of :class:`IDAnnotation` 
+(though in Python practice, it is the other way around :class:`IDAnnotation` inherits
+from :class:`TrackIDAnnotation`.)
+
+The main difference is that it is meant to store multiple tracks per segment.
+It might useful, for instance, when working on face recognition: multiple faces
+can appear simultaneously on screen and we need to know which is which.
+
+	>>> F = TrackIDAnnotation(video='MyVideo.avi', modality='face')
+	>>> F[Segment(0, 15), 'head1', 'Paul'] = 0.87
+	>>> F[Segment(0, 15), 'head2', 'Bernard'] = 0.67
+
+Sub-annotations, confusion and translation can be used the same way.
 
 
-Translation
------------
-    
 
 
 
-    # Add new track named name to segment
-    segment = Segment( start_time, end_time )
-    name = 'track name'
-    track = TrackClass( args )    
-    A[segment, name] = track
-    
-    # Add multiple new named tracks to segment
-    named_tracks = {'first track name': track1, 
-                    'other track name': track2, 
-                    'final track name': track3}
-    A[segment] = named_tracks
-    
-    # Get just added track back
-    track = A[segment, name]
-    
-    # Get all tracks for segment
-    # as a dictionary {'name': track}
-    tracks = A[segment]
-    
-    # Remove just added track
-    del A[segment, name]
-    
-    # Remove all tracks for segment
-    del A[segment]
 
-    # Remove all tracks for all segments
-    A.clear()
-    
-    # Iterate through segments
-    for s, segment in enumerate(A):
-        # do something with A and segment
-        pass
-        
-    A(segment)
-    A(timeline)
-    
-    A ** timeline
-    abs(A)
+
+
+
+
     

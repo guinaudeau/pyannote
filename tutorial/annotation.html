@@ -25,6 +25,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="search" type="application/opensearchdescription+xml"
+          title="Search within pyannote 1 documentation"
+          href="../_static/opensearch.xml"/>
     <link rel="top" title="pyannote 1 documentation" href="../index.html" />
     <link rel="up" title="Tutorial" href="../tutorial.html" />
     <link rel="next" title="API Documentation" href="../api.html" />
@@ -55,108 +58,130 @@
             
   <div class="section" id="annotation">
 <h1>Annotation<a class="headerlink" href="#annotation" title="Permalink to this headline">¶</a></h1>
-<p>Create empty annotation for video &#8216;MyMovie.avi&#8217; and modality &#8216;speaker&#8217;:</p>
+<p>Let us start with a simple type of annotations: <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a>.
+It can be used, for instance, to store the output of a speaker identification system.</p>
+<p>Here is how to create an empty <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a> for video &#8216;MyMovie.avi&#8217; and modality &#8216;speaker&#8217;:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span> <span class="o">=</span> <span class="n">IDAnnotation</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span> <span class="o">=</span> <span class="n">IDAnnotation</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>An annotation is said to be empty in case it contains no annotated segment:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="ow">not</span> <span class="n">confidence</span><span class="p">:</span>
-<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Annotation is empty.&#39;</span>
-<span class="go">Annotation is empty.</span>
-</pre></div>
-</div>
-<p>Get/update video and modality attributes:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">video</span> <span class="o">=</span> <span class="n">confidence</span><span class="o">.</span><span class="n">video</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="s">&#39;MyVideo.avi&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">confidence</span><span class="o">.</span><span class="n">modality</span>
-<span class="go">speaker</span>
-</pre></div>
-</div>
+<p>The most basic way of using is to store one segment per speech turn and annotate
+it with the recognized speaker identifier.</p>
 <p>Add annotation for given speech turn:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">speech_turn</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.99</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Patrick&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.88</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.37</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.99</span>
 </pre></div>
 </div>
-<p>Get list of identifiers with at least one occurrence:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">confidence</span><span class="o">.</span><span class="n">IDs</span>
+<p>As you can see above, speaker called &#8216;Paul&#8217; was recognized with a probability of 0.99.
+Obviously, you are not restricted to store only one of those probabilities.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Patrick&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.88</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.37</span>
+</pre></div>
+</div>
+<p>If necessary, you can get back the list of identifiers appearing at least once
+in the whole annotation.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">S</span><span class="o">.</span><span class="n">IDs</span>
 <span class="go">    [&#39;Patrick&#39;, &#39;Paul&#39;, &#39;Bernard&#39;]</span>
 </pre></div>
 </div>
-<p>Add a few other occurrences of &#8216;Paul&#8217; speaker:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.78</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">51</span><span class="p">),</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.89</span>
+<p>Here is how to get the data back from S:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">]</span>
+<span class="go">{&#39;Patrick&#39;: 0.88, &#39;Paul&#39;: 0.99, &#39;Bernard&#39;: 0.37}</span>
+</pre></div>
+</div>
+<p>Also, we could have stored any other information using a dictionary:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;confidence&#39;</span><span class="p">:</span><span class="mf">0.99</span><span class="p">,</span> <span class="s">&#39;gender&#39;</span><span class="p">:</span> <span class="s">&#39;male&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For the purpose of this tutorial, we will keep it simple:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.99</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Patrick&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">S</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">,</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Add a few other occurrences of &#8216;Paul&#8217; speaker and others:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.78</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.89</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">38</span><span class="p">),</span> <span class="s">&#39;Patrick&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.67</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">51</span><span class="p">),</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.89</span>
 </pre></div>
 </div>
 <p>Get annotation timeline:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">confidence</span><span class="o">.</span><span class="n">timeline</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">S</span><span class="o">.</span><span class="n">timeline</span>
 <span class="go">[</span>
 <span class="go">   [0 --&gt; 10]</span>
 <span class="go">   [15 --&gt; 20]</span>
+<span class="go">   [20 --&gt; 30]</span>
+<span class="go">   [30 --&gt; 38]</span>
 <span class="go">   [40 --&gt; 51]</span>
 <span class="go">]</span>
-</pre></div>
-</div>
-<p>Get annotation for a given segment:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">confidence</span><span class="p">[</span><span class="n">speech_turn</span><span class="p">]</span>
-<span class="go">    {&#39;Patrick&#39;: 0.88, &#39;Paul&#39;: 0.99, &#39;Bernard&#39;: 0.37}</span>
 </pre></div>
 </div>
 <div class="section" id="sub-annotations">
 <h2>Sub-annotations<a class="headerlink" href="#sub-annotations" title="Permalink to this headline">¶</a></h2>
 <p>Sub-annotations can be obtained the same way sub-timelines are (see timeline tutorial):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">requested_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">45</span><span class="p">)</span>
-<span class="go">    &gt;&gt;&gt; mode = &#39;loose&#39; # or &#39;strict&#39; or &#39;intersection&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">subannotation</span> <span class="o">=</span> <span class="n">confidence</span><span class="p">(</span><span class="n">requested_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">S</span><span class="p">(</span><span class="n">requested_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+<span class="go">    &gt;&gt;&gt; for segment in s:</span>
+<span class="go">    ...     print segment, s[segment]</span>
+<span class="go">    [20 --&gt; 30] {&#39;Bernard&#39;: 0.89}</span>
+<span class="go">    [30 --&gt; 38] {&#39;Patrick&#39;: 0.67}</span>
+<span class="go">    [40 --&gt; 51] {&#39;Paul&#39;: 0.89}</span>
 </pre></div>
 </div>
 <p>Additionnaly, one can get annotation for a given identifier:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">paul</span> <span class="o">=</span> <span class="n">confidence</span><span class="p">(</span><span class="s">&#39;Paul&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">S</span><span class="p">(</span><span class="s">&#39;Paul&#39;</span><span class="p">)</span>
+<span class="go">    &gt;&gt;&gt; for segment in p:</span>
+<span class="go">    ...     print segment, p[segment]</span>
+<span class="go">    [0 --&gt; 10] {&#39;Paul&#39;: 0.99}</span>
+<span class="go">    [15 --&gt; 20] {&#39;Paul&#39;: 0.78}</span>
+<span class="go">    [40 --&gt; 51] {&#39;Paul&#39;: 0.89}</span>
+<span class="go">    &gt;&gt;&gt; print &#39;Paul speaks during %g seconds.&#39; % S(&#39;Paul&#39;).timeline.duration()</span>
+<span class="go">    Paul speaks during 26 seconds.</span>
 </pre></div>
 </div>
-<p>and then loop on annotated segments:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">paul</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="k">print</span> <span class="n">segment</span><span class="p">,</span> <span class="n">paul</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span>
+<p>Have a look at <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation.__call__" title="pyannote.TrackIDAnnotation.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">TrackIDAnnotation.__call__()</span></tt></a> for more details on sub-annotations.</p>
+</div>
+<div class="section" id="confusion-translation-and-tagging">
+<h2>Confusion, translation and tagging<a class="headerlink" href="#confusion-translation-and-tagging" title="Permalink to this headline">¶</a></h2>
+<p>Confusion (or cooccurrence) matrix between two annotations can be obtained easily
+via the * operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="n">IDAnnotation</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.34</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.89</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">confusion</span> <span class="o">=</span> <span class="n">T</span> <span class="o">*</span> <span class="n">S</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">confusion</span><span class="p">(</span><span class="s">&#39;Bernard&#39;</span><span class="p">)</span>
+<span class="go">{&#39;Bernard&#39;: 10.0, &#39;Paul&#39;: 11.0, &#39;Patrick&#39;: 8.0}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">confusion</span><span class="p">[</span><span class="s">&#39;Bernard&#39;</span><span class="p">,</span> <span class="s">&#39;Patrick&#39;</span><span class="p">]</span>
+<span class="go">8.0</span>
 </pre></div>
 </div>
+<p>Identifiers can be translated easily. For instance, this can be useful to give
+proper name to speaker clusters output by a speaker diarization system &#8211; once
+they are recognized:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">translation</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Bernard&#39;</span><span class="p">:</span> <span class="s">&#39;Bernard_PIVOT&#39;</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">:</span> <span class="s">&#39;Paul_SIMON&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Z</span> <span class="o">=</span> <span class="n">S</span> <span class="o">%</span> <span class="n">translation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">Z</span><span class="o">.</span><span class="n">IDs</span>
+<span class="go">[&#39;Patrick&#39;, &#39;Bernard_PIVOT&#39;, &#39;Paul_SIMON&#39;]</span>
+</pre></div>
 </div>
-<div class="section" id="translation">
-<h2>Translation<a class="headerlink" href="#translation" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div><p># Add new track named name to segment
-segment = Segment( start_time, end_time )
-name = &#8216;track name&#8217;
-track = TrackClass( args )
-A[segment, name] = track</p>
-<p># Add multiple new named tracks to segment
-named_tracks = {&#8216;first track name&#8217;: track1,</p>
-<blockquote>
-<div>&#8216;other track name&#8217;: track2,
-&#8216;final track name&#8217;: track3}</div></blockquote>
-<p>A[segment] = named_tracks</p>
-<p># Get just added track back
-track = A[segment, name]</p>
-<p># Get all tracks for segment
-# as a dictionary {&#8216;name&#8217;: track}
-tracks = A[segment]</p>
-<p># Remove just added track
-del A[segment, name]</p>
-<p># Remove all tracks for segment
-del A[segment]</p>
-<p># Remove all tracks for all segments
-A.clear()</p>
-<p># Iterate through segments
-for s, segment in enumerate(A):</p>
-<blockquote>
-<div># do something with A and segment
-pass</div></blockquote>
-<p>A(segment)
-A(timeline)</p>
-<p>A ** timeline
-abs(A)</p>
-</div></blockquote>
+<p>Identifiers with no translation are kept as is.</p>
+<p>Tagging is not yet correctly implemented... It is coming!</p>
+</div>
+<div class="section" id="multiple-tracks">
+<h2>Multiple tracks<a class="headerlink" href="#multiple-tracks" title="Permalink to this headline">¶</a></h2>
+<p>Class <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a> can be seen as an extension of <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a>
+(though in Python practice, it is the other way around <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a> inherits
+from <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a>.)</p>
+<p>The main difference is that it is meant to store multiple tracks per segment.
+It might useful, for instance, when working on face recognition: multiple faces
+can appear simultaneously on screen and we need to know which is which.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">F</span> <span class="o">=</span> <span class="n">TrackIDAnnotation</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;face&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">F</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s">&#39;head1&#39;</span><span class="p">,</span> <span class="s">&#39;Paul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.87</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">F</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s">&#39;head2&#39;</span><span class="p">,</span> <span class="s">&#39;Bernard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.67</span>
+</pre></div>
+</div>
+<p>Sub-annotations, confusion and translation can be used the same way.</p>
 </div>
 </div>
 
@@ -170,7 +195,8 @@ abs(A)</p>
   <ul>
 <li><a class="reference internal" href="#">Annotation</a><ul>
 <li><a class="reference internal" href="#sub-annotations">Sub-annotations</a></li>
-<li><a class="reference internal" href="#translation">Translation</a></li>
+<li><a class="reference internal" href="#confusion-translation-and-tagging">Confusion, translation and tagging</a></li>
+<li><a class="reference internal" href="#multiple-tracks">Multiple tracks</a></li>
 </ul>
 </li>
 </ul>

@@ -25,6 +25,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="search" type="application/opensearchdescription+xml"
+          title="Search within pyannote 1 documentation"
+          href="../_static/opensearch.xml"/>
     <link rel="top" title="pyannote 1 documentation" href="../index.html" />
     <link rel="up" title="API Documentation" href="../api.html" />
     <link rel="prev" title="Timeline" href="timeline.html" /> 
@@ -94,7 +97,7 @@ one for each face. Sweeet :)</p>
 </div>
 </dd>
 </dl>
-<p>See <a class="reference internal" href="timeline.html#pyannote.Timeline.__abs__" title="pyannote.Timeline.__abs__"><tt class="xref py py-meth docutils literal"><span class="pre">Timeline.__abs__()</span></tt></a> and <a class="reference internal" href="#pyannote.TrackAnnotation.__pow__" title="pyannote.TrackAnnotation.__pow__"><tt class="xref py py-meth docutils literal"><span class="pre">__pow__()</span></tt></a> for more details.</p>
+<p>See <a class="reference internal" href="timeline.html#pyannote.Timeline.__abs__" title="pyannote.Timeline.__abs__"><tt class="xref py py-meth docutils literal"><span class="pre">Timeline.__abs__()</span></tt></a> and <tt class="xref py py-meth docutils literal"><span class="pre">__pow__()</span></tt> for more details.</p>
 </dd></dl>
 
 <dl class="method">
@@ -326,30 +329,6 @@ of type <strong>HeadPosition</strong> and described <a class="reference internal
 <span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;Annotation is not empty.&#39;</span>        
 </pre></div>
 </div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyannote.TrackAnnotation.__pow__">
-<tt class="descname">__pow__</tt><big>(</big><em>timeline</em>, <em>modulo=None</em><big>)</big><a class="headerlink" href="#pyannote.TrackAnnotation.__pow__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Force alignment of annotation with timeline and return a new instance.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeline</strong> (<a class="reference internal" href="timeline.html#pyannote.Timeline" title="pyannote.Timeline"><tt class="xref py py-class docutils literal"><span class="pre">Timeline</span></tt></a>) &#8211; </td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a></td>
-</tr>
-</tbody>
-</table>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">**</span> <span class="n">timeline</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">timeline</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
-<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;Yes!&#39;</span>
-<span class="go">Yes!</span>
-</pre></div>
-</div>
-<p>For each segment in <a class="reference internal" href="#pyannote.TrackAnnotation.timeline" title="pyannote.TrackAnnotation.timeline"><tt class="xref py py-data docutils literal"><span class="pre">timeline</span></tt></a>, all annotations of intersecting segments
-are added to the new <a class="reference internal" href="#pyannote.TrackAnnotation" title="pyannote.TrackAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackAnnotation</span></tt></a> instance <tt class="xref py py-data docutils literal"><span class="pre">a</span></tt>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -710,7 +689,8 @@ identifier annotations for <tt class="xref py py-attr docutils literal"><span cl
 <dl class="method">
 <dt id="pyannote.TrackIDAnnotation.__mod__">
 <tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a copy of the annotation with identifiers translated according to <tt class="xref py py-data docutils literal"><span class="pre">translation</span></tt></p>
+<dd><p>Identifiers translation</p>
+<p>Create a copy of the annotation with identifiers translated according to <tt class="xref py py-data docutils literal"><span class="pre">translation</span></tt></p>
 <p>Identifiers with no available translation are left unchanged.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -727,6 +707,21 @@ identifier annotations for <tt class="xref py py-attr docutils literal"><span cl
 </pre></div>
 </div>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.TrackIDAnnotation.__mul__">
+<tt class="descname">__mul__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.TrackIDAnnotation.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifiers confusion
+&gt;&gt;&gt; M = A * B</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">confusion matrix <tt class="xref py py-class docutils literal"><span class="pre">Confusion</span></tt></td>
 </tr>
 </tbody>
 </table>
@@ -853,31 +848,6 @@ or if such an identifier does not exist here.</p>
 <p>Raises a KeyError if <tt class="xref py py-data docutils literal"><span class="pre">segment</span></tt> is not annotated or if no such identifier for this segment exists.</p>
 <p class="last">See <tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt> for more advanced functionalities.</p>
 </div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyannote.IDAnnotation.__mod__">
-<tt class="descname">__mod__</tt><big>(</big><em>translation</em><big>)</big><a class="headerlink" href="#pyannote.IDAnnotation.__mod__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a copy of the annotation with identifiers translated according to <tt class="xref py py-data docutils literal"><span class="pre">translation</span></tt></p>
-<p>Identifiers with no available translation are left unchanged.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>translation</strong> (<em>dictionary</em>) &#8211; translation (see example below)</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a><div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">translation</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Jean&#39;</span><span class="p">:</span> <span class="s">&#39;John&#39;</span><span class="p">,</span> <span class="s">&#39;Mathieu&#39;</span><span class="p">:</span> <span class="s">&#39;Matthew&#39;</span><span class="p">}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">A</span><span class="o">.</span><span class="n">IDs</span>
-<span class="go">[&#39;Jean&#39;, &#39;Mathieu&#39;, &#39;Paul&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span> <span class="o">%</span> <span class="n">translation</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">a</span><span class="o">.</span><span class="n">IDs</span>
-<span class="go">[&#39;John&#39;, &#39;Matthew&#39;, &#39;Paul&#39;]</span>
-</pre></div>
-</div>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="method">
