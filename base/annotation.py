@@ -3,6 +3,7 @@
 
 from segment import Segment
 from timeline import Timeline
+from comatrix import Confusion
 import numpy as np
 
 class TrackAnnotation(object):
@@ -692,7 +693,7 @@ class TrackAnnotation(object):
         
         * :data:`mode` = 'intersection'
             same as 'loose' except segments are trimmed
-            down to their intersection with :data:`segment`
+            down to their intersection with :data:`segment`            
         
     >>> a = A(timeline, mode='strict' | 'loose' | 'intersection')
     
@@ -707,7 +708,7 @@ class TrackAnnotation(object):
         * :data:`mode` = 'intersection'
             same as 'loose' except segments are trimmed
             down to their intersection with :data:`timeline` coverage
-         
+                 
         """
         
         if mode == 'strict':
@@ -734,67 +735,7 @@ class TrackAnnotation(object):
         return sub_annotation
             
     # =================================================================== #
-
-    def __pow__(self, timeline, modulo=None):
-        """
-    .. currentmodule:: pyannote
-        
-    Force alignment of annotation with timeline and return a new instance.
     
-    :param timeline: 
-    :type timeline: :class:`Timeline`
-    :rtype: :class:`TrackAnnotation`
-        
-    >>> a = A ** timeline
-    >>> if a.timeline in timeline:
-    ...    print 'Yes!'
-    Yes!
-    
-    For each segment in :data:`timeline`, all annotations of intersecting segments
-    are added to the new :class:`TrackAnnotation` instance :data:`a`.
-        """
-        
-        new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
-        
-        original_timeline = self.timeline
-        S_start = 0
-        N = len(original_timeline)
-        
-        # for each segment in new timeline
-        for ns, new_segment in enumerate(timeline):
-            
-            original_start_segment = original_timeline[S_start]
-            
-            # if start segment is strictly after new segment, jump to next new segment
-            if (original_start_segment > new_segment) and (original_start_segment ^ new_segment):
-                continue
-            
-            # update start segment
-            for s in range(S_start, N):
-                
-                original_segment = original_timeline[s]
-                
-                # found first intersecting segment
-                if original_segment & new_segment:
-                    S_start = s
-                    break
-                # went one step too far
-                if (original_segment > new_segment):
-                    break
-                
-                S_start = s
-            
-            for s in range(S_start, N):
-                original_segment = original_timeline[s]
-                if original_segment & new_segment:
-                    for track in self[original_segment]:
-                        new_annotation[new_segment] = self[original_segment]
-                elif original_segment > new_segment:
-                    break
-                        
-        return new_annotation
-        
-
     def __abs__(self):
         """
         
@@ -1374,10 +1315,11 @@ class TrackIDAnnotation(TrackAnnotation):
             sub_annotation = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
         
         return sub_annotation
-        
-    
+            
     def __mod__(self, translation):
         """
+    Identifiers translation
+    
     Create a copy of the annotation with identifiers translated according to :data:`translation`
     
     Identifiers with no available translation are left unchanged.
@@ -1403,8 +1345,98 @@ class TrackIDAnnotation(TrackAnnotation):
                 for identifier in track:
                     if identifier in translation:
                         translated_identifier = translation[identifier] 
+                    else:
+                        translated_identifier = identifier
                     translated_annotation.__set_segment_name_identifier(segment, name, translated_identifier, track[identifier])
         return translated_annotation
+    
+    
+    def __mul__(self, other):
+        """
+    Identifiers confusion
+    >>> M = A * B
+    
+    :returns: confusion matrix :class:`Confusion`
+        """
+        return Confusion(self, other)    
+    
+
+    # def __rshift__(self, timeline):
+    #     """
+    # Timeline tagging
+    # 
+    # If segment intersects multiple occurrences of the same identifier
+    # 
+    # :returns: :class:`IDAnnotation`
+    # 
+    # >>> B = A >> timeline
+    #         
+    #     """
+    #     
+    #     raise NotImplementedError
+
+    # def __pow__(self, timeline, modulo=None):
+    #     """
+    # .. currentmodule:: pyannote
+    # 
+    # Timeline tagging.
+    #     
+    # :param timeline: 
+    # :type timeline: :class:`Timeline`
+    # :rtype: :class:`TrackAnnotation`
+    #     
+    # >>> a = A ** timeline
+    # >>> if a.timeline in timeline:
+    # ...    print 'Yes!'
+    # Yes!
+    # 
+    # For each segment in :data:`timeline`, all annotations of intersecting segments
+    # are added to the new :class:`TrackAnnotation` instance :data:`a`.
+    #     """
+    #     
+    #     new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
+    #     
+    #     original_timeline = self.timeline
+    #     S_start = 0
+    #     N = len(original_timeline)
+    #     
+    #     # for each segment in new timeline
+    #     for ns, new_segment in enumerate(timeline):
+    #         
+    #         original_start_segment = original_timeline[S_start]
+    #         
+    #         # if start segment is strictly after new segment, jump to next new segment
+    #         if (original_start_segment > new_segment) and (original_start_segment ^ new_segment):
+    #             continue
+    #         
+    #         # update start segment
+    #         for s in range(S_start, N):
+    #             
+    #             original_segment = original_timeline[s]
+    #             
+    #             # found first intersecting segment
+    #             if original_segment & new_segment:
+    #                 S_start = s
+    #                 break
+    #             # went one step too far
+    #             if (original_segment > new_segment):
+    #                 break
+    #             
+    #             S_start = s
+    #         
+    #         for s in range(S_start, N):
+    #             original_segment = original_timeline[s]
+    #             if original_segment & new_segment:
+    #                 for track in self[original_segment]:
+    #                     if new_segment in new_annotation and track in new_annotation[new_segment]:
+    #                         raise Warning('Track %s is replaced in %s' % (track, new_segment))
+    #                     new_annotation[new_segment, track] = self[original_segment, track]
+    #                     # new_annotation[new_segment] = self[original_segment]
+    #             elif original_segment > new_segment:
+    #                 break
+    #                     
+    #     return new_annotation
+    #     
     
     
 IDAnnotation_DefaultName = '@'
@@ -1545,27 +1577,7 @@ class IDAnnotation(TrackIDAnnotation):
         else:
             raise KeyError('')
             
-            
-    def __mod__(self, translation):
-        """
-    Create a copy of the annotation with identifiers translated according to :data:`translation`
-    
-    Identifiers with no available translation are left unchanged.
-    
-    :param translation: translation (see example below)
-    :type translation: dictionary
-    :rtype: :class:`IDAnnotation`
-        
-        >>> translation = {'Jean': 'John', 'Mathieu': 'Matthew'}
-        >>> print A.IDs
-        ['Jean', 'Mathieu', 'Paul']
-        >>> a = A % translation
-        >>> print a.IDs
-        ['John', 'Matthew', 'Paul']
-        
-        """
-        return super(IDAnnotation, self).__mod__(translation)
-        
+                    
 
     
     

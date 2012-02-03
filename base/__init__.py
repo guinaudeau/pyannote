@@ -4,6 +4,7 @@
 __all__ = ['Segment', \
            'Timeline', \
            'TrackAnnotation', 'TrackIDAnnotation', 'IDAnnotation', \
+           'Confusion', \
            'Feature', \
            'SlidingWindow', 'SlidingWindowFeature', \
            'TimelineFeature', ]
@@ -11,5 +12,7 @@ __all__ = ['Segment', \
 from segment import Segment
 from timeline import Timeline
 from annotation import TrackAnnotation, TrackIDAnnotation, IDAnnotation
+from comatrix import Confusion
+
 from feature import Feature, SlidingWindow, SlidingWindowFeature, TimelineFeature
 
