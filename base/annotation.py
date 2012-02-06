@@ -5,6 +5,7 @@ from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
 import numpy as np
+import json
 
 class TrackAnnotation(object):
     """    
@@ -1468,6 +1469,11 @@ class TrackIDAnnotation(TrackAnnotation):
     #     return new_annotation
     #     
     
+    def toJSON(self):
+        data = []
+        for segment in self:
+            data.append({'start': segment.start, 'end': segment.end, 'ids': sorted(self.ids(segment))})
+        return json.dumps(data, indent=4)
     
 IDAnnotation_DefaultName = '@'
 
