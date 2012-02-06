@@ -14,13 +14,34 @@ class CoMatrix(object):
         self.label2i = {ilabel:i for i, ilabel in enumerate(ilabels)}
         self.label2j = {jlabel:i for i, jlabel in enumerate(jlabels)}
         
-        
+    
     def __get_T(self): 
         return CoMatrix(self.jlabels, self.ilabels, self.Mij.T)
     T = property(fget=__get_T, \
                      fset=None, \
                      fdel=None, \
                      doc="Matrix transposition.")
+    
+    def __get_shape(self):
+        return self.Mij.shape
+    shape = property(fget=__get_shape, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Matrix shape.")
+                     
+    def __get_M(self):
+        return self.Mij
+    M = property(fget=__get_M, \
+                 fset=None, \
+                 fdel=None, \
+                 doc="numpy matrix.")
+                 
+    def __get_labels(self):
+        return self.ilabels, self.jlabels
+    labels = property(fget=__get_labels, \
+                      fset=None, \
+                      fdel=None,
+                      doc="Matrix labels.")
     
     def __getitem__(self, key):
         """
