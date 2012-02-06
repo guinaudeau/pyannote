@@ -226,10 +226,10 @@ class TrackAnnotation(object):
         
         # find first track name available -- track0, track1, track2, ...
         count = 0
-        while( '%s%d' % (prefix, count) in track_names ):
+        while( '%s_%d' % (prefix, count) in track_names ):
             count += 1
         
-        return '%s%d' % (prefix, count)
+        return '%s_%d' % (prefix, count)
         
     # =================================================================== #
 
@@ -736,6 +736,32 @@ class TrackAnnotation(object):
             
     # =================================================================== #
     
+    def __rshift__(self, timeline):
+        """
+    Timeline tagging
+        
+    >>> a = A >> timeline   
+        """
+        new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
+        
+        # Loop on each segment of the target timeline
+        for segment in timeline:
+            # Loop on each intersecting segment
+            for isegment in self.timeline(segment, mode='loose'):
+                # Add tracks from current intersecting segment
+                tracks = self._get_segment(isegment)
+                for name in tracks:
+                    # If a track with similar name has already been added
+                    # Generate a new name, to avoid collision
+                    if new_annotation._has_segment_name(segment, name):
+                        new_name = self.auto_track_name(segment, prefix=name)
+                        #DEBUG print "Collision %s / %s --> %s" % (segment, name, new_name)
+                        new_annotation._set_segment_name(segment, new_name, tracks[name])
+                    else:
+                        new_annotation._set_segment_name(segment, name, tracks[name])
+        
+        return new_annotation    
+    
     def __abs__(self):
         """
         
@@ -743,12 +769,12 @@ class TrackAnnotation(object):
     
     In other words, the following two lines have the same effect:
         >>> a = abs(A)
-        >>> a = A ** abs(A.timeline)
+        >>> a = A >> abs(A.timeline)
         
     See :meth:`Timeline.__abs__` and :meth:`__pow__` for more details.
         """
-        return self ** abs(self.timeline)
-        
+        return self >> abs(self.timeline)
+    
 
 def __check_identifier(identifier):
     """
@@ -1360,21 +1386,7 @@ class TrackIDAnnotation(TrackAnnotation):
         """
         return Confusion(self, other)    
     
-
-    # def __rshift__(self, timeline):
-    #     """
-    # Timeline tagging
-    # 
-    # If segment intersects multiple occurrences of the same identifier
-    # 
-    # :returns: :class:`IDAnnotation`
-    # 
-    # >>> B = A >> timeline
-    #         
-    #     """
-    #     
-    #     raise NotImplementedError
-
+        
     # def __pow__(self, timeline, modulo=None):
     #     """
     # .. currentmodule:: pyannote
@@ -1577,7 +1589,9 @@ class IDAnnotation(TrackIDAnnotation):
         else:
             raise KeyError('')
             
-                    
+    def __rshift__(self, timeline):        
+        raise NotImplementedError('Timeline tagging is not implemented for IDAnnotation. ' \
+                                  'Convert it to_TrackIDAnnotation first.')
 
     
     
