@@ -252,7 +252,7 @@ class TrackAnnotation(object):
         
         return self._segment_tracks[segment]
 
-    def __get_segment_name(self, segment, name):
+    def _get_segment_name(self, segment, name):
         """
     Get segment track by name.
     
@@ -269,7 +269,7 @@ class TrackAnnotation(object):
         Might raise a KeyError exception if you're not careful.
         """
         
-        #DEBUG print  "TrackAnnotation > __get_segment_name"
+        #DEBUG print  "TrackAnnotation > _get_segment_name"
         
         return self._segment_tracks[segment][name]
         
@@ -299,7 +299,7 @@ class TrackAnnotation(object):
             segment = key[0]
             name = key[1]
             if self._has_segment_name(segment, name):
-                return self.__get_segment_name(segment, name)
+                return self._get_segment_name(segment, name)
             else:
                 if self._has_segment(segment):
                     raise KeyError('No annotation called %s for segment %s.' \
@@ -415,7 +415,7 @@ class TrackAnnotation(object):
         #DEBUG print  "TrackAnnotation > _del_segment_name"
         
         # keep a copy of the deleted track
-        deleted_track = self.__get_segment_name(segment, name)
+        deleted_track = self._get_segment_name(segment, name)
         
         # this is where track is actually deleted
         # ... from ._segment_tracks attribute 
@@ -865,9 +865,9 @@ class TrackIDAnnotation(TrackAnnotation):
 
     # == INHERITED ==
     # def _get_segment(self, segment):
-    # def __get_segment_name(self, segment, name):
+    # def _get_segment_name(self, segment, name):
         
-    def __get_segment_name_identifier(self, segment, name, identifier):
+    def _get_segment_name_identifier(self, segment, name, identifier):
         """
     Get data for a given identifier/track/segment.
     
@@ -883,7 +883,7 @@ class TrackIDAnnotation(TrackAnnotation):
         Does not do any parameter checking. 
         Might raise a KeyError exception if you're not careful.
         """
-        #DEBUG print  "TrackIDAnnotation > __get_segment_name_identifier"        
+        #DEBUG print  "TrackIDAnnotation > _get_segment_name_identifier"        
         
         return self._segment_tracks[segment][name][identifier]
         
@@ -926,7 +926,7 @@ class TrackIDAnnotation(TrackAnnotation):
             identifier = key[2]
             
             if self.__has_segment_name_identifier(segment, name, identifier):
-                return self.__get_segment_name_identifier(segment, \
+                return self._get_segment_name_identifier(segment, \
                                                           name, \
                                                           identifier)
             else:
@@ -1279,7 +1279,25 @@ class TrackIDAnnotation(TrackAnnotation):
     """
     Get list of identifiers.
     """
-
+    
+    def ids(self, segment):
+        """
+        Get list of identifiers for requested segment.
+        """
+        if segment not in self:
+            raise KeyError('No annotation for segment %s.' % segment)
+        
+        identifiers = set([])
+        
+        # loop on all tracks
+        for name in self._get_segment(segment):
+            # loop on all identifiers in track
+            for identifier in self._get_segment_name(segment, name):
+                # only added if not met yet
+                identifiers.add(identifier)
+        
+        return identifiers
+    
     def __call__(self, subset, mode='strict'):
         """
         
@@ -1471,8 +1489,8 @@ class IDAnnotation(TrackIDAnnotation):
     # def _has_segment_name(self, segment, name):
     # def __has_segment_name_identifier(self, segment, name, identifier):
     # def _get_segment(self, segment):
-    # def __get_segment_name(self, segment, name):
-    # def __get_segment_name_identifier(self, segment, name, identifier):
+    # def _get_segment_name(self, segment, name):
+    # def _get_segment_name_identifier(self, segment, name, identifier):
     
     def __getitem__(self, key):
         """
