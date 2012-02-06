@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from generic import GenericParser
+from ..generic import GenericParser
 
 class ETF0Parser(GenericParser):
     """
@@ -13,7 +13,6 @@ class ETF0Parser(GenericParser):
         super(ETF0Parser, self).__init__(path2etf0, \
                                          format, \
                                          multitrack = False)
-        
 
 class ETFParser(GenericParser):
     """

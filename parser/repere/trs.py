@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from QCompere.base import Segment, Timeline, TrackIDAnnotation
+from pyannote import Segment, Timeline, TrackIDAnnotation
 from lxml import objectify
 
 MODALITY_SPEAKER = 'speaker'

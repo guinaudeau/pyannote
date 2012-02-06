@@ -3,7 +3,7 @@
 
 import struct
 import numpy as np
-from QCompere.base.feature import SlidingWindow, SlidingWindowFeature
+from pyannote import SlidingWindow, SlidingWindowFeature
 
 def _read_plp(path2plp):
     

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from ..base import Segment, Timeline
+from pyannote import Segment, Timeline
 
 class UEMParser(object):
     """

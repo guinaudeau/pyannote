@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from QCompere.base import Segment, TrackIDAnnotation
+from pyannote import Segment, TrackIDAnnotation
 from idx import IDXParser
 from lxml import objectify
 

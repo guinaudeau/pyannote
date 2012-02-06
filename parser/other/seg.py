@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from QCompere.base import IDAnnotation, Segment, SlidingWindow
+from pyannote import IDAnnotation, Segment, SlidingWindow
 
 class SEGParser(object):
     """

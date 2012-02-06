@@ -3,7 +3,7 @@
 
 import struct
 import numpy as np
-from ..base import SlidingWindow, SlidingWindowFeature, TimelineFeature
+from pyannote import SlidingWindow, SlidingWindowFeature, TimelineFeature
 
 def _read_bin(path2bin, dimension, base='<f4'):
     
@@ -18,7 +18,7 @@ def _read_bin(path2bin, dimension, base='<f4'):
 
 class BINParser(object):
     """
-    .bin file parser
+    Binary file parser
     """
     def __init__(self, path2bin, \
                        dimension, \
