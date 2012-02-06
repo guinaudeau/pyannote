@@ -412,6 +412,13 @@ class Timeline(object):
         string += "]"
         return string
     
+    def toJSON(self):
+        data = []
+        for segment in self:
+            data.append({'start': segment.start, 'end': segment.end, 'ids': []})
+        return json.dumps(data, indent=4)
+    
+    
     # =================================================================== #
 
     def __ispartition(self):
