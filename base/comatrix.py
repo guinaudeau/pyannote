@@ -13,7 +13,6 @@ class CoMatrix(object):
         
         self.label2i = {ilabel:i for i, ilabel in enumerate(ilabels)}
         self.label2j = {jlabel:i for i, jlabel in enumerate(jlabels)}
-        
     
     def __get_T(self): 
         return CoMatrix(self.jlabels, self.ilabels, self.Mij.T)
@@ -91,26 +90,29 @@ class Confusion(CoMatrix):
     
     
     """
-    def __init__(self, I, J):
+    def __init__(self, I, J, normalize=False):
                 
         n_i = len(I.IDs)
         n_j = len(J.IDs)
         Mij = np.zeros((n_i, n_j))
         super(Confusion, self).__init__(I.IDs, J.IDs, Mij)
         
+        if normalize:
+            iduration = np.zeros((n_i,))
+            
         for ilabel in self.label2i:
             i = self.label2i[ilabel]
             i_coverage = I(ilabel).timeline.coverage()
+            if normalize:
+                iduration[i] = i_coverage.duration()
+            
             for jlabel in self.label2j:
                 j = self.label2j[jlabel]
                 j_coverage = J(jlabel).timeline.coverage()
-                
                 self.Mij[i, j] = i_coverage(j_coverage, mode='intersection').duration()
         
-        
-        
-        
-        
-        
-        
-        
+        if normalize:
+            for i in range(n_i):
+                self.Mij[i, :] = self.Mij[i, :] / iduration[i]
+    
+    
