@@ -193,7 +193,7 @@ class GenericParser(object):
                 # ==> generate a new one
                 if self.position['track'] < 0:
                     track = self.annotations[video][modality]\
-                                .auto_name_track(segment, \
+                                .auto_track_name(segment, \
                                                  prefix=self.auto_track_prefix)
                 # case 2: track can be read from the line
                 # ==> read it, pardi !
