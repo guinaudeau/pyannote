@@ -1286,7 +1286,7 @@ class TrackIDAnnotation(TrackAnnotation):
         Get list of identifiers for requested segment.
         """
         if segment not in self:
-            raise KeyError('No annotation for segment %s.' % segment)
+            return set([])
         
         identifiers = set([])
         
