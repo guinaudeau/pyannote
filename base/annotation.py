@@ -1613,9 +1613,8 @@ class IDAnnotation(TrackIDAnnotation):
         else:
             raise KeyError('')
             
-    def __rshift__(self, timeline):        
-        raise NotImplementedError('Timeline tagging is not implemented for IDAnnotation. ' \
-                                  'Convert it to_TrackIDAnnotation first.')
+    def __rshift__(self, timeline):
+        return self.toTrackIDAnnotation().__rshift__(timeline)
     
     def toTrackIDAnnotation(self):
         """
