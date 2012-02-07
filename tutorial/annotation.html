@@ -41,6 +41,9 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="../api.html" title="API Documentation"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -58,9 +61,9 @@
             
   <div class="section" id="annotation">
 <h1>Annotation<a class="headerlink" href="#annotation" title="Permalink to this headline">¶</a></h1>
-<p>Let us start with a simple type of annotations: <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a>.
+<p>Let us start with a simple type of annotations: <tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt>.
 It can be used, for instance, to store the output of a speaker identification system.</p>
-<p>Here is how to create an empty <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a> for video &#8216;MyMovie.avi&#8217; and modality &#8216;speaker&#8217;:</p>
+<p>Here is how to create an empty <tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt> for video &#8216;MyMovie.avi&#8217; and modality &#8216;speaker&#8217;:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">S</span> <span class="o">=</span> <span class="n">IDAnnotation</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
 </pre></div>
@@ -140,7 +143,7 @@ in the whole annotation.</p>
 <span class="go">    Paul speaks during 26 seconds.</span>
 </pre></div>
 </div>
-<p>Have a look at <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation.__call__" title="pyannote.TrackIDAnnotation.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">TrackIDAnnotation.__call__()</span></tt></a> for more details on sub-annotations.</p>
+<p>Have a look at <tt class="xref py py-meth docutils literal"><span class="pre">TrackIDAnnotation.__call__()</span></tt> for more details on sub-annotations.</p>
 </div>
 <div class="section" id="confusion-translation-and-tagging">
 <h2>Confusion, translation and tagging<a class="headerlink" href="#confusion-translation-and-tagging" title="Permalink to this headline">¶</a></h2>
@@ -166,13 +169,17 @@ they are recognized:</p>
 </pre></div>
 </div>
 <p>Identifiers with no translation are kept as is.</p>
-<p>Tagging is not yet correctly implemented... It is coming!</p>
+<p>Timeline tagging can be easily done using the &gt;&gt; operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T_tagged_by_S</span> <span class="o">=</span> <span class="n">S</span> <span class="o">&gt;&gt;</span> <span class="n">T</span><span class="o">.</span><span class="n">timeline</span>
+</pre></div>
+</div>
+<p>What it does is simply projecting (intersecting) annotation S onto each segment of T.</p>
 </div>
 <div class="section" id="multiple-tracks">
 <h2>Multiple tracks<a class="headerlink" href="#multiple-tracks" title="Permalink to this headline">¶</a></h2>
-<p>Class <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a> can be seen as an extension of <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a>
-(though in Python practice, it is the other way around <a class="reference internal" href="../api/annotation.html#pyannote.IDAnnotation" title="pyannote.IDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt></a> inherits
-from <a class="reference internal" href="../api/annotation.html#pyannote.TrackIDAnnotation" title="pyannote.TrackIDAnnotation"><tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt></a>.)</p>
+<p>Class <tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt> can be seen as an extension of <tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt>
+(though in Python practice, it is the other way around <tt class="xref py py-class docutils literal"><span class="pre">IDAnnotation</span></tt> inherits
+from <tt class="xref py py-class docutils literal"><span class="pre">TrackIDAnnotation</span></tt>.)</p>
 <p>The main difference is that it is meant to store multiple tracks per segment.
 It might useful, for instance, when working on face recognition: multiple faces
 can appear simultaneously on screen and we need to know which is which.</p>
@@ -235,6 +242,9 @@ can appear simultaneously on screen and we need to know which is which.</p>
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="../api.html" title="API Documentation"
              >next</a> |</li>

@@ -14,5 +14,6 @@ Contents:
    api/segment
    api/timeline
    api/annotation
+   api/metric
    api/parser
 
