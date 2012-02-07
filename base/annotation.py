@@ -1616,10 +1616,19 @@ class IDAnnotation(TrackIDAnnotation):
     def __rshift__(self, timeline):        
         raise NotImplementedError('Timeline tagging is not implemented for IDAnnotation. ' \
                                   'Convert it to_TrackIDAnnotation first.')
-
     
+    def toTrackIDAnnotation(self):
+        """
+    .. currentmodule:: pyannote
     
-    
+    Convert :class:`IDAnnotation` object to :class:`TrackIDAnnotation`
+        """
+        annotation = TrackIDAnnotation(video=self.video, modality=self.modality)
+        for segment in self:
+            for identifier in self[segment]:
+                annotation[segment, IDAnnotation_DefaultName, identifier] = self[segment, identifier]
+        return annotation
+        
     
 
             
