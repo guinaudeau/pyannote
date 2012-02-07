@@ -2,9 +2,9 @@
 # encoding: utf-8
 
 from pyannote.algorithms.hungarian import hungarian
-from identification import ier
+from identification import identification_error_rate
 
-def der(reference, hypothesis):
+def diarization_error_rate(reference, hypothesis):
     """
     Diarization error rate -- the lower (0.) the better.
     
@@ -15,5 +15,7 @@ def der(reference, hypothesis):
     mapping = hungarian(reference, hypothesis)  
     
     # translate hypothesis and compute identification error rate
-    return ier(reference, hypothesis % mapping)
-    
+    return identification_error_rate(reference, hypothesis % mapping)
+
+def der(reference, hypothesis):
+    return diarization_error_rate(reference, hypothesis)

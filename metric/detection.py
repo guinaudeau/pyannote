@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def identification_error_rate(reference, hypothesis):
+def detection_error_rate(reference, hypothesis):
     """
-    Identification error rate -- the lower (0.) the better.    
+    Detection error rate -- the lower (0.) the better.    
     """
     
     # common (up-sampled) timeline
@@ -16,7 +16,6 @@ def identification_error_rate(reference, hypothesis):
     H = hypothesis >> common_timeline
     
     total = 0.
-    error = 0.
     miss = 0.
     fa = 0.
     
@@ -26,21 +25,14 @@ def identification_error_rate(reference, hypothesis):
         # --- local IDs ---
         
         # set of IDs in reference segment
-        r = R.ids(segment) if segment in R else set([])
+        r = R.ids(segment)
         Nr = len(r)
         
         # set of IDs in hypothesis segment
-        h = H.ids(segment) if segment in H else set([])
+        h = H.ids(segment)
         Nh = len(h)
         
         # --- local errors ---
-        # local errors
-        
-        # number of correct matches
-        N_correct = len(r & h)
-        
-        # number of incorrect matches
-        N_error   = min(Nr, Nh) - N_correct
         
         # number of misses
         N_miss = max(0, Nr - Nh)
@@ -56,17 +48,10 @@ def identification_error_rate(reference, hypothesis):
         # total duration in reference
         total += duration * Nr
         
-        # total match error
-        error += duration * N_error
-        
         # total misses
         miss += duration * N_miss
         
         # total false alarms
         fa += duration * N_fa
     
-    return (error + miss + fa) / total
-
-
-def ier(reference, hypothesis):
-    return identification_error_rate(reference, hypothesis)
+    return (miss + fa) / total
