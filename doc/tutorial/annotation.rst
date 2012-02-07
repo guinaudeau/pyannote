@@ -117,7 +117,11 @@ they are recognized::
 
 Identifiers with no translation are kept as is.
 
-Tagging is not yet correctly implemented... It is coming!
+Timeline tagging can be easily done using the >> operator::
+
+	>>> T_tagged_by_S = S >> T.timeline
+
+What it does is simply projecting (intersecting) annotation S onto each segment of T.
 
 Multiple tracks
 ---------------
