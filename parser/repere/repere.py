@@ -7,7 +7,7 @@ class REPEREParser(GenericParser):
     """
     .repere file parser
     """
-    def __init__(self, path2repere, confidence=True):
+    def __init__(self, path2repere, confidence=True, multitrack=False):
         # source start end modality identifier confidence
         if confidence:
             format = '{VIDEO} {START} {END} {MODALITY} {ID} {CONFIDENCE}'
@@ -15,7 +15,7 @@ class REPEREParser(GenericParser):
             format = '{VIDEO} {START} {END} {MODALITY} {ID}'
         super(REPEREParser, self).__init__(path2repere, \
                                          format, \
-                                         multitrack = False)
+                                         multitrack = multitrack)
 
 
 

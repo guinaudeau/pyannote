@@ -7,13 +7,13 @@ class MDTMParser(GenericParser):
     """
     .mdtm file parser
     """
-    def __init__(self, path2mdtm):
+    def __init__(self, path2mdtm, multitrack=False):
         
         # source 1 start duration modality confidence subtype identifier
         format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {NA} {ID}' 
         super(MDTMParser, self).__init__(path2mdtm, \
                                          format, \
-                                         multitrack = False)
+                                         multitrack = multitrack)
 
 class MDTMSample(MDTMParser):
     def __init__(self):
