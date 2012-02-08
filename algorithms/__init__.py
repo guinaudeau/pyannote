@@ -3,5 +3,5 @@
 
 __all__ = ['hungarian']
 
-from hungarian import hungarian
+from association import hungarian
 

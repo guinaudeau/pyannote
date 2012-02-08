@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote.algorithms.hungarian import hungarian
+from pyannote.algorithms.association import hungarian
 from identification import identification_error_rate
 
 def diarization_error_rate(reference, hypothesis):
