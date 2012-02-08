@@ -26,7 +26,7 @@ class NoMatch(object):
     def __repr__(self):
         return str(self)
 
-def hungarian(reference, hypothesis):
+def hungarian(hypothesis, reference):
     """
     Hungarian algorithm
     
