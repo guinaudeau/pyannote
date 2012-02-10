@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def detection_error_rate(reference, hypothesis):
+def detection_error_rate(reference, hypothesis, detailed=False):
     """
     Detection error rate -- the lower (0.) the better.    
     """
@@ -54,4 +54,8 @@ def detection_error_rate(reference, hypothesis):
         # total false alarms
         fa += duration * N_fa
     
-    return (miss + fa) / total
+    rate = (miss + fa) / total
+    if detailed:
+        return {'error_rate': rate, 'miss': miss, 'fa': fa, 'total': total}
+    else:
+        return rate
