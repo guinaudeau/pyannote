@@ -1469,6 +1469,20 @@ class TrackIDAnnotation(TrackAnnotation):
     #     return new_annotation
     #     
     
+    def copy(self):
+        """
+        Generate a duplicate annotation
+        """
+        annotation = TrackIDAnnotation(video=self.video, modality=self.modality)
+        for segment in self:
+            for track in self[segment]:
+                for identifier in self[segment, track]:
+                    annotation[segment, track, identifier] = self[segment, track, identifier]
+        return annotation
+    
+    def toTrackIDAnnotation(self):
+        return self.copy()
+    
     def toJSON(self):
         data = []
         for segment in self:
@@ -1615,6 +1629,16 @@ class IDAnnotation(TrackIDAnnotation):
             
     def __rshift__(self, timeline):
         return self.toTrackIDAnnotation().__rshift__(timeline)
+    
+    def copy(self):
+        """
+        Generate a duplicate annotation
+        """
+        annotation = IDAnnotation(video=self.video, modality=self.modality)
+        for segment in self:
+            for identifier in self[segment]:
+                annotation[segment, identifier] = self[segment, identifier]
+        return annotation
     
     def toTrackIDAnnotation(self):
         """
