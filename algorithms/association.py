@@ -3,11 +3,9 @@
 
 import numpy as np
 from munkres import Munkres
+import networkx as nx
 
 class NoMatch(object):
-    """
-    
-    """
     nextID = 0
     
     @classmethod
@@ -26,37 +24,51 @@ class NoMatch(object):
     def __repr__(self):
         return str(self)
 
-def hungarian(hypothesis, reference):
+def hungarian(A, B):
     """
     Hungarian algorithm
     
-    Finds the best mapping of hypothesis to reference identifiers (hypothesis.IDs --> reference.IDs)
-    based on their confusion matrix.
+    Finds the best one-to-one mapping between A and B identifiers that,
+    when A is translated by this mapping, minimizes the total duration of 
+    segments where A and B disagree.
     
-    http://en.wikipedia.org/wiki/Hungarian_algorithm
+    In other words, mapping minimizes the following:
+    pyannote.metrics.ier(A % mapping, B, detailed=True)['confusion']
+    
+    See http://en.wikipedia.org/wiki/Hungarian_algorithm
     """
     
     # Confusion matrix
-    M = reference * hypothesis
+    M = B * A
     
     # Shape and labels
-    Nr, Nh = M.shape
-    rlabels, hlabels = M.labels
+    Nb, Na = M.shape
+    blabels, alabels = M.labels
     
     # Cost matrix
-    N = max(Nr, Nh)
+    N = max(Nb, Na)
     C = np.zeros((N, N))
-    C[:Nr, :Nh] = np.max(M.M) - M.M
+    C[:Nb, :Na] = np.max(M.M) - M.M
     
-    # Optimal mapping
+    # Optimal one-to-one mapping
     mapper = Munkres()
     mapping = mapper.compute(C)
-    mapping = {hlabels[h]: rlabels[r] for r, h in mapping \
-                                      if (r < Nr) and (h < Nh)}
+    mapping = {alabels[a]: blabels[b] for b, a in mapping \
+                                      if (b < Nb) and (a < Na)}
+    
+    # Add a NoMatch mapping to unmatched identifiers
     NoMatch.reset()
-    for hlabel in hlabels:
-        if hlabel not in mapping:
-            mapping[hlabel] = NoMatch()
+    
+    # A --> NoMatch
+    for alabel in alabels:
+        if alabel not in mapping:
+            mapping[alabel] = NoMatch()
+    
+    # NoMatch <-- B
+    mapped = mapping.values()
+    for blabel in blabels:
+        if blabel not in mapped:
+            mapping[NoMatch()] = blabel
     
     return mapping
-    
+
