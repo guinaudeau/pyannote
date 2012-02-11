@@ -3,30 +3,11 @@
 
 import numpy as np
 from munkres import Munkres
-import networkx as nx
-
-class NoMatch(object):
-    nextID = 0
-    
-    @classmethod
-    def reset(cls):
-        cls.nextID = 0
-    
-    def __init__(self, format='NoMatch%03d'):
-        super(NoMatch, self).__init__()
-        self.ID = NoMatch.nextID
-        self.format = format
-        NoMatch.nextID += 1
-    
-    def __str__(self):
-        return self.format % self.ID
-    
-    def __repr__(self):
-        return str(self)
+from helper import NoMatch
 
 def hungarian(A, B):
     """
-    Hungarian algorithm
+    Hungarian algorithm based on co-occurrence duration.
     
     Finds the best one-to-one mapping between A and B identifiers that,
     when A is translated by this mapping, minimizes the total duration of 
@@ -71,4 +52,3 @@ def hungarian(A, B):
             mapping[NoMatch()] = blabel
     
     return mapping
-
