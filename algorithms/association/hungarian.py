@@ -3,7 +3,9 @@
 
 import numpy as np
 from munkres import Munkres
-from helper import NoMatch
+# from helper import NoMatch
+
+from pyannote.base.association import OneToOneMapping
 
 def hungarian(A, B):
     """
@@ -34,21 +36,26 @@ def hungarian(A, B):
     # Optimal one-to-one mapping
     mapper = Munkres()
     mapping = mapper.compute(C)
-    mapping = {alabels[a]: blabels[b] for b, a in mapping \
-                                      if (b < Nb) and (a < Na)}
     
-    # Add a NoMatch mapping to unmatched identifiers
-    NoMatch.reset()
+    M = OneToOneMapping(A.modality, B.modality)
+    for b, a in mapping:
+        if (b < Nb) and (a < Na):
+            M += ([alabels[a]], [blabels[b]])
+    
+    # mapping = {alabels[a]: blabels[b] for b, a in mapping \
+    #                                   if (b < Nb) and (a < Na)}
+    # 
+    # # Add a NoMatch mapping to unmatched identifiers
+    # NoMatch.reset()
     
     # A --> NoMatch
     for alabel in alabels:
-        if alabel not in mapping:
-            mapping[alabel] = NoMatch()
+        if alabel not in M.first_set:
+            M += ([alabel], None)
     
     # NoMatch <-- B
-    mapped = mapping.values()
     for blabel in blabels:
-        if blabel not in mapped:
-            mapping[NoMatch()] = blabel
+        if blabel not in M.second_set:
+            M += (None, [blabel])
     
-    return mapping
+    return M

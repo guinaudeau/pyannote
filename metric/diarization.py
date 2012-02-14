@@ -12,7 +12,7 @@ def diarization_error_rate(reference, hypothesis):
     """
 
     # best mapping {hypothesis --> reference}
-    mapping = hungarian(hypothesis, reference)  
+    mapping = hungarian(hypothesis, reference).to_dict()  
     
     # translate hypothesis and compute identification error rate
     return identification_error_rate(reference, hypothesis % mapping)
