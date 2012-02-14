@@ -717,6 +717,8 @@ class TrackAnnotation(object):
         elif mode in ['loose', 'intersection']:
             sub_timeline = self.timeline(subset, mode='loose')
             if mode == 'intersection':
+                # note that isub_timeline might have less segments than
+                # sub_timeline for some particular situation
                 isub_timeline = self.timeline(subset, mode='intersection')
         else:
             raise ValueError('')
@@ -728,8 +730,23 @@ class TrackAnnotation(object):
         for s, segment in enumerate(sub_timeline):
             tracks = self[segment]
             if mode == 'intersection':
-                isegment = isub_timeline[s]
-                sub_annotation[isegment] = tracks
+                
+                # get segment from isub_timeline that corresponds
+                # to current segment from sub_timeline
+                isegment = isub_timeline(segment, mode='strict')[0]
+                
+                # if isegment is already annotated 
+                # then we might have a problem, Houston.
+                if isegment in sub_annotation:
+                    for name in tracks:
+                        if name in sub_annotation[isegment]:
+                            # MAYDAY, MAYDAY!
+                            new_name = self.auto_track_name(isegment, prefix=name)
+                            sub_annotation[isegment, new_name] = tracks[name]
+                        else:
+                            sub_annotation[isegment, name] = tracks[name]
+                else:
+                    sub_annotation[isegment] = tracks
             else:
                 sub_annotation[segment] = tracks
         
@@ -1469,6 +1486,20 @@ class TrackIDAnnotation(TrackAnnotation):
     #     return new_annotation
     #     
     
+    def copy(self):
+        """
+        Generate a duplicate annotation
+        """
+        annotation = TrackIDAnnotation(video=self.video, modality=self.modality)
+        for segment in self:
+            for track in self[segment]:
+                for identifier in self[segment, track]:
+                    annotation[segment, track, identifier] = self[segment, track, identifier]
+        return annotation
+    
+    def toTrackIDAnnotation(self):
+        return self.copy()
+    
     def toJSON(self):
         data = []
         for segment in self:
@@ -1615,6 +1646,16 @@ class IDAnnotation(TrackIDAnnotation):
             
     def __rshift__(self, timeline):
         return self.toTrackIDAnnotation().__rshift__(timeline)
+    
+    def copy(self):
+        """
+        Generate a duplicate annotation
+        """
+        annotation = IDAnnotation(video=self.video, modality=self.modality)
+        for segment in self:
+            for identifier in self[segment]:
+                annotation[segment, identifier] = self[segment, identifier]
+        return annotation
     
     def toTrackIDAnnotation(self):
         """

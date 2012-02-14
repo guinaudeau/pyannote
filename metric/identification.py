@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def identification_error_rate(reference, hypothesis):
+def identification_error_rate(reference, hypothesis, detailed=False):
     """
     Identification error rate -- the lower (0.) the better.    
     """
@@ -16,7 +16,7 @@ def identification_error_rate(reference, hypothesis):
     H = hypothesis >> common_timeline
     
     total = 0.
-    error = 0.
+    confusion = 0.
     miss = 0.
     fa = 0.
     
@@ -57,7 +57,7 @@ def identification_error_rate(reference, hypothesis):
         total += duration * Nr
         
         # total match error
-        error += duration * N_error
+        confusion += duration * N_error
         
         # total misses
         miss += duration * N_miss
@@ -65,8 +65,14 @@ def identification_error_rate(reference, hypothesis):
         # total false alarms
         fa += duration * N_fa
     
-    return (error + miss + fa) / total
+    rate = (confusion + miss + fa) / total
+    if detailed:
+        return {'error_rate': rate, 'confusion': confusion, 'miss': miss, 'fa': fa, 'total': total} 
+    else:
+        return rate
+
+def ier(reference, hypothesis, detailed=False):
+    return identification_error_rate(reference, hypothesis, detailed=detailed)
 
 
-def ier(reference, hypothesis):
-    return identification_error_rate(reference, hypothesis)
+
