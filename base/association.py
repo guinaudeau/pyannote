@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-
 class NoMatch(object):
     """
     """
@@ -29,14 +28,16 @@ class NoMatch(object):
         return self.format % self.ID
     
     def __repr__(self):
-        return str(self)
+        return 'NoMatch'
         
     def __hash__(self):
         return hash(self.ID)
         
     def __eq__(self, other):
-        return self.ID == other.ID
-
+        if isinstance(other, NoMatch):
+            return self.ID == other.ID
+        else:
+            return False
 
 class MElement(object):
     
@@ -179,6 +180,14 @@ class Mapping(object):
         
         return partition
         
+    def to_dict(self, reverse=False):
+        if reverse:
+            return {value:key for key, value in self._many1_to_many2.iteritems()}
+        else:
+            return dict(self._many1_to_many2)
+    
+    def __str__(self):
+        return str(self.to_dict())
         
 
 class OneToOneMapping(Mapping):
