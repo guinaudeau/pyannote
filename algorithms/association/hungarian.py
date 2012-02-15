@@ -6,8 +6,9 @@ from munkres import Munkres
 # from helper import NoMatch
 
 from pyannote.base.association import OneToOneMapping
+from pyannote.base.comatrix import Confusion
 
-def hungarian(A, B):
+def hungarian(A, B, normalize=False):
     """
     Hungarian algorithm based on co-occurrence duration.
     
@@ -22,7 +23,7 @@ def hungarian(A, B):
     """
     
     # Confusion matrix
-    M = B * A
+    M = Confusion(B, A, normalize=normalize)
     
     # Shape and labels
     Nb, Na = M.shape
@@ -41,12 +42,6 @@ def hungarian(A, B):
     for b, a in mapping:
         if (b < Nb) and (a < Na):
             M += ([alabels[a]], [blabels[b]])
-    
-    # mapping = {alabels[a]: blabels[b] for b, a in mapping \
-    #                                   if (b < Nb) and (a < Na)}
-    # 
-    # # Add a NoMatch mapping to unmatched identifiers
-    # NoMatch.reset()
     
     # A --> NoMatch
     for alabel in alabels:
