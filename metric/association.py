@@ -3,10 +3,17 @@
 
 """
 """
-# from pyannote.algorithms.association import NoMatch
 import sklearn.metrics
+from pyannote.base.association import Mapping, OneToOneMapping
 
 def __get_labels_true_pred(hypothesis, reference=None):
+    
+    if not isinstance(hypothesis, Mapping):
+        raise TypeError('Hypothesis must be a Mapping, not %s.' % type(hypothesis).__name__)
+    
+    if reference and not isinstance(reference, Mapping):
+        raise TypeError('Reference must be either None or a Mapping, not %s.' % type(hypothesis).__name__)
+    
     partition = hypothesis.to_partition()
     
     if reference:
@@ -18,6 +25,10 @@ def __get_labels_true_pred(hypothesis, reference=None):
     labels_pred = [partition[element] for element in expected]
     
     return labels_true, labels_pred
+
+# -------------------------------------- #
+# Many-to-many mapping evaluation metric #
+# -------------------------------------- #
 
 def homogeneity_completeness_v_measure(hypothesis, reference=None):
     labels_true, labels_pred = __get_labels_true_pred(hypothesis, reference=reference)        
@@ -39,10 +50,11 @@ def adjusted_rand_index(hypothesis, reference=None):
 
 def adjusted_mutual_info(hypothesis, reference=None):
     labels_true, labels_pred = __get_labels_true_pred(hypothesis, reference=reference)        
-    return sklearn.metrics.adjusted_mutual_info(labels_true, labels_pred)
+    return sklearn.metrics.adjusted_mutual_info_score(labels_true, labels_pred)
 
-
-
+    
+    
+    
 # def association_error_rate(source, target, mapping, weights=None):
 #     
 #     """
