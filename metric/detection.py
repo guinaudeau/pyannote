@@ -56,6 +56,6 @@ def detection_error_rate(reference, hypothesis, detailed=False):
     
     rate = (miss + fa) / total
     if detailed:
-        return {'error_rate': rate, 'miss': miss, 'fa': fa, 'total': total}
+        return {'error rate': rate, 'miss': miss, 'false alarm': fa, 'total': total}
     else:
         return rate

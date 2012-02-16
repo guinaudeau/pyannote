@@ -67,7 +67,7 @@ def identification_error_rate(reference, hypothesis, detailed=False):
     
     rate = (confusion + miss + fa) / total
     if detailed:
-        return {'error_rate': rate, 'confusion': confusion, 'miss': miss, 'fa': fa, 'total': total} 
+        return {'error rate': rate, 'confusion': confusion, 'miss': miss, 'false alarm': fa, 'total': total} 
     else:
         return rate
 
