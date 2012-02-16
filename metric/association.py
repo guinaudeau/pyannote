@@ -103,13 +103,17 @@ def accuracy(hypothesis, reference=None, detailed=False):
     proposed, expected = __get_dict_proposed_expected(hypothesis, reference=reference, reverse=True)
     r2l = __one_way_accuracy(proposed, expected)
     
-    rate = 1. * (l2r['correct'] + r2l['correct']) / (l2r['total'] + r2l['total'])
+    total = l2r['total'] + r2l['total']
+    if total == 0:
+        rate = 1.
+    else:
+        rate = 1. * (l2r['correct'] + r2l['correct']) / total
     
     if detailed:
         return {'error rate':  1. - rate, \
                 'confusion':   l2r['error']+r2l['error'], \
                 'false alarm': l2r['false alarm'] + r2l['false alarm'], \
-                'total':       l2r['total'] + r2l['total'], \
+                'total':       total, \
                 }
     else:
         return rate
