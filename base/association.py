@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+    
 
 class NoMatch(object):
     """
@@ -185,6 +186,25 @@ class Mapping(object):
             return {value:key for key, value in self._many1_to_many2.iteritems()}
         else:
             return dict(self._many1_to_many2)
+    
+    def to_expected_dict(self, reverse=False):
+        
+        left = set([element for element in self.__one1_to_many2 if not isinstance(element, NoMatch)])
+        right = set([element for element in self.__one2_to_many1 if not isinstance(element, NoMatch)])
+        both = left & right
+        
+        expected_dict = {}
+        for element in both:
+            expected_dict[element] = element
+        for element in left-both:
+            expected_dict[element] = NoMatch()
+        for element in right-both:
+            expected_dict[NoMatch()] = element
+        
+        if reverse:
+            return {value:key for key, value in expected_dict.iteritems()}
+        else:
+            return expected_dict
     
     def __str__(self):
         return str(self.to_dict())
