@@ -114,5 +114,34 @@ class Confusion(CoMatrix):
         if normalize:
             for i in range(n_i):
                 self.Mij[i, :] = self.Mij[i, :] / iduration[i]
+
+class AutoConfusion(Confusion):
+    """
+    Auto confusion matrix 
+    
+    :param I: (ID-based) annotation
+    :type I: :class:`TrackIDAnnotation`
+
+    :param neighborhood:
+    :type neighborhood: 
+    
+    >>> M = AutoConfusion(A, neighborhood=10)
+
+    Get total confusion duration (in seconds) between id_A and id_B::
+    
+    >>> confusion = M[id_A, id_B]
+    
+    Get confusion dictionary for id_A::
+    
+    >>> confusions = M(id_A)
     
     
+    """
+    def __init__(self, I, neighborhood=0., normalize=False):
+        
+        map_func = lambda segment : neighborhood << segment >> neighborhood
+        
+        xI = I.toTrackIDAnnotation().copy(map_func=map_func)        
+        super(AutoConfusion, self).__init__(xI, xI, normalize=normalize)
+            
+        

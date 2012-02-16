@@ -275,7 +275,7 @@ class Timeline(object):
         both = set(self.__segments[:index]) & set(self.__rsegments[xedni:])
         return sorted([rsegment.copy() for rsegment in both])
     
-    def __call__(self, requested, mode='intersection'):
+    def __call__(self, subset, mode='intersection'):
         """
         # Create sub-timeline. Default mode is 'intersection'.
         # ... made of segments fully included in requested segment
@@ -300,8 +300,8 @@ class Timeline(object):
         sub_timeline = tl(timeline, mode='intersection')
         """
         
-        if isinstance(requested, Segment):
-            segment = requested     
+        if isinstance(subset, Segment):
+            segment = subset     
             isegments = self.__get_intersecting(segment)
             if mode == 'strict':
                 isegments = [isegment for isegment in isegments if isegment in segment]
@@ -312,12 +312,13 @@ class Timeline(object):
             else:
                 raise ValueError('Unsupported mode (%s).' % mode)
             timeline = Timeline(segments=isegments, video=self.video)
-        elif isinstance(requested, Timeline):
+        elif isinstance(subset, Timeline):
             timeline = Timeline(video=self.video)
-            for segment in requested.coverage():
+            for segment in subset.coverage():
                 timeline += self.__call__(segment, mode=mode)
         else:
-            raise TypeError('')
+            raise TypeError('Subset must be either a Segment or a Timeline, not %s' \
+                           % type(subset).__name__)
         
         return timeline
     

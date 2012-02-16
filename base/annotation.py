@@ -4,6 +4,7 @@
 from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
+
 import numpy as np
 import json
 
@@ -711,7 +712,7 @@ class TrackAnnotation(object):
             down to their intersection with :data:`timeline` coverage
                  
         """
-        
+
         if mode == 'strict':
             sub_timeline = self.timeline(subset, mode='strict')
         elif mode in ['loose', 'intersection']:
@@ -726,7 +727,7 @@ class TrackAnnotation(object):
         sub_annotation = self.__class__(track_class=self.__track_class, \
                                         video=self.video, \
                                         modality=self.modality)
-                                                 
+
         for s, segment in enumerate(sub_timeline):
             tracks = self[segment]
             if mode == 'intersection':
@@ -792,14 +793,28 @@ class TrackAnnotation(object):
     See :meth:`Timeline.__abs__` and :meth:`__pow__` for more details.
         """
         return self >> abs(self.timeline)
-    
 
+    def copy(self, map_func=None):
+        """
+        Generate a duplicate annotation
+        """
+        cls = type(self)
+        annotation = cls(track_class=self.track_class, video=self.video, modality=self.modality)
+        
+        if not map_func:
+            map_func = lambda segment: segment
+        
+        for segment in self:
+            annotation[map_func(segment)] = self[segment]
+        
+        return annotation    
+    
 def __check_identifier(identifier):
     """
     Make sure provided identifier is a valid one (anything but int or Segment)
     """
-    if isinstance(identifier, (int, Segment)):
-        raise TypeError('Cannot add annotation with %s identifier' \
+    if not isinstance(identifier, str):
+        raise TypeError('Invalid identifier %s. Must be str.' \
                         % (type(identifier).__name__))
 
 class TrackIDAnnotation(TrackAnnotation):
@@ -1355,28 +1370,56 @@ class TrackIDAnnotation(TrackAnnotation):
             same as 'loose' except segments are trimmed
             down to their intersection with :data:`timeline` coverage
          
-    >>> a = A(valid_identifier)
-        
-        Subset :data:`a` only contains annotations with the provided identifier.
+    >>> a = A( valid_identifier )
+    >>> a = A( set_of_valid_identifiers )   
+    >>> a = A( list_of_valid_identifiers )
+    >>> a = A( tuple_of_valid_identifiers) 
+
+        Subset :data:`a` only contains annotations with the provided identifier(s).
         
         :data:`mode` has no effect here. 
-
-        """
+         """
         
-        if self.__has_identifier(subset):
+        # use inherited __call__ method in case of Segment or Timeline subset
+        if isinstance(subset, (Segment, Timeline)):
+            A = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+        
+        # 
+        elif isinstance(subset, (tuple, list, set)):
+            
+            # create new empty annotation
+            cls = type(self)
+            A = cls(video=self.video, modaity=self.modality)
+            
+            for one_identifier in subset:
+                
+                # extract sub-annotation a for each identifier in list
+                a = self(one_identifier, mode=mode)
+                
+                # add it all to the (previously empty) annotation A
+                # TODO: would be easier if 'A += a' was available
+                for segment in a:
+                    tracks = a._get_segment(segment)
+                    for name in tracks:
+                        track = tracks[name]
+                        for identifier in track:
+                            A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
+        
+        # extract annotation for one particular identifier
+        # and only these...
+        else:
+            cls = type(self)
+            A = cls(video=self.video, modality=self.modality)
             identifier = subset
             timeline = self._identifier_timeline[identifier]
-            sub_annotation = self.__class__(video=self.video, modality=self.modality)
             for segment in timeline:
                 tracks = self._get_segment(segment)
                 for name in tracks:
                     track = tracks[name]
                     if identifier in track:
-                        sub_annotation.__set_segment_name_identifier(segment, name, identifier, track[identifier])
-        else:
-            sub_annotation = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+                        A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
         
-        return sub_annotation
+        return A
             
     def __mod__(self, translation):
         """
@@ -1421,82 +1464,7 @@ class TrackIDAnnotation(TrackAnnotation):
     :returns: confusion matrix :class:`Confusion`
         """
         return Confusion(self, other)    
-    
         
-    # def __pow__(self, timeline, modulo=None):
-    #     """
-    # .. currentmodule:: pyannote
-    # 
-    # Timeline tagging.
-    #     
-    # :param timeline: 
-    # :type timeline: :class:`Timeline`
-    # :rtype: :class:`TrackAnnotation`
-    #     
-    # >>> a = A ** timeline
-    # >>> if a.timeline in timeline:
-    # ...    print 'Yes!'
-    # Yes!
-    # 
-    # For each segment in :data:`timeline`, all annotations of intersecting segments
-    # are added to the new :class:`TrackAnnotation` instance :data:`a`.
-    #     """
-    #     
-    #     new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
-    #     
-    #     original_timeline = self.timeline
-    #     S_start = 0
-    #     N = len(original_timeline)
-    #     
-    #     # for each segment in new timeline
-    #     for ns, new_segment in enumerate(timeline):
-    #         
-    #         original_start_segment = original_timeline[S_start]
-    #         
-    #         # if start segment is strictly after new segment, jump to next new segment
-    #         if (original_start_segment > new_segment) and (original_start_segment ^ new_segment):
-    #             continue
-    #         
-    #         # update start segment
-    #         for s in range(S_start, N):
-    #             
-    #             original_segment = original_timeline[s]
-    #             
-    #             # found first intersecting segment
-    #             if original_segment & new_segment:
-    #                 S_start = s
-    #                 break
-    #             # went one step too far
-    #             if (original_segment > new_segment):
-    #                 break
-    #             
-    #             S_start = s
-    #         
-    #         for s in range(S_start, N):
-    #             original_segment = original_timeline[s]
-    #             if original_segment & new_segment:
-    #                 for track in self[original_segment]:
-    #                     if new_segment in new_annotation and track in new_annotation[new_segment]:
-    #                         raise Warning('Track %s is replaced in %s' % (track, new_segment))
-    #                     new_annotation[new_segment, track] = self[original_segment, track]
-    #                     # new_annotation[new_segment] = self[original_segment]
-    #             elif original_segment > new_segment:
-    #                 break
-    #                     
-    #     return new_annotation
-    #     
-    
-    def copy(self):
-        """
-        Generate a duplicate annotation
-        """
-        annotation = TrackIDAnnotation(video=self.video, modality=self.modality)
-        for segment in self:
-            for track in self[segment]:
-                for identifier in self[segment, track]:
-                    annotation[segment, track, identifier] = self[segment, track, identifier]
-        return annotation
-    
     def toTrackIDAnnotation(self):
         return self.copy()
     
@@ -1646,16 +1614,6 @@ class IDAnnotation(TrackIDAnnotation):
             
     def __rshift__(self, timeline):
         return self.toTrackIDAnnotation().__rshift__(timeline)
-    
-    def copy(self):
-        """
-        Generate a duplicate annotation
-        """
-        annotation = IDAnnotation(video=self.video, modality=self.modality)
-        for segment in self:
-            for identifier in self[segment]:
-                annotation[segment, identifier] = self[segment, identifier]
-        return annotation
     
     def toTrackIDAnnotation(self):
         """
