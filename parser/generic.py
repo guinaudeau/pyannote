@@ -209,14 +209,24 @@ class GenericParser(object):
                                                                 confidence
     
     def annotation(self, video, modality):
-        return self.annotations[video][modality]
-    
+        
+        if (video in self.annotations) and (modality in self.annotations[video]):
+            return self.annotations[video][modality]
+        else:
+            if self.multitrack:
+                return TrackIDAnnotation(modality=modality, video=video)
+            else:
+                return IDAnnotation(modality=modality, video=video)
+            
     def timeline(self, video, modality):
-        return self.annotations[video][modality].timeline
+        return self.annotation(video, modality)
         
     def videos(self):
         return self.annotations.keys()
     
     def modalities(self, video):
-        return self.annotations[video].keys()
+        if video in self.annotations:
+            return self.annotations[video].keys()
+        else:
+            return []
 
