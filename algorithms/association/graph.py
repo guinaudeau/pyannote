@@ -79,11 +79,14 @@ def louvain(A, B, overlap=False, normalize=False):
     normalize: if True, normalize confusion matrix by total duration
     
     """
-    
     G = __confusion_graph(A, B, overlap=overlap, normalize=normalize)
     
-    # Community detection
-    partition = pyannote.algorithms.community.best_partition(G)
+    if nx.number_connected_components(G) == len(G.nodes()):
+        partition = {node: n for n, node in enumerate(G.nodes_iter())}
+    else:
+        # Community detection
+        partition = pyannote.algorithms.community.best_partition(G)
+
     clusters = __partition_to_cluster(partition)
     
     # Many-to-many mapping
