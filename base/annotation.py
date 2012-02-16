@@ -712,7 +712,7 @@ class TrackAnnotation(object):
             down to their intersection with :data:`timeline` coverage
                  
         """
-        
+
         if mode == 'strict':
             sub_timeline = self.timeline(subset, mode='strict')
         elif mode in ['loose', 'intersection']:
@@ -727,7 +727,7 @@ class TrackAnnotation(object):
         sub_annotation = self.__class__(track_class=self.__track_class, \
                                         video=self.video, \
                                         modality=self.modality)
-                                                 
+
         for s, segment in enumerate(sub_timeline):
             tracks = self[segment]
             if mode == 'intersection':
@@ -813,10 +813,9 @@ def __check_identifier(identifier):
     """
     Make sure provided identifier is a valid one (anything but int or Segment)
     """
-    if isinstance(identifier, (int, Segment)):
-        raise TypeError('Cannot add annotation with %s identifier' \
+    if not isinstance(identifier, str):
+        raise TypeError('Invalid identifier %s. Must be str.' \
                         % (type(identifier).__name__))
-
 
 class TrackIDAnnotation(TrackAnnotation):
     """
@@ -1371,28 +1370,56 @@ class TrackIDAnnotation(TrackAnnotation):
             same as 'loose' except segments are trimmed
             down to their intersection with :data:`timeline` coverage
          
-    >>> a = A(valid_identifier)
-        
-        Subset :data:`a` only contains annotations with the provided identifier.
+    >>> a = A( valid_identifier )
+    >>> a = A( set_of_valid_identifiers )   
+    >>> a = A( list_of_valid_identifiers )
+    >>> a = A( tuple_of_valid_identifiers) 
+
+        Subset :data:`a` only contains annotations with the provided identifier(s).
         
         :data:`mode` has no effect here. 
-
-        """
+         """
         
-        if self.__has_identifier(subset):
+        # use inherited __call__ method in case of Segment or Timeline subset
+        if isinstance(subset, (Segment, Timeline)):
+            A = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+        
+        # 
+        elif isinstance(subset, (tuple, list, set)):
+            
+            # create new empty annotation
+            cls = type(self)
+            A = cls(video=self.video, modaity=self.modality)
+            
+            for one_identifier in subset:
+                
+                # extract sub-annotation a for each identifier in list
+                a = self(one_identifier, mode=mode)
+                
+                # add it all to the (previously empty) annotation A
+                # TODO: would be easier if 'A += a' was available
+                for segment in a:
+                    tracks = a._get_segment(segment)
+                    for name in tracks:
+                        track = tracks[name]
+                        for identifier in track:
+                            A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
+        
+        # extract annotation for one particular identifier
+        # and only these...
+        else:
+            cls = type(self)
+            A = cls(video=self.video, modality=self.modality)
             identifier = subset
             timeline = self._identifier_timeline[identifier]
-            sub_annotation = self.__class__(video=self.video, modality=self.modality)
             for segment in timeline:
                 tracks = self._get_segment(segment)
                 for name in tracks:
                     track = tracks[name]
                     if identifier in track:
-                        sub_annotation.__set_segment_name_identifier(segment, name, identifier, track[identifier])
-        else:
-            sub_annotation = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+                        A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
         
-        return sub_annotation
+        return A
             
     def __mod__(self, translation):
         """
