@@ -4,6 +4,7 @@
 from pyannote import Segment, TrackIDAnnotation
 from idx import IDXParser
 from lxml import objectify
+import re
 
 MODALITY_HEAD = 'head'
 MODALITY_WRITTEN = 'written'
@@ -11,13 +12,32 @@ MODALITY_WRITTEN = 'written'
 def _extract_value(attr):
     return attr.getchildren()[0].get('value')
 
-def _extract_written(text):
+def _extract_written(text, name_alone=False):
+    """
+    If name_alone is set to True, will only return identifiers that are
+    not surrounded by other text on the same line.
+    """
     identifiers = []
     if text:
-        elements = unicode(text).split('<pers=')
-        for element in elements[1:]:
-            identifier = element.split('>')[0]
-            identifiers.append(identifier)
+        if name_alone:
+            #         group  #1         #2         #3     #4
+            p = re.compile('(.*?)<pers=(.*?)>.*?(</pers>)(.*)', re.DOTALL)
+            m = p.match(text)
+            while(m):
+                beforeOnSameLine = m.group(1).split('\\n')[-1].strip()
+                afterOnSameLine = m.group(4).split('\\n')[0].strip()
+                if beforeOnSameLine == '' and afterOnSameLine == '':
+                    identifiers.append(m.group(2))
+                text = text[m.end(3):]
+                m = p.match(text)
+        else:
+            p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
+            m = p.match(text)
+            while(m):
+                identifiers.append(m.group(1))
+                text = text[m.end():]  
+                m = p.match(text)
+        
     return identifiers
 
 class XGTFParser(object):
@@ -75,7 +95,7 @@ class XGTFParser(object):
         
         return annotation
         
-    def written(self, value=True):
+    def written(self, value=True, name_alone=False):
         annotation = TrackIDAnnotation(modality=MODALITY_WRITTEN, \
                                        video=self._video)
 
@@ -92,7 +112,7 @@ class XGTFParser(object):
                     endframe = int(_extract_value(vpr_object))
                 elif attr_name == 'TRANSCRIPTION':
                     identifiers = \
-                    _extract_written(unicode(_extract_value(vpr_object)))
+                    _extract_written(unicode(_extract_value(vpr_object)), name_alone=name_alone)
                 else:
                     pass
             segment = Segment(start=self._idx[startframe], \
