@@ -77,7 +77,7 @@ def __one_way_accuracy(proposed, expected):
             else:
                 error += 1
     
-    return {'total': total, 'correct': correct, 'false_alarm': false_alarm, 'error': error}
+    return {'total': total, 'correct': correct, 'false alarm': false_alarm, 'error': error}
     
 def __get_dict_proposed_expected(hypothesis, reference=None, reverse=False):
     
@@ -95,8 +95,7 @@ def __get_dict_proposed_expected(hypothesis, reference=None, reverse=False):
 
     return proposed, expected
 
-
-def accuracy(hypothesis, reference=None):
+def accuracy(hypothesis, reference=None, detailed=False):
     
     proposed, expected = __get_dict_proposed_expected(hypothesis, reference=reference, reverse=False)
     l2r = __one_way_accuracy(proposed, expected)
@@ -104,5 +103,14 @@ def accuracy(hypothesis, reference=None):
     proposed, expected = __get_dict_proposed_expected(hypothesis, reference=reference, reverse=True)
     r2l = __one_way_accuracy(proposed, expected)
     
-    return 1. * (l2r['correct'] + r2l['correct']) / (l2r['total'] + r2l['total'])
+    rate = 1. * (l2r['correct'] + r2l['correct']) / (l2r['total'] + r2l['total'])
+    
+    if detailed:
+        return {'error rate':  1. - rate, \
+                'confusion':   l2r['error']+r2l['error'], \
+                'false alarm': l2r['false alarm'] + r2l['false alarm'], \
+                'total':       l2r['total'] + r2l['total'], \
+                }
+    else:
+        return rate
         
