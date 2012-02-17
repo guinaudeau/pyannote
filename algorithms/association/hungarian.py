@@ -8,7 +8,7 @@ from munkres import Munkres
 from pyannote.base.association import OneToOneMapping, Mapping, NoMatch
 from pyannote.base.comatrix import Confusion
 
-def hungarian(A, B, normalize=False, init=None):
+def hungarian(A, B, normalize=False, init=None, force=False):
     """
     Hungarian algorithm based on co-occurrence duration.
     
@@ -20,6 +20,18 @@ def hungarian(A, B, normalize=False, init=None):
     pyannote.metrics.ier(A % mapping, B, detailed=True)['confusion']
     
     See http://en.wikipedia.org/wiki/Hungarian_algorithm
+    
+    :param normalize: when True, Hungarian algorithm is applied on normalized
+                      confusion matrix.
+    :type normalize: boolean
+    
+    :param init: when provided, Hungarian algorithm is applied within each
+                 many-to-many groups.
+    :type init: Mapping
+    
+    :param force: when True, force mapping even for identifiers with zero confusion
+    :type force: boolean
+    
     """
     
     if isinstance(init, Mapping):
@@ -64,7 +76,8 @@ def hungarian(A, B, normalize=False, init=None):
     
     for b, a in mapping:
         if (b < Nb) and (a < Na):
-            M += ([alabels[a]], [blabels[b]])
+            if force or (matrix[blabels[b], alabels[a]] > 0):
+                M += ([alabels[a]], [blabels[b]])
     
     # A --> NoMatch
     for alabel in alabels:
