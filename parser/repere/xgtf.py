@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote import Segment, TrackIDAnnotation
+from pyannote import Segment, Timeline, TrackIDAnnotation
 from idx import IDXParser
 from lxml import objectify
 import re
@@ -124,8 +124,22 @@ class XGTFParser(object):
                     annotation[segment, name, identifier] = value
         
         return annotation
-
-
+    
+    def annotated(self):
+        """"""
+        timeline = Timeline(video=self._video)
+        p = re.compile('([0-9]*):([0-9]*)')
+        for element in self._xmlroot.data.sourcefile.iterchildren():
+            text = element.get('framespan')
+            if text:
+                m = p.match(text)
+                startframe = int(m.group(1))
+                endframe = int(m.group(2))+1
+                segment = Segment(start=self._idx[startframe], end=self._idx[endframe])            
+                timeline += segment
+        
+        return timeline        
+        
 class XGTFSample(XGTFParser):
     """docstring for XGTFSample"""
     def __init__(self):
