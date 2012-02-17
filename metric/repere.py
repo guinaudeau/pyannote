@@ -1,6 +1,32 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+
+EGER_TOTAL = 'total'
+
+EGER_REF_NAME = 'total named in reference'
+EGER_REF_ANON = 'total anonymous in reference'
+EGER_HYP_NAME = 'total named in hypothesis'
+EGER_HYP_ANON = 'total anonymous in hypothesis'
+    
+EGER_CORRECT_NAME = 'correct named'
+EGER_CORRECT_ANON = 'correct anonymous'
+
+EGER_CONFUSION_NAME_NAME = 'confusion named/named'
+EGER_CONFUSION_NAME_ANON = 'confusion named/anonymous'
+EGER_CONFUSION_ANON_NAME = 'confusion anonymous/named'
+
+EGER_FALSE_ALARM_NAME = 'false alarm named'
+EGER_FALSE_ALARM_ANON = 'false alarm anonymous'
+
+EGER_MISS_NAME = 'miss named'
+EGER_MISS_ANON = 'miss anonymous'
+
+EGER_ERROR_RATE = 'error rate'
+
+def __is_not_anonymous(identifier):
+    return identifier[:8] != 'Inconnu_' and identifier[:7] != 'speaker'
+
 def eger(reference, hypothesis, annotated, detailed=False):
     """
     Estimated Global Error Rate
@@ -35,68 +61,226 @@ def eger(reference, hypothesis, annotated, detailed=False):
     reference = reference >> annotated
     hypothesis = hypothesis >> annotated
     
-    total = 0
-    correct_known = 0
-    correct_unknown = 0
-    confusion = 0
-    false_alarm = 0
-    miss = 0
+    detail = { \
+        EGER_TOTAL: 0, \
+        EGER_REF_NAME: 0, \
+        EGER_REF_ANON: 0, \
+        EGER_HYP_NAME: 0, \
+        EGER_HYP_ANON: 0, \
+        EGER_CORRECT_NAME: 0, \
+        EGER_CORRECT_ANON: 0, \
+        EGER_CONFUSION_NAME_NAME: 0, \
+        EGER_CONFUSION_NAME_ANON: 0, \
+        EGER_CONFUSION_ANON_NAME: 0, \
+        EGER_FALSE_ALARM_NAME: 0, \
+        EGER_FALSE_ALARM_ANON: 0, \
+        EGER_MISS_NAME: 0, \
+        EGER_MISS_ANON: 0, \
+        }    
     
     for frame in annotated:
+        
+        local = {}
         
         ref = reference.ids(frame)
         hyp = hypothesis.ids(frame)
         
-        known_ref = set([identifier for identifier in ref if identifier[:8] != 'Inconnu_'])
-        known_hyp = set([identifier for identifier in hyp if identifier[:8] != 'Inconnu_'])
+        local[EGER_TOTAL] = len(ref)
+        
+        known_ref = set([identifier for identifier in ref if __is_not_anonymous(identifier)])
+        known_hyp = set([identifier for identifier in hyp if __is_not_anonymous(identifier)])
+        local[EGER_REF_NAME] = len(known_ref)
+        local[EGER_HYP_NAME] = len(known_hyp)
         
         unknown_ref = ref - known_ref
         unknown_hyp = hyp - known_hyp
+        local[EGER_REF_ANON] = len(unknown_ref)
+        local[EGER_HYP_ANON] = len(unknown_hyp)
 
-        frame_correct_known = 0
+        # correct named/named matches
+        local[EGER_CORRECT_NAME] = len(known_ref & known_hyp)
         for known in known_ref & known_hyp:
-            frame_correct_known += 1
             known_ref.remove(known)
             known_hyp.remove(known)
         
-        frame_correct_unknown = 0
-        for i in range(min(len(unknown_ref), len(unknown_hyp))):
-            frame_correct_unknown += 1
+        # correct anonymous/anonymous matches
+        n = min(len(unknown_ref), len(unknown_hyp))
+        local[EGER_CORRECT_ANON] = n
+        for i in range(n):
             unknown_ref.pop()
             unknown_hyp.pop()
         
-        left_ref = known_ref | unknown_ref
-        left_hyp = known_hyp | unknown_hyp
-        
-        frame_confusion = 0
-        for i in range(min(len(left_ref), len(left_hyp))):
-            frame_confusion += 1
-            left_ref.pop()
-            left_hyp.pop()
-        
-        frame_total = len(ref)
+        # named/named confusion
+        n = min(len(known_ref), len(known_hyp))
+        local[EGER_CONFUSION_NAME_NAME] = n
+        for i in range(n):
+            known_ref.pop()
+            known_hyp.pop()
 
-        frame_false_alarm = len(left_hyp)
-        frame_miss = len(left_ref)
+        # named/anonymous confusion
+        n = min(len(known_ref), len(unknown_hyp))
+        local[EGER_CONFUSION_NAME_ANON] = n
+        for i in range(n):
+            known_ref.pop()
+            unknown_hyp.pop()
         
-        total += frame_total
-        correct_known += frame_correct_known
-        correct_unknown += frame_correct_unknown
-        confusion += frame_confusion
-        false_alarm += frame_false_alarm
-        miss += frame_miss
+        # anonymous/named confusion
+        n = min(len(unknown_ref), len(known_hyp))
+        local[EGER_CONFUSION_ANON_NAME] = n
+        for i in range(n):
+            unknown_ref.pop()
+            known_hyp.pop()
+        
+        # miss
+        local[EGER_MISS_NAME] = len(known_ref)
+        local[EGER_MISS_ANON] = len(unknown_ref)
+        
+        # false alarm
+        local[EGER_FALSE_ALARM_NAME] = len(known_hyp)
+        local[EGER_FALSE_ALARM_ANON] = len(unknown_hyp)
+        
+        detail[EGER_TOTAL] += local[EGER_TOTAL] 
+        detail[EGER_REF_NAME] += local[EGER_REF_NAME]
+        detail[EGER_REF_ANON] += local[EGER_REF_ANON]
+        detail[EGER_HYP_NAME] += local[EGER_HYP_NAME]
+        detail[EGER_HYP_ANON] += local[EGER_HYP_ANON]
+        detail[EGER_CORRECT_NAME] += local[EGER_CORRECT_NAME]
+        detail[EGER_CORRECT_ANON] += local[EGER_CORRECT_ANON]
+        detail[EGER_CONFUSION_NAME_NAME] += local[EGER_CONFUSION_NAME_NAME]
+        detail[EGER_CONFUSION_NAME_ANON] += local[EGER_CONFUSION_NAME_ANON]
+        detail[EGER_CONFUSION_ANON_NAME] += local[EGER_CONFUSION_ANON_NAME]
+        detail[EGER_FALSE_ALARM_NAME] += local[EGER_FALSE_ALARM_NAME]
+        detail[EGER_FALSE_ALARM_ANON] += local[EGER_FALSE_ALARM_ANON]
+        detail[EGER_MISS_NAME] += local[EGER_MISS_NAME]
+        detail[EGER_MISS_ANON] += local[EGER_MISS_ANON]
+                
+    if detail[EGER_TOTAL] > 0:
+        rate = ( \
+                    .5 * (detail[EGER_CONFUSION_NAME_NAME] + \
+                          detail[EGER_CONFUSION_ANON_NAME] + \
+                          detail[EGER_CONFUSION_NAME_ANON]) + \
+                    1. * (detail[EGER_FALSE_ALARM_NAME] + \
+                          detail[EGER_FALSE_ALARM_ANON]) + \
+                    1. * (detail[EGER_MISS_NAME] + \
+                          detail[EGER_MISS_ANON]) \
+                ) / detail[EGER_TOTAL]
+    else:
+        rate = 0.
     
-    rate = 1. * (.5 * confusion + false_alarm + miss) / total
+    detail[EGER_ERROR_RATE] = rate    
+    
     if detailed:
-        return {'error rate': rate, 'confusion': confusion, 'miss': miss, 'false alarm': false_alarm, 'total': total, 'correct known': correct_known, 'correct unknown': correct_unknown} 
+        return detail
     else:
         return rate
+
+# =================================================================================
+
+def main(argv=None):
+
+    import getopt
+    import os
+    import pyannote.parser
+    import numpy as np
     
-                
+    if argv is None:
+        argv = sys.argv
+    try:
+        try:
+            opts, args = getopt.getopt(argv[1:], \
+                                       "hR:H:F:", \
+                                       ["help", "reference=", "hypothesis=", "frames=", "speaker", "head"])
+        except getopt.error, msg:
+            raise Usage(msg)
         
+        path2reference = None
+        path2hypothesis = None
+        path2frames = None
+        speaker = False
+        head = False
+        for option, value in opts:
+            if option in ("-h", "--help"):
+                raise Usage(help_message)
+            if option in ("-R", "--reference"):
+                path2reference = value
+            if option in ("-H", "--hypothesis"):
+                path2hypothesis = value
+            if option in ("-F", "--frames"):
+                path2frames = value
+            if option in ("--speaker"):
+                speaker = True
+            if option in ("--head"):
+                head = True
+       
+    except Usage, err:
+        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
+        print >> sys.stderr, "\t for help use --help"
+        return 2
+
+    reference = pyannote.parser.repere.REPEREParser(path2reference, confidence=False, multitrack=True)
+    hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, confidence=False, multitrack=True)
+    frames = pyannote.parser.nist.UEMParser(path2frames)
+    
+    modalities = []
+    if speaker: 
+        modalities.append('speaker')
+    if head:
+        modalities.append('head')
+    
+    error = {}
+    
+    reference_entries_named = {modality: 0 for modality in modalities}
+    reference_entries_named = {modality: 0 for modality in modalities}
+    
+    for video in reference.videos():
         
+        error[video] = {}
+        print '* %s' % video
+        A = frames.timeline(video) 
+        for modality in modalities:
+            R = reference.annotation(video, modality)
+            H = hypothesis.annotation(video, modality)
+            error[video][modality] = eger(R, H, A, detailed=True)
+            print '  - EGER (%s) = %.3f' % (modality, error[video][modality]['error rate'])
+        print ""
+    
+    for modality in modalities:
+        print "* Total counts (%s):" % modality
+        ref_named = np.sum([error[video][modality][EGER_REF_NAME] for video in reference.videos()])
+        ref_anon  = np.sum([error[video][modality][EGER_REF_ANON] for video in reference.videos()])
+        print "  - reference entries: %d (%d named, %d anonymous)" % (ref_named+ref_anon, ref_named, ref_anon)
+
+        hyp_named = np.sum([error[video][modality][EGER_HYP_NAME] for video in reference.videos()])
+        hyp_anon  = np.sum([error[video][modality][EGER_HYP_ANON] for video in reference.videos()])
+        print "  - hypothesis entries: %d (%d named, %d anonymous)" % (hyp_named+hyp_anon, hyp_named, hyp_anon)
+
+        correct_named = np.sum([error[video][modality][EGER_CORRECT_NAME] for video in reference.videos()])
+        correct_anon  = np.sum([error[video][modality][EGER_CORRECT_ANON] for video in reference.videos()])
+        print "  - correct: %d (%d named, %d anonymous)" % (correct_named+correct_anon, correct_named, correct_anon)
+
+        confusion_nn = np.sum([error[video][modality][EGER_CONFUSION_NAME_NAME] for video in reference.videos()])
+        confusion_na = np.sum([error[video][modality][EGER_CONFUSION_NAME_ANON] for video in reference.videos()])
+        confusion_an = np.sum([error[video][modality][EGER_CONFUSION_ANON_NAME] for video in reference.videos()])
+        print "  - confusions: %d (%d n-n, %d n-a, %d a-n)" % (confusion_nn+confusion_na+confusion_an, confusion_nn, confusion_na, confusion_an)
         
+        miss_named = np.sum([error[video][modality][EGER_MISS_NAME] for video in reference.videos()])
+        miss_anon = np.sum([error[video][modality][EGER_MISS_ANON] for video in reference.videos()])        
+        print "  - miss: %d (%d named, %d anonymous)" % (miss_named+miss_anon, miss_named, miss_anon)
         
-        
-        
+        fa_named = np.sum([error[video][modality][EGER_FALSE_ALARM_NAME] for video in reference.videos()])
+        fa_anon = np.sum([error[video][modality][EGER_FALSE_ALARM_ANON] for video in reference.videos()])        
+        print "  - fa: %d (%d named, %d anonymous)" % (fa_named+fa_anon, fa_named, fa_anon)
+
+        if ref_named + ref_anon > 0:
+            rate = (.5 * (confusion_nn + confusion_na + confusion_an) + 1. * (miss_named+miss_anon) + 1. * (fa_named+fa_anon)) / (ref_named + ref_anon)
+        else:
+            rate = 0.
+        print "  - EGER (%s): %g %%" % (modality, 100*rate)
+        print ""
+
+import sys
+if  __name__ == '__main__':
+        sys.exit(main())
+    
+
         
