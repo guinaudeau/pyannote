@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-
 EGER_TOTAL = 'total'
 
 EGER_REF_NAME = 'total named in reference'
@@ -278,9 +277,9 @@ def main(argv=None):
         print "  - EGER (%s): %g %%" % (modality, 100*rate)
         print ""
 
-import sys
 if  __name__ == '__main__':
-        sys.exit(main())
+    import sys
+    sys.exit(main())
     
 
         
