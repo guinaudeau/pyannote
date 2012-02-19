@@ -159,7 +159,7 @@ class Mapping(object):
     def to_partition(self):
         partition = {}
         C = 0
-        for left, right in self._many1_to_many2.iteritems():
+        for left, right in self:
             partition.update({MElement(self.modality1, element): C for element in left \
                                                                    if not isinstance(element, NoMatch)} )
             partition.update({MElement(self.modality2, element): C for element in right \
@@ -183,9 +183,9 @@ class Mapping(object):
         
     def to_dict(self, reverse=False):
         if reverse:
-            return {value:key for key, value in self._many1_to_many2.iteritems()}
+            return {right:left for left, right in self}
         else:
-            return dict(self._many1_to_many2)
+            return {left:right for left, right in self}
     
     def to_expected_dict(self, reverse=False):
         
@@ -208,8 +208,10 @@ class Mapping(object):
     
     def __str__(self):
         return str(self.to_dict())
-        
-
+    
+    def __iter__(self):
+        return self._many1_to_many2.iteritems()
+    
 class OneToOneMapping(Mapping):
     
     def _check_mapping(self, mapping):
@@ -239,9 +241,9 @@ class OneToOneMapping(Mapping):
         
     def to_dict(self, reverse=False):
         if reverse:
-            return {value[0]:key[0] for key, value in self._many1_to_many2.iteritems()}
+            return {right[0]:left[0] for left, right in self}
         else:
-            return {key[0]:value[0] for key, value in self._many1_to_many2.iteritems()}
+            return {left[0]:right[0] for left, right in self}
             
     def __str__(self):
         return str(self.to_dict())
