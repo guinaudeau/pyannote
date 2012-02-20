@@ -67,7 +67,7 @@ class Mapping(object):
         self.__modality1 = modality1
         self.__modality2 = modality2
 
-        self.__one1_to_many2 = {}
+        self._one1_to_many2 = {}
         self.__one2_to_many1 = {}
         self._many1_to_many2 = {}
     
@@ -86,7 +86,7 @@ class Mapping(object):
                      doc="Second modality.")
     
     def __get_first_set(self):
-        return set(self.__one1_to_many2.keys())
+        return set(self._one1_to_many2.keys())
     first_set = property(fget=__get_first_set, \
                         fset=None, \
                         fdel=None, \
@@ -129,11 +129,11 @@ class Mapping(object):
         
         elements1, elements2 = self._check_mapping(mapping)
         
-        already_mapped = set(elements1) & set(self.__one1_to_many2)
+        already_mapped = set(elements1) & set(self._one1_to_many2)
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.__modality1, self.__one1_to_many2[already_mapped]))
+                             (already_mapped, self.__modality1, self._one1_to_many2[already_mapped]))
             
         already_mapped = set(elements2) & set(self.__one2_to_many1)
         if already_mapped:
@@ -142,7 +142,7 @@ class Mapping(object):
                              (already_mapped, self.__modality2, self.__one2_to_many1[already_mapped]))
         
         for elt1 in elements1:
-            self.__one1_to_many2[elt1] = elements2
+            self._one1_to_many2[elt1] = elements2
         for elt2 in elements2:
             self.__one2_to_many1[elt2] = elements1
         
@@ -163,7 +163,7 @@ class Mapping(object):
         
     def to_expected_partition(self):
         
-        left = set([element for element in self.__one1_to_many2 if not isinstance(element, NoMatch)])
+        left = set([element for element in self._one1_to_many2 if not isinstance(element, NoMatch)])
         right = set([element for element in self.__one2_to_many1 if not isinstance(element, NoMatch)])
         expected = {element:e for e, element in enumerate(left | right)}
 
@@ -183,7 +183,7 @@ class Mapping(object):
     
     def to_expected_dict(self, reverse=False):
         
-        left = set([element for element in self.__one1_to_many2 if not isinstance(element, NoMatch)])
+        left = set([element for element in self._one1_to_many2 if not isinstance(element, NoMatch)])
         right = set([element for element in self.__one2_to_many1 if not isinstance(element, NoMatch)])
         both = left & right
         
@@ -205,6 +205,12 @@ class Mapping(object):
     
     def __iter__(self):
         return self._many1_to_many2.iteritems()
+        
+    def __contains__(self, key):
+        return key in self._one1_to_many2
+        
+    def __getitem__(self, key):
+        return self._one1_to_many2[key]
     
 class OneToOneMapping(Mapping):
     
@@ -241,4 +247,8 @@ class OneToOneMapping(Mapping):
             
     def __str__(self):
         return str(self.to_dict())
+        
+    def __getitem__(self, key):
+        return self._one1_to_many2[key][0]
+    
     
