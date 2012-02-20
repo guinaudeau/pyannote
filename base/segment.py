@@ -57,14 +57,14 @@ A segment is uniquely defined by its start and end times (in seconds)::
         Examples
         --------
         
-        >>> segment = qc.Segment()
+        >>> segment = Segment()
         >>> if not segment:
-                print 'Segment is empty.'
+        ...     print 'Segment is empty.'
         Segment is empty.
         >>> segment.end = 5
         >>> if segment:
-                print 'Segment duration is %g seconds.' % (abs(segment))
-        Segment duration 5 seconds.        
+        ...     print 'Segment duration is %g seconds.' % (abs(segment))
+        Segment duration is 5 seconds.
         """
         return self.end - self.start > SEGMENT_PRECISION
     
