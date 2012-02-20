@@ -1,61 +1,79 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def detection_error_rate(reference, hypothesis, detailed=False):
-    """
-    Detection error rate -- the lower (0.) the better.    
-    """
+#!/usr/bin/env python
+# encoding: utf-8
+
+from generic import GenericErrorRate
+
+DER_TOTAL = 'total'
+DER_FALSE_ALARM = 'false alarm'
+DER_MISS = 'miss'
+DER_NAME = 'detection error rate'
+
+class DetectionErrorRate(GenericErrorRate):
+
+    def __init__(self):
+
+        numerator = {DER_FALSE_ALARM: 1., DER_MISS: 1., }
+        denominator = {DER_TOTAL: 1., }
+        other = []
+        
+        super(DetectionErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
     
-    # common (up-sampled) timeline
-    common_timeline = abs(reference.timeline + hypothesis.timeline)
     
-    # align reference on common timeline
-    R = reference >> common_timeline
+    def __call__(self, reference, hypothesis, detailed=False):
+        
+        detail = self.initialize()
+        
+        # common (up-sampled) timeline
+        common_timeline = abs(reference.timeline + hypothesis.timeline)
     
-    # translate and align hypothesis on common timeline
-    H = hypothesis >> common_timeline
+        # align reference on common timeline
+        R = reference >> common_timeline
     
-    total = 0.
-    miss = 0.
-    fa = 0.
+        # translate and align hypothesis on common timeline
+        H = hypothesis >> common_timeline
     
-    # loop on all segments
-    for segment in common_timeline:
+        # loop on all segments
+        for segment in common_timeline:
         
-        # --- local IDs ---
+            # segment duration
+            duration = abs(segment)
         
-        # set of IDs in reference segment
-        r = R.ids(segment)
-        Nr = len(r)
+            # set of IDs in reference segment
+            r = R.ids(segment)
+            Nr = len(r)
+            detail[DER_TOTAL] += duration * Nr
         
-        # set of IDs in hypothesis segment
-        h = H.ids(segment)
-        Nh = len(h)
+            # set of IDs in hypothesis segment
+            h = H.ids(segment)
+            Nh = len(h)
         
-        # --- local errors ---
+            # number of misses
+            N_miss = max(0, Nr - Nh)
+            detail[DER_MISS] += duration * N_miss
         
-        # number of misses
-        N_miss = max(0, Nr - Nh)
-        
-        # number of false alarms
-        N_fa = max(0, Nh - Nr)
-        
-        # --- global errors ---
-        
-        # segment duration
-        duration = abs(segment)
-        
-        # total duration in reference
-        total += duration * Nr
-        
-        # total misses
-        miss += duration * N_miss
-        
-        # total false alarms
-        fa += duration * N_fa
+            # number of false alarms
+            N_fa = max(0, Nh - Nr)
+            detail[DER_FALSE_ALARM] += duration * N_fa
     
-    rate = (miss + fa) / total
-    if detailed:
-        return {'error rate': rate, 'miss': miss, 'false alarm': fa, 'total': total}
-    else:
-        return rate
+        return self.compute(detail, accumulate=True, detailed=detailed)
+        
+    def pretty(self, detail):
+        
+        string = ""
+        
+        string += "  - duration: %g" % (detail[DER_TOTAL])
+        string += "\n"
+    
+        string += "  - miss: %g" % (detail[DER_MISS])
+        string += "\n"
+        
+        string += "  - false alarm: %g" % (detail[DER_FALSE_ALARM])
+        string += "\n"
+    
+        string += "  - %s: %g %%" % (self.name, 100*detail[self.name])
+        string += "\n"
+        
+        return string
