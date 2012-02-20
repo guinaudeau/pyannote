@@ -23,7 +23,7 @@ EGER_FALSE_ALARM_ANON = 'false alarm anonymous'
 EGER_MISS_NAME = 'miss named'
 EGER_MISS_ANON = 'miss anonymous'
 
-EGER_ERROR_RATE = 'error rate'
+EGER_NAME = 'estimated global error rate'
 
 class EGER(GenericErrorRate):
     """
@@ -72,7 +72,7 @@ class EGER(GenericErrorRate):
         
         other = [EGER_TOTAL, EGER_HYP_NAME, EGER_HYP_ANON, EGER_CORRECT_NAME, EGER_CORRECT_ANON]
         
-        super(EGER, self).__init__('estimated global error rate', numerator, denominator, other)
+        super(EGER, self).__init__(EGER_NAME, numerator, denominator, other)
     
     def __is_not_anonymous(self, identifier):
         return identifier[:8] != 'Inconnu_' and identifier[:7] != 'speaker'
