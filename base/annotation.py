@@ -354,6 +354,14 @@ class TrackAnnotation(object):
         """
         return iter(self.__timeline)
 
+    def itertracks(self, data=False):
+        for segment in self:
+            for track in self._get_segment(segment):
+                if data:
+                    yield segment, track, self._get_segment_name(segment, track)
+                else:
+                    yield segment, track
+
     def __reversed__(self):
         """
     Enumerate all annotated segments in reversed chronological order    
@@ -798,6 +806,10 @@ class TrackAnnotation(object):
     def copy(self, map_func=None):
         """
         Generate a duplicate annotation
+        
+        :param map_func: map_func(segment) = other_segment
+        :type map_func: function
+        
         """
         cls = type(self)
         annotation = cls(track_class=self.track_class, video=self.video, modality=self.modality)
@@ -805,8 +817,8 @@ class TrackAnnotation(object):
         if not map_func:
             map_func = lambda segment: segment
         
-        for segment in self:
-            annotation[map_func(segment)] = self[segment]
+        for segment, track, data in self.itertracks(data=True):
+            annotation._set_segment_name(map_func(segment), track, data)
         
         return annotation    
 
@@ -912,7 +924,7 @@ class TrackIDAnnotation(TrackAnnotation):
         #DEBUG print  "TrackIDAnnotation > _get_segment_name_identifier"        
         
         return self._segment_tracks[segment][name][identifier]
-        
+
     def __getitem__(self, key):
         """
     Get all tracks for a given segment:
@@ -1314,7 +1326,7 @@ class TrackIDAnnotation(TrackAnnotation):
     """
     Get list of identifiers.
     """
-    
+        
     def ids(self, segment):
         """
         Get list of identifiers for requested segment.
@@ -1333,6 +1345,15 @@ class TrackIDAnnotation(TrackAnnotation):
         
         return identifiers
     
+    def iteritems(self, data=False):
+        for segment in self:
+            for track in self._get_segment(segment):
+                for identifier in self._get_segment_name(segment, track):                    
+                    if data:
+                        yield segment, track, identifier, self._get_segment_name_identifier(segment, track, identifier)
+                    else:
+                        yield segment, track, identifier
+        
     def __call__(self, subset, mode='strict'):
         """
         
@@ -1399,13 +1420,8 @@ class TrackIDAnnotation(TrackAnnotation):
                 a = self(one_identifier, mode=mode)
                 
                 # add it all to the (previously empty) annotation A
-                # TODO: would be easier if 'A += a' was available
-                for segment in a:
-                    tracks = a._get_segment(segment)
-                    for name in tracks:
-                        track = tracks[name]
-                        for identifier in track:
-                            A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
+                for segment, name, identifier, data in a.iteritems(data=True):
+                    A.__set_segment_name_identifier(segment, name, identifier, data)
         
         # extract annotation for one particular identifier
         # and only these...
@@ -1422,7 +1438,7 @@ class TrackIDAnnotation(TrackAnnotation):
                         A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
         
         return A
-            
+                
     def __mod__(self, translation):
         """
     Identifiers translation
@@ -1447,22 +1463,17 @@ class TrackIDAnnotation(TrackAnnotation):
         cls = type(self)
         translated_annotation = cls(video=self.video, modality=self.modality)
         
-        for segment in self:
-            tracks = self._get_segment(segment)
-            for name in tracks:
-                track = tracks[name]
-                for identifier in track:
-                    
-                    if identifier in translation:
-                        translated_identifier = translation[identifier] 
-                    else:
-                        translated_identifier = identifier
-                    
-                    self.__check_identifier(translated_identifier)
-                    translated_annotation.__set_segment_name_identifier(segment, name, translated_identifier, track[identifier])
-        
+        for segment, track, identifier, data in self.iteritems(data=True):
+            
+            if identifier in translation:
+                translated_identifier = translation[identifier] 
+                self.__check_identifier(translated_identifier)
+            else:
+                translated_identifier = identifier
+            
+            translated_annotation.__set_segment_name_identifier(segment, track, translated_identifier, data)
+                
         return translated_annotation
-    
     
     def __mul__(self, other):
         """
@@ -1622,7 +1633,7 @@ class IDAnnotation(TrackIDAnnotation):
             
     def __rshift__(self, timeline):
         return self.toTrackIDAnnotation().__rshift__(timeline)
-    
+        
     def toTrackIDAnnotation(self):
         """
     .. currentmodule:: pyannote
