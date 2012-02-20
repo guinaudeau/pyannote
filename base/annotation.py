@@ -4,6 +4,7 @@
 from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
+from association import NoMatch
 
 import numpy as np
 import json
@@ -808,14 +809,6 @@ class TrackAnnotation(object):
             annotation[map_func(segment)] = self[segment]
         
         return annotation    
-    
-def __check_identifier(identifier):
-    """
-    Make sure provided identifier is a valid one (anything but int or Segment)
-    """
-    if not isinstance(identifier, str):
-        raise TypeError('Invalid identifier %s. Must be str.' \
-                        % (type(identifier).__name__))
 
 class TrackIDAnnotation(TrackAnnotation):
     """
@@ -1245,6 +1238,14 @@ class TrackIDAnnotation(TrackAnnotation):
     
     # ------------------------------------------------------------------- #
     
+    def __check_identifier(self, identifier):
+        """
+        Make sure provided identifier is a valid one (anything but int or Segment)
+        """
+        if not isinstance(identifier, (str, NoMatch)):
+            raise TypeError('Invalid identifier %s. Must be str.' \
+                            % (type(identifier).__name__))
+    
     def __setitem__(self, key, value):
         """
     .. currentmodule:: pyannote
@@ -1293,6 +1294,7 @@ class TrackIDAnnotation(TrackAnnotation):
             segment = key[0]
             name = key[1]
             identifier = key[2]
+            self.__check_identifier(identifier)
             self.__set_segment_name_identifier(segment, name, identifier, value)
         else:
             #
@@ -1430,7 +1432,7 @@ class TrackIDAnnotation(TrackAnnotation):
     Identifiers with no available translation are left unchanged.
     
     :param translation: translation (see example below)
-    :type translation: dictionary
+    :type translation: OneToOneMapping or dict
     :rtype: :class:`TrackIDAnnotation`
         
         >>> translation = {'Jean': 'John', 'Mathieu': 'Matthew'}
@@ -1441,18 +1443,24 @@ class TrackIDAnnotation(TrackAnnotation):
         ['John', 'Matthew', 'Paul']
         
         """
-                
-        translated_annotation = self.__class__(video=self.video, modality=self.modality)
+        
+        cls = type(self)
+        translated_annotation = cls(video=self.video, modality=self.modality)
+        
         for segment in self:
             tracks = self._get_segment(segment)
             for name in tracks:
                 track = tracks[name]
                 for identifier in track:
+                    
                     if identifier in translation:
                         translated_identifier = translation[identifier] 
                     else:
                         translated_identifier = identifier
+                    
+                    self.__check_identifier(translated_identifier)
                     translated_annotation.__set_segment_name_identifier(segment, name, translated_identifier, track[identifier])
+        
         return translated_annotation
     
     
