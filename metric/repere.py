@@ -53,7 +53,7 @@ class EstimatedGlobalErrorRate(GenericErrorRate):
     >>> reference = xgtf.head()
     >>> annotated = xgtf.annotated()
     >>> hypothesis = my_super_algorithm()
-    >>> eger = EGER()
+    >>> eger = EstimatedGlobalErrorRate()
     >>> error_rate = eger(reference, hypothesis, annotated)    
     
     """    
@@ -72,7 +72,7 @@ class EstimatedGlobalErrorRate(GenericErrorRate):
         
         other = [EGER_TOTAL, EGER_HYP_NAME, EGER_HYP_ANON, EGER_CORRECT_NAME, EGER_CORRECT_ANON]
         
-        super(EGER, self).__init__(EGER_NAME, numerator, denominator, other)
+        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, numerator, denominator, other)
     
     def __is_not_anonymous(self, identifier):
         return identifier[:8] != 'Inconnu_' and identifier[:7] != 'speaker'
