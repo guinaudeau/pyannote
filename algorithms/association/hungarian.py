@@ -37,14 +37,14 @@ def hungarian(A, B, normalize=False, init=None, force=False):
     if isinstance(init, Mapping):
         # empty mapping
         M = OneToOneMapping(A.modality, B.modality)
-        for alabels, blabels in init.to_dict().iteritems():
+        for alabels, blabels in init:
             alabels = [label for label in alabels if not isinstance(label, NoMatch)]
             blabels = [label for label in blabels if not isinstance(label, NoMatch)]
             a = A(alabels)
             b = B(blabels)
             m = hungarian(a, b, normalize=normalize, init=None)
-            for alabel, blabel in m.to_dict().iteritems():
-                M += ([alabel], [blabel])
+            for alabel, blabel in m:
+                M += (alabel, blabel)
         return M
     
     # Confusion matrix
