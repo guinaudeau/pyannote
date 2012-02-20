@@ -2,20 +2,29 @@
 # encoding: utf-8
 
 from pyannote.algorithms.association.hungarian import hungarian
-from identification import identification_error_rate
+from identification import IdentificationErrorRate, IER_CONFUSION, IER_FALSE_ALARM, IER_MISS, IER_TOTAL, IER_CORRECT
 
-def diarization_error_rate(reference, hypothesis, detailed=False):
-    """
-    Diarization error rate -- the lower (0.) the better.
+DER_CONFUSION = IER_CONFUSION
+DER_FALSE_ALARM = IER_FALSE_ALARM
+DER_MISS = IER_MISS
+DER_TOTAL = IER_TOTAL
+DER_CORRECT = IER_CORRECT
+DER_NAME = 'diarization error rate'
+
+class DiarizationErrorRate(IdentificationErrorRate):
     
-    as defined in 'Fall 2004 Rich Transcription (RT-04F) Evaluation Plan'
-    """
+    def __init__(self):
 
-    # best mapping {hypothesis --> reference}
-    mapping = hungarian(hypothesis, reference)
+        numerator = {DER_CONFUSION: 1., \
+                     DER_FALSE_ALARM: 1., \
+                     DER_MISS: 1., }
+        
+        denominator = {DER_TOTAL: 1., }
+        other = [DER_CORRECT]
+        super(IdentificationErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
     
-    # translate hypothesis and compute identification error rate
-    return identification_error_rate(reference, hypothesis % mapping, detailed=detailed)
+    def __call__(self, reference, hypothesis, detailed=False):
+        
+        mapping = hungarian(hypothesis, reference)
+        return super(DiarizationErrorRate, self).__call__(reference, hypothesis % mapping, detailed=detailed)
 
-def der(reference, hypothesis, detailed=False):
-    return diarization_error_rate(reference, hypothesis, detailed=detailed)
