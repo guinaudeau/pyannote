@@ -25,7 +25,7 @@ EGER_MISS_ANON = 'miss anonymous'
 
 EGER_NAME = 'estimated global error rate'
 
-class EGER(GenericErrorRate):
+class EstimatedGlobalErrorRate(GenericErrorRate):
     """
     Estimated Global Error Rate
     
@@ -237,7 +237,7 @@ def main(argv=None):
     if head:
         modalities.append('head')
     
-    error = {modality: EGER() for modality in modalities}    
+    error = {modality: EstimatedGlobalErrorRate() for modality in modalities}    
     for video in reference.videos():
         print '* %s' % video
         A = frames.timeline(video) 
