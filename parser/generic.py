@@ -207,7 +207,7 @@ class GenericParser(object):
             else:
                 self.annotations[video][modality][segment, identifier] = \
                                                                 confidence
-    
+        
     def annotation(self, video, modality):
         
         if (video in self.annotations) and (modality in self.annotations[video]):
@@ -219,7 +219,7 @@ class GenericParser(object):
                 return IDAnnotation(modality=modality, video=video)
             
     def timeline(self, video, modality):
-        return self.annotation(video, modality)
+        return self.annotation(video, modality).timeline
         
     def videos(self):
         return self.annotations.keys()
