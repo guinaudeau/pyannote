@@ -112,18 +112,18 @@ class Mapping(object):
         elements2 = mapping[1]
         
         if elements1 is None:
-            elements1 = []
+            elements1 = tuple([NoMatch()])
         
         if elements2 is None:
-            elements2 = []
+            elements2 = tuple([NoMatch()])
         
-        if not isinstance(elements1, list):
-            raise ValueError('Left mapping part (%s) must be a list.' % elements1)
+        if not isinstance(elements1, (list, tuple, set)):
+            raise ValueError('Left mapping part (%s) must be a list, tuple or set.' % (elements1))
             
-        if not isinstance(elements2, list):
-            raise ValueError('Right mapping part (%s) must be a list.' % elements2)
+        if not isinstance(elements2, (list, tuple, set)):
+            raise ValueError('Right mapping part (%s) must be a list, tuple or set' % (elements2))
         
-        return elements1, elements2
+        return tuple(elements1), tuple(elements2)
     
     def __iadd__(self, mapping):
         
@@ -141,18 +141,12 @@ class Mapping(object):
             raise ValueError('%s (%s) is already mapped to %s.' % \
                              (already_mapped, self.__modality2, self.__one2_to_many1[already_mapped]))
         
-        if len(elements1) == 0:
-            elements1 = [NoMatch()]
-        
-        if len(elements2) == 0:
-            elements2 = [NoMatch()]
-        
         for elt1 in elements1:
             self.__one1_to_many2[elt1] = elements2
         for elt2 in elements2:
             self.__one2_to_many1[elt2] = elements1
         
-        self._many1_to_many2[tuple(elements1)] = tuple(elements2)
+        self._many1_to_many2[elements1] = elements2
         
         return self
         
