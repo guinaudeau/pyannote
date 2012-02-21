@@ -42,8 +42,9 @@ Diarization error rate
 Identification error rate
 -------------------------
 
-	>>> from pyannote.algorithms.association.hungarian import hungarian
-	>>> one_to_one_mapping = hungarian(hypothesis, reference)
+	>>> from pyannote.algorithms.association.hungarian import Hungarian
+	>>> mapper = Hungarian()
+	>>> one_to_one_mapping = mapper(hypothesis, reference)
 	>>> print one_to_one_mapping
 	{'speaker#4': NoMatch, 'speaker#3': 'Jean', 'speaker#2': 'Albert', 'speaker#1': 'Bernard'}
 	

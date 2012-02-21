@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote.algorithms.association.hungarian import hungarian
+from pyannote.algorithms.association.hungarian import Hungarian
 from identification import IdentificationErrorRate, IER_CONFUSION, IER_FALSE_ALARM, IER_MISS, IER_TOTAL, IER_CORRECT
 
 DER_CONFUSION = IER_CONFUSION
@@ -22,9 +22,10 @@ class DiarizationErrorRate(IdentificationErrorRate):
         denominator = {DER_TOTAL: 1., }
         other = [DER_CORRECT]
         super(IdentificationErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
+        self.__hungarian = Hungarian()
     
     def __call__(self, reference, hypothesis, detailed=False):
         
-        mapping = hungarian(hypothesis, reference)
+        mapping = self.__hungarian(hypothesis, reference)
         return super(DiarizationErrorRate, self).__call__(reference, hypothesis % mapping, detailed=detailed)
 

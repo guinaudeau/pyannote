@@ -3,12 +3,10 @@
 
 import numpy as np
 from munkres import Munkres
-# from helper import NoMatch
-
 from pyannote.base.association import OneToOneMapping, Mapping, NoMatch
 from pyannote.base.comatrix import Confusion
 
-def hungarian(A, B, normalize=False, init=None, force=False):
+class Hungarian(object):
     """
     Hungarian algorithm based on co-occurrence duration.
     
@@ -33,60 +31,80 @@ def hungarian(A, B, normalize=False, init=None, force=False):
     :type force: boolean
     
     """
+    def __init__(self, normalize=False, force=False):
+        super(Hungarian, self).__init__()
+        self.__normalize = normalize
+        self.__force = force
+        self.__munkres = Munkres()
     
-    if isinstance(init, Mapping):
-        # empty mapping
-        M = OneToOneMapping(A.modality, B.modality)
-        for alabels, blabels in init:
-            alabels = [label for label in alabels if not isinstance(label, NoMatch)]
-            blabels = [label for label in blabels if not isinstance(label, NoMatch)]
-            a = A(alabels)
-            b = B(blabels)
-            m = hungarian(a, b, normalize=normalize, init=None)
-            for alabel, blabel in m:
-                M += (alabel, blabel)
-        return M
-    
-    # Confusion matrix
-    matrix = Confusion(B, A, normalize=normalize)
-    
-    # Shape and labels
-    Nb, Na = matrix.shape
-    blabels, alabels = matrix.labels
+    def __get_normalize(self): 
+        return self.__normalize
+    normalize = property(fget=__get_normalize, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Normalize confusion matrix?")
 
-    M = OneToOneMapping(A.modality, B.modality)
+    def __get_force(self): 
+        return self.__force
+    force = property(fget=__get_force, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Force mapping?")
     
-    if Na < 1:
-        for blabel in blabels:
-            M += (None, [blabel])
+    def __call__(self, A, B, init=None):
+        
+        if isinstance(init, Mapping):
+            # empty mapping
+            M = OneToOneMapping(A.modality, B.modality)
+            for alabels, blabels in init:
+                alabels = [label for label in alabels if not isinstance(label, NoMatch)]
+                blabels = [label for label in blabels if not isinstance(label, NoMatch)]
+                a = A(alabels)
+                b = B(blabels)
+                m = self(a, b, init=None)
+                for alabel, blabel in m:
+                    M += (alabel, blabel)
             return M
-    if Nb < 1:
+    
+        # Confusion matrix
+        matrix = Confusion(B, A, normalize=self.normalize)
+    
+        # Shape and labels
+        Nb, Na = matrix.shape
+        blabels, alabels = matrix.labels
+
+        M = OneToOneMapping(A.modality, B.modality)
+    
+        if Na < 1:
+            for blabel in blabels:
+                M += (None, [blabel])
+                return M
+        if Nb < 1:
+            for alabel in alabels:
+                M += ([alabel], None)
+                return M
+    
+        # Cost matrix
+        N = max(Nb, Na)
+        C = np.zeros((N, N))
+        C[:Nb, :Na] = np.max(matrix.M) - matrix.M
+    
+        # Optimal one-to-one mapping
+        mapping = self.__munkres.compute(C)
+    
+        for b, a in mapping:
+            if (b < Nb) and (a < Na):
+                if self.force or (matrix[blabels[b], alabels[a]] > 0):
+                    M += ([alabels[a]], [blabels[b]])
+    
+        # A --> NoMatch
         for alabel in alabels:
-            M += ([alabel], None)
-            return M
+            if alabel not in M.first_set:
+                M += ([alabel], None)
     
-    # Cost matrix
-    N = max(Nb, Na)
-    C = np.zeros((N, N))
-    C[:Nb, :Na] = np.max(matrix.M) - matrix.M
+        # NoMatch <-- B
+        for blabel in blabels:
+            if blabel not in M.second_set:
+                M += (None, [blabel])
     
-    # Optimal one-to-one mapping
-    mapper = Munkres()
-    mapping = mapper.compute(C)
-    
-    for b, a in mapping:
-        if (b < Nb) and (a < Na):
-            if force or (matrix[blabels[b], alabels[a]] > 0):
-                M += ([alabels[a]], [blabels[b]])
-    
-    # A --> NoMatch
-    for alabel in alabels:
-        if alabel not in M.first_set:
-            M += ([alabel], None)
-    
-    # NoMatch <-- B
-    for blabel in blabels:
-        if blabel not in M.second_set:
-            M += (None, [blabel])
-    
-    return M
+        return M
