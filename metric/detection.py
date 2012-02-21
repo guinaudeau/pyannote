@@ -4,14 +4,14 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from generic import GenericErrorRate
+from base import BaseErrorRate
 
 DER_TOTAL = 'total'
 DER_FALSE_ALARM = 'false alarm'
 DER_MISS = 'miss'
 DER_NAME = 'detection error rate'
 
-class DetectionErrorRate(GenericErrorRate):
+class DetectionErrorRate(BaseErrorRate):
 
     def __init__(self):
 

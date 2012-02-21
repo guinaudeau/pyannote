@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-
-
-class GenericErrorRate(object):
+class BaseErrorRate(object):
     
     def __init__(self, name, numerator, denominator, other=None):
         """
@@ -11,12 +9,12 @@ class GenericErrorRate(object):
         denominator = {'total': 1}
         other = ['correct']
         
-        When inheriting from GenericErrorRate, 
+        When inheriting from BaseErrorRate, 
             - method .__call__() must be defined and should end
               by a call to .compute() method
             - method .pretty() should be overridden
         """
-        super(GenericErrorRate, self).__init__()
+        super(BaseErrorRate, self).__init__()
         
         self.__name = name
         self.__numerator = dict(numerator)

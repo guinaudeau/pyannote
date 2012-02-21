@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from generic import GenericErrorRate
+from base import BaseErrorRate
 
 EGER_TOTAL = 'total'
 
@@ -25,7 +25,7 @@ EGER_MISS_ANON = 'miss anonymous'
 
 EGER_NAME = 'estimated global error rate'
 
-class EstimatedGlobalErrorRate(GenericErrorRate):
+class EstimatedGlobalErrorRate(BaseErrorRate):
     """
     Estimated Global Error Rate
     

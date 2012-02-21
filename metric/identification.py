@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from generic import GenericErrorRate
+from base import BaseErrorRate
 
 IER_TOTAL = 'total'
 IER_CORRECT = 'correct'
@@ -10,7 +10,7 @@ IER_FALSE_ALARM = 'false alarm'
 IER_MISS = 'miss'
 IER_NAME = 'identification error rate'
 
-class IdentificationErrorRate(GenericErrorRate):
+class IdentificationErrorRate(BaseErrorRate):
 
     def __init__(self):
 
