@@ -4,7 +4,7 @@
 from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
-from association import NoMatch
+from association import OneToOneMapping
 
 import numpy as np
 import json
@@ -1254,7 +1254,7 @@ class TrackIDAnnotation(TrackAnnotation):
         """
         Make sure provided identifier is a valid one (anything but int or Segment)
         """
-        if not isinstance(identifier, (str, NoMatch)):
+        if not isinstance(identifier, str):
             raise TypeError('Invalid identifier %s. Must be str.' \
                             % (type(identifier).__name__))
     
@@ -1460,16 +1460,19 @@ class TrackIDAnnotation(TrackAnnotation):
         
         """
         
+        if not isinstance(translation, (dict, OneToOneMapping)):
+            raise TypeError('')
+        
         cls = type(self)
         translated_annotation = cls(video=self.video, modality=self.modality)
         
         for segment, track, identifier, data in self.iteritems(data=True):
             
-            if identifier in translation:
-                translated_identifier = translation[identifier] 
-                self.__check_identifier(translated_identifier)
-            else:
+            if not identifier in translation or translation[identifier] is None:
                 translated_identifier = identifier
+            else:
+                translated_identifier = translation[identifier]
+                self.__check_identifier(translated_identifier)
             
             translated_annotation.__set_segment_name_identifier(segment, track, translated_identifier, data)
                 

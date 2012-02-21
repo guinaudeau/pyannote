@@ -274,7 +274,7 @@ class OneToOneMapping(Mapping):
         if right:
             return right[0]
         else:
-            return NoMatch()
+            return None
     
     
         
