@@ -122,7 +122,24 @@ class Mapping(object):
         
         return tuple(sorted(elements1)), tuple(sorted(elements2))
     
+    def __add__(self, mapping):
+        cls = type(self)
+        M = cls(self.modality1, self.modality2)
+        M += self
+        M += mapping
+        return M
+    
     def __iadd__(self, mapping):
+        
+        if isinstance(mapping, Mapping):
+            if mapping.modality1 != self.modality1 or \
+               mapping.modality2 != self.modality2:
+               raise ValueError('Incompatible modalities (%s/%s) vs. (%s/%s)' % \
+                                (self.modality1, self.modality2, mapping.modality1, mapping.modality2))
+            
+            for l, r in mapping:
+                self += (l, r)
+            return self
         
         elements1, elements2 = self._check_mapping(mapping)
         
