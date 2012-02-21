@@ -68,7 +68,7 @@ class Mapping(object):
         self.__modality2 = modality2
 
         self._one1_to_many2 = {}
-        self.__one2_to_many1 = {}
+        self._one2_to_many1 = {}
         self._many1_to_many2 = {}
     
     def __get_modality1(self): 
@@ -86,14 +86,14 @@ class Mapping(object):
                      doc="Second modality.")
     
     def __get_first_set(self):
-        return set(self._one1_to_many2.keys())
+        return set([e for e in self._one1_to_many2 if not isinstance(e, NoMatch)])
     first_set = property(fget=__get_first_set, \
                         fset=None, \
                         fdel=None, \
                         doc="First set.")
 
     def __get_second_set(self):
-        return set(self.__one2_to_many1.keys())
+        return set([e for e in self._one2_to_many1 if not isinstance(e, NoMatch)])
     second_set = property(fget=__get_second_set, \
                         fset=None, \
                         fdel=None, \
@@ -135,16 +135,16 @@ class Mapping(object):
             raise ValueError('%s (%s) is already mapped to %s.' % \
                              (already_mapped, self.__modality1, self._one1_to_many2[already_mapped]))
             
-        already_mapped = set(elements2) & set(self.__one2_to_many1)
+        already_mapped = set(elements2) & set(self._one2_to_many1)
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.__modality2, self.__one2_to_many1[already_mapped]))
+                             (already_mapped, self.__modality2, self._one2_to_many1[already_mapped]))
         
         for elt1 in elements1:
             self._one1_to_many2[elt1] = elements2
         for elt2 in elements2:
-            self.__one2_to_many1[elt2] = elements1
+            self._one2_to_many1[elt2] = elements1
         
         self._many1_to_many2[elements1] = elements2
         
@@ -164,7 +164,7 @@ class Mapping(object):
     def to_expected_partition(self):
         
         left = set([element for element in self._one1_to_many2 if not isinstance(element, NoMatch)])
-        right = set([element for element in self.__one2_to_many1 if not isinstance(element, NoMatch)])
+        right = set([element for element in self._one2_to_many1 if not isinstance(element, NoMatch)])
         expected = {element:e for e, element in enumerate(left | right)}
 
         partition = {}
@@ -184,7 +184,7 @@ class Mapping(object):
     def to_expected_dict(self, reverse=False):
         
         left = set([element for element in self._one1_to_many2 if not isinstance(element, NoMatch)])
-        right = set([element for element in self.__one2_to_many1 if not isinstance(element, NoMatch)])
+        right = set([element for element in self._one2_to_many1 if not isinstance(element, NoMatch)])
         both = left & right
         
         expected_dict = {}
@@ -203,6 +203,8 @@ class Mapping(object):
     def __str__(self):
         return str(self.to_dict())
     
+    # --- iterator ---
+    
     def __iter__(self):
         return self._many1_to_many2.iteritems()
         
@@ -212,6 +214,31 @@ class Mapping(object):
     def __getitem__(self, key):
         return self._one1_to_many2[key]
     
+    # --- comparison ---
+    
+    def __hash__(self):
+        return hash(tuple(sorted(self.first_set))) + \
+               hash(tuple(sorted(self.second_set)))
+    
+    def __ne_helper(self, o, o2m_1, o2m_2):
+        for e in o:
+            if e not in o2m_2:
+                return True
+            m_1 = set([m for m in o2m_1[e] if not isinstance(m, NoMatch)])
+            m_2 = set([m for m in o2m_2[e] if not isinstance(m, NoMatch)])
+            if m_1 != m_2:
+                return True
+        return False
+
+    def __ne__(self, other):
+        return self.__ne_helper(self.first_set,  self._one1_to_many2, other._one1_to_many2) or \
+               self.__ne_helper(self.second_set, self._one2_to_many1, other._one2_to_many1)        
+
+    def __eq__(self, other):
+        return not self.__ne__(other)
+    
+
+
 class OneToOneMapping(Mapping):
     
     def _check_mapping(self, mapping):
