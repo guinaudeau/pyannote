@@ -57,13 +57,10 @@ class Hungarian(object):
             # empty mapping
             M = OneToOneMapping(A.modality, B.modality)
             for alabels, blabels in init:
-                alabels = [label for label in alabels if not isinstance(label, NoMatch)]
-                blabels = [label for label in blabels if not isinstance(label, NoMatch)]
                 a = A(alabels)
                 b = B(blabels)
                 m = self(a, b, init=None)
-                for alabel, blabel in m:
-                    M += (alabel, blabel)
+                M += m
             return M
     
         # Confusion matrix
@@ -106,5 +103,5 @@ class Hungarian(object):
         for blabel in blabels:
             if blabel not in M.second_set:
                 M += (None, [blabel])
-    
+        
         return M
