@@ -1412,7 +1412,7 @@ class TrackIDAnnotation(TrackAnnotation):
             
             # create new empty annotation
             cls = type(self)
-            A = cls(video=self.video, modaity=self.modality)
+            A = cls(video=self.video, modality=self.modality)
             
             for one_identifier in subset:
                 
