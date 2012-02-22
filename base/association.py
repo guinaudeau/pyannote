@@ -264,6 +264,13 @@ class OneToOneMapping(Mapping):
         
         return elements1, elements2
     
+    @classmethod
+    def fromMapping(cls, mapping):
+        M = cls(mapping.modality1, mapping.modality2)
+        for l, r in mapping:
+            M += (l, r)
+        return M
+    
     # @classmethod
     # def from_dict(cls, mapping, modality1, modality2):
     #     M = cls(modality1, modality2)
