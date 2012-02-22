@@ -5,8 +5,9 @@ import numpy as np
 from munkres import Munkres
 from pyannote.base.association import OneToOneMapping, Mapping, NoMatch
 from pyannote.base.comatrix import Confusion
+from base import BaseAssociation
 
-class Hungarian(object):
+class Hungarian(BaseAssociation):
     """
     Hungarian algorithm based on co-occurrence duration.
     
@@ -51,18 +52,8 @@ class Hungarian(object):
                      fdel=None, \
                      doc="Force mapping?")
     
-    def __call__(self, A, B, init=None):
+    def associate(self, A, B):
         
-        if isinstance(init, Mapping):
-            # empty mapping
-            M = OneToOneMapping(A.modality, B.modality)
-            for alabels, blabels in init:
-                a = A(alabels)
-                b = B(blabels)
-                m = self(a, b, init=None)
-                M += m
-            return M
-    
         # Confusion matrix
         matrix = Confusion(B, A, normalize=self.normalize)
     
@@ -95,13 +86,11 @@ class Hungarian(object):
                     M += ([alabels[a]], [blabels[b]])
     
         # A --> NoMatch
-        for alabel in alabels:
-            if alabel not in M.first_set:
-                M += ([alabel], None)
+        for alabel in set(alabels)-M.first_set:
+            M += ([alabel], None)
     
         # NoMatch <-- B
-        for blabel in blabels:
-            if blabel not in M.second_set:
-                M += (None, [blabel])
+        for blabel in set(blabels)-M.second_set:
+            M += (None, [blabel])
         
         return M

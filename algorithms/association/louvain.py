@@ -6,20 +6,14 @@ import networkx as nx
 import pyannote.algorithms.community
 from pyannote.base.association import Mapping, OneToOneMapping, MElement, NoMatch
 from pyannote.base.comatrix import Confusion, AutoConfusion
-from hungarian import Hungarian
+from base import BaseAssociation
 
-class Louvain(object):
-    """
-    """
-    def __init__(self, normalize=False, overlap=False, complete=False, force=False, recursive=False):
+class Louvain(BaseAssociation):
+    
+    def __init__(self, normalize=False, overlap=False):
         super(Louvain, self).__init__()
         self.__normalize = normalize
         self.__overlap = overlap
-        self.__complete = complete
-        self.__force = force
-        if complete:
-            self.__hungarian = Hungarian(normalize=normalize, force=force)
-        self.__recursive = recursive
     
     def __get_normalize(self): 
         return self.__normalize
@@ -34,28 +28,6 @@ class Louvain(object):
                      fset=None, \
                      fdel=None, \
                      doc="Intra-modality overlap?")
-
-    def __get_force(self): 
-        return self.__force
-    force = property(fget=__get_force, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Force mapping?")
-
-    def __get_complete(self): 
-        return self.__complete
-    complete = property(fget=__get_complete, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Complete one-to-one mapping?")
-
-    def __get_recursive(self): 
-        return self.__recursive
-    recursive = property(fget=__get_recursive, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Recursive calls until convergence?")
-
 
     def __partition_to_cluster(self, partition):
         clusters = {}
@@ -119,54 +91,24 @@ class Louvain(object):
         
         return G
     
-    def __call__(self, A, B, init=None, recursive=False):
+    def associate(self, A, B):
         
-        if recursive:
-            if init is None:
-                init = Mapping(A.modality, B.modality)
-                init += (A.IDs, B.IDs)
-
-            new_init = self(A, B, init=init, recursive=False)
-            if new_init == init:
-            
-            else:
-                return self(A, B, init=new_init, recursive=True)
-            
+        G = self.__confusion_graph(A, B)
+    
+        if nx.number_connected_components(G) == len(G.nodes()):
+            partition = {node: n for n, node in enumerate(G.nodes_iter())}
         else:
-            
-            # first call
-            if init is None:
-                init = self(A, B, init=None)
-            
-            new_init = self(A, B, init=init)
-            
-            if new_init != init:
-                init = new_init
-                return self(A, B, init=init)
-            else:
-                
-            
-        else:
-        
-            G = self.__confusion_graph(A, B)
-    
-            if nx.number_connected_components(G) == len(G.nodes()):
-                partition = {node: n for n, node in enumerate(G.nodes_iter())}
-            else:
-                # Community detection
-                partition = pyannote.algorithms.community.best_partition(G)
+            # Community detection
+            partition = pyannote.algorithms.community.best_partition(G)
 
-            clusters = self.__partition_to_cluster(partition)
+        clusters = self.__partition_to_cluster(partition)
     
-            # Many-to-many mapping
-            M = Mapping(A.modality, B.modality)
-            for cluster in clusters:
-                nodes = clusters[cluster]
-                key = [node.element for node in nodes if node.modality == A.modality]
-                value = [node.element for node in nodes if node.modality == B.modality]
-                M += (key, value)
+        # Many-to-many mapping
+        M = Mapping(A.modality, B.modality)
+        for cluster in clusters:
+            nodes = clusters[cluster]
+            key = [node.element for node in nodes if node.modality == A.modality]
+            value = [node.element for node in nodes if node.modality == B.modality]
+            M += (key, value)
     
-            if self.complete:
-                M = self.__hungarian(A, B, init=M)
-        
-            return M
+        return M
