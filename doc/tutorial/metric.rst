@@ -44,12 +44,12 @@ Identification error rate
 
 	>>> from pyannote.algorithms.association.hungarian import Hungarian
 	>>> mapper = Hungarian()
-	>>> one_to_one_mapping = mapper(hypothesis, reference)
-	>>> print one_to_one_mapping
-	{'speaker#4': NoMatch, 'speaker#3': 'Jean', 'speaker#2': 'Albert', 'speaker#1': 'Bernard'}
+	>>> mapping = mapper(hypothesis, reference)
+	>>> print mapping
+	{('speaker#2',): ('Albert',), ('speaker#4',): Ø, ('speaker#1',): ('Bernard',), ('speaker#3',): ('Jean',)}
 	
 	>>> from pyannote.metric.identification import IdentificationErrorRate
 	>>> ier = IdentificationErrorRate()
-	>>> print ier(reference, hypothesis % one_to_one_mapping, detailed=True)
+	>>> print ier(reference, hypothesis % mapping, detailed=True)
 	{'identification error rate': 0.21428571428571427, 'false alarm': 3.0, 'confusion': 4.0, 'total': 42.0, 'miss': 2.0, 'correct': 36.0}
 
