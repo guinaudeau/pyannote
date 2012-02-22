@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import hungarian
-import graph
+from hungarian import Hungarian
+from louvain import Louvain

@@ -16,3 +16,4 @@ __version__ = '0.1'
 from base import *
 import parser
 import metric
+import algorithms

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote import TrackIDAnnotation, IDAnnotation, Segment, SlidingWindow
+from pyannote import TrackIDAnnotation, IDAnnotation, Segment
+from pyannote.base.feature import SlidingWindow
 
 class GenericParser(object):
     """

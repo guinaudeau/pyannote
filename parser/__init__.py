@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-__all__ = ['repere', 'nist', 'other']
+__all__ = ['repere', 'nist']
 
-import repere
 import nist
-import other
+import repere
 
