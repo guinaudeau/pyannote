@@ -119,11 +119,3 @@ class TRSParser(object):
             incomplete = _fix_incomplete(incomplete, latest_sync)
         
         return annotation
-
-
-class TRSSample(TRSParser):
-    """docstring for TRSSample"""
-    def __init__(self):
-        import os.path
-        sample_trs = '%s/../data/sample.trs' % (os.path.dirname(__file__))
-        super(TRSSample, self).__init__(sample_trs, video='sample')

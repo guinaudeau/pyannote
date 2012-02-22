@@ -139,11 +139,3 @@ class XGTFParser(object):
                 timeline += segment
         
         return timeline        
-        
-class XGTFSample(XGTFParser):
-    """docstring for XGTFSample"""
-    def __init__(self):
-        import os.path
-        sample_xgtf = '%s/../data/sample.xgtf' % (os.path.dirname(__file__))
-        sample_idx  = '%s/../data/sample.idx'  % (os.path.dirname(__file__))
-        super(XGTFSample, self).__init__(sample_xgtf, sample_idx, video='sample')

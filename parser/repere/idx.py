@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def sample():
-    import os.path
-    sample_idx = '%s/data/sample.idx' % (os.path.dirname(__file__))
-    return IDXParser(sample_idx)
-
 class IDXParser(object):
     def __init__(self, path2idx):
         super(IDXParser, self).__init__()
