@@ -4,7 +4,7 @@
 from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
-from association import OneToOneMapping
+from association import Mapping, OneToOneMapping
 
 import numpy as np
 import json
@@ -1460,8 +1460,15 @@ class TrackIDAnnotation(TrackAnnotation):
         
         """
         
-        if not isinstance(translation, (dict, OneToOneMapping)):
-            raise TypeError('')
+        
+        if not isinstance(translation, (dict, Mapping)):
+            raise TypeError('Translation must be either dict or Mapping.')
+        
+        if isinstance(translation, Mapping):
+            try:
+                translation = OneToOneMapping.fromMapping(translation)
+            except Exception, e:
+                raise ValueError('Translation is not a one-to-one mapping.')
         
         cls = type(self)
         translated_annotation = cls(video=self.video, modality=self.modality)
