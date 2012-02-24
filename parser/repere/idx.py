@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import numpy as np
+
 class IDXParser(object):
+    
     def __init__(self, path2idx):
+        
         super(IDXParser, self).__init__()
         self.path2idx = path2idx
         
-        # load idx file as is.
-        self._time = {}
+        self.__time = {}
         f = open(self.path2idx, 'r')
         for line in f:
             # sample line:
@@ -16,16 +19,31 @@ class IDXParser(object):
             fields = line.split()
             idx = int(fields[0])
             sec = float(fields[3])
-            self._time[idx] = sec
+            self.__time[idx] = sec
         f.close()
         
-        # # fix it.
-        # m = min(self._time)
-        # M = max(self._time)
-        # for idx in range(m+1, M-1):
-        #     if (idx not in self._time) or (self._time[idx] < self._time[idx-1]):
-        #         self._time[idx] = .5 * (self._time[idx-1] + self._time[idx+1])
+        # fix it.
+        # average delta between two consecutive frames
+        m = min(self.__time)
+        M = max(self.__time)
+        self.__delta = np.median([self.__time[idx]-self.__time[idx-1] \
+                                  for idx in range(m+1, M) \
+                                  if idx in self.__time and (idx-1) in self.__time])
+        
+        count = 0
+        for idx in range(m, M):
+            if idx not in self.__time:
+                self.__time[idx] = self.__time[idx-1] + self.__delta
     
-    def __getitem__(self, idx):
-        return self._time[idx]
+    def __get_delta(self): 
+        return self.__delta
+    delta = property(fget=__get_delta, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Median frame duration.")
+    
+    
+    
+    def __call__(self, idx):
+        return self.__time[idx]
     
