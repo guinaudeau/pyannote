@@ -3,3 +3,4 @@
 
 from hungarian import Hungarian
 from louvain import Louvain
+from hasher import IDHasher
