@@ -43,7 +43,7 @@ __license__ = """
 """
 
 __date__ = '24/02/2012'
-__version__ = '0.1'
+__version__ = '0.1.1'
 
 from base import *
 import parser
