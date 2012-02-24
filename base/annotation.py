@@ -1,9 +1,28 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
 from segment import Segment
 from timeline import Timeline
 from comatrix import Confusion
+from association import Mapping, OneToOneMapping
+
 import numpy as np
 import json
 
@@ -351,6 +370,14 @@ class TrackAnnotation(object):
         ...     print "Do something with segment %s." % segment
         """
         return iter(self.__timeline)
+
+    def itertracks(self, data=False):
+        for segment in self:
+            for track in self._get_segment(segment):
+                if data:
+                    yield segment, track, self._get_segment_name(segment, track)
+                else:
+                    yield segment, track
 
     def __reversed__(self):
         """
@@ -711,12 +738,14 @@ class TrackAnnotation(object):
             down to their intersection with :data:`timeline` coverage
                  
         """
-        
+
         if mode == 'strict':
             sub_timeline = self.timeline(subset, mode='strict')
         elif mode in ['loose', 'intersection']:
             sub_timeline = self.timeline(subset, mode='loose')
             if mode == 'intersection':
+                # note that isub_timeline might have less segments than
+                # sub_timeline for some particular situation
                 isub_timeline = self.timeline(subset, mode='intersection')
         else:
             raise ValueError('')
@@ -724,12 +753,27 @@ class TrackAnnotation(object):
         sub_annotation = self.__class__(track_class=self.__track_class, \
                                         video=self.video, \
                                         modality=self.modality)
-                                                 
+
         for s, segment in enumerate(sub_timeline):
             tracks = self[segment]
             if mode == 'intersection':
-                isegment = isub_timeline[s]
-                sub_annotation[isegment] = tracks
+                
+                # get segment from isub_timeline that corresponds
+                # to current segment from sub_timeline
+                isegment = isub_timeline(segment, mode='strict')[0]
+                
+                # if isegment is already annotated 
+                # then we might have a problem, Houston.
+                if isegment in sub_annotation:
+                    for name in tracks:
+                        if name in sub_annotation[isegment]:
+                            # MAYDAY, MAYDAY!
+                            new_name = self.auto_track_name(isegment, prefix=name)
+                            sub_annotation[isegment, new_name] = tracks[name]
+                        else:
+                            sub_annotation[isegment, name] = tracks[name]
+                else:
+                    sub_annotation[isegment] = tracks
             else:
                 sub_annotation[segment] = tracks
         
@@ -775,15 +819,25 @@ class TrackAnnotation(object):
     See :meth:`Timeline.__abs__` and :meth:`__pow__` for more details.
         """
         return self >> abs(self.timeline)
-    
 
-def __check_identifier(identifier):
-    """
-    Make sure provided identifier is a valid one (anything but int or Segment)
-    """
-    if isinstance(identifier, (int, Segment)):
-        raise TypeError('Cannot add annotation with %s identifier' \
-                        % (type(identifier).__name__))
+    def copy(self, map_func=None):
+        """
+        Generate a duplicate annotation
+        
+        :param map_func: map_func(segment) = other_segment
+        :type map_func: function
+        
+        """
+        cls = type(self)
+        annotation = cls(track_class=self.track_class, video=self.video, modality=self.modality)
+        
+        if not map_func:
+            map_func = lambda segment: segment
+        
+        for segment, track, data in self.itertracks(data=True):
+            annotation._set_segment_name(map_func(segment), track, data)
+        
+        return annotation    
 
 class TrackIDAnnotation(TrackAnnotation):
     """
@@ -887,7 +941,7 @@ class TrackIDAnnotation(TrackAnnotation):
         #DEBUG print  "TrackIDAnnotation > _get_segment_name_identifier"        
         
         return self._segment_tracks[segment][name][identifier]
-        
+
     def __getitem__(self, key):
         """
     Get all tracks for a given segment:
@@ -1213,6 +1267,14 @@ class TrackIDAnnotation(TrackAnnotation):
     
     # ------------------------------------------------------------------- #
     
+    def __check_identifier(self, identifier):
+        """
+        Make sure provided identifier is a valid one (anything but int or Segment)
+        """
+        if not isinstance(identifier, str):
+            raise TypeError('Invalid identifier %s. Must be str.' \
+                            % (type(identifier).__name__))
+    
     def __setitem__(self, key, value):
         """
     .. currentmodule:: pyannote
@@ -1261,6 +1323,7 @@ class TrackIDAnnotation(TrackAnnotation):
             segment = key[0]
             name = key[1]
             identifier = key[2]
+            self.__check_identifier(identifier)
             self.__set_segment_name_identifier(segment, name, identifier, value)
         else:
             #
@@ -1280,7 +1343,7 @@ class TrackIDAnnotation(TrackAnnotation):
     """
     Get list of identifiers.
     """
-    
+        
     def ids(self, segment):
         """
         Get list of identifiers for requested segment.
@@ -1299,6 +1362,15 @@ class TrackIDAnnotation(TrackAnnotation):
         
         return identifiers
     
+    def iteritems(self, data=False):
+        for segment in self:
+            for track in self._get_segment(segment):
+                for identifier in self._get_segment_name(segment, track):                    
+                    if data:
+                        yield segment, track, identifier, self._get_segment_name_identifier(segment, track, identifier)
+                    else:
+                        yield segment, track, identifier
+        
     def __call__(self, subset, mode='strict'):
         """
         
@@ -1338,29 +1410,52 @@ class TrackIDAnnotation(TrackAnnotation):
             same as 'loose' except segments are trimmed
             down to their intersection with :data:`timeline` coverage
          
-    >>> a = A(valid_identifier)
-        
-        Subset :data:`a` only contains annotations with the provided identifier.
+    >>> a = A( valid_identifier )
+    >>> a = A( set_of_valid_identifiers )   
+    >>> a = A( list_of_valid_identifiers )
+    >>> a = A( tuple_of_valid_identifiers) 
+
+        Subset :data:`a` only contains annotations with the provided identifier(s).
         
         :data:`mode` has no effect here. 
-
-        """
+         """
         
-        if self.__has_identifier(subset):
+        # use inherited __call__ method in case of Segment or Timeline subset
+        if isinstance(subset, (Segment, Timeline)):
+            A = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+        
+        # 
+        elif isinstance(subset, (tuple, list, set)):
+            
+            # create new empty annotation
+            cls = type(self)
+            A = cls(video=self.video, modality=self.modality)
+            
+            for one_identifier in subset:
+                
+                # extract sub-annotation a for each identifier in list
+                a = self(one_identifier, mode=mode)
+                
+                # add it all to the (previously empty) annotation A
+                for segment, name, identifier, data in a.iteritems(data=True):
+                    A.__set_segment_name_identifier(segment, name, identifier, data)
+        
+        # extract annotation for one particular identifier
+        # and only these...
+        else:
+            cls = type(self)
+            A = cls(video=self.video, modality=self.modality)
             identifier = subset
             timeline = self._identifier_timeline[identifier]
-            sub_annotation = self.__class__(video=self.video, modality=self.modality)
             for segment in timeline:
                 tracks = self._get_segment(segment)
                 for name in tracks:
                     track = tracks[name]
                     if identifier in track:
-                        sub_annotation.__set_segment_name_identifier(segment, name, identifier, track[identifier])
-        else:
-            sub_annotation = super(TrackIDAnnotation, self).__call__(subset, mode=mode)
+                        A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
         
-        return sub_annotation
-            
+        return A
+                
     def __mod__(self, translation):
         """
     Identifiers translation
@@ -1370,7 +1465,7 @@ class TrackIDAnnotation(TrackAnnotation):
     Identifiers with no available translation are left unchanged.
     
     :param translation: translation (see example below)
-    :type translation: dictionary
+    :type translation: OneToOneMapping or dict
     :rtype: :class:`TrackIDAnnotation`
         
         >>> translation = {'Jean': 'John', 'Mathieu': 'Matthew'}
@@ -1381,20 +1476,31 @@ class TrackIDAnnotation(TrackAnnotation):
         ['John', 'Matthew', 'Paul']
         
         """
+        
+        
+        if not isinstance(translation, (dict, Mapping)):
+            raise TypeError('Translation must be either dict or Mapping.')
+        
+        if isinstance(translation, Mapping):
+            try:
+                translation = OneToOneMapping.fromMapping(translation)
+            except Exception, e:
+                raise ValueError('Translation is not a one-to-one mapping.')
+        
+        cls = type(self)
+        translated_annotation = cls(video=self.video, modality=self.modality)
+        
+        for segment, track, identifier, data in self.iteritems(data=True):
+            
+            if not identifier in translation or translation[identifier] is None:
+                translated_identifier = identifier
+            else:
+                translated_identifier = translation[identifier]
+                self.__check_identifier(translated_identifier)
+            
+            translated_annotation.__set_segment_name_identifier(segment, track, translated_identifier, data)
                 
-        translated_annotation = self.__class__(video=self.video, modality=self.modality)
-        for segment in self:
-            tracks = self._get_segment(segment)
-            for name in tracks:
-                track = tracks[name]
-                for identifier in track:
-                    if identifier in translation:
-                        translated_identifier = translation[identifier] 
-                    else:
-                        translated_identifier = identifier
-                    translated_annotation.__set_segment_name_identifier(segment, name, translated_identifier, track[identifier])
         return translated_annotation
-    
     
     def __mul__(self, other):
         """
@@ -1404,70 +1510,9 @@ class TrackIDAnnotation(TrackAnnotation):
     :returns: confusion matrix :class:`Confusion`
         """
         return Confusion(self, other)    
-    
         
-    # def __pow__(self, timeline, modulo=None):
-    #     """
-    # .. currentmodule:: pyannote
-    # 
-    # Timeline tagging.
-    #     
-    # :param timeline: 
-    # :type timeline: :class:`Timeline`
-    # :rtype: :class:`TrackAnnotation`
-    #     
-    # >>> a = A ** timeline
-    # >>> if a.timeline in timeline:
-    # ...    print 'Yes!'
-    # Yes!
-    # 
-    # For each segment in :data:`timeline`, all annotations of intersecting segments
-    # are added to the new :class:`TrackAnnotation` instance :data:`a`.
-    #     """
-    #     
-    #     new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
-    #     
-    #     original_timeline = self.timeline
-    #     S_start = 0
-    #     N = len(original_timeline)
-    #     
-    #     # for each segment in new timeline
-    #     for ns, new_segment in enumerate(timeline):
-    #         
-    #         original_start_segment = original_timeline[S_start]
-    #         
-    #         # if start segment is strictly after new segment, jump to next new segment
-    #         if (original_start_segment > new_segment) and (original_start_segment ^ new_segment):
-    #             continue
-    #         
-    #         # update start segment
-    #         for s in range(S_start, N):
-    #             
-    #             original_segment = original_timeline[s]
-    #             
-    #             # found first intersecting segment
-    #             if original_segment & new_segment:
-    #                 S_start = s
-    #                 break
-    #             # went one step too far
-    #             if (original_segment > new_segment):
-    #                 break
-    #             
-    #             S_start = s
-    #         
-    #         for s in range(S_start, N):
-    #             original_segment = original_timeline[s]
-    #             if original_segment & new_segment:
-    #                 for track in self[original_segment]:
-    #                     if new_segment in new_annotation and track in new_annotation[new_segment]:
-    #                         raise Warning('Track %s is replaced in %s' % (track, new_segment))
-    #                     new_annotation[new_segment, track] = self[original_segment, track]
-    #                     # new_annotation[new_segment] = self[original_segment]
-    #             elif original_segment > new_segment:
-    #                 break
-    #                     
-    #     return new_annotation
-    #     
+    def toTrackIDAnnotation(self):
+        return self.copy()
     
     def toJSON(self):
         data = []
@@ -1615,7 +1660,7 @@ class IDAnnotation(TrackIDAnnotation):
             
     def __rshift__(self, timeline):
         return self.toTrackIDAnnotation().__rshift__(timeline)
-    
+        
     def toTrackIDAnnotation(self):
         """
     .. currentmodule:: pyannote

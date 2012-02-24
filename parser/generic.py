@@ -1,7 +1,25 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote import TrackIDAnnotation, IDAnnotation, Segment, SlidingWindow
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
+from pyannote import TrackIDAnnotation, IDAnnotation, Segment
+from pyannote.base.feature import SlidingWindow
 
 class GenericParser(object):
     """
@@ -207,16 +225,26 @@ class GenericParser(object):
             else:
                 self.annotations[video][modality][segment, identifier] = \
                                                                 confidence
-    
+        
     def annotation(self, video, modality):
-        return self.annotations[video][modality]
-    
+        
+        if (video in self.annotations) and (modality in self.annotations[video]):
+            return self.annotations[video][modality]
+        else:
+            if self.multitrack:
+                return TrackIDAnnotation(modality=modality, video=video)
+            else:
+                return IDAnnotation(modality=modality, video=video)
+            
     def timeline(self, video, modality):
-        return self.annotations[video][modality].timeline
+        return self.annotation(video, modality).timeline
         
     def videos(self):
         return self.annotations.keys()
     
     def modalities(self, video):
-        return self.annotations[video].keys()
+        if video in self.annotations:
+            return self.annotations[video].keys()
+        else:
+            return []
 

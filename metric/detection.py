@@ -1,57 +1,93 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def detection_error_rate(reference, hypothesis):
-    """
-    Detection error rate -- the lower (0.) the better.    
-    """
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
+from base import BaseErrorRate
+
+DER_TOTAL = 'total'
+DER_FALSE_ALARM = 'false alarm'
+DER_MISS = 'miss'
+DER_NAME = 'detection error rate'
+
+class DetectionErrorRate(BaseErrorRate):
+
+    def __init__(self):
+
+        numerator = {DER_FALSE_ALARM: 1., DER_MISS: 1., }
+        denominator = {DER_TOTAL: 1., }
+        other = []
+        
+        super(DetectionErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
     
-    # common (up-sampled) timeline
-    common_timeline = abs(reference.timeline + hypothesis.timeline)
     
-    # align reference on common timeline
-    R = reference >> common_timeline
+    def __call__(self, reference, hypothesis, detailed=False):
+        
+        detail = self.initialize()
+        
+        # common (up-sampled) timeline
+        common_timeline = abs(reference.timeline + hypothesis.timeline)
     
-    # translate and align hypothesis on common timeline
-    H = hypothesis >> common_timeline
+        # align reference on common timeline
+        R = reference >> common_timeline
     
-    total = 0.
-    miss = 0.
-    fa = 0.
+        # translate and align hypothesis on common timeline
+        H = hypothesis >> common_timeline
     
-    # loop on all segments
-    for segment in common_timeline:
+        # loop on all segments
+        for segment in common_timeline:
         
-        # --- local IDs ---
+            # segment duration
+            duration = abs(segment)
         
-        # set of IDs in reference segment
-        r = R.ids(segment)
-        Nr = len(r)
+            # set of IDs in reference segment
+            r = R.ids(segment)
+            Nr = len(r)
+            detail[DER_TOTAL] += duration * Nr
         
-        # set of IDs in hypothesis segment
-        h = H.ids(segment)
-        Nh = len(h)
+            # set of IDs in hypothesis segment
+            h = H.ids(segment)
+            Nh = len(h)
         
-        # --- local errors ---
+            # number of misses
+            N_miss = max(0, Nr - Nh)
+            detail[DER_MISS] += duration * N_miss
         
-        # number of misses
-        N_miss = max(0, Nr - Nh)
-        
-        # number of false alarms
-        N_fa = max(0, Nh - Nr)
-        
-        # --- global errors ---
-        
-        # segment duration
-        duration = abs(segment)
-        
-        # total duration in reference
-        total += duration * Nr
-        
-        # total misses
-        miss += duration * N_miss
-        
-        # total false alarms
-        fa += duration * N_fa
+            # number of false alarms
+            N_fa = max(0, Nh - Nr)
+            detail[DER_FALSE_ALARM] += duration * N_fa
     
-    return (miss + fa) / total
+        return self.compute(detail, accumulate=True, detailed=detailed)
+        
+    def pretty(self, detail):
+        
+        string = ""
+        
+        string += "  - duration: %g" % (detail[DER_TOTAL])
+        string += "\n"
+    
+        string += "  - miss: %g" % (detail[DER_MISS])
+        string += "\n"
+        
+        string += "  - false alarm: %g" % (detail[DER_FALSE_ALARM])
+        string += "\n"
+    
+        string += "  - %s: %g %%" % (self.name, 100*detail[self.name])
+        string += "\n"
+        
+        return string

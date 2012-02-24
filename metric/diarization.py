@@ -1,21 +1,48 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from pyannote.algorithms.association import hungarian
-from identification import identification_error_rate
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
-def diarization_error_rate(reference, hypothesis):
-    """
-    Diarization error rate -- the lower (0.) the better.
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
+from pyannote.algorithms.association.hungarian import Hungarian
+from identification import IdentificationErrorRate, IER_CONFUSION, IER_FALSE_ALARM, IER_MISS, IER_TOTAL, IER_CORRECT
+
+DER_CONFUSION = IER_CONFUSION
+DER_FALSE_ALARM = IER_FALSE_ALARM
+DER_MISS = IER_MISS
+DER_TOTAL = IER_TOTAL
+DER_CORRECT = IER_CORRECT
+DER_NAME = 'diarization error rate'
+
+class DiarizationErrorRate(IdentificationErrorRate):
     
-    as defined in 'Fall 2004 Rich Transcription (RT-04F) Evaluation Plan'
-    """
+    def __init__(self):
 
-    # best mapping {hypothesis --> reference}
-    mapping = hungarian(hypothesis, reference)  
+        numerator = {DER_CONFUSION: 1., \
+                     DER_FALSE_ALARM: 1., \
+                     DER_MISS: 1., }
+        
+        denominator = {DER_TOTAL: 1., }
+        other = [DER_CORRECT]
+        super(IdentificationErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
+        self.__hungarian = Hungarian()
     
-    # translate hypothesis and compute identification error rate
-    return identification_error_rate(reference, hypothesis % mapping)
+    def __call__(self, reference, hypothesis, detailed=False):
+        
+        mapping = self.__hungarian(hypothesis, reference)
+        return super(DiarizationErrorRate, self).__call__(reference, hypothesis % mapping, detailed=detailed)
 
-def der(reference, hypothesis):
-    return diarization_error_rate(reference, hypothesis)

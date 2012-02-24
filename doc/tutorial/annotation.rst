@@ -30,7 +30,7 @@ If necessary, you can get back the list of identifiers appearing at least once
 in the whole annotation.
 
     >>> print S.IDs
-	['Patrick', 'Paul', 'Bernard']
+    ['Patrick', 'Paul', 'Bernard']
 
 Here is how to get the data back from S::
 

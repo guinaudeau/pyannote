@@ -18,7 +18,29 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['PLPParser', 'SEGParser']
+from pyannote.base.association import Mapping
 
-from plp import PLPParser
-from seg import SEGParser
+class BaseAssociation(object):
+
+    def associate(self, A, B):
+        raise NotImplementedError('')
+        
+    def __call__(self, A, B, init=None):
+        
+        if init is None:
+            init = Mapping(A.modality, B.modality)
+            init += (A.IDs, B.IDs)
+        
+        M = Mapping(A.modality, B.modality)
+        
+        # process each part of initial mapping separately
+        # and concatenate them at the end
+        for lblA, lblB in init:
+            
+            a = A(lblA)            
+            b = B(lblB)
+            m = self.associate(a, b)            
+            M += m
+        
+        return M
+    

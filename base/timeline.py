@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
 from segment import Segment, RevSegment, SEGMENT_PRECISION
     
 class Timeline(object):
@@ -275,7 +292,7 @@ class Timeline(object):
         both = set(self.__segments[:index]) & set(self.__rsegments[xedni:])
         return sorted([rsegment.copy() for rsegment in both])
     
-    def __call__(self, requested, mode='intersection'):
+    def __call__(self, subset, mode='intersection'):
         """
         # Create sub-timeline. Default mode is 'intersection'.
         # ... made of segments fully included in requested segment
@@ -300,8 +317,8 @@ class Timeline(object):
         sub_timeline = tl(timeline, mode='intersection')
         """
         
-        if isinstance(requested, Segment):
-            segment = requested     
+        if isinstance(subset, Segment):
+            segment = subset     
             isegments = self.__get_intersecting(segment)
             if mode == 'strict':
                 isegments = [isegment for isegment in isegments if isegment in segment]
@@ -312,12 +329,13 @@ class Timeline(object):
             else:
                 raise ValueError('Unsupported mode (%s).' % mode)
             timeline = Timeline(segments=isegments, video=self.video)
-        elif isinstance(requested, Timeline):
+        elif isinstance(subset, Timeline):
             timeline = Timeline(video=self.video)
-            for segment in requested.coverage():
+            for segment in subset.coverage():
                 timeline += self.__call__(segment, mode=mode)
         else:
-            raise TypeError('')
+            raise TypeError('Subset must be either a Segment or a Timeline, not %s' \
+                           % type(subset).__name__)
         
         return timeline
     

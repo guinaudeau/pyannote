@@ -33,10 +33,10 @@ A segment is empty in case start time is greater than (or equals) end time.
 One can check if a segment is **empty** using the following::
 
     >>> if segment:
-            print "Segment is not empty."
-        else:
-            print "Segment is empty."
-	Segment is not empty. 
+    ...     print "Segment is not empty."
+    ... else:
+    ...     print "Segment is empty."
+    Segment is not empty.
 
    
 Comparison
@@ -47,7 +47,8 @@ Two segments can be compared for equality as expected::
    >>> segment1 = Segment(1, 2)
    >>> segment2 = Segment(1, 2)   
    >>> if segment1 == segment2:
-           print "Segments are identical"
+   ...     print "Segments are identical."
+   Segments are identical.
 
 Other **comparison** operators <, >, <= and >= are also available.
 Segment A is smaller than segment B if (and only if)
@@ -63,7 +64,7 @@ Inclusion of one segment into another can be tested with the **in** operator::
    >>> big_segment = Segment(10, 20)
    >>> small_segment = Segment(12, 13)
    >>> if small_segment in big_segment:
-          print "Small segment is fully included in big segment."
+   ...    print "Small segment is fully included in big segment."
    Small segment is fully included in big segment.
    
 **Intersection** of two segments is obtained with the **&** operator::
@@ -82,7 +83,7 @@ Operator ^ returns the gap between two segments::
    
    >>> print segment1 ^ segment2
    ∅
-   >>> print Segment(0, 10) ^ (15, 25)
+   >>> print Segment(0, 10) ^ Segment(15, 25)
    [10 --> 15]
 
 Other operations

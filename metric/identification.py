@@ -1,72 +1,111 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-def identification_error_rate(reference, hypothesis):
-    """
-    Identification error rate -- the lower (0.) the better.    
-    """
-    
-    # common (up-sampled) timeline
-    common_timeline = abs(reference.timeline + hypothesis.timeline)
-    
-    # align reference on common timeline
-    R = reference >> common_timeline
-    
-    # translate and align hypothesis on common timeline
-    H = hypothesis >> common_timeline
-    
-    total = 0.
-    error = 0.
-    miss = 0.
-    fa = 0.
-    
-    # loop on all segments
-    for segment in common_timeline:
-        
-        # --- local IDs ---
-        
-        # set of IDs in reference segment
-        r = R.ids(segment) if segment in R else set([])
-        Nr = len(r)
-        
-        # set of IDs in hypothesis segment
-        h = H.ids(segment) if segment in H else set([])
-        Nh = len(h)
-        
-        # --- local errors ---
-        # local errors
-        
-        # number of correct matches
-        N_correct = len(r & h)
-        
-        # number of incorrect matches
-        N_error   = min(Nr, Nh) - N_correct
-        
-        # number of misses
-        N_miss = max(0, Nr - Nh)
-        
-        # number of false alarms
-        N_fa = max(0, Nh - Nr)
-        
-        # --- global errors ---
-        
-        # segment duration
-        duration = abs(segment)
-        
-        # total duration in reference
-        total += duration * Nr
-        
-        # total match error
-        error += duration * N_error
-        
-        # total misses
-        miss += duration * N_miss
-        
-        # total false alarms
-        fa += duration * N_fa
-    
-    return (error + miss + fa) / total
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-def ier(reference, hypothesis):
-    return identification_error_rate(reference, hypothesis)
+from base import BaseErrorRate
+
+IER_TOTAL = 'total'
+IER_CORRECT = 'correct'
+IER_CONFUSION = 'confusion'
+IER_FALSE_ALARM = 'false alarm'
+IER_MISS = 'miss'
+IER_NAME = 'identification error rate'
+
+class IdentificationErrorRate(BaseErrorRate):
+
+    def __init__(self):
+
+        numerator = {IER_CONFUSION: 1., \
+                     IER_FALSE_ALARM: 1., \
+                     IER_MISS: 1., }
+        
+        denominator = {IER_TOTAL: 1., }
+        other = [IER_CORRECT]
+        super(IdentificationErrorRate, self).__init__(IER_NAME, numerator, denominator, other)
+    
+    
+    def __call__(self, reference, hypothesis, detailed=False):
+        
+        detail = self.initialize()
+        
+        # common (up-sampled) timeline
+        common_timeline = abs(reference.timeline + hypothesis.timeline)
+    
+        # align reference on common timeline
+        R = reference >> common_timeline
+    
+        # translate and align hypothesis on common timeline
+        H = hypothesis >> common_timeline
+    
+        # loop on all segments
+        for segment in common_timeline:
+        
+            # segment duration
+            duration = abs(segment)
+        
+            # set of IDs in reference segment
+            r = R.ids(segment) if segment in R else set([])
+            Nr = len(r)
+            detail[IER_TOTAL] += duration * Nr
+        
+            # set of IDs in hypothesis segment
+            h = H.ids(segment) if segment in H else set([])
+            Nh = len(h)
+        
+            # number of correct matches
+            N_correct = len(r & h)
+            detail[IER_CORRECT] += duration * N_correct
+        
+            # number of incorrect matches
+            N_error   = min(Nr, Nh) - N_correct
+            detail[IER_CONFUSION] += duration * N_error
+        
+            # number of misses
+            N_miss = max(0, Nr - Nh)
+            detail[IER_MISS] += duration * N_miss
+        
+            # number of false alarms
+            N_fa = max(0, Nh - Nr)
+            detail[IER_FALSE_ALARM] += duration * N_fa
+    
+        return self.compute(detail, accumulate=True, detailed=detailed)
+        
+    def pretty(self, detail):
+        
+        string = ""
+        
+        string += "  - duration: %g" % (detail[IER_TOTAL])
+        string += "\n"
+    
+        string += "  - correct: %g" % (detail[IER_CORRECT])
+        string += "\n"
+    
+        string += "  - confusion: %g" % (detail[IER_CONFUSION])
+        string += "\n"
+        
+        string += "  - miss: %g" % (detail[IER_MISS])
+        string += "\n"
+        
+        string += "  - false alarm: %g" % (detail[IER_FALSE_ALARM])
+        string += "\n"
+    
+        string += "  - %s: %g %%" % (self.name, 100*detail[self.name])
+        string += "\n"
+        
+        return string

@@ -46,7 +46,7 @@ A segment **cannot** be added twice to a timeline. If it already exists, it is s
 One can add all segments of another timeline at once:: 
 
     >>> other_segments = [Segment(6,7), Segment(8, 9)]
-    >>> other_timeline = Timeline(segments=other_segments, video='MyMovie.avi')
+    >>> other_timeline = Timeline(segments=other_segments, video='video.mpg')
     >>> timeline += other_timeline
     >>> print timeline
     [
@@ -93,6 +93,8 @@ Combined with **in** operator, **index()** method can be used to retrieve the po
     index() raises an error if timeline does not contain requested segment::
 
         >>> timeline.index(Segment(2, 3))
+        Traceback (most recent call last):
+          ...
         ValueError: segment [2 --> 3] is not in timeline
 
 
@@ -121,7 +123,7 @@ The duration of a timeline is defined as the sum of the duration of all segments
    
 Get duplicate timeline::
 
-   >>> timeline = tl.copy()
+   >>> duplicate = timeline.copy()
 
 Sub-timelines
 -------------
@@ -130,7 +132,7 @@ Timeline objects are *callable* and this property can be used to get sub-timelin
 
 * Sub-timeline made of segments fully included in requested segment (**strict** mode)::
    
-    >>> requested_segment = Segment(2.5, 6.)
+    >>> requested_segment = Segment(2.5, 6.5)
     >>> sub_timeline = timeline(requested_segment, mode='strict')
     >>> print sub_timeline
     [
@@ -214,7 +216,7 @@ Check whether timeline is a partition::
     ...     print "Timeline is a partition."
     ... else: 
     ...     print "Timeline is not a partition." 
-    Timeline is not a partitiion.        
+    Timeline is not a partition.
     
 A timeline might contains gaps (or holes) in its coverage.
 Use inversion (~) operator to get them::
