@@ -179,8 +179,26 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         fa_anon = detail[EGER_FALSE_ALARM_ANON]        
         string += "  - fa: %d (%d named, %d anonymous)" % (fa_named+fa_anon, fa_named, fa_anon)
         string += "\n"
-    
-        string += "  - EGER: %g %%" % (100*detail[self.name])
+        
+        if detail[EGER_HYP_NAME] > 0:
+            precision = 1. * detail[EGER_CORRECT_NAME] / detail[EGER_HYP_NAME]
+        else:
+            precision = 1.
+        string += "  - precision (named): %.2f %%" % (100*precision)
+        string += "\n"
+
+        if detail[EGER_HYP_NAME] > 0:
+            recall = 1. * detail[EGER_CORRECT_NAME] / detail[EGER_REF_NAME]
+        else:
+            recall = 1.
+        string += "  - recall (named): %.2f %%" % (100*recall)
+        string += "\n"
+        
+        fmeasure = 2 * precision * recall / (precision + recall) 
+        string += "  - F1-measure (named): %.2f %%" % (100*fmeasure)
+        string += "\n"
+        
+        string += "  - EGER: %.2f %%" % (100*detail[self.name])
         string += "\n"
         
         return string
