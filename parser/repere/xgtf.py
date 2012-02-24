@@ -122,14 +122,14 @@ class XGTFParser(object):
                     beforeOnSameLine = m.group(1).split('\\n')[-1].strip()
                     afterOnSameLine = m.group(4).split('\\n')[0].strip()
                     if beforeOnSameLine == '' and afterOnSameLine == '':
-                        identifiers.append(m.group(2))
+                        identifiers.append(str(m.group(2)))
                     text = text[m.end(3):]
                     m = p.match(text)
             else:
                 p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
                 m = p.match(text)
                 while(m):
-                    identifiers.append(m.group(1))
+                    identifiers.append(str(m.group(1)))
                     text = text[m.end():]  
                     m = p.match(text)
         
@@ -149,7 +149,7 @@ class XGTFParser(object):
                 if attr_name == 'STARTFRAME':
                     startframe = int(self.__extract_value(vpr_object))
                 elif attr_name == 'ENDFRAME':
-                    endframe = int(self__extract_value(vpr_object))
+                    endframe = int(self.__extract_value(vpr_object))
                 elif attr_name == 'TRANSCRIPTION':
                     identifiers = \
                     self.__extract_written(self.__extract_value(vpr_object), \
