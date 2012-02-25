@@ -28,17 +28,17 @@ DER_NAME = 'detection error rate'
 class DetectionErrorRate(BaseErrorRate):
 
     def __init__(self):
-
-        numerator = {DER_FALSE_ALARM: 1., DER_MISS: 1., }
-        denominator = {DER_TOTAL: 1., }
-        other = []
         
-        super(DetectionErrorRate, self).__init__(DER_NAME, numerator, denominator, other)
-    
-    
-    def __call__(self, reference, hypothesis, detailed=False):
+        values = set([ \
+            DER_FALSE_ALARM, \
+            DER_MISS, \
+            DER_TOTAL])
         
-        detail = self.initialize()
+        super(DetectionErrorRate, self).__init__(DER_NAME, values)
+        
+    def get_details(self, reference, hypothesis, **kwargs):
+        
+        detail = self.init_details()
         
         # common (up-sampled) timeline
         common_timeline = abs(reference.timeline + hypothesis.timeline)
@@ -71,23 +71,25 @@ class DetectionErrorRate(BaseErrorRate):
             # number of false alarms
             N_fa = max(0, Nh - Nr)
             detail[DER_FALSE_ALARM] += duration * N_fa
-    
-        return self.compute(detail, accumulate=True, detailed=detailed)
         
+        return detail
+    
+    def get_rate(self, detail):
+        numerator = 1. * (detail[DER_FALSE_ALARM] + detail[DER_MISS])
+        denominator = 1. * detail[DER_TOTAL]
+        if denominator == 0.:
+            if numerator == 0:
+                return 0.
+            else:
+                return 1.
+        else:
+            return numerator/denominator
+            
     def pretty(self, detail):
-        
         string = ""
-        
-        string += "  - duration: %g" % (detail[DER_TOTAL])
-        string += "\n"
-    
-        string += "  - miss: %g" % (detail[DER_MISS])
-        string += "\n"
-        
-        string += "  - false alarm: %g" % (detail[DER_FALSE_ALARM])
-        string += "\n"
-    
-        string += "  - %s: %g %%" % (self.name, 100*detail[self.name])
-        string += "\n"
-        
+        string += "  - duration: %.2f seconds\n" % (detail[DER_TOTAL])
+        string += "  - miss: %.2f seconds\n" % (detail[DER_MISS])
+        string += "  - false alarm: %.2f seconds\n" % (detail[DER_FALSE_ALARM])
+        string += "  - %s: %.2f %%\n" % (self.name, \
+                                         100*detail[self.name])
         return string

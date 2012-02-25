@@ -89,26 +89,25 @@ IER_NAME = 'identification error rate'
 
 class IdentificationErrorRate(BaseErrorRate):
 
-    def __init__(self, idhandler=None):
+    def __init__(self, matcher=None):
 
-        numerator = {IER_CONFUSION: 1., \
-                     IER_FALSE_ALARM: 1., \
-                     IER_MISS: 1., }
-        denominator = {IER_TOTAL: 1., }
-        other = [IER_CORRECT]
-        super(IdentificationErrorRate, self).__init__(IER_NAME, \
-                                                      numerator, \
-                                                      denominator, \
-                                                      other)
+        values = set([ \
+            IER_CONFUSION, \
+            IER_FALSE_ALARM, \
+            IER_MISS, \
+            IER_TOTAL, \
+            IER_CORRECT])
+
+        super(IdentificationErrorRate, self).__init__(IER_NAME, values)
         
-        if idhandler:
-            self.idhandler = idhandler
+        if matcher:
+            self.matcher = matcher
         else:
-            self.idhandler = DefaultIDMatcher()
+            self.matcher = DefaultIDMatcher()
     
-    def __call__(self, reference, hypothesis, detailed=False):
+    def get_details(self, reference, hypothesis, **kwargs):
         
-        detail = self.initialize()
+        detail = self.init_details()
         
         # common (up-sampled) timeline
         common_timeline = abs(reference.timeline + hypothesis.timeline)
@@ -136,7 +135,7 @@ class IdentificationErrorRate(BaseErrorRate):
         
             # number of correct matches
             # N_correct = len(r & h)
-            N_correct = self.idhandler.ncorrect(r, h)
+            N_correct = self.matcher.ncorrect(r, h)
             detail[IER_CORRECT] += duration * N_correct
             
             # number of incorrect matches
@@ -151,28 +150,28 @@ class IdentificationErrorRate(BaseErrorRate):
             N_fa = max(0, Nh - Nr)
             detail[IER_FALSE_ALARM] += duration * N_fa
         
-        return self.compute(detail, accumulate=True, detailed=detailed)
+        return detail
+    
+    def get_rate(self, detail):
         
+        numerator = 1. * (detail[IER_CONFUSION] + \
+                          detail[IER_FALSE_ALARM] + \
+                          detail[IER_MISS])
+        denominator = 1. * detail[IER_TOTAL]
+        if denominator == 0.:
+            if numerator == 0:
+                return 0.
+            else:
+                return 1.
+        else:
+            return numerator/denominator
+       
     def pretty(self, detail):
-        
         string = ""
-        
-        string += "  - duration: %.2f seconds" % (detail[IER_TOTAL])
-        string += "\n"
-    
-        string += "  - correct: %.2f seconds" % (detail[IER_CORRECT])
-        string += "\n"
-    
-        string += "  - confusion: %.2f seconds" % (detail[IER_CONFUSION])
-        string += "\n"
-        
-        string += "  - miss: %.2f seconds" % (detail[IER_MISS])
-        string += "\n"
-        
-        string += "  - false alarm: %.2f seconds" % (detail[IER_FALSE_ALARM])
-        string += "\n"
-    
-        string += "  - %s: %.2f %%" % (self.name, 100*detail[self.name])
-        string += "\n"
-        
+        string += "  - duration: %.2f seconds\n" % (detail[IER_TOTAL])
+        string += "  - correct: %.2f seconds\n" % (detail[IER_CORRECT])
+        string += "  - confusion: %.2f seconds\n" % (detail[IER_CONFUSION])
+        string += "  - miss: %.2f seconds\n" % (detail[IER_MISS])
+        string += "  - false alarm: %.2f seconds\n" % (detail[IER_FALSE_ALARM])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string

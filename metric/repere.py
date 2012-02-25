@@ -130,31 +130,29 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
     
     """    
     def __init__(self):
+                
+        values = set([ \
+            EGER_CONFUSION_NAME_NAME, \
+            EGER_CONFUSION_NAME_ANON, \
+            EGER_CONFUSION_ANON_NAME, \
+            EGER_FALSE_ALARM_NAME, \
+            EGER_FALSE_ALARM_ANON, \
+            EGER_MISS_NAME, \
+            EGER_MISS_ANON, \
+            EGER_REF_NAME, \
+            EGER_REF_ANON, \
+            EGER_TOTAL, \
+            EGER_HYP_NAME, \
+            EGER_HYP_ANON, \
+            EGER_CORRECT_NAME, \
+            EGER_CORRECT_ANON])
         
-        numerator = {EGER_CONFUSION_NAME_NAME: 0.5, \
-                     EGER_CONFUSION_NAME_ANON: 0.5, \
-                     EGER_CONFUSION_ANON_NAME: 0.5, \
-                     EGER_FALSE_ALARM_NAME: 1., \
-                     EGER_FALSE_ALARM_ANON: 1., \
-                     EGER_MISS_NAME: 1., \
-                     EGER_MISS_ANON: 1., }
-                     
-        denominator = {EGER_REF_NAME: 1., \
-                       EGER_REF_ANON: 1., }
-        
-        other = [EGER_TOTAL, EGER_HYP_NAME, EGER_HYP_ANON, \
-                 EGER_CORRECT_NAME, EGER_CORRECT_ANON]
-        
-        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, \
-                                                       numerator, \
-                                                       denominator, \
-                                                       other)
-        
+        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, values)
         self.matcher = REPEREIDMatcher()
+      
+    def get_details(self, reference, hypothesis, annotated=None):
         
-    def __call__(self, reference, hypothesis, annotated, detailed=False):
-        
-        detail = self.initialize()
+        detail = self.init_details()
 
         reference = reference >> annotated
         hypothesis = hypothesis >> annotated
@@ -218,8 +216,26 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
             detail[EGER_FALSE_ALARM_NAME] += len(name_hyp)
             detail[EGER_FALSE_ALARM_ANON] += len(anon_hyp)
         
-        return self.compute(detail, accumulate=True, detailed=detailed)
-
+        return detail
+    
+    def get_rate(self, detail):
+        numerator = .5 * detail[EGER_CONFUSION_NAME_NAME] + \
+                    .5 * detail[EGER_CONFUSION_NAME_ANON] + \
+                    .5 * detail[EGER_CONFUSION_ANON_NAME] + \
+                    1. * detail[EGER_FALSE_ALARM_NAME] + \
+                    1. * detail[EGER_FALSE_ALARM_ANON] + \
+                    1. * detail[EGER_MISS_NAME] + \
+                    1. * detail[EGER_MISS_ANON]
+        denominator = 1. * detail[EGER_REF_NAME] + \
+                      1. * detail[EGER_REF_ANON]
+        if denominator == 0.:
+            if numerator == 0:
+                return 0.
+            else:
+                return 1.
+        else:
+            return numerator/denominator
+    
     def pretty(self, detail):
         
         string = ""
