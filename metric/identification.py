@@ -18,6 +18,66 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+# --------------------------------------------------------------------------- #
+
+class IDMatcher(object):
+    """
+    ID matcher base class.
+    
+    All ID matcher classes must inherit from this class and implement
+    .__call__() -- ie return True if two IDs match and False 
+    otherwise.
+    """
+    
+    def __init__(self):
+        super(IDMatcher, self).__init__()
+    
+    def __call__(self, id1, id2):
+        raise NotImplementedError( \
+            'IDMatcher sub-classes must implement .__call__() method.')
+
+    def ncorrect(self, ids1, ids2):
+        
+        # duplicate because we are going to modify it.
+        ids2 = set(ids2)
+        # will contain number of matches
+        count = 0
+        
+        # look for a match for each ID in ids1
+        for id1 in ids1:
+            # get list of matching IDs in ids2
+            matched = set([id2 for id2 in ids2 if self(id1, id2)])
+            # if we found at least one match
+            if matched:
+                # increment number of matches
+                count += 1
+                # remove one match for ids2
+                ids2.remove(matched.pop())
+                
+        return count
+
+
+# --------------------------------------------------------------------------- #
+
+class DefaultIDMatcher(IDMatcher):
+    """
+    Default ID matcher: two IDs match if they are equal.
+    """
+    
+    def __init__(self):
+        super(DefaultIDMatcher, self).__init__()
+    
+    def __call__(self, id1, id2):
+        # Two IDs match if they are equal to each other
+        return id1 == id2
+
+    def ncorrect(self, ids1, ids2):
+        # Slightly faster than inherited .ncorrect() method
+        return len(ids1 & ids2)
+        
+
+# --------------------------------------------------------------------------- #
+
 from base import BaseErrorRate
 
 IER_TOTAL = 'total'
@@ -29,16 +89,22 @@ IER_NAME = 'identification error rate'
 
 class IdentificationErrorRate(BaseErrorRate):
 
-    def __init__(self):
+    def __init__(self, idhandler=None):
 
         numerator = {IER_CONFUSION: 1., \
                      IER_FALSE_ALARM: 1., \
                      IER_MISS: 1., }
-        
         denominator = {IER_TOTAL: 1., }
         other = [IER_CORRECT]
-        super(IdentificationErrorRate, self).__init__(IER_NAME, numerator, denominator, other)
-    
+        super(IdentificationErrorRate, self).__init__(IER_NAME, \
+                                                      numerator, \
+                                                      denominator, \
+                                                      other)
+        
+        if idhandler:
+            self.idhandler = idhandler
+        else:
+            self.idhandler = DefaultIDMatcher()
     
     def __call__(self, reference, hypothesis, detailed=False):
         
@@ -60,52 +126,53 @@ class IdentificationErrorRate(BaseErrorRate):
             duration = abs(segment)
         
             # set of IDs in reference segment
-            r = R.ids(segment) if segment in R else set([])
+            r = R.ids(segment)
             Nr = len(r)
             detail[IER_TOTAL] += duration * Nr
         
             # set of IDs in hypothesis segment
-            h = H.ids(segment) if segment in H else set([])
+            h = H.ids(segment)
             Nh = len(h)
         
             # number of correct matches
-            N_correct = len(r & h)
+            # N_correct = len(r & h)
+            N_correct = self.idhandler.ncorrect(r, h)
             detail[IER_CORRECT] += duration * N_correct
-        
+            
             # number of incorrect matches
             N_error   = min(Nr, Nh) - N_correct
             detail[IER_CONFUSION] += duration * N_error
-        
+            
             # number of misses
             N_miss = max(0, Nr - Nh)
             detail[IER_MISS] += duration * N_miss
-        
+            
             # number of false alarms
             N_fa = max(0, Nh - Nr)
             detail[IER_FALSE_ALARM] += duration * N_fa
-    
+        
         return self.compute(detail, accumulate=True, detailed=detailed)
         
     def pretty(self, detail):
         
         string = ""
         
-        string += "  - duration: %g" % (detail[IER_TOTAL])
+        string += "  - duration: %.2f seconds" % (detail[IER_TOTAL])
         string += "\n"
     
-        string += "  - correct: %g" % (detail[IER_CORRECT])
+        string += "  - correct: %.2f seconds" % (detail[IER_CORRECT])
         string += "\n"
     
-        string += "  - confusion: %g" % (detail[IER_CONFUSION])
+        string += "  - confusion: %.2f seconds" % (detail[IER_CONFUSION])
         string += "\n"
         
-        string += "  - miss: %g" % (detail[IER_MISS])
+        string += "  - miss: %.2f seconds" % (detail[IER_MISS])
         string += "\n"
         
-        string += "  - false alarm: %g" % (detail[IER_FALSE_ALARM])
+        string += "  - false alarm: %.2f seconds" % (detail[IER_FALSE_ALARM])
         string += "\n"
     
-        string += "  - %s: %g %%" % (self.name, 100*detail[self.name])
+        string += "  - %s: %.2f %%" % (self.name, 100*detail[self.name])
         string += "\n"
         
         return string

@@ -18,6 +18,55 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+# --------------------------------------------------------------------------- #
+
+from identification import IDMatcher
+class REPEREIDMatcher(IDMatcher):
+    """
+    REPERE ID matcher: 
+    Two IDs match if: 
+    * they are both anonymous, or
+    * they are both named and equal.
+    
+    """
+    
+    def __init__(self):
+        super(REPEREIDMatcher, self).__init__()
+    
+    def __call__(self, identifier1, identifier2):
+        return (self.is_anonymous(identifier1) and \
+               self.is_anonymous(identifier2)) \
+            or (identifier1 == identifier2 and \
+                self.is_named(identifier1) and \
+                self.is_named(identifier2))
+
+    def ncorrect(self, identifiers1, identifiers2):
+        # Slightly faster than inherited .ncorrect() method
+        named1 = self.named_from(identifiers1)
+        named2 = self.named_from(identifiers2)
+        anonymous1 = self.anonymous_from(identifiers1)
+        anonymous2 = self.anonymous_from(identifiers2)
+        return len(named1 & named2) + min(len(anonymous1), len(anonymous2))
+
+    # ------------------------------------------------------------ #
+    def is_anonymous(self, identifier):
+        return identifier[:8] == 'Inconnu_' \
+            or identifier[:7] == 'speaker'
+    
+    def anonymous_from(self, identifiers):
+        return set([identifier for identifier in identifiers \
+                               if self.is_anonymous(identifier)])
+    # ------------------------------------------------------------ #
+    def is_named(self, identifier):
+        return identifier[:8] != 'Inconnu_' \
+           and identifier[:7] != 'speaker'
+    
+    def named_from(self, identifiers):
+        return set([identifier for identifier in identifiers \
+                               if self.is_named(identifier)])
+
+# --------------------------------------------------------------------------- #
+
 from base import BaseErrorRate
 
 EGER_TOTAL = 'total'
@@ -46,23 +95,29 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
     """
     Estimated Global Error Rate
     
-    Pour chaque image annotée (annotated timeline) de la reference, la liste des personnes présentes et/ou parlant 
-    à l’instant associé est constituée, et ce du point de vue référence et du point de vue système. 
+    Pour chaque image annotée (annotated timeline) de la reference, la liste
+    des personnes présentes et/ou parlant à l’instant associé est constituée, 
+    et ce du point de vue référence et du point de vue système. 
     
-    Ces deux listes sont comparées en associant les personnes une à une, chaque personne ne pouvant être associée 
-    au plus qu’une fois. Une association entre deux personnes nommées compte pour un correct, tout comme l’association 
-    entre deux anonymes. L’association entre deux personnes avec des noms différents ou entre un nommé et un anonyme donne 
-    une confusion. Chaque personne de l’hypothèse non associée compte pour une fausse alarme, et chaque personne de la 
-    référence non associée pour un oubli. Un coût est associé par confusion, et un par oubli/fausse alarme. 
+    Ces deux listes sont comparées en associant les personnes une à une, chaque 
+    personne ne pouvant être associée au plus qu’une fois. Une association 
+    entre deux personnes nommées compte pour un correct, tout comme 
+    l’association entre deux anonymes. L’association entre deux personnes avec 
+    des noms différents ou entre un nommé et un anonyme donne une confusion. 
+    Chaque personne de l’hypothèse non associée compte pour une fausse alarme, 
+    et chaque personne de la référence non associée pour un oubli. Un coût est
+    associé par confusion, et un par oubli/fausse alarme. 
     
-    De toutes les associations possibles est choisie celle qui donne le coût total (erreur pour l’image) le plus faible. 
-    La somme de tous ces comptes d’erreur par image permet d’obtenir le nombre d’erreurs global. Le nombre global 
-    d’entrées attendues est lui aussi comptabilisé en cumulant le nombre de personnes présentes dans la référence à 
-    chaque image. Le taux d’erreur est alors le nombre d’erreurs global divisé par le nombre global d’entrées attendues.
+    De toutes les associations possibles est choisie celle qui donne le coût 
+    total (erreur pour l’image) le plus faible. 
+    La somme de tous ces comptes d’erreur par image permet d’obtenir le nombre 
+    d’erreurs global. Le nombre global d’entrées attendues est lui aussi 
+    comptabilisé en cumulant le nombre de personnes présentes dans la référence 
+    à chaque image. Le taux d’erreur est alors le nombre d’erreurs global 
+    divisé par le nombre global d’entrées attendues.
     
-    Nous nous proposons d’utiliser un coût de 1 pour oubli/fausse alarme et de 0,5 pour confusion.
-    Cette métrique est identique pour la tâche principale et les deux tâches élémentaires, seul l’établissement
-    des ensembles de personnes change pour tenir compte uniquement des modalités voulues.    
+    Nous nous proposons d’utiliser un coût de 1 pour oubli/fausse alarme et de 
+    0,5 pour confusion.
     
     Example
     
@@ -87,13 +142,16 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         denominator = {EGER_REF_NAME: 1., \
                        EGER_REF_ANON: 1., }
         
-        other = [EGER_TOTAL, EGER_HYP_NAME, EGER_HYP_ANON, EGER_CORRECT_NAME, EGER_CORRECT_ANON]
+        other = [EGER_TOTAL, EGER_HYP_NAME, EGER_HYP_ANON, \
+                 EGER_CORRECT_NAME, EGER_CORRECT_ANON]
         
-        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, numerator, denominator, other)
-    
-    def __is_not_anonymous(self, identifier):
-        return identifier[:8] != 'Inconnu_' and identifier[:7] != 'speaker'
-    
+        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, \
+                                                       numerator, \
+                                                       denominator, \
+                                                       other)
+        
+        self.matcher = REPEREIDMatcher()
+        
     def __call__(self, reference, hypothesis, annotated, detailed=False):
         
         detail = self.initialize()
@@ -108,57 +166,57 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         
             detail[EGER_TOTAL] += len(ref)
         
-            known_ref = set([identifier for identifier in ref if self.__is_not_anonymous(identifier)])
-            known_hyp = set([identifier for identifier in hyp if self.__is_not_anonymous(identifier)])
-            detail[EGER_REF_NAME] += len(known_ref)
-            detail[EGER_HYP_NAME] += len(known_hyp)
+            name_ref = self.matcher.named_from(ref)
+            name_hyp = self.matcher.named_from(hyp)
+            detail[EGER_REF_NAME] += len(name_ref)
+            detail[EGER_HYP_NAME] += len(name_hyp)
         
-            unknown_ref = ref - known_ref
-            unknown_hyp = hyp - known_hyp
-            detail[EGER_REF_ANON] += len(unknown_ref)
-            detail[EGER_HYP_ANON] += len(unknown_hyp)
+            anon_ref = ref - name_ref
+            anon_hyp = hyp - name_hyp
+            detail[EGER_REF_ANON] += len(anon_ref)
+            detail[EGER_HYP_ANON] += len(anon_hyp)
 
             # correct named/named matches
-            detail[EGER_CORRECT_NAME] += len(known_ref & known_hyp)
-            for known in known_ref & known_hyp:
-                known_ref.remove(known)
-                known_hyp.remove(known)
+            detail[EGER_CORRECT_NAME] += len(name_ref & name_hyp)
+            for known in name_ref & name_hyp:
+                name_ref.remove(known)
+                name_hyp.remove(known)
         
             # correct anonymous/anonymous matches
-            n = min(len(unknown_ref), len(unknown_hyp))
+            n = min(len(anon_ref), len(anon_hyp))
             detail[EGER_CORRECT_ANON] += n
             for i in range(n):
-                unknown_ref.pop()
-                unknown_hyp.pop()
+                anon_ref.pop()
+                anon_hyp.pop()
         
             # named/named confusion
-            n = min(len(known_ref), len(known_hyp))
+            n = min(len(name_ref), len(name_hyp))
             detail[EGER_CONFUSION_NAME_NAME] += n
             for i in range(n):
-                known_ref.pop()
-                known_hyp.pop()
+                name_ref.pop()
+                name_hyp.pop()
 
             # named/anonymous confusion
-            n = min(len(known_ref), len(unknown_hyp))
+            n = min(len(name_ref), len(anon_hyp))
             detail[EGER_CONFUSION_NAME_ANON] += n
             for i in range(n):
-                known_ref.pop()
-                unknown_hyp.pop()
+                name_ref.pop()
+                anon_hyp.pop()
         
             # anonymous/named confusion
-            n = min(len(unknown_ref), len(known_hyp))
+            n = min(len(anon_ref), len(name_hyp))
             detail[EGER_CONFUSION_ANON_NAME] += n
             for i in range(n):
-                unknown_ref.pop()
-                known_hyp.pop()
+                anon_ref.pop()
+                name_hyp.pop()
         
             # miss
-            detail[EGER_MISS_NAME] += len(known_ref)
-            detail[EGER_MISS_ANON] += len(unknown_ref)
+            detail[EGER_MISS_NAME] += len(name_ref)
+            detail[EGER_MISS_ANON] += len(anon_ref)
         
             # false alarm
-            detail[EGER_FALSE_ALARM_NAME] += len(known_hyp)
-            detail[EGER_FALSE_ALARM_ANON] += len(unknown_hyp)
+            detail[EGER_FALSE_ALARM_NAME] += len(name_hyp)
+            detail[EGER_FALSE_ALARM_ANON] += len(anon_hyp)
         
         return self.compute(detail, accumulate=True, detailed=detailed)
 
@@ -166,61 +224,58 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         
         string = ""
         
-        ref_named = detail[EGER_REF_NAME]
+        ref_name = detail[EGER_REF_NAME]
         ref_anon  = detail[EGER_REF_ANON]
-        string += "  - reference entries: %d (%d named, %d anonymous)" % (ref_named+ref_anon, ref_named, ref_anon)
-        string += "\n"
+        string += "  - reference entries: %d (%d named, %d anonymous)\n" % \
+                  (ref_name+ref_anon, ref_name, ref_anon)
     
-        hyp_named = detail[EGER_HYP_NAME]
+        hyp_name = detail[EGER_HYP_NAME]
         hyp_anon  = detail[EGER_HYP_ANON]
-        string += "  - hypothesis entries: %d (%d named, %d anonymous)" % (hyp_named+hyp_anon, hyp_named, hyp_anon)
-        string += "\n"
+        string += "  - hypothesis entries: %d (%d named, %d anonymous)\n" % \
+                  (hyp_name+hyp_anon, hyp_name, hyp_anon)
     
-        correct_named = detail[EGER_CORRECT_NAME]
+        correct_name = detail[EGER_CORRECT_NAME]
         correct_anon  = detail[EGER_CORRECT_ANON]
-        string += "  - correct: %d (%d named, %d anonymous)" % (correct_named+correct_anon, correct_named, correct_anon)
-        string += "\n"
+        string += "  - correct: %d (%d named, %d anonymous)\n" % \
+                  (correct_name+correct_anon, correct_name, correct_anon)
     
         confusion_nn = detail[EGER_CONFUSION_NAME_NAME]
         confusion_na = detail[EGER_CONFUSION_NAME_ANON]
         confusion_an = detail[EGER_CONFUSION_ANON_NAME]
-        string += "  - confusions: %d (%d n-n, %d n-a, %d a-n)" % (confusion_nn+confusion_na+confusion_an, confusion_nn, confusion_na, confusion_an)
-        string += "\n"
+        string += "  - confusions: %d (%d n-n, %d n-a, %d a-n)\n" % \
+                  (confusion_nn+confusion_na+confusion_an, \
+                   confusion_nn, confusion_na, confusion_an)
         
-        miss_named = detail[EGER_MISS_NAME]
+        miss_name = detail[EGER_MISS_NAME]
         miss_anon = detail[EGER_MISS_ANON]        
-        string += "  - miss: %d (%d named, %d anonymous)" % (miss_named+miss_anon, miss_named, miss_anon)
-        string += "\n"
+        string += "  - miss: %d (%d named, %d anonymous)\n" % \
+                  (miss_name+miss_anon, miss_name, miss_anon)
         
-        fa_named = detail[EGER_FALSE_ALARM_NAME]
+        fa_name = detail[EGER_FALSE_ALARM_NAME]
         fa_anon = detail[EGER_FALSE_ALARM_ANON]        
-        string += "  - fa: %d (%d named, %d anonymous)" % (fa_named+fa_anon, fa_named, fa_anon)
-        string += "\n"
+        string += "  - fa: %d (%d named, %d anonymous)\n" % \
+                  (fa_name+fa_anon, fa_name, fa_anon)
         
         if detail[EGER_HYP_NAME] > 0:
             precision = 1. * detail[EGER_CORRECT_NAME] / detail[EGER_HYP_NAME]
         else:
             precision = 1.
-        string += "  - precision (named): %.2f %%" % (100*precision)
-        string += "\n"
+        string += "  - precision (named): %.2f %%\n" % (100*precision)
 
         if detail[EGER_HYP_NAME] > 0:
             recall = 1. * detail[EGER_CORRECT_NAME] / detail[EGER_REF_NAME]
         else:
             recall = 1.
-        string += "  - recall (named): %.2f %%" % (100*recall)
-        string += "\n"
+        string += "  - recall (named): %.2f %%\n" % (100*recall)
         
         fmeasure = 2 * precision * recall / (precision + recall) 
-        string += "  - F1-measure (named): %.2f %%" % (100*fmeasure)
-        string += "\n"
+        string += "  - F1-measure (named): %.2f %%\n" % (100*fmeasure)
         
-        string += "  - EGER: %.2f %%" % (100*detail[self.name])
-        string += "\n"
+        string += "  - EGER: %.2f %%\n" % (100*detail[self.name])
         
         return string
 
-# =================================================================================
+# --------------------------------------------------------------------------- #
 
 def main(argv=None):
 
@@ -233,8 +288,9 @@ def main(argv=None):
     try:
         try:
             opts, args = getopt.getopt(argv[1:], \
-                                       "hR:H:F:", \
-                                       ["help", "reference=", "hypothesis=", "frames=", "speaker", "head"])
+                            "hR:H:F:", \
+                            ["help", "reference=", "hypothesis=", \
+                             "frames=", "speaker", "head"])
         except getopt.error, msg:
             raise Usage(msg)
         
@@ -262,8 +318,12 @@ def main(argv=None):
         print >> sys.stderr, "\t for help use --help"
         return 2
 
-    reference = pyannote.parser.repere.REPEREParser(path2reference, confidence=False, multitrack=True)
-    hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, confidence=False, multitrack=True)
+    reference = pyannote.parser.repere.REPEREParser(path2reference, \
+                                                    confidence=False, \
+                                                    multitrack=True)
+    hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, \
+                                                     confidence=False, \
+                                                     multitrack=True)
     frames = pyannote.parser.nist.UEMParser(path2frames)
     
     modalities = []
@@ -286,10 +346,14 @@ def main(argv=None):
     for modality in modalities:
         print "=== %s ===" % modality
         print error[modality]
-        
+    
+# --------------------------------------------------------------------------- #
+    
 if  __name__ == '__main__':
     import sys
     sys.exit(main())
+
+# --------------------------------------------------------------------------- #
     
 
         
