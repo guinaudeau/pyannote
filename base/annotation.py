@@ -1371,7 +1371,7 @@ class TrackIDAnnotation(TrackAnnotation):
                     else:
                         yield segment, track, identifier
         
-    def __call__(self, subset, mode='strict'):
+    def __call__(self, subset, mode='strict', invert=False):
         """
         
     .. currentmodule:: pyannote
@@ -1380,6 +1380,7 @@ class TrackIDAnnotation(TrackAnnotation):
     
     :param subset: :class:`Segment`, :class:`Timeline` or any valid identifier
     :param mode: choose between 'strict', 'loose' and 'intersection'
+    :param invert: when True, returns the complementary subset of annotations.
     :rtype: :class:`TrackIDAnnotation`
     
     >>> a = A(segment, mode='strict' | 'loose' | 'intersection')
@@ -1404,7 +1405,8 @@ class TrackIDAnnotation(TrackAnnotation):
         
         * :data:`mode` = 'loose'
             subset :data:`a` only contains annotations of 
-            segments with a non-empty intersection with :data:`timeline` coverage
+            segments with a non-empty intersection with :data:`timeline` 
+            coverage
         
         * :data:`mode` = 'intersection'
             same as 'loose' except segments are trimmed
@@ -1413,9 +1415,13 @@ class TrackIDAnnotation(TrackAnnotation):
     >>> a = A( valid_identifier )
     >>> a = A( set_of_valid_identifiers )   
     >>> a = A( list_of_valid_identifiers )
-    >>> a = A( tuple_of_valid_identifiers) 
+    >>> a = A( tuple_of_valid_identifiers ) 
 
-        Subset :data:`a` only contains annotations with the provided identifier(s).
+        Subset :data:`a` only contains annotations with the provided 
+        identifier(s).
+        
+        If :data:`invert` is provided and is True, subset :data:`a` contains 
+        all annotations but the ones with the provided identifier(s).
         
         :data:`mode` has no effect here. 
          """
@@ -1426,6 +1432,12 @@ class TrackIDAnnotation(TrackAnnotation):
         
         # 
         elif isinstance(subset, (tuple, list, set)):
+            
+            # if invert, get complementary list of identifiers
+            # and 
+            if invert:
+                subset = set(self.IDs) - set(subset)
+                return self(subset, mode=mode, invert=False)
             
             # create new empty annotation
             cls = type(self)
@@ -1438,21 +1450,32 @@ class TrackIDAnnotation(TrackAnnotation):
                 
                 # add it all to the (previously empty) annotation A
                 for segment, name, identifier, data in a.iteritems(data=True):
-                    A.__set_segment_name_identifier(segment, name, identifier, data)
+                    A.__set_segment_name_identifier(segment, name, \
+                                                    identifier, data)
         
         # extract annotation for one particular identifier
         # and only these...
         else:
+            
+            # if invert
+            if invert:
+                return self(set(subset), mode=mode, invert=True)
+            
             cls = type(self)
             A = cls(video=self.video, modality=self.modality)
             identifier = subset
-            timeline = self._identifier_timeline[identifier]
+            try:
+                timeline = self._identifier_timeline[identifier]
+            except:
+                timeline = Timeline(video=self.video)
             for segment in timeline:
                 tracks = self._get_segment(segment)
                 for name in tracks:
                     track = tracks[name]
                     if identifier in track:
-                        A.__set_segment_name_identifier(segment, name, identifier, track[identifier])
+                        A.__set_segment_name_identifier(segment, name, \
+                                                        identifier, \
+                                                        track[identifier])
         
         return A
                 
@@ -1460,7 +1483,8 @@ class TrackIDAnnotation(TrackAnnotation):
         """
     Identifiers translation
     
-    Create a copy of the annotation with identifiers translated according to :data:`translation`
+    Create a copy of the annotation with identifiers translated according to
+    :data:`translation`
     
     Identifiers with no available translation are left unchanged.
     
