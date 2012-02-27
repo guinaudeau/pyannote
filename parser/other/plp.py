@@ -20,7 +20,7 @@
 
 import struct
 import numpy as np
-from pyannote import SlidingWindow, SlidingWindowFeature
+from pyannote.base.feature import SlidingWindow, SlidingWindowFeature
 
 def _read_plp(path2plp):
     
@@ -44,8 +44,8 @@ def _read_plp(path2plp):
     vec_type = np.dtype(('<f4', (dim, )))
     plp_record = []
     for r in range(nrec):
-        plp_record.append(np.fromfile(f, dtype=vec_type, count=count[r], sep=''))
-    
+        plp_record.append(np.fromfile(f, dtype=vec_type, \
+                                     count=count[r], sep=''))
     f.close()
     
     return plp_record
@@ -70,9 +70,3 @@ class PLPParser(object):
                                        sliding_window = self.sliding_window,
                                        video=self.video)
         return feature
-        
-class PLPSample(PLPParser):
-    def __init__(self):
-        import os.path
-        sample_plp = '%s/../data/sample.12plp' % (os.path.dirname(__file__))
-        super(PLPSample, self).__init__(sample_plp, video='sample')

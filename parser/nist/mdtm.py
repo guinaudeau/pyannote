@@ -33,13 +33,6 @@ class MDTMParser(GenericParser):
                                          format, \
                                          multitrack = multitrack)
 
-class MDTMSample(MDTMParser):
-    def __init__(self):
-        import os.path
-        sample_mdtm = '%s/../data/sample.mdtm' % (os.path.dirname(__file__))
-        super(MDTMSample, self).__init__(sample_mdtm)
-
-
 def toMDTM(annotation, confidence=None):
     """
     Meta Data Time-Mark

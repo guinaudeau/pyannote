@@ -18,8 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['repere', 'nist']
-
-import nist
-import repere
+from nist import *
+from repere import *
+from other import *
 
