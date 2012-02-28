@@ -18,8 +18,13 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['DetectionErrorRate', 'DiarizationErrorRate', 'IdentificationErrorRate']
+__all__ = ['DetectionErrorRate', \
+           'DiarizationErrorRate', \
+           'IdentificationErrorRate', \
+           'SegmentationPrecision', 'SegmentationRecall', \
+           ]
 
 from detection import DetectionErrorRate
 from diarization import DiarizationErrorRate
 from identification import IdentificationErrorRate
+from segmentation import SegmentationPrecision, SegmentationRecall

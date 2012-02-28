@@ -20,51 +20,89 @@
 
 # --------------------------------------------------------------------------- #
 
-SEG_PRECISION_NAME = 'precision'
+from base import Precision, Recall
+from base import PRECISION_RETRIEVED, PRECISION_RELEVANT_RETRIEVED
+from base import RECALL_RELEVANT, RECALL_RELEVANT_RETRIEVED
+from ..base.segment import SEGMENT_PRECISION
 
-class SegmentationPrecision(BaseErrorRate):
+class SegmentationPrecision(Precision):
     def __init__(self, tolerance=0.):
-        values = set([])
-        super(SegmentationPrecision, self).__init__(SEG_PRECISION_NAME, \
-                                                    values)
-        self.__tolerance = tolerance
+        super(SegmentationPrecision, self).__init__()
+        self.__tolerance = max(tolerance, 1.1 * SEGMENT_PRECISION)
+        
+    def __get_tolerance(self): 
+        return self.__tolerance
+    tolerance = property(fget=__get_tolerance, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Tolerance, in seconds.")
     
+    def __segment_to_collar(self, segment):
+        collar = segment.copy()
+        collar.start = segment.start - .5 * self.tolerance
+        collar.end =   segment.start + .5 * self.tolerance 
+        return collar
+        
     def get_details(self, reference, hypothesis, **kwargs):
         
+        if not reference.is_segmentation():
+            raise ValueError('Provided reference is not a segmentation.')
+        if not hypothesis.is_segmentation():
+            raise ValueError('Provided hypothesis is not a segmentation.')
+        if reference.extent() != hypothesis.extent():
+            raise ValueError('Reference and hypothesis extents do not match.')
+                
         detail = self.init_details()        
+        
+        detail[PRECISION_RETRIEVED] = len(hypothesis) - 1
+        R = reference.copy(map_func=self.__segment_to_collar)
+        del R[0]
+        H = hypothesis.copy(map_func=self.__segment_to_collar)
+        del H[0]
+        
+        for collar in H:
+            if R(collar, mode='loose'):
+                detail[PRECISION_RELEVANT_RETRIEVED] += 1
+        
         return detail
-    
-    def get_rate(self, detail):
-        
-        numerator = 
-        denominator = 
-        if denominator == 0.:
-            if numerator == 0:
-                return 0.
-            else:
-                return 1.
-        else:
-            return numerator/denominator
-       
-    def pretty(self, detail):
-        return string
-    
-    
 
-SEG_RECALL_NAME = 'recall'
-class SegmentationRecall(BaseErrorRate):
+class SegmentationRecall(Recall):
     def __init__(self, tolerance=0.):
-        values = 
-        super(SegmentationRecall, self).__init__(SEG_RECALL_NAME, \
-                                                 values)
-        self.__tolerance = tolerance
-
-SEG_FMEASURE_NAME = 'f-measure'
-class SegmentationFMeasure(object):
-    def __init__(self, tolerance=0.):
-        values = 
-        super(SegmentationRecall, self).__init__(SEG_RECALL_NAME, \
-                                                 values)
-        self.__tolerance = tolerance
+        super(SegmentationRecall, self).__init__()
+        self.__tolerance = max(tolerance, 1.1 * SEGMENT_PRECISION)
         
-
+    def __get_tolerance(self): 
+        return self.__tolerance
+    tolerance = property(fget=__get_tolerance, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Tolerance, in seconds.")
+    
+    def __segment_to_collar(self, segment):
+        collar = segment.copy()
+        collar.start = segment.start - .5 * self.tolerance
+        collar.end =   segment.start + .5 * self.tolerance 
+        return collar
+        
+    def get_details(self, reference, hypothesis, **kwargs):
+        
+        if not reference.is_segmentation():
+            raise ValueError('Provided reference is not a segmentation.')
+        if not hypothesis.is_segmentation():
+            raise ValueError('Provided hypothesis is not a segmentation.')
+        if reference.extent() != hypothesis.extent():
+            raise ValueError('Reference and hypothesis extents do not match.')
+                
+        detail = self.init_details()        
+        
+        detail[RECALL_RELEVANT] = len(reference) - 1
+        R = reference.copy(map_func=self.__segment_to_collar)
+        del R[0]
+        H = hypothesis.copy(map_func=self.__segment_to_collar)
+        del H[0]
+        
+        for collar in R:
+            if H(collar, mode='loose'):
+                detail[RECALL_RELEVANT_RETRIEVED] += 1
+        
+        return detail
