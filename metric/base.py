@@ -97,6 +97,14 @@ class Precision(BaseErrorRate):
                 raise ValueError('')
         else:
             return numerator/denominator
+    
+    def pretty(self, detail):
+        string = ""
+        string += "  - # retrieved: %d\n" % (detail[PRECISION_RETRIEVED])
+        string += "  - ... and relevant: %d\n" % \
+                  (detail[PRECISION_RELEVANT_RETRIEVED])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
 
 RECALL_NAME = 'recall'
 RECALL_RELEVANT = '# relevant'
@@ -118,3 +126,14 @@ class Recall(BaseErrorRate):
                 raise ValueError('')
         else:
             return numerator/denominator
+    
+    def pretty(self, detail):
+        string = ""
+        string += "  - # relevant: %d\n" % (detail[RECALL_RELEVANT])
+        string += "  - ... and retrieved: %d\n" % \
+                  (detail[RECALL_RELEVANT_RETRIEVED])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+    
+
+    
