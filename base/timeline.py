@@ -225,8 +225,14 @@ class Timeline(object):
         """
         Return total duration of timeline coverage
         """
-        return sum( [segment.duration for s, segment in enumerate(self.coverage())] )
+        return sum( [segment.duration \
+                     for s, segment in enumerate(self.coverage())] )
     
+    def is_segmentation(self):
+        """
+        A segmentation is a partition with no gap.
+        """
+        return (len(self) > 0) and (self > 0) and (not 1/self)
     # ------------------------------------------------------------------- #
     
     def __getitem__(self, key):
@@ -389,13 +395,23 @@ class Timeline(object):
     
     # =================================================================== #
     
-    def copy(self):
+    def copy(self, map_func=None):
         """
         new_timeline = timeline.copy()
             create new timeline, identical to timeline
+
+        :param map_func: map_func(segment) = other_segment
+        :type map_func: function
+
         """
         timeline = Timeline(video=self.video)
-        timeline += self
+        
+        if map_func is None:
+            map_func = lambda segment: segment
+
+        for segment in self:
+            timeline += map_func(segment)
+        
         return timeline
     
     # =================================================================== #
