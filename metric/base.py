@@ -100,9 +100,10 @@ class Precision(BaseErrorRate):
     
     def pretty(self, detail):
         string = ""
-        string += "  - # retrieved: %d\n" % (detail[PRECISION_RETRIEVED])
-        string += "  - ... and relevant: %d\n" % \
-                  (detail[PRECISION_RELEVANT_RETRIEVED])
+        string += "  - %s: %d\n" % (PRECISION_RETRIEVED, \
+                                    detail[PRECISION_RETRIEVED])
+        string += "  - %s: %d\n" % (PRECISION_RELEVANT_RETRIEVED, \
+                                    detail[PRECISION_RELEVANT_RETRIEVED])
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
 
@@ -129,9 +130,10 @@ class Recall(BaseErrorRate):
     
     def pretty(self, detail):
         string = ""
-        string += "  - # relevant: %d\n" % (detail[RECALL_RELEVANT])
-        string += "  - ... and retrieved: %d\n" % \
-                  (detail[RECALL_RELEVANT_RETRIEVED])
+        string += "  - %s: %d\n" % (RECALL_RELEVANT, \
+                                    detail[RECALL_RELEVANT])
+        string += "  - %s: %d\n" % (RECALL_RELEVANT_RETRIEVED, \
+                                    detail[RECALL_RELEVANT_RETRIEVED])
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
     
