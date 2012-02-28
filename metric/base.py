@@ -136,6 +136,6 @@ class Recall(BaseErrorRate):
                                     detail[RECALL_RELEVANT_RETRIEVED])
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
-    
 
-    
+def f_measure(precision, recall, beta=1.):
+    return (1+beta*beta)*precision*recall / (beta*beta*precision+recall)
