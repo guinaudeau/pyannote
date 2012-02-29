@@ -81,10 +81,43 @@ class CoMatrix(object):
     def __call__(self, ilabel):
         if ilabel in self.label2i:
             i = self.label2i[ilabel]
-            return {jlabel: self.Mij[i, self.label2j[jlabel]] for jlabel in self.label2j}
+            return {jlabel: self.Mij[i, self.label2j[jlabel]] \
+                    for jlabel in self.label2j}
         else:
             return {}
             
+    def argmin(self, threshold=None):
+        """
+        :param threshold: threshold on minimum value
+        :type threshold: float
+        
+        :returns: list of label pairs corresponding to minimum value in matrix.
+        In case :data:`threshold` is provided and is smaller than minimum value,
+        then, returns an empty list.
+        """
+        m = np.min(self.M)
+        if (threshold is None) or (m < threshold):
+            pairs = np.argwhere(self.M == m)
+        else:
+            pairs = []
+        return [(self.ilabels[i], self.jlabels[j]) for i, j in pairs]
+
+    def argmax(self, threshold=None):
+        """
+        :param threshold: threshold on maximum value
+        :type threshold: float
+        
+        :returns: list of label pairs corresponding to maximum value in matrix.
+        In case :data:`threshold` is provided and is higher than maximum value,
+        then, returns an empty list.
+        """
+        M = np.max(self.M)
+        if (threshold is None) or (M > threshold):
+            pairs = np.argwhere(self.M == M)
+        else:
+            pairs = []
+        return [(self.ilabels[i], self.jlabels[j]) for i, j in pairs]
+        
 class Confusion(CoMatrix):
     """
     Confusion matrix between two (ID-based) annotations
