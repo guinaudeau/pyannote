@@ -23,128 +23,157 @@ from segment import Segment
 from timeline import Timeline
 
 class Feature(object):
-    """
-    """
-    def __init__(self, data, \
-                       toFrameRange_func, \
-                       toSegment_func, \
-                       video=None):
-        
+    
+    def __init__(self, data, toFrameRange, toSegment, video=None):
         super(Feature, self).__init__()
-        self._data = data
-        self._toFrameRange_func = toFrameRange_func
-        self._toSegment_func    = toSegment_func
-        self._video = video
+        self.__data = data
+        self.__toFrameRange = toFrameRange
+        self.__toSegment = toSegment
+        self.__video = video
     
-    # --------------- #
-    # Getters/Setters #
-    # --------------- #
+    def __get_video(self): 
+        return self.__video
+    def __set_video(self, value):
+        self.__video = value
+    video = property(fget=__get_video, \
+                     fset=__set_video, \
+                     fdel=None, \
+                     doc="Processed video.")
     
-    def _get_video(self): 
-        return self._video
-    def _set_video(self, value):
-        self._video = value
-    video = property(fget=_get_video, fset=_set_video, fdel=None, doc="Processed video.")
+    def __get_data(self): 
+        return self.__data
+    data = property(fget=__get_data, \
+                    fset=None, \
+                    fdel=None, \
+                    doc="Raw features (numpy array).")
     
-    def _get_data(self): 
-        return self._data
-    data = property(fget=_get_data, fset=None, fdel=None, doc="Raw features (numpy array).")
-    
-    def _get_toFrameRange(self): 
-        return self._toFrameRange_func
-    toFrameRange = property(fget=_get_toFrameRange, fset=None, fdel=None, \
+    def __get_toFrameRange(self): 
+        return self.__toFrameRange
+    def __set_toFrameRange(self, value): 
+        self.__toFrameRange = value
+    toFrameRange = property(fget=__get_toFrameRange, \
+                            fset=__set_toFrameRange, \
+                            fdel=None, \
                             doc="Segment to frame range conversion function.")
     
-    def _get_toSegment(self): 
-        return self._toSegment_func
-    toSegment = property(fget=_get_toSegment, fset=None, fdel=None, \
-                            doc="Frame range to segment conversion function.")
+    def __get_toSegment(self): 
+        return self.__toSegment
+    def __set_toSegment(self, value):
+        self.__toSegment = value
+    toSegment = property(fget=__get_toSegment, \
+                         fset=__set_toSegment, \
+                         fdel=None, \
+                         doc="Frame range to segment conversion function.")
     
-    def __getitem__(self, key):
-        if isinstance(key, Segment):
-            i0, n = self._toFrameRange_func(key)
-            return np.take(self._data, \
-                           range(i0, i0+n), \
-                           axis=0, \
-                           out=None, \
-                           mode='raise')
-        elif isinstance(key, Timeline):
-            # make sure there is no overlapping segment
-            coverage = key.coverage()
+    def __call__(self, subset):
+        
+        # extract segment feature vectors
+        if isinstance(subset, Segment):
+
+            # get frame range corresponding to the segment
+            i0, n = self.toFrameRange(subset)
+
+            # perform the actual extraction
+            return np.take(self.data, range(i0, i0+n), axis=0, \
+                           out=None, mode='raise')
+        
+        # extract timeline feature vectors
+        elif isinstance(subset, Timeline):
+
+            # provided timeline has to be a partition
+            # ie must not contain any overlapping segments
+            if subset < 0:
+                raise ValueError('Overlapping segments.')
+                
+            # concatenate frame ranges of all segments
             indices = []
-            for s, segment in enumerate(coverage):
-                i0, n = self._toFrameRange_func(segment)
+            for segment in subset.coverage():
+                i0, n = self.toFrameRange(segment)
                 indices += range(i0, i0+n)
-            return np.take(self._data, \
-                           indices, \
-                           axis=0, \
-                           out=None, \
-                           mode='raise')
-        elif isinstance(key, slice):
-            return np.take(self._data, \
-                           range(key.start, key.stop, key.step if key.step else 1), \
-                           axis=0, \
-                           out=None, \
-                           mode='raise')
-        elif isinstance(key, int):
-            return np.take(self._data, \
-                           [key], \
-                           axis=0,
-                           out=None,
-                           mode='raise')
+
+            # perform the actual extraction
+            return np.take(self.data, indices, axis=0, out=None, mode='raise')
+        
         else:
-            raise TypeError('Cannot get anything but Segment or slice of Feature')
+            raise TypeError('')
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return np.take(self.data, [key], axis=0, out=None, mode='raise')
+        elif isinstance(key, slice):
+            return np.take(self.data, \
+                           range(key.start, key.stop, key.step \
+                                                      if key.step else 1), \
+                           axis=0, out=None, mode='raise')
+        else:
+            raise TypeError('')
     
     def extent(self):
-        n_features = self._data.shape[0]
-        return self._toSegment_func(0, n_features)
+        N, D = self.data.shape
+        return self.toSegment(0, N)
     
 
 class SlidingWindow(object):
     """
-    > sw = SlidingWindow(duration, step, start)    
-    > frame_range = (a, b)
-    > frame_range == sw.toFrameRange(sw.toSegment(*frame_range))
+    >>> sw = SlidingWindow(duration, step, start)    
+    >>> frame_range = (a, b)
+    >>> frame_range == sw.toFrameRange(sw.toSegment(*frame_range))
+    ... True
     
-    > segment = Segment(A, B)
-    > new_segment = sw.toSegment(*sw.toFrameRange(segment))
-    > abs(segment) - abs(segment & new_segment) < .5 * sw.step
+    >>> segment = Segment(A, B)
+    >>> new_segment = sw.toSegment(*sw.toFrameRange(segment))
+    >>> abs(segment) - abs(segment & new_segment) < .5 * sw.step
     
     """
     def __init__(self, duration=0.030, step=0.010, start=0.000):
         super(SlidingWindow, self).__init__()
-        self._duration = duration
-        self._step = step
-        self._start = start
+        self.__duration = duration
+        self.__step = step
+        self.__start = start
     
-    def get_start(self): 
-        return self._start
-    def set_start(self, value):
-        self._start = value
-    start = property(fget=get_start, fset=set_start, fdel=None, doc="Sliding window start time in seconds.")
+    def __get_start(self): 
+        return self.__start
+    def __set_start(self, value):
+        self.__start = value
+    start = property(fget=__get_start, \
+                     fset=__set_start, \
+                     fdel=None, \
+                     doc="Sliding window start time in seconds.")
     
-    def get_duration(self): 
-        return self._duration
-    def set_duration(self, value):
-        self._duration = value
-    duration = property(fget=get_duration, fset=set_duration, fdel=None, doc="Sliding window duration in seconds.")
+    def __get_duration(self): 
+        return self.__duration
+    def __set_duration(self, value):
+        self.__duration = value
+    duration = property(fget=__get_duration, \
+                        fset=__set_duration, \
+                        fdel=None, \
+                        doc="Sliding window duration in seconds.")
 
-    def get_step(self): 
-        return self._step
-    def set_step(self, value):
-        self._step = value
-    step = property(fget=get_step, fset=set_step, fdel=None, doc="Sliding window step in seconds.")
+    def __get_step(self): 
+        return self.__step
+    def __set_step(self, value):
+        self.__step = value
+    step = property(fget=__get_step, \
+                    fset=__set_step, \
+                    fdel=None, \
+                    doc="Sliding window step in seconds.")
+    
+    def __closest_frame(self, t):
+        """
+        Finds index of closest frame to timestamp t
+        """
+        frame = np.rint(.5 + (t - self.start - .5*self.duration) / self.step)
+        return int(frame)
     
     def toFrameRange(self, segment):
         """
         Segment to 0-indexed frame range
         """
-        
-        # find frame center is the closest to the segment start
-        i0 = int(np.rint(.5 + (segment.start-self.start-.5*self.duration) / self.step))
-        # find frame whose center is the closest to the segment end
-        j0 = int(np.rint(.5 + (segment.stop -self.start-.5*self.duration) / self.step))
-        
+        # find closest frame to segment start
+        i0 = self.__closest_frame(segment.start)
+        # find closest frame to segment end
+        j0 = self.__closest_frame(segment.end)
+        # return frame range as (start_frame, number_of_frame) tuple
         i0 = max(0, i0)
         n = j0 - i0
         return i0, n
@@ -178,43 +207,51 @@ class SlidingWindow(object):
         
         return segment
 
-
 class SlidingWindowFeature(Feature):
-    def __init__(self, data, \
-                       sliding_window=SlidingWindow(), \
-                       video=None):
-        super(SlidingWindowFeature, self).__init__(data, sliding_window.toFrameRange, \
-                                                         sliding_window.toSegment, \
-                                                   video=video)
-        self._sliding_window = sliding_window
+    
+    def __init__(self, data, sliding_window, video=None):
         
-    def _get_sw(self): 
-        return self._sliding_window
-    sliding_window = property(fget=_get_sw, fset=None, fdel=None, \
-                              doc="Sliding window on which features are extracted.")
+        sw = sliding_window
+        super(SlidingWindowFeature, self).__init__(data, sw.toFrameRange, \
+                                                   sw.toSegment, video=video)
+        self.__sliding_window = sw
+        
+    def __get_sliding_window(self): 
+        return self.__sliding_window
+    sliding_window = property(fget=__get_sliding_window, \
+                              fset=None, \
+                              fdel=None, \
+                              doc="Feature extraction sliding window.")
 
 class TimelineFeature(Feature):
-    def __init__(self, data, \
-                       timeline=Timeline(), \
-                       video=None):
+    
+    def __init__(self, data, timeline, video=None):        
+        super(TimelineFeature, self).__init__(data, None, None, video=video)
+        self.__timeline = timeline
+        self.toFrameRange = self.__toFrameRange
+        self.toSegment = self.__toSegment
         
-        def _local_toFrameRange(segment):
-            segments = timeline[segment]
-            i0 = timeline.index(segments[0])
-            n = len(segments)
+    def __get_timeline(self): 
+        return self.__timeline
+    timeline = property(fget=__get_timeline, \
+                        fset=None, \
+                        fdel=None, \
+                        doc="Feature extraction timeline.")
+    
+    def __toFrameRange(self, segment):
+        sub_timeline = self.timeline(segment, mode='loose')
+        if sub_timeline:
+            # index of first segment in sub-timeline
+            i0 = self.timeline.index( sub_timeline[0] )
+            # number of segments in sub-timeline
+            n = len(sub_timeline)
             return i0, n
+        else:
+            return 0, 0
         
-        def _local_toSegment(i0, n):
-            raise NotImplementedError('toSegment is not implemented for TimelineFeature')
-        
-        super(TimelineFeature, self).__init__(data, _local_toFrameRange, \
-                                                    _local_toSegment, \
-                                                    video=video)
-        self._timeline = timeline
-    
-    def _get_tl(self): 
-        return self.timeline
-    timeline = property(fget=_get_tl, fset=None, fdel=None, \
-                              doc="Timeline on which features are aligned (one per segment).")
-    
+    def __toSegment(self, i0, n):
+        raise NotImplementedError('')
+        # first_segment = self.timeline[i0]
+        # last_segment = self.timeline[i0+n]
+        return first_segment | last_segment
     
