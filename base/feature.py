@@ -125,11 +125,12 @@ class SlidingWindow(object):
     >>> abs(segment) - abs(segment & new_segment) < .5 * sw.step
     
     """
-    def __init__(self, duration=0.030, step=0.010, start=0.000):
+    def __init__(self, duration=0.030, step=0.010, start=0.000, end=None):
         super(SlidingWindow, self).__init__()
         self.__duration = duration
         self.__step = step
         self.__start = start
+        self.__end = end
     
     def __get_start(self): 
         return self.__start
@@ -139,15 +140,15 @@ class SlidingWindow(object):
                      fset=__set_start, \
                      fdel=None, \
                      doc="Sliding window start time in seconds.")
-    
-    def __get_duration(self): 
-        return self.__duration
-    def __set_duration(self, value):
-        self.__duration = value
-    duration = property(fget=__get_duration, \
-                        fset=__set_duration, \
-                        fdel=None, \
-                        doc="Sliding window duration in seconds.")
+
+    def __get_end(self): 
+        return self.__end
+    def __set_end(self, value):
+        self.__end = value
+    end = property(fget=__get_end, \
+                     fset=__set_end, \
+                     fdel=None, \
+                     doc="Sliding window end time in seconds.")
 
     def __get_step(self): 
         return self.__step
@@ -157,6 +158,16 @@ class SlidingWindow(object):
                     fset=__set_step, \
                     fdel=None, \
                     doc="Sliding window step in seconds.")
+
+    def __get_duration(self): 
+        return self.__duration
+    def __set_duration(self, value):
+        self.__duration = value
+    duration = property(fget=__get_duration, \
+                        fset=__set_duration, \
+                        fdel=None, \
+                        doc="Sliding window duration in seconds.")
+
     
     def __closest_frame(self, t):
         """
@@ -206,7 +217,24 @@ class SlidingWindow(object):
             segment = (delta << segment)
         
         return segment
+        
+    def __iter__(self):
+        
+        if self.end is None:
+            raise ValueError('Please set end time first.')
+        extent = Segment(start=self.start, end=self.end)  
 
+        position = 0
+        while(True):
+            start = self.start + position * self.step
+            end   = start + self.duration
+            window = extent & Segment(start=start, end=end)
+            if window:
+                yield window
+                position += 1
+            else:
+                break
+        
 class SlidingWindowFeature(Feature):
     
     def __init__(self, data, sliding_window, video=None):
