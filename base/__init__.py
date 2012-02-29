@@ -18,8 +18,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['Segment', 'Timeline', 'TrackIDAnnotation', 'IDAnnotation']
+__all__ = ['Segment', \
+           'Timeline', \
+           'TrackIDAnnotation', 'IDAnnotation', \
+           'SlidingWindowFeature', 'TimelineFeature']
 
 from segment import Segment
 from timeline import Timeline
 from annotation import TrackIDAnnotation, IDAnnotation
+from feature import SlidingWindowFeature, TimelineFeature
