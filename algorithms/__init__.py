@@ -20,4 +20,4 @@
 
 import association
 import diarization
-
+import segmentation

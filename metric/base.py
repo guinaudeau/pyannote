@@ -18,8 +18,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-import warnings
-
 class BaseErrorRate(object):
     
     def __init__(self, name, values):
@@ -77,4 +75,67 @@ class BaseErrorRate(object):
     
     def pretty(self, detail):
         raise NotImplementedError('')
+
+
+PRECISION_NAME = 'precision'
+PRECISION_RETRIEVED = '# retrieved'
+PRECISION_RELEVANT_RETRIEVED = '# relevant retrieved'
+
+class Precision(BaseErrorRate):
+    def __init__(self):
+        values = set([PRECISION_RETRIEVED, \
+                      PRECISION_RELEVANT_RETRIEVED])
+        super(Precision, self).__init__(PRECISION_NAME, values)
     
+    def get_rate(self, detail):
+        numerator = detail[PRECISION_RELEVANT_RETRIEVED] 
+        denominator = detail[PRECISION_RETRIEVED]
+        if denominator == 0.:
+            if numerator == 0:
+                return 1.
+            else:
+                raise ValueError('')
+        else:
+            return numerator/denominator
+    
+    def pretty(self, detail):
+        string = ""
+        string += "  - %s: %d\n" % (PRECISION_RETRIEVED, \
+                                    detail[PRECISION_RETRIEVED])
+        string += "  - %s: %d\n" % (PRECISION_RELEVANT_RETRIEVED, \
+                                    detail[PRECISION_RELEVANT_RETRIEVED])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
+RECALL_NAME = 'recall'
+RECALL_RELEVANT = '# relevant'
+RECALL_RELEVANT_RETRIEVED = '# relevant retrieved'
+
+class Recall(BaseErrorRate):
+    def __init__(self):
+        values = set([RECALL_RELEVANT, \
+                      RECALL_RELEVANT_RETRIEVED])
+        super(Recall, self).__init__(RECALL_NAME, values)
+    
+    def get_rate(self, detail):
+        numerator = detail[RECALL_RELEVANT_RETRIEVED] 
+        denominator = detail[RECALL_RELEVANT]
+        if denominator == 0.:
+            if numerator == 0:
+                return 1.
+            else:
+                raise ValueError('')
+        else:
+            return numerator/denominator
+    
+    def pretty(self, detail):
+        string = ""
+        string += "  - %s: %d\n" % (RECALL_RELEVANT, \
+                                    detail[RECALL_RELEVANT])
+        string += "  - %s: %d\n" % (RECALL_RELEVANT_RETRIEVED, \
+                                    detail[RECALL_RELEVANT_RETRIEVED])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
+def f_measure(precision, recall, beta=1.):
+    return (1+beta*beta)*precision*recall / (beta*beta*precision+recall)
