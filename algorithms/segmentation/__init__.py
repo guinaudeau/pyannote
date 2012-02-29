@@ -19,3 +19,4 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from base import PeriodicSegmentation

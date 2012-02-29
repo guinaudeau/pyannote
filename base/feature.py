@@ -168,7 +168,6 @@ class SlidingWindow(object):
                         fdel=None, \
                         doc="Sliding window duration in seconds.")
 
-    
     def __closest_frame(self, t):
         """
         Finds index of closest frame to timestamp t

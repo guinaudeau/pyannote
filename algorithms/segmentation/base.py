@@ -19,3 +19,32 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
+class BaseSegmentation(object):
+    def __init__(self):
+        super(BaseSegmentation, self).__init__()
+
+class PeriodicSegmentation(BaseSegmentation):
+    def __init__(self, period):
+        super(PeriodicSegmentation, self).__init__()
+        self.__period = period
+        
+    def __get_period(self):
+        return self.__period
+    def __set_period(self, value):
+        self.__period = value
+    period = property(fget=__get_period, \
+                      fset=__set_period, \
+                      fdel=None, \
+                      doc='Segmentation period.')
+    
+    def __call__(self, feature):
+        extent = feature.extent()
+        sliding_window = SlidingWindow(duration=self.period, \
+                                       step=self.period, \
+                                       start=extent.start, \
+                                       end=extent.end)
+        segmentation = Timeline(video=feature.video)
+        for window in sliding_window:
+            segmentation += window
+        return segmentation
+        
