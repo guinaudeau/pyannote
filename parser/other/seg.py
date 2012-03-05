@@ -31,13 +31,12 @@ class SEGParser(GenericParser):
                        multitrack=False, \
                        sliding_window=SlidingWindow()):
         
-        warnings.warn('SEGParser never was tested...')
-        
         # source identifier 1 start duration
         format = '{VIDEO} {ID} {NA} {START} {DURATION}' 
         super(SEGParser, self).__init__(path2seg, \
                                          format, \
-                                         sliding_window = None, 
+                                         modality=modality, \
+                                         sliding_window = sliding_window, \
                                          multitrack = multitrack)
 
 def toSEG(annotation, toFrameRange, delta=0, order_by='time'):
