@@ -22,10 +22,10 @@ import numpy as np
 from segment import Segment
 from timeline import Timeline
 
-class Feature(object):
+class BaseFeature(object):
     
     def __init__(self, data, toFrameRange, toSegment, video=None):
-        super(Feature, self).__init__()
+        super(BaseFeature, self).__init__()
         self.__data = data
         self.__toFrameRange = toFrameRange
         self.__toSegment = toSegment
@@ -75,7 +75,7 @@ class Feature(object):
 
             # perform the actual extraction
             return np.take(self.data, range(i0, i0+n), axis=0, \
-                           out=None, mode='raise')
+                           out=None, mode='clip')
         
         # extract timeline feature vectors
         elif isinstance(subset, Timeline):
@@ -234,7 +234,7 @@ class SlidingWindow(object):
             else:
                 break
         
-class SlidingWindowFeature(Feature):
+class SlidingWindowFeature(BaseFeature):
     
     def __init__(self, data, sliding_window, video=None):
         
@@ -250,7 +250,7 @@ class SlidingWindowFeature(Feature):
                               fdel=None, \
                               doc="Feature extraction sliding window.")
 
-class TimelineFeature(Feature):
+class TimelineFeature(BaseFeature):
     
     def __init__(self, data, timeline, video=None):        
         super(TimelineFeature, self).__init__(data, None, None, video=video)
@@ -281,4 +281,5 @@ class TimelineFeature(Feature):
         # first_segment = self.timeline[i0]
         # last_segment = self.timeline[i0+n]
         return first_segment | last_segment
+            
     
