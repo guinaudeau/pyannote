@@ -21,6 +21,7 @@
 import pyannote.parser
 
 duration = 60 # 1 minute
+step = 30 
 output_dir = '/tmp/'
 data_dir = '/Users/bredin/Data/QCompere/dryrun'
 dev_or_test = 'dev'
@@ -65,7 +66,7 @@ for video in VIDEOS:
     for section in uem:
         
         sw = pyannote.base.feature.SlidingWindow(start=section.start, \
-                                                 step=duration, \
+                                                 step=step, \
                                                  duration=duration)
         parts = pyannote.Timeline(video=video)
         segment = pyannote.Segment(sw.start, sw.start + sw.duration)
@@ -81,19 +82,19 @@ for video in VIDEOS:
             w = written(part, mode='intersection')
         
             for segment in s:
-                f_speaker.write('%s ' % "_".join(sorted(s.ids(segment))))
+                f_speaker.write('%s ' % " ".join(sorted(s.ids(segment))))
             f_speaker.write('\n')
 
             for segment in S:
-                f_spoken.write('%s ' % "_".join(sorted(S.ids(segment))))
+                f_spoken.write('%s ' % " ".join(sorted(S.ids(segment))))
             f_spoken.write('\n')
         
             for segment in h:
-                f_head.write('%s ' % "_".join(sorted(h.ids(segment))))
+                f_head.write('%s ' % " ".join(sorted(h.ids(segment))))
             f_head.write('\n')
         
             for segment in w:
-                f_written.write('%s ' % "_".join(sorted(w.ids(segment))))
+                f_written.write('%s ' % " ".join(sorted(w.ids(segment))))
             f_written.write('\n')
     
 f_speaker.close()
