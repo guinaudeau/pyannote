@@ -17,5 +17,3 @@
 # 
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
-
-from bic import BICClustering

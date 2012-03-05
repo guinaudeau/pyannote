@@ -20,15 +20,20 @@
 
 import numpy as np
 from base import DiarizationGraph
-from ..helper import Gaussian
+from ..helper.bic import Gaussian
 
-class BICClusteringGraph(DiarizationGraph):
+BIC_CLUSTERING_GAUSSIAN = '__gaussian__'
+
+class BICClustering(DiarizationGraph):
     
-    def __init__(self, annotation, feature, penalty=7.):
-        super(BICClusteringGraph, self).__init__(annotation)
+    def __init__(self, penalty=7.):
+        super(BICClustering, self).__init__()
         self.__penalty = penalty
-        self.__feature = feature
     
+    def __call__(self, annotation, feature=None):
+        self.__feature = feature
+        super(BICClustering, self).__call__(annotation)
+        
     def __get_feature(self): 
         return self.__feature
     feature = property(fget=__get_feature, \
@@ -46,27 +51,33 @@ class BICClusteringGraph(DiarizationGraph):
     # ================================================================== #
     
     def get_base_node(self, segment, track):
-        a, attr = super(BICClusteringGraph, self).get_base_node(segment, track) 
+        a, attr = super(BICClustering, self).get_base_node(segment, track) 
         g = Gaussian(penalty=self.penalty)
-        g.fit(self.feature(segment))
-        attr['gaussian'] = g
+        if self.feature is not None:
+            x = self.feature(segment)
+        else:
+            x = self.annotation[segment, track]
+        g.fit(x)
+        attr[BIC_CLUSTERING_GAUSSIAN] = g
         return a, attr
     
     # ------------------------------------------------------------------ #
 
     def get_nodes_distance(self, a, b):
-        d = self.node[a]['gaussian'] - self.node[b]['gaussian']
+        d = self.node[a][BIC_CLUSTERING_GAUSSIAN] - \
+            self.node[b][BIC_CLUSTERING_GAUSSIAN]
         if d > 0:
             return np.inf
         else:
             return d
-    
-    # ================================================================== #
+
+    # ------------------------------------------------------------------ #
     
     def get_new_node(self, a, b):
-        ab, attr = super(BICClusteringGraph, self).get_new_node(a, b)
-        g = self.node[a]['gaussian'] & self.node[b]['gaussian']
-        attr['gaussian'] = g
+        ab, attr = super(BICClustering, self).get_new_node(a, b)
+        g = self.node[a][BIC_CLUSTERING_GAUSSIAN] & \
+            self.node[b][BIC_CLUSTERING_GAUSSIAN]
+        attr[BIC_CLUSTERING_GAUSSIAN] = g
         return ab, attr
     
     # ================================================================== #
