@@ -112,12 +112,8 @@ class Louvain(BaseAssociation):
         
         G = self.__confusion_graph(A, B)
     
-        if nx.number_connected_components(G) == len(G.nodes()):
-            partition = {node: n for n, node in enumerate(G.nodes_iter())}
-        else:
-            # Community detection
-            partition = pyannote.algorithms.community.best_partition(G)
-
+        # Community detection
+        partition = pyannote.algorithms.community.best_partition(G)
         clusters = self.__partition_to_cluster(partition)
     
         # Many-to-many mapping
