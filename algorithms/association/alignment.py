@@ -66,20 +66,16 @@ for video in VIDEOS:
     for section in uem:
         
         sw = pyannote.base.feature.SlidingWindow(start=section.start, \
+                                                 end=section.end, \
                                                  step=step, \
                                                  duration=duration)
-        parts = pyannote.Timeline(video=video)
-        segment = pyannote.Segment(sw.start, sw.start + sw.duration)
-        while(segment in section):
-            parts += segment
-            segment += sw.step
 
-        for part in parts:
+        for window in sw:
             
-            s = speaker(part, mode='intersection')
-            S = spoken(part, mode='intersection')
-            h = head(part, mode='intersection')
-            w = written(part, mode='intersection')
+            s = speaker(window, mode='intersection')
+            S = spoken(window, mode='intersection')
+            h = head(window, mode='intersection')
+            w = written(window, mode='intersection')
         
             for segment in s:
                 f_speaker.write('%s ' % " ".join(sorted(s.ids(segment))))
