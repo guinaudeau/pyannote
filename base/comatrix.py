@@ -19,46 +19,65 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import warnings
 
 class CoMatrix(object):
-    def __init__(self, ilabels, jlabels, Mij):
+    def __init__(self, ilabels, jlabels, Mij, default=0.):
+        
         super(CoMatrix, self).__init__()
         
-        self.ilabels = ilabels
-        self.jlabels = jlabels
-        self.Mij = Mij
+        self.__ilabels = ilabels
+        self.__jlabels = jlabels
+        self.__Mij = np.array(Mij).reshape((len(ilabels), len(jlabels)))
         
-        self.label2i = {ilabel:i for i, ilabel in enumerate(ilabels)}
-        self.label2j = {jlabel:i for i, jlabel in enumerate(jlabels)}
+        self.__label2i = {ilabel:i for i, ilabel in enumerate(ilabels)}
+        self.__label2j = {jlabel:i for i, jlabel in enumerate(jlabels)}
+        
+        self.__default = default
     
+    # ------------------------------------------------------------------- #
+    
+    def __get_default(self):
+        return self.__default
+    default = property(fget=__get_default, \
+                       fset=None, \
+                       fdel=None, \
+                       doc="Default value.")
+    
+    # ------------------------------------------------------------------- #
+
     def __get_T(self): 
-        return CoMatrix(self.jlabels, self.ilabels, self.Mij.T)
+        return CoMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
     T = property(fget=__get_T, \
                      fset=None, \
                      fdel=None, \
                      doc="Matrix transposition.")
     
     def __get_shape(self):
-        return self.Mij.shape
+        return self.__Mij.shape
     shape = property(fget=__get_shape, \
                      fset=None, \
                      fdel=None, \
                      doc="Matrix shape.")
-                     
+
+    # ------------------------------------------------------------------- #
+
     def __get_M(self):
-        return self.Mij
+        return self.__Mij
     M = property(fget=__get_M, \
                  fset=None, \
                  fdel=None, \
                  doc="numpy matrix.")
                  
     def __get_labels(self):
-        return self.ilabels, self.jlabels
+        return self.__ilabels, self.__jlabels
     labels = property(fget=__get_labels, \
                       fset=None, \
                       fdel=None,
                       doc="Matrix labels.")
     
+    # =================================================================== #
+
     def __getitem__(self, key):
         """
         """
@@ -67,25 +86,126 @@ class CoMatrix(object):
             ilabel = key[0]
             jlabel = key[1]
             
-            if ilabel in self.label2i and jlabel in self.label2j:
-                return self.Mij[self.label2i[ilabel], self.label2j[jlabel]]
-        
-        raise KeyError('')
+            if ilabel in self.__label2i and \
+               jlabel in self.__label2j:
+                return self.__Mij[self.__label2i[ilabel], \
+                                  self.__label2j[jlabel]]
+            else:
+                return self.default
+        else:
+            raise KeyError('')
     
+    # =================================================================== #
+    
+    def __add_ilabel(self, ilabel):
+        n, m = self.shape
+        self.__ilabels.append(ilabel)
+        self.__label2i[ilabel] = n
+        self.__Mij = np.append(self.__Mij, \
+                               self.default*np.ones((1, m)), \
+                               axis=0)
+
+    # ------------------------------------------------------------------- #
+
+    def __add_jlabel(self, jlabel):
+        n, m = self.shape
+        self.__jlabels.append(jlabel)
+        self.__label2j[jlabel] = m
+        self.__Mij = np.append(self.__Mij, \
+                               self.default*np.ones((n, 1)), \
+                               axis=1)
+        
+    # ------------------------------------------------------------------- #
+
     def __setitem__(self, key, value):
-        raise NotImplementedError('')
+        """
+        """
+        if isinstance(key, tuple) and len(key) == 2:
+            ilabel = key[0]
+            jlabel = key[1]
+            
+            if ilabel not in self.__label2i:
+                self.__add_ilabel(ilabel)
+            if jlabel not in self.__label2j:
+                self.__add_jlabel(jlabel)
+            
+            i = self.__label2i[ilabel]
+            j = self.__label2j[jlabel]
+            self.__Mij[i, j] = value
+        
+        else:
+            raise KeyError('')
+    
+    # =================================================================== #
     
     def __delitem__(self, key):
         raise NotImplementedError('')
     
-    def __call__(self, ilabel):
-        if ilabel in self.label2i:
-            i = self.label2i[ilabel]
-            return {jlabel: self.Mij[i, self.label2j[jlabel]] \
-                    for jlabel in self.label2j}
-        else:
-            return {}
-            
+    # =================================================================== #
+    
+    # def __call__(self, ilabel):
+    #     if ilabel in self.__label2i:
+    #         i = self.__label2i[ilabel]
+    #         return {jlabel: self.__Mij[i, self.__label2j[jlabel]] \
+    #                 for jlabel in self.__label2j}
+    #     else:
+    #         return {}
+    
+    # =================================================================== #
+    
+    def iter_ilabels(self, index=False):
+        for ilabel in self.__ilabels:
+            if index:
+                yield self.__label2i[ilabel], ilabel
+            else:
+                yield ilabel
+    
+    def iter_jlabels(self, index=False):
+        for jlabel in self.__jlabels:
+            if index:
+                yield self.__label2j[jlabel], jlabel
+            else:
+                yield jlabel
+    
+    def iter_pairs(self, data=False):
+        for ilabel in self.__ilabels:
+            for jlabel in self.__jlabels:
+                if data:
+                    yield ilabel, jlabel, self[ilabel, jlabel]
+                else:
+                    yield ilabel, jlabel
+    
+    # ------------------------------------------------------------------- #
+    
+    def copy(self):
+        ilabels, jlabels = self.labels
+        C = CoMatrix(list(ilabels), \
+                     list(jlabels), \
+                     np.copy(self.M), \
+                     default=self.default)
+        return C
+        
+    # ------------------------------------------------------------------- #
+
+    def __iadd__(self, other):
+
+        if self.default != other.default:
+            warnings.warn('Incompatible default value. Uses %g.' % self.default)
+
+        for ilabel, jlabel, value in other.iter_pairs(data=True):
+            self[ilabel, jlabel] += value
+        
+        return self 
+
+    # ------------------------------------------------------------------- #
+
+    def __add__(self, other):
+        C = self.copy()        
+        C += other
+        return C
+    
+    # =================================================================== #
+
     def argmin(self, threshold=None):
         """
         :param threshold: threshold on minimum value
@@ -100,7 +220,9 @@ class CoMatrix(object):
             pairs = np.argwhere(self.M == m)
         else:
             pairs = []
-        return [(self.ilabels[i], self.jlabels[j]) for i, j in pairs]
+        return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+
+    # ------------------------------------------------------------------- #
 
     def argmax(self, threshold=None):
         """
@@ -116,8 +238,34 @@ class CoMatrix(object):
             pairs = np.argwhere(self.M == M)
         else:
             pairs = []
-        return [(self.ilabels[i], self.jlabels[j]) for i, j in pairs]
+        return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+
+    # =================================================================== #
+
+    def __str__(self):
         
+        ilabels, jlabels = self.labels
+        
+        len_i = max([len(label) for label in ilabels])
+        len_j = max([len(label) for label in jlabels])
+        
+        fmt_label_i = "%%%ds" % len_i 
+        fmt_label_j = "%%%ds" % len_j
+        fmt_value = "%%%d.1f" % len_j
+        
+        string = fmt_label_i % " "
+        string += " "
+        string += " ".join([fmt_label_j % j for j in jlabels])
+        
+        for i in ilabels:
+            string += "\n"
+            string += fmt_label_i % i
+            string += " "
+            string += " ".join([fmt_value % self[i, j] for j in jlabels])
+        
+        return string
+            
+
 class Confusion(CoMatrix):
     """
     Confusion matrix between two (ID-based) annotations
@@ -145,25 +293,28 @@ class Confusion(CoMatrix):
         n_i = len(I.IDs)
         n_j = len(J.IDs)
         Mij = np.zeros((n_i, n_j))
-        super(Confusion, self).__init__(I.IDs, J.IDs, Mij)
+        super(Confusion, self).__init__(I.IDs, J.IDs, Mij, default=0.)
         
         if normalize:
-            iduration = np.zeros((n_i,))
-            
-        for ilabel in self.label2i:
-            i = self.label2i[ilabel]
+            raise ValueError('normalize = True no longer supported ')
+            # iduration = np.zeros((n_i,))
+        
+        ilabels, jlabels = self.labels
+        
+        for i, ilabel in self.iter_ilabels(index=True):
             i_coverage = I(ilabel).timeline.coverage()
-            if normalize:
-                iduration[i] = i_coverage.duration()
+            # if normalize:
+            #     iduration[i] = i_coverage.duration()
             
-            for jlabel in self.label2j:
-                j = self.label2j[jlabel]
+            for j, jlabel in self.iter_jlabels(index=True):
                 j_coverage = J(jlabel).timeline.coverage()
-                self.Mij[i, j] = i_coverage(j_coverage, mode='intersection').duration()
+                self[ilabel, jlabel] = i_coverage(j_coverage, \
+                                              mode='intersection').duration()
         
-        if normalize:
-            for i in range(n_i):
-                self.Mij[i, :] = self.Mij[i, :] / iduration[i]
+        # if normalize:
+        #     for i in range(n_i):
+        #         self[ilabel, jlabel]
+        #         self.__Mij[i, :] = self.__Mij[i, :] / iduration[i]
 
 class AutoConfusion(Confusion):
     """
