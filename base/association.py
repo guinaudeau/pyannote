@@ -236,10 +236,12 @@ class Mapping(object):
         
     def to_dict(self, reverse=False):
         if reverse:
-            return {(tuple(left) if left else NoMatch()):(tuple(right) if right else NoMatch()) \
+            return {(tuple(left) if left else NoMatch()): \
+                    (tuple(right) if right else NoMatch()) \
                     for right, left in self}
         else:
-            return {(tuple(left) if left else NoMatch()):(tuple(right) if right else NoMatch()) \
+            return {(tuple(left) if left else NoMatch()): \
+                    (tuple(right) if right else NoMatch()) \
                     for left, right in self}
     
     def to_expected_dict(self, reverse=False):
@@ -298,14 +300,16 @@ class OneToOneMapping(Mapping):
     #         M += ([key], [value])
     #     return M
     
-    # def to_dict(self, reverse=False):
-    #     if reverse:
-    #         return {(left[0] if left else NoMatch()):(right[0] if right else NoMatch()) \
-    #                 for right, left in self}
-    #     else:
-    #         return {(left[0] if left else NoMatch()):(right[0] if right else NoMatch()) \
-    #                 for left, right in self}
-    
+    def to_dict(self, reverse=False, single=False):
+        D = super(OneToOneMapping, self).to_dict(reverse=reverse)
+        if single:
+            d = {left if isinstance(left, NoMatch) else left[0]: \
+                 right if isinstance(right, NoMatch) else right[0] \
+                 for left, right in D.iteritems()}
+            return d
+        else:
+            return D
+        
     def __str__(self):
         return str(self.to_dict())
         

@@ -73,7 +73,8 @@ def adjusted_mutual_info(hypothesis, reference=None):
 
 def __one_way_accuracy(proposed, expected):
     
-    elements =  [element for element in expected if not isinstance(element, NoMatch)]
+    elements =  [element for element in expected \
+                         if not isinstance(element, NoMatch)]
     
     correct = 0
     false_alarm = 0
@@ -92,19 +93,24 @@ def __one_way_accuracy(proposed, expected):
             else:
                 error += 1
     
-    return {'total': total, 'correct': correct, 'false alarm': false_alarm, 'error': error}
+    return {'total': total, \
+            'correct': correct, \
+            'false alarm': false_alarm, \
+            'error': error}
     
 def __get_dict_proposed_expected(hypothesis, reference=None, reverse=False):
     
     if not isinstance(hypothesis, OneToOneMapping):
-        raise TypeError('Hypothesis must be a OneToOneMapping, not %s.' % type(hypothesis).__name__)
+        raise TypeError('Hypothesis must be a OneToOneMapping, not %s.' % \
+                        type(hypothesis).__name__)
     
     if reference and not isinstance(reference, OneToOneMapping):
-        raise TypeError('Reference must be either None or a OneToOneMapping, not %s.' % type(reference).__name__)
+        raise TypeError('Reference must be either None or a OneToOneMapping,' \
+                        + 'not %s.' % type(reference).__name__)
         
-    proposed = hypothesis.to_dict(reverse=reverse)
+    proposed = hypothesis.to_dict(reverse=reverse, single=True)
     if reference:
-        expected = reference.to_dict(reverse=reverse)
+        expected = reference.to_dict(reverse=reverse, single=True)
     else:
         expected = hypothesis.to_expected_dict(reverse=reverse)
 
@@ -112,10 +118,14 @@ def __get_dict_proposed_expected(hypothesis, reference=None, reverse=False):
 
 def accuracy(hypothesis, reference=None, detailed=False):
     
-    proposed, expected = __get_dict_proposed_expected(hypothesis, reference=reference, reverse=False)
+    proposed, expected = __get_dict_proposed_expected(hypothesis, \
+                                                      reference=reference, \
+                                                      reverse=False)
     l2r = __one_way_accuracy(proposed, expected)
 
-    proposed, expected = __get_dict_proposed_expected(hypothesis, reference=reference, reverse=True)
+    proposed, expected = __get_dict_proposed_expected(hypothesis, \
+                                                      reference=reference, \
+                                                      reverse=True)
     r2l = __one_way_accuracy(proposed, expected)
     
     total = l2r['total'] + r2l['total']
