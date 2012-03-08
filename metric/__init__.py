@@ -19,12 +19,16 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ['DetectionErrorRate', \
-           'DiarizationErrorRate', \
+           'DiarizationErrorRate', 'DiarizationPurity', 'DiarizationCoverage', \
            'IdentificationErrorRate', \
            'SegmentationPrecision', 'SegmentationRecall', \
-           ]
+           'f_measure']
 
 from detection import DetectionErrorRate
-from diarization import DiarizationErrorRate
+from diarization import DiarizationErrorRate, \
+                        DiarizationPurity, \
+                        DiarizationCoverage
 from identification import IdentificationErrorRate
-from segmentation import SegmentationPrecision, SegmentationRecall
+from segmentation import SegmentationPrecision, \
+                         SegmentationRecall
+from base import f_measure

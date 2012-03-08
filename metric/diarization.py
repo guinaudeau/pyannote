@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyannote.algorithms.association.hungarian import Hungarian
+
 from identification import IdentificationErrorRate, \
                            IER_CONFUSION, \
                            IER_FALSE_ALARM, \
@@ -40,3 +41,55 @@ class DiarizationErrorRate(IdentificationErrorRate):
         return super(DiarizationErrorRate, self).get_details(reference, \
                                                          hypothesis % mapping)
 
+from base import BaseErrorRate
+from pyannote.base.comatrix import Confusion
+import numpy as np
+
+PURITY_NAME = 'purity'
+PURITY_TOTAL = 'total'
+PURITY_CORRECT = 'correct'
+
+class DiarizationPurity(BaseErrorRate):
+    
+    def __init__(self):
+        values = set([ \
+            PURITY_TOTAL, \
+            PURITY_CORRECT])
+        super(DiarizationPurity, self).__init__(PURITY_NAME, values)
+    
+    def get_details(self, reference, hypothesis, **kwargs):
+        detail = self.init_details()
+        matrix = Confusion(reference, hypothesis, normalize=False)        
+        detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+        detail[PURITY_TOTAL] = np.sum(matrix.M)
+        return detail
+    
+    def get_rate(self, detail):
+        numerator = 1. * detail[PURITY_CORRECT]
+        denominator = 1. * detail[PURITY_TOTAL]
+        if denominator == 0.:
+            if numerator == 0:
+                return 1.
+            else:
+                return 1.
+        else:
+            return numerator/denominator
+       
+    def pretty(self, detail):
+        string = ""
+        string += "  - duration: %.2f seconds\n" % (detail[PURITY_TOTAL])
+        string += "  - correct: %.2f seconds\n" % (detail[PURITY_CORRECT])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
+COVERAGE_NAME = 'coverage'
+
+class DiarizationCoverage(DiarizationPurity):
+    
+    def __init__(self):
+        super(DiarizationCoverage, self).__init__()
+        self.name = COVERAGE_NAME
+    
+    def get_details(self, reference, hypothesis, **kwargs):
+        return super(DiarizationCoverage, self).get_details(hypothesis, \
+                                                            reference)
