@@ -21,7 +21,8 @@
 import networkx as nx
 
 import pyannote.algorithms.community
-from pyannote.base.association import Mapping, OneToOneMapping, MElement, NoMatch
+from pyannote.base.association import Mapping, OneToOneMapping, \
+                                      MElement, NoMatch
 from pyannote.base.comatrix import Confusion, AutoConfusion
 from base import BaseAssociation
 
@@ -120,8 +121,10 @@ class Louvain(BaseAssociation):
         M = Mapping(A.modality, B.modality)
         for cluster in clusters:
             nodes = clusters[cluster]
-            key = [node.element for node in nodes if node.modality == A.modality]
-            value = [node.element for node in nodes if node.modality == B.modality]
+            key = [node.element for node in nodes \
+                   if node.modality == A.modality]
+            value = [node.element for node in nodes \
+                     if node.modality == B.modality]
             M += (key, value)
     
         return M
