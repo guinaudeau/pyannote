@@ -23,19 +23,50 @@ import warnings
 
 class CoMatrix(object):
     
-    def __init__(self, ilabels, jlabels, Mij, default=0.):
-        
+    def __init__(self, ilabels=None, jlabels=None, Mij=None, default=0.):
         super(CoMatrix, self).__init__()
         
-        self.__ilabels = ilabels
-        self.__jlabels = jlabels
-        self.__Mij = np.array(Mij).reshape((len(ilabels), len(jlabels)))
+        # -- ilabels
+        if ilabels is None:
+            self.__ilabels = []
+        elif isinstance(ilabels, list):
+            self.__ilabels = list(ilabels)
+        else:
+            raise ValueError('')
+                
+        # -- jlabels
+        if jlabels is None:
+            self.__jlabels = []
+        elif isinstance(jlabels, list):
+            self.__jlabels = list(jlabels)
+        else:
+            raise ValueError('')
+
+        # -- ilabels and jlabels must be both empty or both not empty
+        Ni = len(self.__ilabels)
+        Nj = len(self.__jlabels)
+        if bool(Ni) ^ bool(Nj):
+            raise ValueError('Incompatible ilabels and jlabels parameters. ' + \
+                             'One of them is empty while the other is not.')
         
-        self.__label2i = {ilabel:i for i, ilabel in enumerate(ilabels)}
-        self.__label2j = {jlabel:i for i, jlabel in enumerate(jlabels)}
+        # --
+        self.__label2i = {ilabel:i for i, ilabel in enumerate(self.__ilabels)}
+        self.__label2j = {jlabel:j for j, jlabel in enumerate(self.__jlabels)}
         
+        # --
         self.__default = default
-    
+
+        # --
+        if Mij is None:
+            if bool(Ni):
+                self.__Mij = self.__default * np.ones((Ni, Nj))
+            else:
+                self.__Mij = None
+        else:
+            self.__Mij = np.array(Mij)
+            if (Ni, Nj) != self.__Mij.shape:
+                raise ValueError('Expecting an %d x %d matrix.' % (Ni, Nj))
+        
     # ------------------------------------------------------------------- #
     
     def __get_default(self):
@@ -55,7 +86,10 @@ class CoMatrix(object):
                      doc="Matrix transposition.")
     
     def __get_shape(self):
-        return self.__Mij.shape
+        if self.__Mij is None:
+            return 0, 0
+        else:
+            return self.__Mij.shape
     shape = property(fget=__get_shape, \
                      fset=None, \
                      fdel=None, \
@@ -101,7 +135,7 @@ class CoMatrix(object):
     def __add_ilabel(self, ilabel):
         n, m = self.shape
         self.__ilabels.append(ilabel)
-        self.__label2i[ilabel] = n
+        self.__label2i[ilabel] = n        
         self.__Mij = np.append(self.__Mij, \
                                self.default*np.ones((1, m)), \
                                axis=0)
@@ -122,17 +156,24 @@ class CoMatrix(object):
         """
         """
         if isinstance(key, tuple) and len(key) == 2:
+            
             ilabel = key[0]
             jlabel = key[1]
             
-            if ilabel not in self.__label2i:
-                self.__add_ilabel(ilabel)
-            if jlabel not in self.__label2j:
-                self.__add_jlabel(jlabel)
-            
-            i = self.__label2i[ilabel]
-            j = self.__label2j[jlabel]
-            self.__Mij[i, j] = value
+            if self.__Mij is None:
+                self.__ilabels.append(ilabel)
+                self.__jlabels.append(jlabel)
+                self.__label2i[ilabel] = 0
+                self.__label2j[jlabel] = 0
+                self.__Mij = value * np.ones((1,1))
+            else:
+                if ilabel not in self.__label2i:
+                    self.__add_ilabel(ilabel)
+                if jlabel not in self.__label2j:
+                    self.__add_jlabel(jlabel)
+                i = self.__label2i[ilabel]
+                j = self.__label2j[jlabel]
+                self.__Mij[i, j] = value
         
         else:
             raise KeyError('')
