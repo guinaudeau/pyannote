@@ -22,6 +22,7 @@ import numpy as np
 import warnings
 
 class CoMatrix(object):
+    
     def __init__(self, ilabels, jlabels, Mij, default=0.):
         
         super(CoMatrix, self).__init__()
@@ -205,8 +206,11 @@ class CoMatrix(object):
         return C
     
     # =================================================================== #
-
-    def argmin(self, threshold=None):
+    
+    
+    # =================================================================== #
+    
+    def argmin(self, threshold=None, axis=None):
         """
         :param threshold: threshold on minimum value
         :type threshold: float
@@ -215,16 +219,37 @@ class CoMatrix(object):
         In case :data:`threshold` is provided and is smaller than minimum value,
         then, returns an empty list.
         """
-        m = np.min(self.M)
-        if (threshold is None) or (m < threshold):
-            pairs = np.argwhere(self.M == m)
+        if axis == 0:
+            pairs = {}
+            for i, ilabel in self.iter_ilabels(index=True):
+                M = self.M[i,:]
+                m = np.min(M)
+                if threshold is None or m < threshold:
+                    pairs[ilabel] = [self.__jlabels[j] for j in np.argmin(M)]
+                else:
+                    pairs[ilabel] = []
+            return pairs
+        elif axis == 1:
+            pairs = {}
+            for j, jlabel in self.iter_jlabels(index=True):
+                M = self.M[:,j]
+                m = np.min(M)
+                if threshold is None or m < threshold:
+                    pairs[jlabel] = [self.__ilabels[i] for i in np.argmin(M)]
+                else:
+                    pairs[jlabel] = []
+            return pairs
         else:
-            pairs = []
-        return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+            m = np.min(self.M)
+            if (threshold is None) or (m < threshold):
+                pairs = np.argwhere(self.M == m)
+            else:
+                pairs = []
+            return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
 
     # ------------------------------------------------------------------- #
 
-    def argmax(self, threshold=None):
+    def argmax(self, axis=None, threshold=None):
         """
         :param threshold: threshold on maximum value
         :type threshold: float
@@ -233,13 +258,37 @@ class CoMatrix(object):
         In case :data:`threshold` is provided and is higher than maximum value,
         then, returns an empty list.
         """
-        M = np.max(self.M)
-        if (threshold is None) or (M > threshold):
-            pairs = np.argwhere(self.M == M)
+        
+        if axis == 0:
+            pairs = {}
+            for i, ilabel in self.iter_ilabels(index=True):
+                M = self.M[i,:]
+                m = np.max(M)
+                if threshold is None or m > threshold:
+                    pairs[ilabel] = [self.__jlabels[j[0]] \
+                                    for j in np.argwhere(M == m)]
+                else:
+                    pairs[ilabel] = []
+            return pairs
+        elif axis == 1:
+            pairs = {}
+            for j, jlabel in self.iter_jlabels(index=True):
+                M = self.M[:,j]
+                m = np.max(M)
+                if threshold is None or m > threshold:
+                    pairs[jlabel] = [self.__ilabels[i[0]] \
+                                     for i in np.argwhere(M == m)]
+                else:
+                    pairs[jlabel] = []
+            return pairs
         else:
-            pairs = []
-        return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
-
+            m = np.max(self.M)
+            if (threshold is None) or (m > threshold):
+                pairs = np.argwhere(self.M == m)
+            else:
+                pairs = []
+            return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+    
     # =================================================================== #
 
     def __str__(self):
