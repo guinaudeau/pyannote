@@ -121,12 +121,22 @@ class CoMatrix(object):
             ilabel = key[0]
             jlabel = key[1]
             
-            if ilabel in self.__label2i and \
-               jlabel in self.__label2j:
-                return self.__Mij[self.__label2i[ilabel], \
-                                  self.__label2j[jlabel]]
-            else:
-                return self.default
+            if isinstance(ilabel, (tuple, list, set)) and \
+               isinstance(jlabel, (tuple, list, set)):
+                C = CoMatrix(default=self.default)
+                ilabels = sorted(ilabel)
+                jlabels = sorted(jlabel)
+                for ilabel in ilabels:
+                    for jlabel in jlabels:
+                        C[ilabel, jlabel] = self[ilabel, jlabel]
+                return C
+            else:            
+                if ilabel in self.__label2i and \
+                   jlabel in self.__label2j:
+                    return self.__Mij[self.__label2i[ilabel], \
+                                      self.__label2j[jlabel]]
+                else:
+                    return self.default
         else:
             raise KeyError('')
     
@@ -159,6 +169,10 @@ class CoMatrix(object):
             
             ilabel = key[0]
             jlabel = key[1]
+            
+            if isinstance(ilabel, (tuple, list, set)) or \
+               isinstance(jlabel, (tuple, list, set)):
+                raise ValueError('')
             
             if self.__Mij is None:
                 self.__ilabels.append(ilabel)
