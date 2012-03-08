@@ -55,7 +55,7 @@ class CoMatrix(object):
         
         if Mij is None:
             if ni or nj:
-                self.__Mij = self.__default * np.ones(ni, nj)
+                self.__Mij = self.__default * np.ones((ni, nj))
             else:
                 self.__Mij = None
         else:
@@ -353,7 +353,7 @@ class CoMatrix(object):
         
         fmt_label_i = "%%%ds" % len_i 
         fmt_label_j = "%%%ds" % len_j
-        fmt_value = "%%%d.1f" % len_j
+        fmt_value = "%%%d.2f" % len_j
         
         string = fmt_label_i % " "
         string += " "
