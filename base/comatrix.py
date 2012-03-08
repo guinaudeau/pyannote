@@ -41,13 +41,6 @@ class CoMatrix(object):
             self.__jlabels = list(jlabels)
         else:
             raise ValueError('')
-
-        # -- ilabels and jlabels must be both empty or both not empty
-        Ni = len(self.__ilabels)
-        Nj = len(self.__jlabels)
-        if bool(Ni) ^ bool(Nj):
-            raise ValueError('Incompatible ilabels and jlabels parameters. ' + \
-                             'One of them is empty while the other is not.')
         
         # --
         self.__label2i = {ilabel:i for i, ilabel in enumerate(self.__ilabels)}
@@ -57,16 +50,21 @@ class CoMatrix(object):
         self.__default = default
 
         # --
+        ni = len(self.__ilabels)
+        nj = len(self.__jlabels)
+        
         if Mij is None:
-            if bool(Ni):
-                self.__Mij = self.__default * np.ones((Ni, Nj))
+            if ni or nj:
+                self.__Mij = self.__default * np.ones(ni, nj)
             else:
                 self.__Mij = None
         else:
             self.__Mij = np.array(Mij)
-            if (Ni, Nj) != self.__Mij.shape:
-                raise ValueError('Expecting an %d x %d matrix.' % (Ni, Nj))
-        
+            Ni, Nj = self.__Mij.shape
+            if (ni, nj) != (Ni, Nj):
+                raise ValueError('%d x %d matrix is expected (got %d x %d).' % \
+                                 (ni, nj, Ni, Nj))
+    
     # ------------------------------------------------------------------- #
     
     def __get_default(self):
