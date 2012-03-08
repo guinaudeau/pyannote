@@ -69,17 +69,20 @@ class Hungarian(BaseAssociation):
                      fdel=None, \
                      doc="Force mapping?")
     
-    def associate(self, A, B):
+    def associate(self, A=None, B=None, precomputed=None):
         
-        # Confusion matrix
-        matrix = Confusion(B, A, normalize=self.normalize)
-    
+        if precomputed is None:
+            # Confusion matrix
+            matrix = Confusion(B, A, normalize=self.normalize)
+            M = OneToOneMapping(A.modality, B.modality)
+        else:
+            matrix = precomputed.T.copy()
+            M = OneToOneMapping('A', 'B')
+        
         # Shape and labels
         Nb, Na = matrix.shape
         blabels, alabels = matrix.labels
 
-        M = OneToOneMapping(A.modality, B.modality)
-    
         if Na < 1:
             for blabel in blabels:
                 M += (None, [blabel])
