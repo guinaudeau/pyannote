@@ -19,7 +19,9 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ['DetectionErrorRate', \
-           'DiarizationErrorRate', 'DiarizationPurity', 'DiarizationCoverage', \
+           'DiarizationErrorRate', \
+           'DiarizationPurity', 'DiarizationCoverage', \
+           'DiarizationHomogeneity', 'DiarizationCompleteness', \
            'IdentificationErrorRate', \
            'SegmentationPrecision', 'SegmentationRecall', \
            'f_measure']
@@ -27,7 +29,9 @@ __all__ = ['DetectionErrorRate', \
 from detection import DetectionErrorRate
 from diarization import DiarizationErrorRate, \
                         DiarizationPurity, \
-                        DiarizationCoverage
+                        DiarizationCoverage, \
+                        DiarizationHomogeneity, \
+                        DiarizationCompleteness
 from identification import IdentificationErrorRate
 from segmentation import SegmentationPrecision, \
                          SegmentationRecall

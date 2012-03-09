@@ -93,3 +93,73 @@ class DiarizationCoverage(DiarizationPurity):
     def get_details(self, reference, hypothesis, **kwargs):
         return super(DiarizationCoverage, self).get_details(hypothesis, \
                                                             reference)
+
+HOMOGENEITY_NAME = 'homogeneity'
+HOMOGENEITY_ENTROPY = 'entropy'
+HOMOGENEITY_CROSS_ENTROPY = 'cross-entropy'
+
+class DiarizationHomogeneity(BaseErrorRate):
+    
+    def __init__(self):
+        values = set([ \
+            HOMOGENEITY_ENTROPY, \
+            HOMOGENEITY_CROSS_ENTROPY])
+        super(DiarizationHomogeneity, self).__init__(HOMOGENEITY_NAME, values)
+    
+    def get_details(self, reference, hypothesis, **kwargs):
+        detail = self.init_details()
+            
+        matrix = Confusion(reference, hypothesis, normalize=False)
+        duration = np.sum(matrix.M)
+        rduration = np.sum(matrix.M, axis=1)
+        hduration = np.sum(matrix.M, axis=0)
+            
+        # Reference entropy and reference/hypothesis cross-entropy
+        cross_entropy = 0.
+        entropy = 0.
+        for i, ilabel in matrix.iter_ilabels(index=True):
+            ratio = rduration[i] / duration
+            entropy -= ratio * np.log(ratio)                
+            for j, jlabel in matrix.iter_jlabels(index=True):
+                coduration = matrix[ilabel, jlabel]
+                if coduration > 0:
+                    cross_entropy -= (coduration / duration) * \
+                                     np.log(coduration / hduration[j])
+                        
+        detail[HOMOGENEITY_CROSS_ENTROPY] = cross_entropy 
+        detail[HOMOGENEITY_ENTROPY] = entropy
+             
+        return detail
+    
+    def get_rate(self, detail):
+        numerator = 1. * detail[HOMOGENEITY_CROSS_ENTROPY]
+        denominator = 1. * detail[HOMOGENEITY_ENTROPY]
+        if denominator == 0.:
+            if numerator == 0:
+                return 1.
+            else:
+                return 0.
+        else:
+            return 1. - numerator/denominator
+       
+    def pretty(self, detail):
+        string = ""
+        string += "  - %s: %.2f\n" % \
+                  (HOMOGENEITY_ENTROPY, detail[HOMOGENEITY_ENTROPY])
+        string += "  - %s: %.2f\n" % \
+                  (HOMOGENEITY_CROSS_ENTROPY, \
+                  detail[HOMOGENEITY_CROSS_ENTROPY])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
+COMPLETENESS_NAME = 'completeness'
+
+class DiarizationCompleteness(DiarizationHomogeneity):
+    
+    def __init__(self):
+        super(DiarizationCompleteness, self).__init__()
+        self.name = COMPLETENESS_NAME
+    
+    def get_details(self, reference, hypothesis, **kwargs):
+        return super(DiarizationCompleteness, self).get_details(hypothesis, \
+                                                            reference)
