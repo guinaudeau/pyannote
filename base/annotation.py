@@ -768,7 +768,8 @@ class TrackAnnotation(object):
                     for name in tracks:
                         if name in sub_annotation[isegment]:
                             # MAYDAY, MAYDAY!
-                            new_name = self.auto_track_name(isegment, prefix=name)
+                            new_name = self.auto_track_name(isegment, \
+                                                            prefix=name)
                             sub_annotation[isegment, new_name] = tracks[name]
                         else:
                             sub_annotation[isegment, name] = tracks[name]
@@ -787,8 +788,9 @@ class TrackAnnotation(object):
         
     >>> a = A >> timeline   
         """
-        new_annotation = self.__class__(track_class=self.__track_class, video=self.video, modality=self.modality)
-        
+        new_annotation = self.__class__(track_class=self.__track_class, \
+                                        video=self.video, \
+                                        modality=self.modality)
         # Loop on each segment of the target timeline
         for segment in timeline:
             # Loop on each intersecting segment
@@ -801,9 +803,13 @@ class TrackAnnotation(object):
                     if new_annotation._has_segment_name(segment, name):
                         new_name = self.auto_track_name(segment, prefix=name)
                         #DEBUG print "Collision %s / %s --> %s" % (segment, name, new_name)
-                        new_annotation._set_segment_name(segment, new_name, tracks[name])
+                        new_annotation._set_segment_name(segment, \
+                                                         new_name, \
+                                                         tracks[name])
                     else:
-                        new_annotation._set_segment_name(segment, name, tracks[name])
+                        new_annotation._set_segment_name(segment, \
+                                                         name, \
+                                                         tracks[name])
         
         return new_annotation    
     
@@ -829,7 +835,9 @@ class TrackAnnotation(object):
         
         """
         cls = type(self)
-        annotation = cls(track_class=self.track_class, video=self.video, modality=self.modality)
+        annotation = cls(track_class=self.track_class, \
+                         video=self.video, \
+                         modality=self.modality)
         
         if not map_func:
             map_func = lambda segment: segment
@@ -839,6 +847,7 @@ class TrackAnnotation(object):
         
         return annotation    
 
+import collections
 class TrackIDAnnotation(TrackAnnotation):
     """
     TrackIDAnnotation is an extension of :class:`TrackAnnotation` to store identifiers.
@@ -1269,10 +1278,13 @@ class TrackIDAnnotation(TrackAnnotation):
     
     def __check_identifier(self, identifier):
         """
-        Make sure provided identifier is a valid one (anything but int or Segment)
+        Make sure provided identifier is a valid one 
+        (anything hashable but int or Segment)
         """
-        if not isinstance(identifier, str):
-            raise TypeError('Invalid identifier %s. Must be str.' \
+        if (not isinstance(identifier, collections.Hashable)) or \
+           isinstance(identifier, (int, Segment)):
+            raise TypeError('Invalid identifier %s. ' + \
+                            'Must be anything hashable but int or Segment.' \
                             % (type(identifier).__name__))
     
     def __setitem__(self, key, value):
