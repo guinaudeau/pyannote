@@ -129,8 +129,8 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
     >>> error_rate = eger(reference, hypothesis, annotated)    
     
     """    
-    def __init__(self):
-                
+    def __init__(self, confusion=1., anonymous=False):
+
         values = set([ \
             EGER_CONFUSION_NAME_NAME, \
             EGER_CONFUSION_NAME_ANON, \
@@ -149,7 +149,9 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         
         super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, values)
         self.matcher = REPEREIDMatcher()
-      
+        self.confusion = confusion
+        self.anonymous = anonymous
+
     def get_details(self, reference, hypothesis, annotated=None):
         
         detail = self.init_details()
@@ -161,32 +163,37 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
 
             ref = reference.ids(frame)
             hyp = hypothesis.ids(frame)
-        
-            detail[EGER_TOTAL] += len(ref)
-        
+            
+            if not self.anonymous:
+                ref = self.matcher.named_from(ref)
+                hyp = self.matcher.named_from(hyp)    
+            
             name_ref = self.matcher.named_from(ref)
             name_hyp = self.matcher.named_from(hyp)
             detail[EGER_REF_NAME] += len(name_ref)
             detail[EGER_HYP_NAME] += len(name_hyp)
-        
+            
             anon_ref = ref - name_ref
             anon_hyp = hyp - name_hyp
             detail[EGER_REF_ANON] += len(anon_ref)
             detail[EGER_HYP_ANON] += len(anon_hyp)
-
+            
+            detail[EGER_TOTAL] += detail[EGER_REF_NAME] + \
+                                  detail[EGER_REF_ANON]
+            
             # correct named/named matches
             detail[EGER_CORRECT_NAME] += len(name_ref & name_hyp)
             for known in name_ref & name_hyp:
                 name_ref.remove(known)
                 name_hyp.remove(known)
-        
+            
             # correct anonymous/anonymous matches
             n = min(len(anon_ref), len(anon_hyp))
             detail[EGER_CORRECT_ANON] += n
             for i in range(n):
                 anon_ref.pop()
                 anon_hyp.pop()
-        
+            
             # named/named confusion
             n = min(len(name_ref), len(name_hyp))
             detail[EGER_CONFUSION_NAME_NAME] += n
@@ -219,9 +226,9 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         return detail
     
     def get_rate(self, detail):
-        numerator = .5 * detail[EGER_CONFUSION_NAME_NAME] + \
-                    .5 * detail[EGER_CONFUSION_NAME_ANON] + \
-                    .5 * detail[EGER_CONFUSION_ANON_NAME] + \
+        numerator = self.confusion * detail[EGER_CONFUSION_NAME_NAME] + \
+                    self.confusion * detail[EGER_CONFUSION_NAME_ANON] + \
+                    self.confusion * detail[EGER_CONFUSION_ANON_NAME] + \
                     1. * detail[EGER_FALSE_ALARM_NAME] + \
                     1. * detail[EGER_FALSE_ALARM_ANON] + \
                     1. * detail[EGER_MISS_NAME] + \
@@ -243,12 +250,12 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         ref_name = detail[EGER_REF_NAME]
         ref_anon  = detail[EGER_REF_ANON]
         string += "  - reference entries: %d (%d named, %d anonymous)\n" % \
-                  (ref_name+ref_anon, ref_name, ref_anon)
+                  (ref_name+ref_anon, ref_name, ref_anon)        
     
         hyp_name = detail[EGER_HYP_NAME]
         hyp_anon  = detail[EGER_HYP_ANON]
         string += "  - hypothesis entries: %d (%d named, %d anonymous)\n" % \
-                  (hyp_name+hyp_anon, hyp_name, hyp_anon)
+                  (hyp_name+hyp_anon, hyp_name, hyp_anon)            
     
         correct_name = detail[EGER_CORRECT_NAME]
         correct_anon  = detail[EGER_CORRECT_ANON]
