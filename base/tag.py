@@ -134,7 +134,7 @@ class MonoTag(BaseTag):
         segment, track = self.parse_key(key)
         
         if track == slice(None,None,None):
-            return self.data[segment]
+            return dict(self.data[segment])
         else:
             return self.data[segment][track]
     
@@ -229,11 +229,23 @@ class MonoTag(BaseTag):
                 else:
                     yield segment, self.data[segment][track]
     
-    def copy(self, segment_func=None, track_func=None, label_func=None):
-        
+    def empty(self):
+        """
+        Return empty copy.
+        """
         T = type(self)(multitrack=self.multitrack, \
                        video=self.video, \
                        modality=self.modality)
+        return T
+    
+    def copy(self, segment_func=None, track_func=None, label_func=None):
+        """
+        Return copy.
+        - segment_in_copy = segment_func(original_segment)
+        - track_in_copy = track_func(original_track)
+        - label_in_copy = label_func(original_label)
+        """
+        T = self.empty()
         
         if segment_func is None:
             segment_func = lambda s: s
@@ -250,7 +262,18 @@ class MonoTag(BaseTag):
                 T[segment_func(segment)] = label_func(label)
         
         return T
+                
+    def __mod__(self, translation):
+        """
+        More or less equivalent to copy(label_func=translation)
+        """
+
+        if not isinstance(translation, (dict, OneToOneMapping)):
+            raise TypeError('Translation must be dict or OneToOneMapping.')
         
+        label_func = lambda x: translation[x] if translation[x] else x
+        return self.copy(label_func=label_func)    
+    
     def __get_label(self, label):
         
         T = type(self)(multitrack=self.multitrack, \
@@ -304,3 +327,13 @@ class MonoTag(BaseTag):
         else:
             # one single label == set of one label
             return self.__call__(set([subset]), mode=mode, invert=invert)
+    
+    def show(self):
+        if self.multitrack:
+            for segment, track, label in self.iterlabels():
+                print segment, track, label
+        else:
+            for segment, label in self.iterlabels():
+                print segment, label
+    
+            
