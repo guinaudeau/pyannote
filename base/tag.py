@@ -276,9 +276,7 @@ class MonoTag(BaseTag):
     
     def __get_label(self, label):
         
-        T = type(self)(multitrack=self.multitrack, \
-                       video=self.video, \
-                       modality=self.modality)
+        T = self.empty()
         
         if self.multitrack:
             for segment in self.tag_timeline[label]:
@@ -309,9 +307,8 @@ class MonoTag(BaseTag):
             else:
                 labels = set(subset)
             
-            T = type(self)(multitrack=self.multitrack, \
-                           video=self.video, \
-                           modality=self.modality)
+            T = self.empty()
+
             for label in labels:
                 t = self.__get_label(label)
                 if self.multitrack:
