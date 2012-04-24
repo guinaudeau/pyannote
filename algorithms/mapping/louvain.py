@@ -21,12 +21,11 @@
 import networkx as nx
 
 import pyannote.algorithms.community
-from pyannote.base.association import Mapping, OneToOneMapping, \
-                                      MElement, NoMatch
+from pyannote.base.mapping import Mapping, OneToOneMapping, NoMatch, MElement 
 from pyannote.base.comatrix import Confusion, AutoConfusion
-from base import BaseAssociation
+from base import BaseMapper
 
-class Louvain(BaseAssociation):
+class Louvain(BaseMapper):
     
     def __init__(self, normalize=False, overlap=False):
         super(Louvain, self).__init__()

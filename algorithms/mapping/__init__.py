@@ -18,4 +18,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Label mapping
+=============
 
+Given two (or more) annotated timelines, label mapping consists in finding
+the ``best'' one-to-one (or one-to-many) mapping between their labels.
+
+"""
+
+from hungarian import HungarianMapper
+from argmax import ArgMaxMapper

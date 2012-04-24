@@ -20,48 +20,43 @@
 
 import numpy as np
 from munkres import Munkres
-from pyannote.base.association import OneToOneMapping, Mapping, NoMatch
+from base import BaseMapper
+from pyannote.base.mapping import OneToOneMapping
 from pyannote.base.comatrix import Confusion
-from base import BaseAssociation
 
-class Hungarian(BaseAssociation):
+class HungarianMapper(BaseMapper):
     """
-    Hungarian algorithm based on co-occurrence duration.
-    
-    Finds the best one-to-one mapping between A and B identifiers that,
-    when A is translated by this mapping, minimizes the total duration of 
-    segments where A and B disagree.
-    
-    In other words, mapping minimizes the following:
-    pyannote.metrics.ier(A % mapping, B, detailed=True)['confusion']
+    Hungarian algorithm based on confusion matrix as profit function.
     
     See http://en.wikipedia.org/wiki/Hungarian_algorithm
-    
-    :param normalize: when True, Hungarian algorithm is applied on normalized
-                      confusion matrix.
-    :type normalize: boolean
-    
-    :param init: when provided, Hungarian algorithm is applied within each
-                 many-to-many groups.
-    :type init: Mapping
     
     :param force: when True, force mapping even for identifiers with zero confusion
     :type force: boolean
     
     """
-    def __init__(self, normalize=False, force=False):
-        super(Hungarian, self).__init__()
-        self.__normalize = normalize
+    def __init__(self, confusion=None, force=False):
+        super(HungarianMapper, self).__init__()
         self.__force = force
         self.__munkres = Munkres()
+        if confusion is None:
+            self.__confusion = Confusion
+        else:
+            self.__confusion = confusion
     
-    def __get_normalize(self): 
-        return self.__normalize
-    normalize = property(fget=__get_normalize, \
+    def __get_munkres(self): 
+        return self.__munkres
+    munkres = property(fget=__get_munkres, \
                      fset=None, \
                      fdel=None, \
-                     doc="Normalize confusion matrix?")
+                     doc="Munkres algorithm.")
 
+    def __get_confusion(self): 
+        return self.__confusion
+    confusion = property(fget=__get_confusion, \
+                     fset=None, \
+                     fdel=None, \
+                     doc="Confusion.")
+    
     def __get_force(self): 
         return self.__force
     force = property(fget=__get_force, \
@@ -69,40 +64,27 @@ class Hungarian(BaseAssociation):
                      fdel=None, \
                      doc="Force mapping?")
     
-    def associate(self, A=None, B=None, precomputed=None):
+    def associate(self, A, B):
         
-        if precomputed is None:
-            # Confusion matrix
-            matrix = Confusion(B, A, normalize=self.normalize)
-            M = OneToOneMapping(A.modality, B.modality)
-        else:
-            matrix = precomputed.T.copy()
-            M = OneToOneMapping('A', 'B')
+        # Confusion matrix
+        matrix = self.confusion(A, B)
+        M = OneToOneMapping(A.modality, B.modality)
         
         # Shape and labels
-        Nb, Na = matrix.shape
-        blabels, alabels = matrix.labels
+        Na, Nb = matrix.shape
+        alabels, blabels = matrix.labels
 
-        if Na < 1:
-            for blabel in blabels:
-                M += (None, [blabel])
-                return M
-        if Nb < 1:
-            for alabel in alabels:
-                M += ([alabel], None)
-                return M
-    
         # Cost matrix
         N = max(Nb, Na)
         C = np.zeros((N, N))
-        C[:Nb, :Na] = np.max(matrix.M) - matrix.M
+        C[:Nb, :Na] = (np.max(matrix.M) - matrix.M).T
     
         # Optimal one-to-one mapping
-        mapping = self.__munkres.compute(C)
+        mapping = self.munkres.compute(C)
     
         for b, a in mapping:
             if (b < Nb) and (a < Na):
-                if self.force or (matrix[blabels[b], alabels[a]] > 0):
+                if self.force or (matrix[alabels[a], blabels[b]] > 0):
                     M += ([alabels[a]], [blabels[b]])
     
         # A --> NoMatch

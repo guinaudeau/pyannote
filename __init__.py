@@ -46,6 +46,6 @@ __date__ = '24/02/2012'
 __version__ = '0.1.1'
 
 from base import *
-import parser
+# import parser
 import metric
 import algorithms

@@ -18,7 +18,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-import mapping
-import tagging
-import segmentation
-import diarization
+"""
+Tagging
+=======
+
+"""
+
+from hungarian import HungarianTagger
+from argmax import ArgMaxTagger

@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.algorithms.association.hungarian import Hungarian
+from pyannote.algorithms.mapping.hungarian import HungarianMapper
 
 from identification import IdentificationErrorRate, \
                            IER_CONFUSION, \
@@ -34,7 +34,7 @@ class DiarizationErrorRate(IdentificationErrorRate):
     def __init__(self):
         super(DiarizationErrorRate, self).__init__()
         self.name = DER_NAME
-        self.__hungarian = Hungarian()
+        self.__hungarian = HungarianMapper()
     
     def get_details(self, reference, hypothesis):
         mapping = self.__hungarian(hypothesis, reference)

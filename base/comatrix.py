@@ -97,8 +97,12 @@ class CoMatrix(object):
 
     def __get_M(self):
         return self.__Mij
+    def __set_M(self, M):
+        if M.shape != self.shape:
+            raise ValueError('Shape mismatch %s %s' % (self.shape, M.shape))
+        self.__Mij = M
     M = property(fget=__get_M, \
-                 fset=None, \
+                 fset=__set_M, \
                  fdel=None, \
                  doc="numpy matrix.")
                  
@@ -159,7 +163,7 @@ class CoMatrix(object):
                                axis=1)
         
     # ------------------------------------------------------------------- #
-
+    
     def __setitem__(self, key, value):
         """
         """
@@ -310,6 +314,13 @@ class CoMatrix(object):
         :returns: list of label pairs corresponding to maximum value in matrix.
         In case :data:`threshold` is provided and is higher than maximum value,
         then, returns an empty list.
+        
+        >>> C = Confusion(A, B)
+        >>> pairs = C.argmax(axis=0)
+        >>> for a in A.IDs:
+        ...    if a in pairs:
+        ...        print '%s --> %s' % (a, pairs[a])
+        
         """
         
         if axis == 0:
@@ -349,7 +360,7 @@ class CoMatrix(object):
         ilabels, jlabels = self.labels
         
         len_i = max([len(label) for label in ilabels])
-        len_j = max([len(label) for label in jlabels])
+        len_j = max(4, max([len(label) for label in jlabels]))
         
         fmt_label_i = "%%%ds" % len_i 
         fmt_label_j = "%%%ds" % len_j
@@ -366,7 +377,6 @@ class CoMatrix(object):
             string += " ".join([fmt_value % self[i, j] for j in jlabels])
         
         return string
-            
 
 class Confusion(CoMatrix):
     """
@@ -388,35 +398,62 @@ class Confusion(CoMatrix):
     
     >>> confusions = M(id_A)
     
-    
     """
-    def __init__(self, I, J, normalize=False):
+    def __init__(self, I, J):
                 
         n_i = len(I.IDs)
         n_j = len(J.IDs)
         Mij = np.zeros((n_i, n_j))
         super(Confusion, self).__init__(I.IDs, J.IDs, Mij, default=0.)
-        
-        if normalize:
-            raise ValueError('normalize = True no longer supported ')
-            # iduration = np.zeros((n_i,))
-        
+                
         ilabels, jlabels = self.labels
         
         for i, ilabel in self.iter_ilabels(index=True):
             i_coverage = I(ilabel).timeline.coverage()
-            # if normalize:
-            #     iduration[i] = i_coverage.duration()
             
             for j, jlabel in self.iter_jlabels(index=True):
                 j_coverage = J(jlabel).timeline.coverage()
-                self[ilabel, jlabel] = i_coverage(j_coverage, \
-                                              mode='intersection').duration()
+                # self[ilabel, jlabel] = i_coverage(j_coverage, \
+                #                               mode='intersection').duration()
+                super(Confusion, self).__setitem__((ilabel, jlabel), \
+                i_coverage(j_coverage, mode='intersection').duration())
+    
+    def __setitem__(self, key, value):
+        raise NotImplementedError('')
+    
+    def __delitem__(self, key):
+        raise NotImplementedError('')
+
+
+class CoTFIDF(Confusion):
+    """
+    Term Frequency Inverse Document Frequency (TF-IDF) confusion matrix:
+    - documents are J labels
+    - words are co-occurring I labels
+    
+    C[i, j] = TF(i, j) x IDF(i)
+    
+                  duration of word i in document j         confusion[i, j]
+    TF(i, j) = --------------------------------------- = -------------------
+               total duration of I words in document j   sum confusion[:, j]
+               
+                        number of J documents                     
+    IDF(i) = ---------------------------------------------- 
+                 number of J documents co-occurring with word i   
+           
+                      Nj
+           = -----------------------
+             sum confusion[i, :] > 0
+    """
+    def __init__(self, words=None, documents=None, log=True):
+        super(CoTFIDF, self).__init__(words, documents)
+        Nw, Nd = self.shape
+        tf = self.M / np.tile(np.sum(self.M, axis=0), (Nw, 1))
+        idf = np.tile(float(Nd) / np.sum(self.M > 0, axis=1), (Nd, 1)).T
+        if log:
+            idf = np.log(idf)
+        self.M = tf * idf
         
-        # if normalize:
-        #     for i in range(n_i):
-        #         self[ilabel, jlabel]
-        #         self.__Mij[i, :] = self.__Mij[i, :] / iduration[i]
 
 class AutoConfusion(Confusion):
     """
@@ -440,11 +477,10 @@ class AutoConfusion(Confusion):
     
     
     """
-    def __init__(self, I, neighborhood=0., normalize=False):
+    def __init__(self, I, neighborhood=0.):
         
         map_func = lambda segment : neighborhood << segment >> neighborhood
         
         xI = I.toTrackIDAnnotation().copy(map_func=map_func)        
-        super(AutoConfusion, self).__init__(xI, xI, normalize=normalize)
+        super(AutoConfusion, self).__init__(xI, xI)
             
-        

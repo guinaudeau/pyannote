@@ -32,7 +32,7 @@ class NoMatch(object):
     def next(cls):
         cls.nextID += 1
         return cls.nextID
-        
+    
     def __init__(self, format='NoMatch%03d'):
         super(NoMatch, self).__init__()
         self.ID = NoMatch.next()
@@ -150,8 +150,9 @@ class Mapping(object):
         if isinstance(mapping, Mapping):
             if mapping.modality1 != self.modality1 or \
                mapping.modality2 != self.modality2:
-               raise ValueError('Incompatible modalities (%s/%s) vs. (%s/%s)' % \
-                                (self.modality1, self.modality2, mapping.modality1, mapping.modality2))
+               raise ValueError('Incompatible modalities (%s/%s) vs (%s/%s)' % \
+                                (self.modality1, self.modality2, \
+                                 mapping.modality1, mapping.modality2))
             
             for l, r in mapping:
                 self += (l, r)
@@ -163,13 +164,15 @@ class Mapping(object):
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.modality1, self._one1_to_many2[already_mapped]))
+                             (already_mapped, self.modality1, \
+                              self._one1_to_many2[already_mapped]))
             
         already_mapped = set(elements2) & self.second_set
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.modality2, self._one2_to_many1[already_mapped]))
+                             (already_mapped, self.modality2, \
+                              self._one2_to_many1[already_mapped]))
         
         for elt1 in elements1:
             self._one1_to_many2[elt1] = elements2
@@ -212,11 +215,14 @@ class Mapping(object):
                self._one2_to_many1 == other._one2_to_many1
         
     def to_partition(self):
+        
         partition = {}
         C = 0
         for left, right in self:
-            partition.update({MElement(self.modality1, element): C for element in left})
-            partition.update({MElement(self.modality2, element): C for element in right})
+            partition.update({MElement(self.modality1, element): C \
+                              for element in left})
+            partition.update({MElement(self.modality2, element): C \
+                              for element in right})
             C += 1
         return partition
         
@@ -319,8 +325,8 @@ class OneToOneMapping(Mapping):
             return right[0]
         else:
             return None
-    
-    
+            
+    def __call__(self, key):
+        return self[key]
         
-    
-    
+        

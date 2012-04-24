@@ -18,14 +18,15 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+from pyannote.base.feature import SlidingWindow
 
-class BaseSegmentation(object):
+class BaseSegmenter(object):
     def __init__(self):
-        super(BaseSegmentation, self).__init__()
+        super(BaseSegmenter, self).__init__()
 
-class PeriodicSegmentation(BaseSegmentation):
+class PeriodicSegmenter(BaseSegmenter):
     def __init__(self, period):
-        super(PeriodicSegmentation, self).__init__()
+        super(PeriodicSegmenter, self).__init__()
         self.__period = period
         
     def __get_period(self):

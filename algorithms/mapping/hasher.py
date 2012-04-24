@@ -18,10 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from base import BaseAssociation
-from pyannote.base.association import Mapping
+from base import BaseMapper
+from pyannote.base.mapping import Mapping
 
-class IDHasher(BaseAssociation):
+class IDHasher(BaseMapper):
     
     def __init__(self, hashA, hashB):
         """
