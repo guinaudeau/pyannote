@@ -59,7 +59,7 @@ class BaseTag(object):
                    doc="List of labels.")
     
     def valid_segment(self, segment):
-        return isinstance(segment, Segment)
+        return isinstance(segment, Segment) and segment
     
     def valid_track(self, track):
         return isinstance(track, Hashable)
@@ -256,10 +256,13 @@ class MonoTag(BaseTag):
         
         if self.multitrack:
             for segment, track, label in self.iterlabels():
-                T[segment_func(segment), track_func(track)] = label_func(label)
+                new_segment = segment_func(segment)
+                if new_segment:
+                    T[new_segment, track_func(track)] = label_func(label)
         else:
             for segment, label in self.iterlabels():
-                T[segment_func(segment)] = label_func(label)
+                if segment_func(segment):
+                    T[segment_func(segment)] = label_func(label)
         
         return T
                 
@@ -292,10 +295,31 @@ class MonoTag(BaseTag):
         return T    
             
     def __call__(self, subset, mode='strict', invert=False):
-        
+        """
+        """
         # get temporal slices
-        if isinstance(subset, (Segment, Timeline)):
-            raise NotImplementedError('Temporal slices not yet implemented.')
+        if isinstance(subset, Segment):
+            segment = subset
+            timeline = Timeline(video=self.video)
+            timeline += segment
+            return self.__call__(timeline, mode=mode, invert=invert)            
+        
+        elif isinstance(subset, Timeline):
+            
+            timeline = subset
+            
+            if invert:
+                timeline = self.timeline.coverage() / timeline
+                return self.__call__(timeline, mode=mode, invert=False)
+            
+            coverage = timeline.coverage()
+            if mode == 'strict':
+                segment_func = lambda s : s if coverage.covers(s) else False 
+            else:
+                raise ValueError('unsupported mode.')
+                
+            return self.copy(segment_func=segment_func)
+
         
         # get set of labels
         elif isinstance(subset, (tuple, list, set)):
