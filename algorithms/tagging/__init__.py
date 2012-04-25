@@ -27,4 +27,4 @@ Tagging
 from hungarian import HungarianTagger
 from argmax import ArgMaxTagger
 from segment import ConservativeSegmentTagger
-
+from timeline import ConservativeTimelineTagger
