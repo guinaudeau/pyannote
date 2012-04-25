@@ -272,17 +272,15 @@ class Mapping(object):
     def __str__(self):
         return str(self.to_dict())
 
-class OneToOneMapping(Mapping):
+class ManyToOneMapping(Mapping):
     
     def _check_mapping(self, mapping):
         """
-        Extra verification for one-to-one mapping
+        Extra verification for many-to-one mapping
         """
-        elements1, elements2 = super(OneToOneMapping, self)._check_mapping(mapping)
+        elements1, elements2 = super(ManyToOneMapping, self)\
+                               ._check_mapping(mapping)
         
-        if len(elements1) > 1:
-            raise ValueError('Left mapping part (%s) must contain only one element.' % elements1)
-            
         if len(elements2) > 1:
             raise ValueError('Right mapping part (%s) must contain only one element.' % elements2)
         
@@ -294,17 +292,36 @@ class OneToOneMapping(Mapping):
         for l, r in mapping:
             M += (l, r)
         return M
+        
+    def __getitem__(self, key):
+        right = self._one1_to_many2[key]
+        if right:
+            return right[0]
+        else:
+            return None
+            
+    def __call__(self, key):
+        return self[key]      
+
+class OneToOneMapping(ManyToOneMapping):
     
-    # @classmethod
-    # def from_dict(cls, mapping, modality1, modality2):
-    #     M = cls(modality1, modality2)
-    #     for key, value in mapping.iteritems():
-    #         if isinstance(key, NoMatch):
-    #             key = None
-    #         if isinstance(value, NoMatch):
-    #             value = None
-    #         M += ([key], [value])
-    #     return M
+    def _check_mapping(self, mapping):
+        """
+        Extra verification for one-to-one mapping
+        """
+        elements1, elements2 = super(OneToOneMapping, self)._check_mapping(mapping)
+        
+        if len(elements1) > 1:
+            raise ValueError('Left mapping part (%s) must contain only one element.' % elements1)
+            
+        return elements1, elements2
+    
+    @classmethod
+    def fromMapping(cls, mapping):
+        M = cls(mapping.modality1, mapping.modality2)
+        for l, r in mapping:
+            M += (l, r)
+        return M
     
     def to_dict(self, reverse=False, single=False):
         D = super(OneToOneMapping, self).to_dict(reverse=reverse)
@@ -315,18 +332,3 @@ class OneToOneMapping(Mapping):
             return d
         else:
             return D
-        
-    def __str__(self):
-        return str(self.to_dict())
-        
-    def __getitem__(self, key):
-        right = self._one1_to_many2[key]
-        if right:
-            return right[0]
-        else:
-            return None
-            
-    def __call__(self, key):
-        return self[key]
-        
-        
