@@ -242,7 +242,15 @@ class CoMatrix(object):
                      np.copy(self.M), \
                      default=self.default)
         return C
-        
+    
+    # ------------------------------------------------------------------- #
+
+    def __neg__(self):
+        ilabels, jlabels = self.labels
+        C = CoMatrix(list(ilabels), list(jlabels), -np.copy(self.M), \
+                     default=-self.default)
+        return C
+    
     # ------------------------------------------------------------------- #
 
     def __iadd__(self, other):
@@ -267,54 +275,62 @@ class CoMatrix(object):
     
     # =================================================================== #
     
-    def argmin(self, threshold=None, axis=None):
-        """
-        :param threshold: threshold on minimum value
-        :type threshold: float
-        
-        :returns: list of label pairs corresponding to minimum value in matrix.
-        In case :data:`threshold` is provided and is smaller than minimum value,
-        then, returns an empty list.
-        """
-        if axis == 0:
-            pairs = {}
-            for i, ilabel in self.iter_ilabels(index=True):
-                M = self.M[i,:]
-                m = np.min(M)
-                if threshold is None or m < threshold:
-                    pairs[ilabel] = [self.__jlabels[j] for j in np.argmin(M)]
-                else:
-                    pairs[ilabel] = []
-            return pairs
-        elif axis == 1:
-            pairs = {}
-            for j, jlabel in self.iter_jlabels(index=True):
-                M = self.M[:,j]
-                m = np.min(M)
-                if threshold is None or m < threshold:
-                    pairs[jlabel] = [self.__ilabels[i] for i in np.argmin(M)]
-                else:
-                    pairs[jlabel] = []
-            return pairs
-        else:
-            m = np.min(self.M)
-            if (threshold is None) or (m < threshold):
-                pairs = np.argwhere(self.M == m)
-            else:
-                pairs = []
-            return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+    # def argmin(self, threshold=None, axis=None):
+    #     """
+    #     :param threshold: threshold on minimum value
+    #     :type threshold: float
+    #     
+    #     :returns: set of label pairs corresponding to minimum value in matrix.
+    #     In case :data:`threshold` is provided and is smaller than minimum value,
+    #     then, returns an empty list.
+    #     """
+    #     if axis == 0:
+    #         pairs = {}
+    #         for i, ilabel in self.iter_ilabels(index=True):
+    #             M = self.M[i,:]
+    #             m = np.min(M)
+    #             if threshold is None or m < threshold:
+    #                 pairs[ilabel] = [self.__jlabels[j] for j in np.argmin(M)]
+    #             else:
+    #                 pairs[ilabel] = []
+    #         return pairs
+    #     elif axis == 1:
+    #         pairs = {}
+    #         for j, jlabel in self.iter_jlabels(index=True):
+    #             M = self.M[:,j]
+    #             m = np.min(M)
+    #             if threshold is None or m < threshold:
+    #                 pairs[jlabel] = [self.__ilabels[i] for i in np.argmin(M)]
+    #             else:
+    #                 pairs[jlabel] = []
+    #         return pairs
+    #     else:
+    #         m = np.min(self.M)
+    #         if (threshold is None) or (m < threshold):
+    #             pairs = np.argwhere(self.M == m)
+    #         else:
+    #             pairs = []
+    #         return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
 
     # ------------------------------------------------------------------- #
 
-    def argmax(self, axis=None, threshold=None):
+    def argmax(self, axis=None, threshold=None, ties='all'):
         """
+        
+        :param axis:
+        :type axis: 0, 1 or None
+        
         :param threshold: threshold on maximum value
         :type threshold: float
-        
-        :returns: list of label pairs corresponding to maximum value in matrix.
+
         In case :data:`threshold` is provided and is higher than maximum value,
         then, returns an empty list.
+
+        :param ties: tie handling -- keep all or just one?
+        :type ties: 'all' (default) or 'any'
         
+        :returns: dictionary of label pairs corresponding to maximum value in matrix.
+                
         >>> C = Confusion(A, B)
         >>> pairs = C.argmax(axis=0)
         >>> for a in A.IDs:
@@ -329,29 +345,38 @@ class CoMatrix(object):
                 M = self.M[i,:]
                 m = np.max(M)
                 if threshold is None or m > threshold:
-                    pairs[ilabel] = [self.__jlabels[j[0]] \
-                                    for j in np.argwhere(M == m)]
+                    pairs[ilabel] = set([self.__jlabels[j[0]] \
+                                         for j in np.argwhere(M == m)])
                 else:
-                    pairs[ilabel] = []
+                    pairs[ilabel] = set([])
+                if ties == 'any' and len(pairs[ilabel]) > 1:
+                    pairs[ilabel] = set([pairs[ilabel].pop()])
             return pairs
         elif axis == 1:
-            pairs = {}
-            for j, jlabel in self.iter_jlabels(index=True):
-                M = self.M[:,j]
-                m = np.max(M)
-                if threshold is None or m > threshold:
-                    pairs[jlabel] = [self.__ilabels[i[0]] \
-                                     for i in np.argwhere(M == m)]
-                else:
-                    pairs[jlabel] = []
-            return pairs
+            return self.T.argmax(axis=0, threshold=threshold)
+            # pairs = {}
+            # for j, jlabel in self.iter_jlabels(index=True):
+            #     M = self.M[:,j]
+            #     m = np.max(M)
+            #     if threshold is None or m > threshold:
+            #         pairs[jlabel] = set([self.__ilabels[i[0]] \
+            #                              for i in np.argwhere(M == m)])
+            #     else:
+            #         pairs[jlabel] = set([])
+            # return pairs
         else:
             m = np.max(self.M)
             if (threshold is None) or (m > threshold):
                 pairs = np.argwhere(self.M == m)
             else:
                 pairs = []
-            return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
+            return set([(self.__ilabels[i], self.__jlabels[j]) \
+                        for i, j in pairs])
+    
+    # ------------------------------------------------------------------- #
+    
+    def argmin(self, axis=None, threshold=None, ties='all'):
+        return (-self).argmax(axis=axis, threshold=-threshold)
     
     # =================================================================== #
 
@@ -445,11 +470,11 @@ class CoTFIDF(Confusion):
            = -----------------------
              sum confusion[i, :] > 0
     """
-    def __init__(self, words=None, documents=None, log=True):
+    def __init__(self, words=None, documents=None, log=False):
         super(CoTFIDF, self).__init__(words, documents)
         Nw, Nd = self.shape
         tf = self.M / np.tile(np.sum(self.M, axis=0), (Nw, 1))
-        idf = np.tile(float(Nd) / np.sum(self.M > 0, axis=1), (Nd, 1)).T
+        idf = np.tile(float(Nd) / np.maximum(1, np.sum(self.M > 0, axis=1)), (Nd, 1)).T
         if log:
             idf = np.log(idf)
         self.M = tf * idf
