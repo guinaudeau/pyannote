@@ -94,7 +94,7 @@ class Unknown(object):
         return self.format % self.ID
     
     def __repr__(self):
-        return '?'
+        return str(self)
         
     def __hash__(self):
         return hash(self.ID)
@@ -272,11 +272,17 @@ class MonoTag(BaseTag):
         """
         More or less equivalent to copy(label_func=translation)
         """
-
-        if not isinstance(translation, (dict, OneToOneMapping)):
-            raise TypeError('Translation must be dict or OneToOneMapping.')
         
-        label_func = lambda x: translation[x] if translation[x] else x
+        if isinstance(translation, dict):
+            label_func = lambda x: translation[x] \
+                                   if x in translation and translation[x] \
+                                   else x
+        elif isinstance(translation, ManyToOneMapping):
+            label_func = lambda x: translation(x) if translation(x) else x
+        else:
+            raise TypeError('Translation must be dict or ManyToOneMapping.')
+        
+
         return self.copy(label_func=label_func)    
     
     def __get_label(self, label):
@@ -299,32 +305,39 @@ class MonoTag(BaseTag):
     def __call__(self, subset, mode='strict', invert=False):
         """
         """
-        # get temporal slices
+
+
+        # Segment subset
+        # --------------
         if isinstance(subset, Segment):
             segment = subset
+
+            # --- Recursive call as a Timeline subset.            
             timeline = Timeline(video=self.video)
             timeline += segment
             return self.__call__(timeline, mode=mode, invert=invert)            
         
+        # Timeline subset
+        # ---------------
         elif isinstance(subset, Timeline):
-            
             timeline = subset
             
+            
             if invert:
+                # --- Recursive call with complementary timeline subset
                 timeline = self.timeline.coverage() / timeline
                 return self.__call__(timeline, mode=mode, invert=False)
             
-            coverage = timeline.coverage()
             if mode == 'strict':
                 # keep segment if it is fully included in timeline coverage
+                coverage = timeline.coverage()
                 segment_func = lambda s : s if coverage.covers(s) else False 
                 return self.copy(segment_func=segment_func)
             elif mode == 'loose':
                 # keep segment if it intersects timeline coverage
+                coverage = timeline.coverage()
                 segment_func = lambda s : s if (coverage & s) else False
                 return self.copy(segment_func=segment_func)
-            elif mode == 'intersection':
-                raise NotImplementedError('unsupported mode.')
             else:
                 raise ValueError('unsupported mode.')
         
@@ -336,7 +349,7 @@ class MonoTag(BaseTag):
             if invert:
                 labels = set(self.IDs) - set(subset)
             else:
-                labels = set(subset)
+                labels = set(subset) & set(self.IDs)
             
             T = self.empty()
 
@@ -356,14 +369,17 @@ class MonoTag(BaseTag):
             # one single label == set of one label
             return self.__call__(set([subset]), mode=mode, invert=invert)
     
-    def show(self):
+    def __str__(self):
+        
+        string = ""
         if self.multitrack:
             for segment, track, label in self.iterlabels():
-                print segment, track, label
+                string += '%s %s %s\n' % (segment, track, label)
         else:
             for segment, label in self.iterlabels():
-                print segment, label
-    
+                string += '%s %s\n' % (segment, label)
+        return string
+            
     def new_track(self, segment, prefix=DEFAULT_TRACK_PREFIX):
         
         if not self.multitrack:
