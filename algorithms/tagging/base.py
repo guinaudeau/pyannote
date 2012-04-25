@@ -20,10 +20,10 @@
 
 from pyannote.base.tag import MonoTag
 
-class BaseTagger(object):
+class BaseMonoTagTagger(object):
     
     def __init__(self):
-        super(BaseTagger, self).__init__()
+        super(BaseMonoTagTagger, self).__init__()
     
     def tag(self, source, target):
         raise NotImplementedError('')
@@ -55,9 +55,9 @@ class BaseTagger(object):
         # else:
         #     return self.tag(source, target)
 
-from pyannote.base.mapping import OneToOneMapping
+from pyannote.base.mapping import ManyToOneMapping
 
-class LabelTagger(BaseTagger):
+class LabelTagger(BaseMonoTagTagger):
     
     def __init__(self):
         super(LabelTagger, self).__init__()
@@ -72,8 +72,34 @@ class LabelTagger(BaseTagger):
                      doc="Label Mapper.")
     
     def tag(self, source, target):
-        # get one-to-one mapping
-        mapping = OneToOneMapping.fromMapping(self.mapper(target, source))
+        # get many-to-one mapping
+        mapping = ManyToOneMapping.fromMapping(self.mapper(target, source))
         # translate only mapped labels
         label_func = lambda x: mapping(x) if mapping(x) else x
         return target.copy(label_func=label_func)
+
+from pyannote.base.timeline import Timeline
+
+class BaseTimelineTagger(object):
+    def __init__(self):
+        super(BaseTimelineTagger, self).__init__()
+    
+    def tag(self, source, target):
+        raise NotImplementedError('')
+
+    def __call__(self, source, target):
+        
+        # make sure source is MonoTag
+        if not isinstance(source, MonoTag):
+            raise TypeError('Source must be a MonoTag (is %s).' % type(source))
+        # make sure target is Timeline
+        if not isinstance(target, Timeline):
+            raise TypeError('Target must be a Timeline (is %s).' % type(target))
+        
+        # make sure source and target are for the same video
+        if source.video != target.video:
+            raise ValueError('Video mismatch (%s vs. %s).' \
+                             % (source.video, target.video))
+        
+        return self.tag(source, target)
+    
