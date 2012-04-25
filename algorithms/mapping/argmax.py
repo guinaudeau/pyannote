@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.mapping import OneToOneMapping
+from pyannote.base.mapping import ManyToOneMapping
 from pyannote.base.comatrix import Confusion
 from base import BaseMapper
 
@@ -43,21 +43,29 @@ class ArgMaxMapper(BaseMapper):
         
         # Confusion matrix
         matrix = self.confusion(A, B)
-        M = OneToOneMapping(A.modality, B.modality)
         
-        # Shape and labels
-        Na, Nb = matrix.shape
+        # ArgMax
+        pairs = matrix.argmax(axis=0, threshold=0, ties='any')
+        
+        # Reverse dict and group alabels by argmax
+        sriap = {}
+        for a, b_s in pairs.iteritems():
+            if b_s:
+                b = b_s.pop()
+                if b not in sriap:
+                    sriap[b] = set([])
+                sriap[b].add(a)
+        
+        M = ManyToOneMapping(A.modality, B.modality)
+        
+        for b, a_s in sriap.iteritems():
+            M += (a_s, [b])                
         alabels, blabels = matrix.labels
-        
-        pairs = matrix.argmax(axis=0, threshold=0)
-        for alabel in alabels:
-            if alabel in pairs:
-                M += ([alabel], pairs[alabel])
-            else:
-                M += ([alabel], None)
-        for blabel in set(blabels)-M.second_set:
-            M += (None, [blabel])
-            
+        for a in set(alabels)-M.first_set:
+            M += ([a], None)
+        for b in set(blabels)-M.second_set:
+            M += (None, [b])
+
         return M
         
             
