@@ -464,7 +464,7 @@ class CoTFIDF(Confusion):
                
                         number of J documents                     
     IDF(i) = ---------------------------------------------- 
-                 number of J documents co-occurring with word i   
+             number of J documents co-occurring with word i   
            
                       Nj
            = -----------------------
