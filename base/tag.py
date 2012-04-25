@@ -20,10 +20,12 @@
 
 from segment import Segment
 from timeline import Timeline
+from mapping import OneToOneMapping
 from collections import Hashable
 
 UNIQUE_TRACK = '__@__'
 UNIQUE_LABEL = '__@__'
+DEFAULT_TRACK_PREFIX = 'track'
 
 class BaseTag(object):
     
@@ -357,4 +359,22 @@ class MonoTag(BaseTag):
             for segment, label in self.iterlabels():
                 print segment, label
     
+    def new_track(self, segment, prefix=DEFAULT_TRACK_PREFIX):
+        
+        if not self.multitrack:
+            raise NotImplementedError('MonoTag is mono-track.')
+            
+        count = 0
+        if segment in self:
+            existing_tracks = set(self[segment, :])
+        else:
+            existing_tracks = set([])
+        new_track = '%s%d' % (prefix, count)
+        
+        while new_track in existing_tracks:
+            count += 1
+            new_track = '%s%d' % (prefix, count)
+        return new_track
+        
+        
             
