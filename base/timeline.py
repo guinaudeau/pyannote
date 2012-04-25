@@ -589,15 +589,12 @@ class Timeline(object):
                 raise TypeError('')
         else:
             raise ValueError('Unknown mode (strict or loose)')
-        
     
     def __and__(self, other):
-        raise NotImplementedError('')
-        #return abs(self(other, mode='intersection'))
+        return self(other, mode='intersection').coverage()
     
     def __or__(self, other):
-        raise NotImplementedError('')
-        # return abs(self + other)
+        return (self + other).coverage()
     
     
     # ------------------------------------------------------------------
