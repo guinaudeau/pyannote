@@ -21,6 +21,8 @@
 # --------------------------------------------------------------------------- #
 
 from identification import IDMatcher
+from pyannote.base.tag import Unknown
+
 class REPEREIDMatcher(IDMatcher):
     """
     REPERE ID matcher: 
@@ -50,16 +52,17 @@ class REPEREIDMatcher(IDMatcher):
 
     # ------------------------------------------------------------ #
     def is_anonymous(self, identifier):
-        return identifier[:8] == 'Inconnu_' \
-            or identifier[:7] == 'speaker'
+        return isinstance(identifier, Unknown) or \
+               (isinstance(identifier, str) and \
+                                            (identifier[:8] == 'Inconnu_' or \
+                                             identifier[:7] == 'speaker')) 
     
     def anonymous_from(self, identifiers):
         return set([identifier for identifier in identifiers \
                                if self.is_anonymous(identifier)])
     # ------------------------------------------------------------ #
     def is_named(self, identifier):
-        return identifier[:8] != 'Inconnu_' \
-           and identifier[:7] != 'speaker'
+        return not self.is_anonymous(identifier)
     
     def named_from(self, identifiers):
         return set([identifier for identifier in identifiers \
@@ -68,6 +71,7 @@ class REPEREIDMatcher(IDMatcher):
 # --------------------------------------------------------------------------- #
 
 from base import BaseErrorRate
+from pyannote.algorithms.tagging.timeline import ConservativeTimelineTagger
 
 EGER_TOTAL = 'total'
 
@@ -151,13 +155,14 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         self.matcher = REPEREIDMatcher()
         self.confusion = confusion
         self.anonymous = anonymous
+        self.tagger = ConservativeTimelineTagger()
 
     def get_details(self, reference, hypothesis, annotated=None):
         
         detail = self.init_details()
-
-        reference = reference >> annotated
-        hypothesis = hypothesis >> annotated
+        
+        reference = self.tagger(reference, annotated)
+        hypothesis = self.tagger(hypothesis, annotated)
         
         for frame in annotated:
 
@@ -311,14 +316,15 @@ def main(argv=None):
     try:
         try:
             opts, args = getopt.getopt(argv[1:], \
-                            "hR:H:F:", \
-                            ["help", "reference=", "hypothesis=", \
+                            "hR:H:F:O:", \
+                            ["help", "reference=", "hypothesis=", "oracle=", \
                              "frames=", "speaker", "head"])
         except getopt.error, msg:
             raise Usage(msg)
         
         path2reference = None
         path2hypothesis = None
+        path2oracle = None
         path2frames = None
         speaker = False
         head = False
@@ -329,6 +335,8 @@ def main(argv=None):
                 path2reference = value
             if option in ("-H", "--hypothesis"):
                 path2hypothesis = value
+            if option in ("-O", "--oracle"):
+                path2oracle = value
             if option in ("-F", "--frames"):
                 path2frames = value
             if option in ("--speaker"):
@@ -344,9 +352,15 @@ def main(argv=None):
     reference = pyannote.parser.repere.REPEREParser(path2reference, \
                                                     confidence=False, \
                                                     multitrack=True)
-    hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, \
-                                                     confidence=False, \
-                                                     multitrack=True)
+    if path2oracle is None:
+        hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, \
+                                                         confidence=False, \
+                                                         multitrack=True)
+    else:
+        f = open(path2oracle, 'r')
+        recognizable = [line.strip() for line in f.readlines()]
+        f.close()
+
     frames = pyannote.parser.nist.UEMParser(path2frames)
     
     modalities = []
@@ -361,8 +375,16 @@ def main(argv=None):
         A = frames.timeline(video) 
         for modality in modalities:
             R = reference.annotation(video, modality)
-            H = hypothesis.annotation(video, modality)
-            value = error[modality](R, H, A, detailed=False)
+            if path2oracle is None:
+                H = hypothesis.annotation(video, modality)
+            else:
+                oracle_translation = {}
+                for identifier in R.IDs:
+                    if identifier not in recognizable:
+                        oracle_translation[identifier] = Unknown()
+                H = R % oracle_translation
+                
+            value = error[modality](R, H, annotated=A)
             print '  - EGER (%s) = %.3f' % (modality, value)
         print ""
     
