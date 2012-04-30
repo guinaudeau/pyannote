@@ -20,61 +20,15 @@
 
 from segment import Segment
 from timeline import Timeline
-from mapping import OneToOneMapping
+from mapping import ManyToOneMapping
 from collections import Hashable
 
 UNIQUE_TRACK = '__@__'
 UNIQUE_LABEL = '__@__'
 DEFAULT_TRACK_PREFIX = 'track'
 
-class BaseTag(object):
-    
-    def __init__(self, multitrack=True, modality=None, video=None):
-        
-        super(BaseTag, self).__init__()
-        self.__multitrack = multitrack
-        self.__modality = modality
-        self.__video = video
-        self.timeline = Timeline(video=self.video)
-        self.data = {}
-        self.tag_timeline = {}
-        self.tag_count = {}
-
-    def __get_multitrack(self):
-        return self.__multitrack
-    multitrack = property(fget=__get_multitrack, fset=None, fdel=None, \
-                          doc="Can segments contain multiple tracks?")
-    
-    def __get_video(self): 
-        return self.__video
-    video = property(fget=__get_video, fset=None, fdel=None, \
-                     doc="Annotated video.")
-
-    def __get_modality(self): 
-        return self.__modality
-    modality = property(fget=__get_modality, fset=None, fdel=None, \
-                        doc="Annotated modality.")    
-    
-    def __get_IDs(self):
-        return self.tag_count.keys()
-    IDs = property(fget=__get_IDs, fset=None, fdel=None, \
-                   doc="List of labels.")
-    
-    def valid_segment(self, segment):
-        return isinstance(segment, Segment) and segment
-    
-    def valid_track(self, track):
-        return isinstance(track, Hashable)
-    
-    def valid_label(self, label):
-        return isinstance(label, Hashable)
-    
-
 class Unknown(object):
     nextID = 0
-    """
-    Keep track of the number of instances since last reset
-    """
     
     @classmethod
     def reset(cls):
@@ -95,160 +49,569 @@ class Unknown(object):
     
     def __repr__(self):
         return str(self)
-        
+    
     def __hash__(self):
         return hash(self.ID)
-        
+    
     def __eq__(self, other):
         if isinstance(other, Unknown):
             return self.ID == other.ID
         else:
             return False
 
-class MonoTag(BaseTag):
+class Annotation(object):
+    """
+    Annotated timeline.
     
-    def __init__(self, multitrack=True, video=None, modality=None):        
-        super(MonoTag, self).__init__(multitrack=multitrack, \
-                                      video=video, \
-                                      modality=modality)
+    An annotation is ...
     
-    def ids(self, segment):
-        if segment not in self:
-            return set([])
-        return set([self.data[segment][track] \
-                    for track in self.data[segment]])
+    Parameters
+    ----------
+    multitrack : bool, optional
+        whether a segment can contain multiple track (True) or not (False).
+        Default is True (multi-track annotation).
+    modality : string, optional
+        name of annotated modality
+    video : string, optional
+        name of (audio or video) annotated document
     
-    def parse_key(self, key):
+    Returns
+    -------
+    annotation : Annotation
+        New empty annotation
+        
+    Examples
+    --------
+    
+    """
+    def __init__(self, multitrack=True, video=None, modality=None):
+        
+        super(Annotation, self).__init__()
+        
+        # whether a segment can contain multiple track (True) or not (False)
+        self.__multitrack = multitrack
+        
+        # name of annotated modality
+        self.__modality = modality
+        
+        # path to (or any identifier of) segmented video
+        self.__video = video
+        
+        # this timeline is meant to store annotated segments.
+        # it only contains segments with at least one labelled track.
+        # a segment that is no longer annotated must be removed from it.
+        self.__timeline = Timeline(video=self.video)
+        
+        # this is where tracks and labels are actually stored.
+        # it is a dictionary indexed by segments.
+        # .__data[segment] is a dictionary indexed by tracks.
+        # .__data[segment][track] contains the actual label.
+        self.__data = {}
+        
+        # this is a dictionary indexed by labels.
+        # .__label_timeline[label] is a timeline made of segments for which
+        # there exists at least one track labelled by label.
+        # when a label no longer exists, its entry must be removed.
+        self.__label_timeline = {}
+        
+        # this is a dictionary indexed by labels
+        # .__label_count[label] is a dictionary indexed by segments containing
+        # at least one track labelled by label.
+        # .__label_count[label][segment] contains the number of tracks labelled
+        # as label in this segment. when zero, segment entry must be removed.
+        self.__label_count = {}
+    
+    def __get_multitrack(self):
+        return self.__multitrack
+    multitrack = property(fget=__get_multitrack)
+    """Can segments contain multiple tracks?"""
+    
+    def __get_video(self): 
+        return self.__video
+    video = property(fget=__get_video)
+    """Path to (or any identifier of) annotated video
+    
+    Examples
+    --------
+        >>> annotation = Annotation(video="MyVideo.avi")
+        >>> print annotation.video
+        MyVideo.avi
+    
+    """
+    
+    def __get_modality(self): 
+        return self.__modality
+    modality = property(fget=__get_modality)
+    """Name (or any identifier) of annotated modality
+    
+    Examples
+    --------
+        >>> annotation = Annotation(modality="speaker")
+        >>> print annotation.modality
+        speaker
+    
+    """
+    
+    # Make sure provided segment is valid.
+    def __valid_segment(self, segment):
+        return isinstance(segment, Segment) and segment
+    
+    # Any hashable object can be used as a track name.
+    def __valid_track(self, track):
+        return isinstance(track, Hashable)
+    
+    # Strings or Unknown can be used as label.
+    def __valid_label(self, label):
+        return isinstance(label, (Unknown, str))
+    
+    def labels(self):
+        """Global list of labels
+        
+        Returns
+        -------
+        labels : list
+            Sorted list of existing labels (based on their string version)
+        
+        """
+        return sorted(self.__label_count.keys(), key=str)
+    
+    def get_labels(self, segment):
+        """Local set of labels
+        
+        Parameters
+        ----------
+        segment : Segment
+            Segments to get label from.
+        
+        Returns
+        -------
+        labels : set
+            Set of labels for `segment`
+        
+        Raises
+        ------
+        KeyError if `segment` is not annotated.
+        
+        Examples
+        --------
+            
+            >>> annotation = Annotation(multitrack=True)
+            >>> segment = Segment(0, 2)
+            >>> annotation[segment, 'speaker1'] = 'Bernard'
+            >>> annotation[segment, 'speaker2'] = 'John'
+            >>> print sorted(annotation.get_labels(segment))
+            ['Bernard', 'John']
+            >>> annotation.get_labels(Segment(1, 2))
+            Traceback (most recent call last):
+            ...
+            KeyError: <Segment(1, 2)>
+            
+        """
+        
+        return set([self.__data[segment][track] \
+                    for track in self.__data[segment]])
+    
+    # Function used to parse key used to access annotation elements
+    # eg. annotation[segment] or annotation[segment, track]
+    def __parse_key(self, key):
+        
+        # For multi-track annotation, 
+        # both segment and track name must be provided.
         if self.multitrack:
-            if (not isinstance(key, tuple)) or (len(key) != 1+self.multitrack):
-               raise KeyError('')
+            if not isinstance(key, tuple) or len(key) != 2:
+               raise KeyError("multi-track annotation, "
+                              "expected 'annotation[segment, track]'")
             segment = key[0]
-            track = key[1]            
+            track = key[1]
+        
+        # For mono-track annotation,
+        # only segment must be provided.
         else:
-            if (not isinstance(key, Segment)):
-                raise KeyError('')
+            if not isinstance(key, Segment):
+                raise KeyError("single-track annotation, "
+                               "expected 'annotation[segment]'")
             segment = key
+            # default name for unique track
             track = UNIQUE_TRACK
+        
         return segment, track
     
     def __getitem__(self, key):
+        """
         
-        segment, track = self.parse_key(key)
+        Use expression 'annotation[segment]' for single-track annotation
+                   and 'annotation[segment, track]' for multi-track annotation
         
+        Examples
+        -------
+        
+            >>> annotation = Annotation(multitrack=True)
+            >>> segment = Segment(0, 2)
+            >>> annotation[segment, 'speaker1'] = 'Bernard'
+            >>> annotation[segment, 'speaker2'] = 'John'
+            >>> print annotation[segment, 'speaker1']
+            Bernard
+            >>> track2name = annotation[segment, :]
+            >>> for track in sorted(track2name):
+            ...     print '%s --> %s' % (track, track2name[track])
+            speaker1 --> Bernard
+            speaker2 --> John
+        
+        """
+        
+        # Parse requested key
+        segment, track = self.__parse_key(key)
+        
+        # case 1: annotation[segment, :]
+        # returns {track --> label} dictionary
         if track == slice(None,None,None):
-            return dict(self.data[segment])
+            return dict(self.__data[segment])
+        
+        # case 2: annotation[segment] or annotation[segment, track]
+        # returns corresponding label
         else:
-            return self.data[segment][track]
+            return self.__data[segment][track]
     
     def __setitem__(self, key, label):
+        """Add/update label
         
-        segment, track = self.parse_key(key)
-        
-        if not self.valid_segment(segment):
-            raise KeyError('')
-        if not self.valid_track(track):
-            raise KeyError('')
-        if not self.valid_label(label):
-            raise ValueError('')
+        Use expression 'annotation[segment] = label' for single-track annotation
+        and 'annotation[segment, track] = label' for multi-track annotation.
 
-        # do nothing or delete existing label
-        if (segment in self.data) and (track in self.data[segment]):
-            if self.data[segment][track] == label:
+        Parameters
+        ----------
+        key : any valid key (annotation[segment] or annotation[segment, track])
+        label : any valid label 
+        
+        Examples
+        --------
+        
+            >>> annotation = Annotation(multitrack=True)
+            >>> segment = Segment(0, 2)
+            >>> annotation[segment, 'speaker1'] = 'Bernard'
+            >>> annotation[segment, 'speaker2'] = 'John'
+        
+        """
+        
+        # Parse provided key
+        segment, track = self.__parse_key(key)
+        
+        # Validate segment, track and label
+        if not self.__valid_segment(segment):
+            raise KeyError("invalid segment.")
+        if not self.__valid_track(track):
+            raise KeyError('invalid track name.')
+        if not self.__valid_label(label):
+            raise ValueError('invalid label.')
+
+        # In case segment/track annotation already exists
+        if segment in self.__data and \
+           track in self.__data[segment]:
+            
+            # do nothing if provided label is the same as existing one
+            if self.__data[segment][track] == label:
                 return
+            
+            # remove existing label if provided label 
+            # is different from existing one
             else:
                 self.__delitem__(key)
-
-        # update .timeline
-        if segment not in self.timeline:
-            self.timeline += segment
-            self.data[segment] = {}
-
-        # update .data
-        self.data[segment][track] = label
         
-        # update .tag_timeline
-        if label not in self.tag_timeline:
-            self.tag_timeline[label] = Timeline(video=self.video)
-        self.tag_timeline[label] += segment
-
-        # update .tag_count
-        if label not in self.tag_count:
-            self.tag_count[label] = {}
-        if segment not in self.tag_count[label]:
-            self.tag_count[label][segment] = 0
-        self.tag_count[label][segment] += 1
+        # Add segment if necessary
+        if segment not in self.__timeline:
+            # to global timeline
+            self.__timeline += segment
+            # to internal data dictionary
+            self.__data[segment] = {}
+        
+        # Store label for segment/track
+        self.__data[segment][track] = label
+        
+        # Create label timeline if necessary
+        if label not in self.__label_timeline:
+            self.__label_timeline[label] = Timeline(video=self.video)
+        
+        # Add segment to label timeline
+        # Note: it won't be added twice if it already exists (see timeline API)
+        self.__label_timeline[label] += segment
+        
+        # Create label count dictionary if necessary
+        if label not in self.__label_count:
+            self.__label_count[label] = {}
+        
+        # Initialize label count for provided segment if necessar
+        if segment not in self.__label_count[label]:
+            self.__label_count[label][segment] = 0
+            
+        # Increment label count for provided segment
+        self.__label_count[label][segment] += 1
     
     def __delitem__(self, key):
+        """Remove label
         
-        segment, track = self.parse_key(key)
+        Use expression 'del annotation[segment]' for single-track annotation
+        and 'del annotation[segment, track]' for multi-track annotation.
         
-        # del T[segment, :]
+        """
+        
+        # Parse provided key
+        segment, track = self.__parse_key(key)
+        
+        # Special case: del T[segment, :]
+        # delete all track labels, one after the other
+        # (recursive calls to del T[segment, track])
         if track == slice(None,None,None):
-            for t in self.data[segment].keys():
-                print "del T[segment, %s]" % t
+            for t in self.__data[segment].keys():
                 self.__delitem__((segment, t))
             return
         
-        # del T[segment, track]
-        label = self.data[segment][track]
+        # del T[segment, track] for multi-track annotation
+        # or del T[segment (, UNIQUE_TRACK)] for single-track annotation
+        label = self.__data[segment][track]
         
-        # update .data & .timeline
-        del self.data[segment][track]
-        if not self.data[segment]:
-            del self.data[segment]
-            del self.timeline[segment]
+        # Remove track from internal data for provided segment
+        del self.__data[segment][track]
         
-        # update .tag_count & .tag_timeline
-        self.tag_count[label][segment] -= 1
-        if self.tag_count[label][segment] == 0:
-            del self.tag_count[label][segment]
-            if not self.tag_count[label]:
-                del self.tag_count[label]
-            del self.tag_timeline[label][segment]
-            if not self.tag_timeline[label]:
-                del self.tag_timeline[label]
+        # If segment no longer has any track
+        # Remove segment as well
+        if not self.__data[segment]:
+            # from internal data 
+            del self.__data[segment]
+            # from global timeline
+            del self.__timeline[segment]
+        
+        # Decrement label count for provided segment
+        self.__label_count[label][segment] -= 1
+        
+        # If label count gets to zero
+        if self.__label_count[label][segment] == 0:
+            
+            # remove segment for label count dictionary
+            del self.__label_count[label][segment]
+            
+            # if label count dictionary is empty
+            # remove label from dictionary
+            if not self.__label_count[label]:
+                del self.__label_count[label]
+                
+            # remove segment from label timeline
+            del self.__label_timeline[label][segment]
+            
+            # if timeline is empty
+            # remove label timeline as well
+            if not self.__label_timeline[label]:
+                del self.__label_timeline[label]
     
     def __len__(self):
-        return len(self.timeline)
+        """Use expression 'len(annotation)'
+        
+        Equivalent to 'len(annotation.timeline)
+        
+        Returns
+        -------
+        number : int
+            Number of annotated segments
+        
+        See Also
+        --------
+        Timeline.__len__
+        
+        """
+        return len(self.__timeline)
     
     def __nonzero__(self):
-        return len(self.timeline) > 0
+        """Use expression 'if annotation'
         
-    def __contains__(self, segment):
-        return segment in self.timeline
+        Equivalent to 'if annotation.timeline'
+        
+        Returns
+        -------
+        empty : bool
+            False if annotation is empty (contains no annotated segment),
+            True otherwise
+        
+        See Also
+        --------
+        Timeline.__nonzero__
+        
+        
+        """
+        return len(self.__timeline) > 0
+        
+    def __contains__(self, included):
+        """Use expression 'included in annotation'
+        
+        Equivalent to 'included in annotation.timeline'
+        
+        Returns
+        -------
+        contains : bool
+            True if every segment in `included` is annotated,
+            False otherwise.
+        
+        See Also
+        --------
+        Timeline.__contains__
+        
+        """
+        return included in self.__timeline
     
     def __iter__(self):
-        return iter(self.timeline)
+        """Sorted segment iterator
+        
+        See Also
+        --------
+        Timeline.__iter__
+        
+        """
+        return iter(self.__timeline)
 
     def __reversed__(self):
-        return reversed(self.timeline)
+        """Reverse-sorted segment iterator
+        
+        See Also
+        --------
+        Timeline.__reversed__
+        
+        """
+        return reversed(self.__timeline)
     
     def iterlabels(self):
+        """Annotation iterator
+        
+        Examples
+        --------
+            
+            Iterate multi-track annotation
+            
+            >>> annotation = Annotation(multitrack=True)
+            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
+            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
+            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
+            >>> for segment, track, label in annotation.iterlabels():
+            ...    print '%s.%s --> %s' % (segment, track, label)
+            [0 --> 2].speaker1 --> Bernard
+            [0 --> 2].speaker2 --> John
+            [3 --> 4].speaker1 --> Albert
+            
+            Iterate single-track annotation
+            
+            >>> annotation = Annotation(multitrack=False)
+            >>> annotation[Segment(0, 2)] = 'Bernard'
+            >>> annotation[Segment(3, 4)] = 'Albert'
+            >>> for segment, label in annotation.iterlabels():
+            ...    print '%s --> %s' % (segment, label)
+            [0 --> 2] --> Bernard
+            [3 --> 4] --> Albert
+        
+        """
+        
+        # iterate through sorted segments
         for segment in self:
-            for track in self.data[segment]:
+            
+            # iterate through tracks
+            for track in sorted(self.__data[segment]):
+                
+                # yield segment/track/label for multi-track annotation
                 if self.multitrack:
-                    yield segment, track, self.data[segment][track]
+                    yield segment, track, self.__data[segment][track]
+                    
+                # yield segment/label for single-track annotation
                 else:
-                    yield segment, self.data[segment][track]
+                    yield segment, self.__data[segment][track]
     
     def empty(self):
+        """Empty copy of an annotation.
+        
+        See Also
+        --------
+        Timeline.empty
+        
+        Examples
+        --------
+            
+            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
+            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
+            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
+            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
+            >>> empty = annotation.empty()
+            >>> print empty.video
+            MyVideo.avi
+            >>> print empty
+            [
+            ]
+        
         """
-        Return empty copy.
-        """
-        T = type(self)(multitrack=self.multitrack, \
+        T = Annotation(multitrack=self.multitrack, \
                        video=self.video, \
                        modality=self.modality)
         return T
     
     def copy(self, segment_func=None, track_func=None, label_func=None):
+        """Duplicate annotation.
+        
+        If `segment_func`, `track_func` or `label_func` are provided, they are 
+        applied to segment, track and label before copying. 
+        In a nutshell:
+           copy[segment_func(s), track_func(t)] = label_func[original[s, t]]
+        
+        Therefore `segment_func` can be used to remove a segment,
+        eg. in case segment_func(segment) is False, None or an empty Segment.
+        
+        Parameters
+        ----------
+        segment_func, track_func, label_func : function
+            Segment, track and label transformation function
+        
+        Returns
+        -------
+        annotation : Annotation
+            A (possibly modified) copy of the annotation
+        
+        Examples
+        --------
+            
+            Extend all segments by one segment on each side
+            
+            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
+            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
+            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
+            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
+            >>> segment_func = lambda s: 1 << s >> 1
+            >>> copy = annotation.copy(segment_func=segment_func)
+            >>> print copy
+            [
+               [-1 --> 3] speaker1 : Bernard
+                          speaker2 : John
+               [2 --> 5] speaker1 : Albert
+            ]
+            
+            Only keep annotation for segment longer than 1 second,
+            and reverse names
+            
+            >>> annotation = Annotation(multitrack=False)
+            >>> annotation[Segment(0, 2)] = 'Bernard'
+            >>> annotation[Segment(3, 4)] = 'Albert'
+            >>> segment_func = lambda s: s if s.duration > 1 else None
+            >>> label_func = lambda l: l[::-1]
+            >>> copy = annotation.copy(segment_func=segment_func, \
+                                       label_func=label_func)
+            >>> print copy
+            [
+               [0 --> 2] : dranreB
+            ]
+        
+        See Also
+        --------
+        Timeline.copy
+        
         """
-        Return copy.
-        - segment_in_copy = segment_func(original_segment)
-        - track_in_copy = track_func(original_track)
-        - label_in_copy = label_func(original_label)
-        """
+        
+        # starts with an empty copy.
         T = self.empty()
         
+        # If functions are not provided
+        # make them pass-trough functions
         if segment_func is None:
             segment_func = lambda s: s
         if track_func is None:
@@ -259,74 +622,170 @@ class MonoTag(BaseTag):
         if self.multitrack:
             for segment, track, label in self.iterlabels():
                 new_segment = segment_func(segment)
+                
+                # Copy annotation only if transformed segment is valid
+                # (make sure track and label are transformed as well)
                 if new_segment:
                     T[new_segment, track_func(track)] = label_func(label)
         else:
             for segment, label in self.iterlabels():
-                if segment_func(segment):
-                    T[segment_func(segment)] = label_func(label)
+                new_segment = segment_func(segment)
+                
+                # Copy annotation only if transformed segment is valid
+                # (make sure label is transformed as well)
+                if new_segment:
+                    T[new_segment] = label_func(label)
         
         return T
                 
     def __mod__(self, translation):
-        """
-        More or less equivalent to copy(label_func=translation)
+        """Translate labels
+        
+        Short-cut for Annotation.copy(label_func=translation)
+        
+        Parameters
+        ----------
+        translation: dict or ManyToOneMapping
+        
+        Returns
+        -------
+        translated : Annotation
+            
+        
+        Examples
+        --------
+        
+            >>> annotation = Annotation(multitrack=False)
+            >>> annotation[Segment(0, 2)] = 'Bernard'
+            >>> annotation[Segment(3, 4)] = 'Albert'
+            >>> translation = {'Bernard': 'Bernie', 'Albert': 'Al'}
+            >>> translated = annotation % translation
+            >>> print translated
+            [
+               [0 --> 2] : Bernie
+               [3 --> 4] : Al
+            ]
+        
         """
         
+        if not isinstance(translation, (dict, ManyToOneMapping)):
+            raise TypeError("unsupported operand types(s) for '%': "
+                            "Annotation and %s" % type(translation).__name__)
+        
+        # translation is provided as a {'original' --> 'translated'} dict.
         if isinstance(translation, dict):
+            
+            # only transform labels that have an actual translation
+            # stored in the provided dictionary, keep the others as they are.
             label_func = lambda x: translation[x] \
                                    if x in translation and translation[x] \
                                    else x
-        elif isinstance(translation, ManyToOneMapping):
-            label_func = lambda x: translation(x) if translation(x) else x
-        else:
-            raise TypeError('Translation must be dict or ManyToOneMapping.')
         
-
-        return self.copy(label_func=label_func)    
+        # translation is provided as a ManyToOneMapping
+        elif isinstance(translation, ManyToOneMapping):
+            
+            # only transform labels that actually have a mapping 
+            # see ManyToOneMapping.__call__() API
+            label_func = lambda x: translation(x) if translation(x) else x
+        
+        # perform the actual translation
+        return self.copy(label_func=label_func)
     
     def __get_label(self, label):
         
         T = self.empty()
         
         if self.multitrack:
-            for segment in self.tag_timeline[label]:
-                for track in self.data[segment]:
-                    if self.data[segment][track] == label:
+            for segment in self.__label_timeline[label]:
+                for track in self.__data[segment]:
+                    if self.__data[segment][track] == label:
                         T[segment, track] = label
         else:
-            for segment in self.tag_timeline[label]:
-                for track in self.data[segment]:
-                    if self.data[segment][track] == label:
+            for segment in self.__label_timeline[label]:
+                for track in self.__data[segment]:
+                    if self.__data[segment][track] == label:
                         T[segment] = label
         
-        return T    
+        return T
             
     def __call__(self, subset, mode='strict', invert=False):
-        """
-        """
-
-
-        # Segment subset
-        # --------------
-        if isinstance(subset, Segment):
-            segment = subset
-
-            # --- Recursive call as a Timeline subset.            
-            timeline = Timeline(video=self.video)
-            timeline += segment
-            return self.__call__(timeline, mode=mode, invert=invert)            
+        """Sub-annotation extraction.
         
-        # Timeline subset
-        # ---------------
-        elif isinstance(subset, Timeline):
+        Use expression 'annotation(subset, ...)'
+        
+        If `subset` is a Segment or a Timeline, only extract segments that
+        are fully included into its coverage. Set mode to 'loose' to extract
+        all intersecting segments. `invert` has no effect in this case.
+            
+        If `subset` is a label or a label iterator, only extract tracks with
+        provided labels. Set `invert` to True to extract **all but**
+        provided labels. `mode` has no effect in this case.
+        
+        Parameters
+        ----------
+        subset : Segment, Timeline, any valid label or label iterator
+        mode : {'strict', 'loose'}, optional
+            `mode` only has effect when `subset` is a Segment or Timeline.
+            Defaults to 'strict'. 
+        invert : bool, optional
+            `invert` only has effect when `subset` is a valid label or 
+            label iterator. Defaults to False.
+        
+        Returns
+        -------
+        annotation : Annotation
+            Extracted sub-annotation.
+        
+        Examples
+        --------
+        
+            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
+            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
+            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
+            >>> annotation[Segment(3, 4), 'speaker1'] = 'John'
+            >>> annotation[Segment(4, 5), 'speaker1'] = 'Albert'
+            
+            
+            Extract sub-annotation for labels 'John' and 'Nicholas'
+            
+            >>> print annotation(['John', 'Nicholas'])
+            [
+               [0 --> 2] speaker2 : John
+               [3 --> 4] speaker1 : John
+            ]
+            
+            
+            Extract sub-annotation for **all but** labels 'John' and 'Albert'
+            
+            >>> print annotation(['John', 'Albert'], invert=True)
+            [
+               [0 --> 2] speaker1 : Bernard
+            ]
+            
+            
+            Extract sub-annotation for segments fully included in [2 --> 4.5]
+            
+            >>> print annotation(Segment(2, 4.5), mode='strict')
+            [
+               [3 --> 4] speaker1 : John
+            ]
+            
+            
+            Extract sub-annotation for segments intersecting [2 --> 4.5]
+            
+            >>> print annotation(Segment(2, 4.5), mode='loose')
+            [
+               [3 --> 4] speaker1 : John
+               [4 --> 5] speaker1 : Albert
+            ]
+        
+        """
+        
+        if isinstance(subset, Timeline):
             timeline = subset
             
-            
             if invert:
-                # --- Recursive call with complementary timeline subset
-                timeline = self.timeline.coverage() / timeline
-                return self.__call__(timeline, mode=mode, invert=False)
+                raise NotImplementedError('')
             
             if mode == 'strict':
                 # keep segment if it is fully included in timeline coverage
@@ -341,15 +800,25 @@ class MonoTag(BaseTag):
             else:
                 raise ValueError('unsupported mode.')
         
+        # Segment subset
+        # --------------
+        elif isinstance(subset, Segment):
+            segment = subset
+            
+            # --- Recursive call as a Timeline subset.            
+            timeline = Timeline(video=self.video)
+            timeline += segment
+            return self.__call__(timeline, mode=mode, invert=invert)            
+        
         # get set of labels
         elif isinstance(subset, (tuple, list, set)):
             
             # if invert, get the complementary set of labels
             # otherwise, make sure it is a set (not list or tuple)
             if invert:
-                labels = set(self.IDs) - set(subset)
+                labels = set(self.labels()) - set(subset)
             else:
-                labels = set(subset) & set(self.IDs)
+                labels = set(subset) & set(self.labels())
             
             T = self.empty()
 
@@ -370,20 +839,73 @@ class MonoTag(BaseTag):
             return self.__call__(set([subset]), mode=mode, invert=invert)
     
     def __str__(self):
+        """Human-friendly representation
         
-        string = ""
+        Examples
+        --------
+        
+            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
+            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
+            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
+            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
+            >>> print annotation
+            [
+               [0 --> 2] speaker1 : Bernard
+                         speaker2 : John
+               [3 --> 4] speaker1 : Albert
+            ]
+        
+        """
+        
+        string = "[\n"
+        
         if self.multitrack:
+            
+            previous = Segment(0, 0)
             for segment, track, label in self.iterlabels():
-                string += '%s %s %s\n' % (segment, track, label)
+                
+                if segment != previous:
+                    previous = segment
+                    string += '   %s %s : %s\n' % (previous, track, label)
+                    n_spaces = len(str(previous))
+                else:
+                    string += '   %s %s : %s\n' % (' ' * n_spaces, track, label)
+        
         else:
+            
+            previous = Segment(0, 0)
             for segment, label in self.iterlabels():
-                string += '%s %s\n' % (segment, label)
+                if segment != previous:
+                    previous = segment
+                    string += '   %s : %s\n' % (previous, label)
+                    n_spaces = len(str(previous))
+                else:
+                    string += '   %s : %s\n' % (' ' * nspaces, label)
+                    
+        string += "]"
         return string
             
     def new_track(self, segment, prefix=DEFAULT_TRACK_PREFIX):
+        """Track name generator
         
+        Parameters
+        ----------
+        segment : Segment
+        
+        prefix : str, optional
+        
+        
+        Returns
+        -------
+        track : str
+        
+        Raises
+        ------
+        NotImplementedError when annotation is single-track.
+        
+        """
         if not self.multitrack:
-            raise NotImplementedError('MonoTag is mono-track.')
+            raise NotImplementedError('annotation is single-track')
             
         count = 0
         if segment in self:
@@ -397,5 +919,8 @@ class MonoTag(BaseTag):
             new_track = '%s%d' % (prefix, count)
         return new_track
         
-        
-            
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+    
