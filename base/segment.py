@@ -418,7 +418,8 @@ class Segment(object):
             return '∅'
     
     def __repr__(self):
-        return '<%s.Segment(%g, %g)>' % (__name__, self.start, self.end)
+        
+        return '<Segment(%g, %g)>' % (self.start, self.end)
     
 
 class RevSegment(Segment):
