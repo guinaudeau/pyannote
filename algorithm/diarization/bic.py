@@ -81,4 +81,8 @@ class BICClustering(DiarizationGraph):
         return ab, attr
     
     # ================================================================== #
-    
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+  

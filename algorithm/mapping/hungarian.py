@@ -25,13 +25,46 @@ from pyannote.base.mapping import OneToOneMapping
 from pyannote.base.comatrix import Confusion
 
 class HungarianMapper(BaseMapper):
-    """
-    Hungarian algorithm based on confusion matrix as profit function.
+    """Label mapper based on the Hungarian algorithm
     
-    See http://en.wikipedia.org/wiki/Hungarian_algorithm
+    Given two annotations of the same document, the Hungarian algorithm aims
+    at solving the following equations:
     
-    :param force: when True, force mapping even for identifiers with zero confusion
-    :type force: boolean
+    
+    
+    
+    See [1]_ 
+    
+    
+    Parameters
+    ----------
+    confusion : Confusion class or sub-class
+        Defaults to Confusion.
+    force : bool
+        force mapping even for labels with zero confusion
+        Defaults to False.
+    
+    Returns
+    -------
+    mapper : HungarianMapper
+    
+    Examples
+    --------
+    
+        >>> mapper = HungarianMapper()
+        >>> A = Annotation(multitrack=False, modality="speaker")
+        >>> A[]
+        >>> B = Annotation(multitrack=True, modality="face")
+        >>> speaker_face = mapper(A, B)
+        
+        >>> print speaker_face('Bernard')
+        'Bernard'
+    
+    References
+    ----------
+    [1] "Hungarian algorithm", http://en.wikipedia.org/wiki/Hungarian_algorithm
+    [2] J. Poignant, H. Bredin et al., "Unsupervised Speaker Identification
+    using Overlaid Texts in TV Broadcast", submitted to Interspeech 2012.
     
     """
     def __init__(self, confusion=None, force=False):
@@ -88,11 +121,16 @@ class HungarianMapper(BaseMapper):
                     M += ([alabels[a]], [blabels[b]])
     
         # A --> NoMatch
-        for alabel in set(alabels)-M.first_set:
+        for alabel in set(alabels)-M.left_set:
             M += ([alabel], None)
     
         # NoMatch <-- B
-        for blabel in set(blabels)-M.second_set:
+        for blabel in set(blabels)-M.right_set:
             M += (None, [blabel])
         
         return M
+        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

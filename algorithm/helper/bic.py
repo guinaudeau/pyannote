@@ -162,3 +162,7 @@ class Gaussian(sklearn.mixture.GMM):
         
         # final \Delta BIC
         return G.nlogdet - self.nlogdet - other.nlogdet - penalty*P
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

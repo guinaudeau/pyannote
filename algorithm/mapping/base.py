@@ -21,9 +21,13 @@
 from pyannote.base.mapping import Mapping
 
 class BaseMapper(object):
-    """Maps A labels and B labels"""
+    """
+    Every mapping algorithm must inherit from this class and implement
+    the .associate(A, B) method.
+    """
     
     def associate(self, A, B):
+        """Must be implemented by subclass"""
         raise NotImplementedError('')
         
     def __call__(self, A, B, init=None):
@@ -32,7 +36,7 @@ class BaseMapper(object):
         """
         if init is None:
             init = Mapping(A.modality, B.modality)
-            init += (A.IDs, B.IDs)
+            init += (A.labels(), B.labels())
         
         M = Mapping(A.modality, B.modality)
         
@@ -42,8 +46,8 @@ class BaseMapper(object):
             a = A(lblA)            
             b = B(lblB)
             
-            alabels = a.IDs
-            blabels = b.IDs
+            alabels = a.labels()
+            blabels = b.labels()
             Na = len(alabels)
             Nb = len(blabels)
             
@@ -58,3 +62,7 @@ class BaseMapper(object):
                     for alabel in alabels:
                         M += ([alabel], None)
         return M
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

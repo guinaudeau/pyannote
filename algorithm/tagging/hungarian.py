@@ -18,13 +18,16 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Tagging
-=======
+from base import LabelTagger
+from pyannote.algorithm.mapping.hungarian import HungarianMapper
 
-"""
+class HungarianTagger(LabelTagger):
+    
+    def __init__(self, confusion=None, force=False):
+        super(HungarianTagger, self).__init__()
+        self.mapper = HungarianMapper(confusion=confusion, force=force)
 
-from hungarian import HungarianTagger
-from argmax import ArgMaxTagger
-from segment import ConservativeSegmentTagger
-from timeline import ConservativeTimelineTagger
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

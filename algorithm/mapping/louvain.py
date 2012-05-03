@@ -20,7 +20,7 @@
 
 import networkx as nx
 
-import pyannote.algorithms.community
+import pyannote.algorithm.community
 from pyannote.base.mapping import Mapping, OneToOneMapping, NoMatch, MElement 
 from pyannote.base.comatrix import Confusion, AutoConfusion
 from base import BaseMapper
@@ -113,7 +113,7 @@ class Louvain(BaseMapper):
         G = self.__confusion_graph(A, B)
     
         # Community detection
-        partition = pyannote.algorithms.community.best_partition(G)
+        partition = pyannote.algorithm.community.best_partition(G)
         clusters = self.__partition_to_cluster(partition)
     
         # Many-to-many mapping
@@ -127,3 +127,7 @@ class Louvain(BaseMapper):
             M += (key, value)
     
         return M
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

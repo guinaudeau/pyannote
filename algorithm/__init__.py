@@ -18,11 +18,15 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from base import LabelTagger
-from pyannote.algorithms.mapping.hungarian import HungarianMapper
+"""
 
-class HungarianTagger(LabelTagger):
-    
-    def __init__(self, confusion=None, force=False):
-        super(HungarianTagger, self).__init__()
-        self.mapper = HungarianMapper(confusion=confusion, force=force)
+The ``pyannote.algorithm`` module contains the various algorithms available in  ``PyAnnote``.
+
+"""
+
+import mapping
+import tagging
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

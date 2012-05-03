@@ -18,23 +18,23 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.tag import MonoTag
+from pyannote.base.tag import Annotation
 
-class BaseMonoTagTagger(object):
+class BaseAnnotationTagger(object):
     
     def __init__(self):
-        super(BaseMonoTagTagger, self).__init__()
+        super(BaseAnnotationTagger, self).__init__()
     
     def tag(self, source, target):
         raise NotImplementedError('')
     
     def __call__(self, source, target):
         
-        # make sure both source and target are MonoTag
-        if not isinstance(source, MonoTag):
-            raise TypeError('Source must be a MonoTag (is %s).' % type(source))
-        if not isinstance(target, MonoTag):
-            raise TypeError('Target must be a MonoTag (is %s).' % type(target))
+        # make sure both source and target are Annotation
+        if not isinstance(source, Annotation):
+            raise TypeError('Source must be a Annotation (is %s).' % type(source))
+        if not isinstance(target, Annotation):
+            raise TypeError('Target must be a Annotation (is %s).' % type(target))
         
         # make sure source and target are for the same video
         if source.video != target.video:
@@ -42,10 +42,10 @@ class BaseMonoTagTagger(object):
                              % (source.video, target.video))
         
         return self.tag(source, target)
-        # # make MonoTag from Timeline (one label per segment)
+        # # make Annotation from Timeline (one label per segment)
         # # and do the actual tagging
         # if isinstance(target, Timeline):
-        #     new_target = MonoTag(multitrack=False, \
+        #     new_target = Annotation(multitrack=False, \
         #                          video=target.video, \
         #                          modality=source.modality)
         #     for segment in target:
@@ -57,7 +57,7 @@ class BaseMonoTagTagger(object):
 
 from pyannote.base.mapping import ManyToOneMapping
 
-class LabelTagger(BaseMonoTagTagger):
+class LabelTagger(BaseAnnotationTagger):
     
     def __init__(self):
         super(LabelTagger, self).__init__()
@@ -89,9 +89,9 @@ class BaseTimelineTagger(object):
 
     def __call__(self, source, target):
         
-        # make sure source is MonoTag
-        if not isinstance(source, MonoTag):
-            raise TypeError('Source must be a MonoTag (is %s).' % type(source))
+        # make sure source is Annotation
+        if not isinstance(source, Annotation):
+            raise TypeError('Source must be a Annotation (is %s).' % type(source))
         # make sure target is Timeline
         if not isinstance(target, Timeline):
             raise TypeError('Target must be a Timeline (is %s).' % type(target))
@@ -102,4 +102,7 @@ class BaseTimelineTagger(object):
                              % (source.video, target.video))
         
         return self.tag(source, target)
-    
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

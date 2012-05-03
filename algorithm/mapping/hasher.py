@@ -36,8 +36,8 @@ class IDHasher(BaseMapper):
         
     def associate(self, A, B):
         
-        partitionA = {a:self.__hashA(a) for a in A.IDs}
-        partitionB = {b:self.__hashB(b) for b in B.IDs}
+        partitionA = {a:self.__hashA(a) for a in A.labels()}
+        partitionB = {b:self.__hashB(b) for b in B.labels()}
         
         M = Mapping(A.modality, B.modality)
         
@@ -49,6 +49,6 @@ class IDHasher(BaseMapper):
         
         return M
         
-        
-    
-        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

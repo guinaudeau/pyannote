@@ -59,13 +59,15 @@ class ArgMaxMapper(BaseMapper):
         M = ManyToOneMapping(A.modality, B.modality)
         
         for b, a_s in sriap.iteritems():
-            M += (a_s, [b])                
+            M += (a_s, [b])
         alabels, blabels = matrix.labels
-        for a in set(alabels)-M.first_set:
+        for a in set(alabels)-M.left_set:
             M += ([a], None)
-        for b in set(blabels)-M.second_set:
+        for b in set(blabels)-M.right_set:
             M += (None, [b])
-
-        return M
         
-            
+        return M
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

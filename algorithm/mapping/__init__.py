@@ -19,13 +19,20 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Label mapping
-=============
 
-Given two (or more) annotated timelines, label mapping consists in finding
-the ``best'' one-to-one (or one-to-many) mapping between their labels.
+The ``pyannote.algorithm.mapping`` module contains the various mapping algorithms available in ``PyAnnote``.
+
+Mapping consists in finding the optimal association between labels from two different annotations. 
+
+The output of such algorithms can be one-to-one, many-to-one, one-to-many or many-to-many label mapping.
 
 """
 
 from hungarian import HungarianMapper
 from argmax import ArgMaxMapper
+
+__all__ = ['HungarianMapper', 'ArgMaxMapper']
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

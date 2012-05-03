@@ -18,5 +18,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from base import PeriodicSegmenter
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

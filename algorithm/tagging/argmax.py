@@ -19,9 +19,13 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from base import LabelTagger
-from pyannote.algorithms.mapping.argmax import ArgMaxMapper
+from pyannote.algorithm.mapping.argmax import ArgMaxMapper
 
 class ArgMaxTagger(LabelTagger):
     def __init__(self, confusion=None):
         super(ArgMaxTagger, self).__init__()
         self.mapper = ArgMaxMapper(confusion=confusion)
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

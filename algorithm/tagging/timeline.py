@@ -52,7 +52,7 @@ class ConservativeTimelineTagger(BaseTimelineTagger):
                         pass
             else:
                 # -- mono-track
-                labels = t.IDs
+                labels = t.labels()
                 if len(labels) == 1:
                     T[segment] = labels[0]
                 elif len(labels) > 1:
@@ -61,3 +61,7 @@ class ConservativeTimelineTagger(BaseTimelineTagger):
                     pass
         
         return T
+        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

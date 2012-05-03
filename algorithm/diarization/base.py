@@ -20,7 +20,7 @@
 
 import numpy as np
 import networkx as nx
-from pyannote.base.annotation import TrackAnnotation, TrackIDAnnotation
+from pyannote.base.annotation import Annotation
 from pyannote.base.comatrix import CoMatrix
 
 DIARIZATION_DISTANCE = '__distance__'
@@ -37,7 +37,7 @@ class DiarizationGraph(nx.Graph):
         self.__diarize()
     
     def __abs__(self):
-        A = TrackIDAnnotation(video=self.annotation.video, \
+        A = Annotation(video=self.annotation.video, \
                               modality=self.annotation.modality)
                             
         n_digits = np.int(np.ceil(np.log10(len(self)+1)))
@@ -131,3 +131,7 @@ class DiarizationGraph(nx.Graph):
         return ab, {}
     
     # ================================================================== #
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

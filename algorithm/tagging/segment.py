@@ -18,9 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from base import BaseMonoTagTagger
+from base import BaseAnnotationTagger
 
-class ConservativeSegmentTagger(BaseMonoTagTagger):
+class ConservativeSegmentTagger(BaseAnnotationTagger):
     """
     By default (conflict=False), tagger quietly discards (do not tag) segments 
     where conflicts/uncertainties happen.
@@ -73,4 +73,7 @@ class ConservativeSegmentTagger(BaseMonoTagTagger):
         return new_target
 
 
-        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+       
