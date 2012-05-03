@@ -19,6 +19,13 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 class NoMatch(object):
+    """
+    Parameters
+    ----------
+    format : str, optional
+            
+    """
+    
     nextID = 0
     """
     Keep track of the number of instances since last reset
@@ -26,10 +33,12 @@ class NoMatch(object):
     
     @classmethod
     def reset(cls):
+        """Reset counter"""
         cls.nextID = 0
     
     @classmethod
     def next(cls):
+        """Increment & get counter"""
         cls.nextID += 1
         return cls.nextID
     
@@ -59,184 +68,300 @@ class MElement(object):
         super(MElement, self).__init__()
         self.modality = modality
         self.element = element
-        
+    
     def __eq__(self, other):
         return (self.element == other.element) & \
                (self.modality == other.modality)
     
     def __hash__(self):
         return hash(self.element)
-        
+    
     def __str__(self):
         return '%s (%s)' % (self.element, self.modality)
-        
+    
     def __repr__(self):
         return str(self)
 
 class Mapping(object):
+    """Many-to-many label mapping
     
-    def __init__(self, modality1, modality2):
+    Parameters
+    ----------
+    left : str, optional
+        Left-hand side modality. Defaults to 'left'.
+    right : str
+        Right-hand side modality. Defaults to 'right'.
+    
+    Returns
+    -------
+    mapping : Mapping
+    
+    Examples
+    --------
+    
+        >>> mapping = Mapping('speaker', 'face')
+        >>> mapping += (('A', 'B', 'C'), ('a', 'b'))
+        >>> mapping += (('D', ), ('c', 'd', e))
+        >>> print mapping
+        (
+           A B C --> a b
+           D --> c d e
+        )
+    
+    """
+    def __init__(self, left="left", right="right"):
         super(Mapping, self).__init__()
-        self.__modality1 = modality1
-        self.__modality2 = modality2
-
-        self._one1_to_many2 = {}
-        self._one2_to_many1 = {}
-        self._many1_to_many2 = {}
+        
+        # left & right modality
+        self.__left = left
+        self.__right = right
+        
+        # left-to-right one-to-many label mapping
+        # { left_label --> sorted_right_labels_tuple }
+        # 
+        self._left_to_right = {}
+        
+        # right-to-left one-to-many label mapping
+        # { right_label --> sorted_left_labels_tuple }
+        self._right_to_left = {}
+        
+        # left-to-right many-to-many label mapping
+        # { sorted_left_labels_tuple --> sorted_right_labels_tuple }
+        self._many_to_many = {}
     
-    def __get_modality1(self): 
-        return self.__modality1
-    modality1 = property(fget=__get_modality1, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="First modality.")
-
-    def __get_modality2(self): 
-        return self.__modality2
-    modality2 = property(fget=__get_modality2, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Second modality.")
+    def __get_left(self): 
+        return self.__left
+    left = property(fget=__get_left)
+    """Left-hand side modality"""
     
-    def __get_first_set(self):
-        return set(self._one1_to_many2)
-    first_set = property(fget=__get_first_set, \
-                        fset=None, \
-                        fdel=None, \
-                        doc="First set.")
-
-    def __get_second_set(self):
-        return set(self._one2_to_many1)
-    second_set = property(fget=__get_second_set, \
-                        fset=None, \
-                        fdel=None, \
-                        doc="Second set.")
+    def __get_right(self): 
+        return self.__right
+    right = property(fget=__get_right)
+    """Right-hand side modality"""
     
-    def _check_mapping(self, mapping):
-        
-        # expected mapping
-        # (elements1, elements2)
-        # with elements1 = [a, b, c]
-        #      elements2 = [d, e]
-        if (not isinstance(mapping, tuple)) or (not len(mapping) == 2):
-            raise ValueError('')
-        
-        elements1 = mapping[0]
-        elements2 = mapping[1]
-        
-        if elements1 is None:
-            elements1 = tuple()
-        
-        if elements2 is None:
-            elements2 = tuple()
-        
-        if not isinstance(elements1, (list, tuple, set)):
-            raise ValueError('Left mapping part (%s) must be a list, tuple or set.' % (elements1))
-            
-        if not isinstance(elements2, (list, tuple, set)):
-            raise ValueError('Right mapping part (%s) must be a list, tuple or set' % (elements2))
-        
-        return tuple(sorted(elements1)), tuple(sorted(elements2))
+    def __get_left_set(self):
+        return set(self._left_to_right)
+    left_set = property(fget=__get_left_set)
+    """Left-hand side set of labels"""
     
-    def __add__(self, mapping):
-        cls = type(self)
-        M = cls(self.modality1, self.modality2)
-        M += self
-        M += mapping
+    def __get_right_set(self):
+        return set(self._right_to_left)
+    right_set = property(fget=__get_right_set)
+    """Right-hand side set of labels"""
+    
+    # Normalize left_right argument to 
+    # ( tuple(sorted_left_labels), tuple(sorted_right_labels) )
+    def _check_and_normalize(self, left_right):
+        
+        if not isinstance(left_right, (tuple, list)) or len(left_right) != 2:
+            raise ValueError('expected 2-tuple of list of labels')
+        
+        left = left_right[0]
+        right = left_right[1]
+        
+        if left is None:
+            left = tuple()
+        elif isinstance(left, (list, tuple, set)):
+            left = tuple(sorted(left))
+        else:
+            raise ValueError('expected list, tuple or set for left part.')
+        
+        if right is None:
+            right = tuple()
+        elif isinstance(right, (list, tuple, set)):
+            right = tuple(sorted(right))
+        else:
+            raise ValueError('expected list, tuple or set for right part.')
+        
+        return left, right
+    
+    def empty(self):
+        """Empty copy"""
+        M = type(self)(self.left, self.right)
         return M
     
-    def __iadd__(self, mapping):
+    def copy(self):
+        """Duplicate mapping"""
         
-        if isinstance(mapping, Mapping):
-            if mapping.modality1 != self.modality1 or \
-               mapping.modality2 != self.modality2:
-               raise ValueError('Incompatible modalities (%s/%s) vs (%s/%s)' % \
-                                (self.modality1, self.modality2, \
-                                 mapping.modality1, mapping.modality2))
+        # starts with an empty mapping
+        mapping = self.empty()
+        
+        # add 
+        for left, right in self:
+            mapping += (left, right)
+        return mapping
+    
+    def __add__(self, other):
+        """
+        
+        Use expression 'mapping + (left_labels, right_labels)'
+                    or 'mapping + other_mapping'
+        
+        Parameters
+        ----------
+        other : Mapping or couple of labels
+        
+        Returns
+        -------
+        mapping : Mapping
+        
+        Examples
+        --------
+        
+            >>> mapping1 = Mapping()
+            >>> mapping1 += (('A', 'B', 'C'), ('a', 'b'))
+            >>> mapping2 = Mapping()
+            >>> mapping2 += (('D',), ('c', 'd', 'e'))
+            >>> mapping = mapping1 + mapping2
+            >>> print mapping
+            (
+               A B C --> a b
+               D --> c d e
+            )
+        
+        """
+        
+        mapping = self.copy()
+        mapping += other
+        return mapping
+    
+    def __iadd__(self, other):
+        """
+        
+        Use expression 'mapping += (left_labels, right_labels)'
+                    or 'mapping += other_mapping'
+                    
+        Examples
+        --------
+
+            >>> mapping = Mapping()
+            >>> mapping += (('A', 'B', 'C'), ('a', 'b'))
+            >>> print mapping
+            (
+               A B C --> a b
+            )
+            >>> other_mapping = Mapping()
+            >>> other_mapping += (('D',), ('c', 'd', 'e'))
+            >>> mapping += other_mapping
+            >>> print mapping
+            (
+               A B C --> a b
+               D --> c d e
+            )
             
-            for l, r in mapping:
-                self += (l, r)
+        Raises
+        ------
+        ValueError
+        
+        """
+        
+        if isinstance(other, Mapping):
+            if other.left != self.left or other.right != self.right:
+               raise ValueError('incompatible mapping modalities')
+            
+            for left, right in other:
+                self += (left, right)
             return self
         
-        elements1, elements2 = self._check_mapping(mapping)
+        left, right = self._check_and_normalize(other)
         
-        already_mapped = set(elements1) & self.first_set
+        already_mapped = set(left) & self.left_set
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.modality1, \
-                              self._one1_to_many2[already_mapped]))
+                             (already_mapped, self.left, \
+                              self._left_to_right[already_mapped]))
             
-        already_mapped = set(elements2) & self.second_set
+        already_mapped = set(right) & self.right_set
         if already_mapped:
             already_mapped = already_mapped.pop()
             raise ValueError('%s (%s) is already mapped to %s.' % \
-                             (already_mapped, self.modality2, \
-                              self._one2_to_many1[already_mapped]))
+                             (already_mapped, self.right, \
+                              self._right_to_left[already_mapped]))
         
-        for elt1 in elements1:
-            self._one1_to_many2[elt1] = elements2
-        for elt2 in elements2:
-            self._one2_to_many1[elt2] = elements1
+        for label in left:
+            self._left_to_right[label] = right
+        for label in right:
+            self._right_to_left[label] = left
         
-        if elements1 == tuple():
-            elements1 = NoMatch()
-        if elements2 == tuple():
-            elements2 = NoMatch()
-        self._many1_to_many2[elements1] = elements2
+        if left == tuple():
+            left = NoMatch()
+        if right == tuple():
+            right = NoMatch()
+        self._many_to_many[left] = right
         
         return self
         
     # --- iterator ---
     
     def __iter__(self):
-        for many1, many2 in self._many1_to_many2.iteritems():
-            if isinstance(many1, NoMatch):
+        """Left/right mapping iterator
+        
+        Examples
+        --------
+        
+            >>> mapping = Mapping()
+            >>> mapping += (('A', 'B', 'C'), ('a', 'b'))
+            >>> mapping += (('D',), ('c', 'd', 'e'))
+            >>> for left, right in mapping:
+            ...    print '%s --> %s' % (' '.join(sorted(left)), \
+                                        ' '.join(sorted(right)))
+            A B C --> a b
+            D --> c d e
+            
+        """
+        
+        for left, right in self._many_to_many.iteritems():
+            
+            if isinstance(left, NoMatch):
                 left = set([])
             else:
-                left = set(many1)
-            if isinstance(many2, NoMatch):
+                left = set(left)
+            
+            if isinstance(right, NoMatch):
                 right = set([])
             else:
-                right = set(many2)
+                right = set(right)
+            
             yield left, right
-        
-    def __contains__(self, key):
-        return key in self.first_set
-
-    # --- comparison ---
+    
+    def __contains__(self, label):
+        """Use expression 'label in mapping'"""
+        return label in self.left_set
     
     def __hash__(self):
-        return hash(tuple(sorted(self.first_set))) + \
-               hash(tuple(sorted(self.second_set)))
+        """Use expression hash(mapping)"""
+        return hash(tuple(sorted(self.left_set))) + \
+               hash(tuple(sorted(self.right_set)))
     
     def __eq__(self, other):
-        return self._one1_to_many2 == other._one1_to_many2 and \
-               self._one2_to_many1 == other._one2_to_many1
+        """Use expression 'mapping == other_mapping'"""
+        return self._left_to_right == other._left_to_right and \
+               self._right_to_left == other._right_to_left
         
     def to_partition(self):
         
         partition = {}
         C = 0
         for left, right in self:
-            partition.update({MElement(self.modality1, element): C \
+            partition.update({MElement(self.left, element): C \
                               for element in left})
-            partition.update({MElement(self.modality2, element): C \
+            partition.update({MElement(self.right, element): C \
                               for element in right})
             C += 1
         return partition
         
     def to_expected_partition(self):
         
-        left = self.first_set
-        right = self.second_set
+        left = self.left_set
+        right = self.right_set
         expected = {element:e for e, element in enumerate(left | right)}
 
         partition = {}
         for element in left:
-            partition[MElement(self.modality1, element)] = expected[element]
+            partition[MElement(self.left, element)] = expected[element]
         for element in right:
-            partition[MElement(self.modality2, element)] = expected[element]
+            partition[MElement(self.right, element)] = expected[element]
         
         return partition
         
@@ -252,8 +377,8 @@ class Mapping(object):
     
     def to_expected_dict(self, reverse=False):
         
-        left = self.first_set
-        right = self.second_set
+        left = self.left_set
+        right = self.right_set
         both = left & right
         
         expected_dict = {}
@@ -270,16 +395,37 @@ class Mapping(object):
             return expected_dict
     
     def __str__(self):
-        return str(self.to_dict())
+        """Human-readable representation
+        
+        Examples
+        --------
+        
+            >>> mapping = Mapping()
+            >>> mapping += (('A', 'B', 'C'), ('a', 'b'))
+            >>> mapping += (('D',), ('c', 'd', 'e'))
+            >>> print mapping
+            (
+               A B C --> a b
+               D --> c d e
+            )
+        """
+        
+        string = "(\n"
+        for left, right in self:
+            string += '   %s <--> %s\n' % (' '.join(sorted(left)), \
+                                           ' '.join(sorted(right)))
+        string += ")"
+        return string
 
 class ManyToOneMapping(Mapping):
+    """Many-to-one mapping"""
     
-    def _check_mapping(self, mapping):
+    def _check_and_normalize(self, mapping):
         """
         Extra verification for many-to-one mapping
         """
         elements1, elements2 = super(ManyToOneMapping, self)\
-                               ._check_mapping(mapping)
+                               ._check_and_normalize(mapping)
         
         if len(elements2) > 1:
             raise ValueError('Right mapping part (%s) must contain only one element.' % elements2)
@@ -288,13 +434,13 @@ class ManyToOneMapping(Mapping):
     
     @classmethod
     def fromMapping(cls, mapping):
-        M = cls(mapping.modality1, mapping.modality2)
+        M = cls(mapping.left, mapping.right)
         for l, r in mapping:
             M += (l, r)
         return M
         
     def __getitem__(self, key):
-        right = self._one1_to_many2[key]
+        right = self._left_to_right[key]
         if right:
             return right[0]
         else:
@@ -304,12 +450,13 @@ class ManyToOneMapping(Mapping):
         return self[key]      
 
 class OneToOneMapping(ManyToOneMapping):
+    """One-to-one mapping"""
     
-    def _check_mapping(self, mapping):
+    def _check_and_normalize(self, mapping):
         """
         Extra verification for one-to-one mapping
         """
-        elements1, elements2 = super(OneToOneMapping, self)._check_mapping(mapping)
+        elements1, elements2 = super(OneToOneMapping, self)._check_and_normalize(mapping)
         
         if len(elements1) > 1:
             raise ValueError('Left mapping part (%s) must contain only one element.' % elements1)
@@ -318,7 +465,7 @@ class OneToOneMapping(ManyToOneMapping):
     
     @classmethod
     def fromMapping(cls, mapping):
-        M = cls(mapping.modality1, mapping.modality2)
+        M = cls(mapping.left, mapping.right)
         for l, r in mapping:
             M += (l, r)
         return M
@@ -332,3 +479,9 @@ class OneToOneMapping(ManyToOneMapping):
             return d
         else:
             return D
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

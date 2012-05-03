@@ -22,7 +22,19 @@ import numpy as np
 import warnings
 
 class CoMatrix(object):
+    """
     
+    Parameters
+    ----------
+    ilabels, jlabels : list of labels, optional
+    Mij : NumPy array, optional
+    default : float, optional
+    
+    Returns
+    -------
+    matrix : CoMatrix
+    
+    """
     def __init__(self, ilabels=None, jlabels=None, Mij=None, default=0.):
         super(CoMatrix, self).__init__()
         
@@ -48,7 +60,7 @@ class CoMatrix(object):
         
         # --
         self.__default = default
-
+        
         # --
         ni = len(self.__ilabels)
         nj = len(self.__jlabels)
@@ -65,59 +77,40 @@ class CoMatrix(object):
                 raise ValueError('%d x %d matrix is expected (got %d x %d).' % \
                                  (ni, nj, Ni, Nj))
     
-    # ------------------------------------------------------------------- #
-    
     def __get_default(self):
         return self.__default
-    default = property(fget=__get_default, \
-                       fset=None, \
-                       fdel=None, \
-                       doc="Default value.")
+    default = property(fget=__get_default)
+    """Default value"""
     
-    # ------------------------------------------------------------------- #
-
     def __get_T(self): 
         return CoMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
-    T = property(fget=__get_T, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Matrix transposition.")
+    T = property(fget=__get_T)
+    """Transposed co-matrix"""
     
     def __get_shape(self):
         if self.__Mij is None:
             return 0, 0
         else:
             return self.__Mij.shape
-    shape = property(fget=__get_shape, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Matrix shape.")
-
-    # ------------------------------------------------------------------- #
-
+    shape = property(fget=__get_shape)
+    """Matrix shape"""
+    
     def __get_M(self):
         return self.__Mij
     def __set_M(self, M):
         if M.shape != self.shape:
             raise ValueError('Shape mismatch %s %s' % (self.shape, M.shape))
         self.__Mij = M
-    M = property(fget=__get_M, \
-                 fset=__set_M, \
-                 fdel=None, \
-                 doc="numpy matrix.")
+    M = property(fget=__get_M, fset=__set_M)
+    "Matrix as Numpy array"
                  
     def __get_labels(self):
         return self.__ilabels, self.__jlabels
-    labels = property(fget=__get_labels, \
-                      fset=None, \
-                      fdel=None,
-                      doc="Matrix labels.")
+    labels = property(fget=__get_labels)
+    """Matrix labels"""
     
-    # =================================================================== #
-
     def __getitem__(self, key):
-        """
-        """
+        """"""
         if isinstance(key, tuple) and len(key) == 2:
             
             ilabel = key[0]
@@ -166,6 +159,9 @@ class CoMatrix(object):
     
     def __setitem__(self, key, value):
         """
+        
+        Use expression 'matrix[label_i, label_j] = value
+        
         """
         if isinstance(key, tuple) and len(key) == 2:
             
@@ -194,24 +190,13 @@ class CoMatrix(object):
         else:
             raise KeyError('')
     
-    # =================================================================== #
-    
     def __delitem__(self, key):
         raise NotImplementedError('')
     
-    # =================================================================== #
-    
-    # def __call__(self, ilabel):
-    #     if ilabel in self.__label2i:
-    #         i = self.__label2i[ilabel]
-    #         return {jlabel: self.__Mij[i, self.__label2j[jlabel]] \
-    #                 for jlabel in self.__label2j}
-    #     else:
-    #         return {}
-    
-    # =================================================================== #
-    
     def iter_ilabels(self, index=False):
+        """
+        
+        """
         for ilabel in self.__ilabels:
             if index:
                 yield self.__label2i[ilabel], ilabel
@@ -236,11 +221,12 @@ class CoMatrix(object):
     # ------------------------------------------------------------------- #
     
     def copy(self):
+        """Duplicate matrix.
+        
+        """
         ilabels, jlabels = self.labels
-        C = CoMatrix(list(ilabels), \
-                     list(jlabels), \
-                     np.copy(self.M), \
-                     default=self.default)
+        C = CoMatrix(list(ilabels), list(jlabels), \
+                     np.copy(self.M), default=self.default)
         return C
     
     # ------------------------------------------------------------------- #
@@ -270,50 +256,6 @@ class CoMatrix(object):
         C += other
         return C
     
-    # =================================================================== #
-    
-    
-    # =================================================================== #
-    
-    # def argmin(self, threshold=None, axis=None):
-    #     """
-    #     :param threshold: threshold on minimum value
-    #     :type threshold: float
-    #     
-    #     :returns: set of label pairs corresponding to minimum value in matrix.
-    #     In case :data:`threshold` is provided and is smaller than minimum value,
-    #     then, returns an empty list.
-    #     """
-    #     if axis == 0:
-    #         pairs = {}
-    #         for i, ilabel in self.iter_ilabels(index=True):
-    #             M = self.M[i,:]
-    #             m = np.min(M)
-    #             if threshold is None or m < threshold:
-    #                 pairs[ilabel] = [self.__jlabels[j] for j in np.argmin(M)]
-    #             else:
-    #                 pairs[ilabel] = []
-    #         return pairs
-    #     elif axis == 1:
-    #         pairs = {}
-    #         for j, jlabel in self.iter_jlabels(index=True):
-    #             M = self.M[:,j]
-    #             m = np.min(M)
-    #             if threshold is None or m < threshold:
-    #                 pairs[jlabel] = [self.__ilabels[i] for i in np.argmin(M)]
-    #             else:
-    #                 pairs[jlabel] = []
-    #         return pairs
-    #     else:
-    #         m = np.min(self.M)
-    #         if (threshold is None) or (m < threshold):
-    #             pairs = np.argwhere(self.M == m)
-    #         else:
-    #             pairs = []
-    #         return [(self.__ilabels[i], self.__jlabels[j]) for i, j in pairs]
-
-    # ------------------------------------------------------------------- #
-
     def argmax(self, axis=None, threshold=None, ties='all'):
         """
         
@@ -333,7 +275,7 @@ class CoMatrix(object):
                 
         >>> C = Confusion(A, B)
         >>> pairs = C.argmax(axis=0)
-        >>> for a in A.IDs:
+        >>> for a in A.labels():
         ...    if a in pairs:
         ...        print '%s --> %s' % (a, pairs[a])
         
@@ -373,13 +315,9 @@ class CoMatrix(object):
             return set([(self.__ilabels[i], self.__jlabels[j]) \
                         for i, j in pairs])
     
-    # ------------------------------------------------------------------- #
-    
     def argmin(self, axis=None, threshold=None, ties='all'):
         return (-self).argmax(axis=axis, threshold=-threshold)
     
-    # =================================================================== #
-
     def __str__(self):
         
         ilabels, jlabels = self.labels
@@ -426,10 +364,10 @@ class Confusion(CoMatrix):
     """
     def __init__(self, I, J):
                 
-        n_i = len(I.IDs)
-        n_j = len(J.IDs)
+        n_i = len(I.labels())
+        n_j = len(J.labels())
         Mij = np.zeros((n_i, n_j))
-        super(Confusion, self).__init__(I.IDs, J.IDs, Mij, default=0.)
+        super(Confusion, self).__init__(I.labels(), J.labels(), Mij, default=0.)
                 
         ilabels, jlabels = self.labels
         
@@ -508,4 +446,8 @@ class AutoConfusion(Confusion):
         
         xI = I.toTrackIDAnnotation().copy(map_func=map_func)        
         super(AutoConfusion, self).__init__(xI, xI)
-            
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

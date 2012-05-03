@@ -18,12 +18,19 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['Segment', 'Timeline', 'MonoTag', 'Unknown', \
-           'Confusion', 'CoTFIDF', \
-           'SlidingWindowFeature', 'TimelineFeature']
+"""
+
+The ``pyannote.base`` module contains the foundation object of ``PyAnnote``.
+
+"""
 
 from segment import Segment
 from timeline import Timeline
-from tag import MonoTag, Unknown
-from comatrix import Confusion, CoTFIDF
-from feature import SlidingWindowFeature, TimelineFeature
+from annotation import Annotation
+
+__all__ = ['Segment', 'Timeline', 'Annotation']
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

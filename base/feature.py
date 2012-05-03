@@ -281,5 +281,9 @@ class TimelineFeature(BaseFeature):
         # first_segment = self.timeline[i0]
         # last_segment = self.timeline[i0+n]
         return first_segment | last_segment
-            
-    
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+  
