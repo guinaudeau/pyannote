@@ -18,14 +18,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Tagging algorithm
 
 """
+Tagging algorithms aim at propagating labels from one source ``Annotation`` onto
+a target ``Timeline`` (or ``Annotation``).
+"""
 
-from hungarian import HungarianTagger
-from argmax import ArgMaxTagger
-from segment import ConservativeSegmentTagger
-from timeline import ConservativeTimelineTagger
+from label import HungarianTagger, ArgMaxTagger
+from segment import DirectTagger
 
 if __name__ == "__main__":
     import doctest

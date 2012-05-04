@@ -18,90 +18,133 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.tag import Annotation
 
-class BaseAnnotationTagger(object):
-    
-    def __init__(self):
-        super(BaseAnnotationTagger, self).__init__()
-    
-    def tag(self, source, target):
-        raise NotImplementedError('')
-    
-    def __call__(self, source, target):
-        
-        # make sure both source and target are Annotation
-        if not isinstance(source, Annotation):
-            raise TypeError('Source must be a Annotation (is %s).' % type(source))
-        if not isinstance(target, Annotation):
-            raise TypeError('Target must be a Annotation (is %s).' % type(target))
-        
-        # make sure source and target are for the same video
-        if source.video != target.video:
-            raise ValueError('Video mismatch (%s vs. %s).' \
-                             % (source.video, target.video))
-        
-        return self.tag(source, target)
-        # # make Annotation from Timeline (one label per segment)
-        # # and do the actual tagging
-        # if isinstance(target, Timeline):
-        #     new_target = Annotation(multitrack=False, \
-        #                          video=target.video, \
-        #                          modality=source.modality)
-        #     for segment in target:
-        #         new_target[segment] = Unknown()
-        #     return self.tag(source, new_target)
-        # # do the actual tagging 
-        # else:
-        #     return self.tag(source, target)
-
-from pyannote.base.mapping import ManyToOneMapping
-
-class LabelTagger(BaseAnnotationTagger):
-    
-    def __init__(self):
-        super(LabelTagger, self).__init__()
-    
-    def __get_mapper(self): 
-        return self.__mapper
-    def __set_mapper(self, mapper): 
-        self.__mapper = mapper
-    mapper = property(fget=__get_mapper, \
-                     fset=__set_mapper, \
-                     fdel=None, \
-                     doc="Label Mapper.")
-    
-    def tag(self, source, target):
-        # get many-to-one mapping
-        mapping = ManyToOneMapping.fromMapping(self.mapper(target, source))
-        # translate only mapped labels
-        label_func = lambda x: mapping(x) if mapping(x) else x
-        return target.copy(label_func=label_func)
 
 from pyannote.base.timeline import Timeline
+from pyannote.base.annotation import Annotation
 
-class BaseTimelineTagger(object):
-    def __init__(self):
-        super(BaseTimelineTagger, self).__init__()
+class BaseTagger(object):
+    """
+    Base class for tagging algorithms.
     
-    def tag(self, source, target):
-        raise NotImplementedError('')
-
-    def __call__(self, source, target):
+    Parameters
+    ----------
+    annotation : bool, optional
+        True if tagger supports ``Annotation`` tagging. Defaults to False
+    timeline : bool, optional
+        True if tagger supports ``Timeline`` tagging. Default to False.
+    
+    Returns
+    -------
+    tagger : BaseTagger
+    
+    """
+    def __init__(self, annotation=False, timeline=False):
+        super(BaseTagger, self).__init__()
+        self.__taggable = set([])
+        if annotation:
+            self.__taggable.add(Annotation)
+        if timeline:
+            self.__taggable.add(Timeline)
+        self.__taggable = tuple(self.__taggable)
+    def __get_taggable(self): 
+        return self.__taggable
+    taggable = property(fget=__get_taggable)
+    """Taggable objects."""
+    
+    def _tag_timeline(self, source, timeline):
+        """Must be implemented by inheriting ``Timeline`` tagger.
         
-        # make sure source is Annotation
+        Parameters
+        ----------
+        source : Annotation
+            Source annotation whose labels will be propagated
+        timeline : Timeline
+            Target timeline whose segments will be tagged.
+        
+        Returns
+        -------
+        tagged : Annotation
+            Tagged `timeline`
+        
+        """
+        raise NotImplementedError('._tag_timeline() is not implemented.')
+    
+    def _tag_annotation(self, source, annotation):
+        """Must be implemented by inheriting ``Annotation`` tagger.
+        
+        Parameters
+        ----------
+        source : Annotation
+            Source annotation whose labels will be propagated
+        annotation : Annotation
+            Target annotation whose tracks will be tagged.
+        
+        Returns
+        -------
+        tagged : Annotation
+            Tagged `annotation`
+        
+        """
+        raise NotImplementedError('._tag_annotation() is not implemented.')
+    
+    def _check(self, source, target):
+        """Check source and target format.
+        
+        Parameters
+        ----------
+        source, target : any object.
+        
+        Returns
+        -------
+        (source, target) if `source` and `target` are compatible with tagger.
+        
+        Raises
+        ------
+        TypeError if `source` is not an ``Annotation`` or ``target`` is not 
+        taggable by the tagger.
+        ValueError if `source` vidoe and `target` video are not the same.
+        
+        """
+        
+        # source must be Annotation
         if not isinstance(source, Annotation):
-            raise TypeError('Source must be a Annotation (is %s).' % type(source))
-        # make sure target is Timeline
-        if not isinstance(target, Timeline):
-            raise TypeError('Target must be a Timeline (is %s).' % type(target))
+            raise TypeError("untaggable source type: '%s'. Must be "
+                            "Annotation." % type(source).__name__)
         
-        # make sure source and target are for the same video
+        if not isinstance(target, self.__taggable):
+            raise TypeError("untaggable target type: '%s'." \
+                            % type(target).__name__,)
+        
+        # source and target videos must match
         if source.video != target.video:
-            raise ValueError('Video mismatch (%s vs. %s).' \
+            raise ValueError("source/target video mismatch: '%s' and '%s'" \
                              % (source.video, target.video))
         
-        return self.tag(source, target)
+        return source, target
+    
+    def __call__(self, source, target):
+        """Tag `target` based on `source` labels.
+        
+        Parameters
+        ----------
+        source : Annotation
+            Source annotation whose labels will be propagated
+        target : Timeline or Annotation
+            Target timeline (or annotation) whose segment (or tracks) will be
+            tagged
+            
+        Returns
+        -------
+        tagged: Annotation
+            Tagged target.
+            
+        """
+        source, target = self._check(source, target)
+        if isinstance(target, Timeline):
+            return self._tag_timeline(source, target)
+        elif isinstance(target, Annotation):
+            return self._tag_annotation(source, target)
 
 if __name__ == "__main__":
     import doctest
