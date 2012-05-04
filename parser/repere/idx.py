@@ -63,4 +63,8 @@ class IDXParser(object):
     
     def __call__(self, idx):
         return self.__time[idx]
-    
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

@@ -67,3 +67,6 @@ def toUEM(timeline):
         text += '%s 1 %g %g\n' % (video, start, end)
     return text
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

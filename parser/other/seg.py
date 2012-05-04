@@ -65,3 +65,7 @@ def toSEG(annotation, toFrameRange, delta=0, order_by='time'):
         raise ValueError('Unknow order_by argument -- must be time or id')
     
     return text
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

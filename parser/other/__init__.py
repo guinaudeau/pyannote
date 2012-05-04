@@ -23,3 +23,7 @@ __all__ = ['PLPParser', 'SEGParser', 'toSRT']
 from plp import PLPParser
 from seg import SEGParser
 from srt import toSRT
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote import Segment, Timeline, TrackIDAnnotation
+from pyannote import Segment, Timeline, Annotation
 from lxml import objectify
 import re
 
@@ -96,7 +96,7 @@ class TRSParser(object):
         return timeline
                 
     def speaker(self, name=True, ):
-        annotation = TrackIDAnnotation(modality=MODALITY_SPEAKER, \
+        annotation = Annotation(modality=MODALITY_SPEAKER, \
                                        video=self.video)
         # parse file looking for speaker info.
         for section in self.root.Episode.iterchildren():
@@ -117,7 +117,7 @@ class TRSParser(object):
     
     def spoken(self, value=True):
         
-        annotation = TrackIDAnnotation(modality=MODALITY_SPOKEN, \
+        annotation = Annotation(modality=MODALITY_SPOKEN, \
                                        video=self.video)
         incomplete = []
         
@@ -160,3 +160,9 @@ class TRSParser(object):
             incomplete = self.__fix_incomplete(incomplete, latest_sync)
         
         return annotation
+        
+        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

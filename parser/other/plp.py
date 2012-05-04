@@ -70,3 +70,7 @@ class PLPParser(object):
                                        sliding_window = self.sliding_window,
                                        video=self.video)
         return feature
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote import Segment, Timeline, TrackIDAnnotation
+from pyannote import Segment, Timeline, Annotation
 from idx import IDXParser
 from lxml import objectify
 import re
@@ -67,7 +67,7 @@ class XGTFParser(object):
         return attr.getchildren()[0].get('value')
 
     def head(self, value=True):
-        annotation = TrackIDAnnotation(modality=MODALITY_HEAD, \
+        annotation = Annotation(modality=MODALITY_HEAD, \
                                        video=self.video)
         # parse file looking for face info.
         
@@ -136,7 +136,7 @@ class XGTFParser(object):
         return identifiers
     
     def written(self, value=True, name_alone=False):
-        annotation = TrackIDAnnotation(modality=MODALITY_WRITTEN, \
+        annotation = Annotation(modality=MODALITY_WRITTEN, \
                                        video=self.video)
 
         for element in self.root.iterchildren():
@@ -180,3 +180,7 @@ class XGTFParser(object):
                 timeline += segment
         
         return timeline        
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -62,4 +62,8 @@ class BINParser(object):
                                        sliding_window = sliding_window, \
                                        video=self.video)
         return feature
-    
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

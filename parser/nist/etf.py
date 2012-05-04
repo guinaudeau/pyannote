@@ -57,4 +57,7 @@ class ETFParser(GenericParser):
 #             text += '%s 1 %g %g %s - %s %g -\n' % (video, start, duration, modality, identifier, confidence)
 #     return text
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
 
