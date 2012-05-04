@@ -21,8 +21,9 @@
 import numpy as np
 import warnings
 
-class CoMatrix(object):
+class LabelMatrix(object):
     """
+    2D-matrix indexed by labels.
     
     Parameters
     ----------
@@ -32,11 +33,11 @@ class CoMatrix(object):
     
     Returns
     -------
-    matrix : CoMatrix
+    matrix : LabelMatrix
     
     """
     def __init__(self, ilabels=None, jlabels=None, Mij=None, default=0.):
-        super(CoMatrix, self).__init__()
+        super(LabelMatrix, self).__init__()
         
         # -- ilabels
         if ilabels is None:
@@ -83,7 +84,7 @@ class CoMatrix(object):
     """Default value"""
     
     def __get_T(self): 
-        return CoMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
+        return LabelMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
     T = property(fget=__get_T)
     """Transposed co-matrix"""
     
@@ -118,7 +119,7 @@ class CoMatrix(object):
             
             if isinstance(ilabel, (tuple, list, set)) and \
                isinstance(jlabel, (tuple, list, set)):
-                C = CoMatrix(default=self.default)
+                C = LabelMatrix(default=self.default)
                 ilabels = sorted(ilabel)
                 jlabels = sorted(jlabel)
                 for ilabel in ilabels:
@@ -225,7 +226,7 @@ class CoMatrix(object):
         
         """
         ilabels, jlabels = self.labels
-        C = CoMatrix(list(ilabels), list(jlabels), \
+        C = LabelMatrix(list(ilabels), list(jlabels), \
                      np.copy(self.M), default=self.default)
         return C
     
@@ -233,7 +234,7 @@ class CoMatrix(object):
 
     def __neg__(self):
         ilabels, jlabels = self.labels
-        C = CoMatrix(list(ilabels), list(jlabels), -np.copy(self.M), \
+        C = LabelMatrix(list(ilabels), list(jlabels), -np.copy(self.M), \
                      default=-self.default)
         return C
     
@@ -273,7 +274,7 @@ class CoMatrix(object):
         
         :returns: dictionary of label pairs corresponding to maximum value in matrix.
                 
-        >>> C = Confusion(A, B)
+        >>> C = Cooccurrence(A, B)
         >>> pairs = C.argmax(axis=0)
         >>> for a in A.labels():
         ...    if a in pairs:
@@ -341,17 +342,23 @@ class CoMatrix(object):
         
         return string
 
-class Confusion(CoMatrix):
+class Cooccurrence(LabelMatrix):
     """
-    Confusion matrix between two (ID-based) annotations
+    Cooccurrence matrix between two annotations
     
-    :param I: first (ID-based) annotation
-    :type I: :class:`TrackIDAnnotation`
-
-    :param J: second (ID-based) annotation
-    :type J: :class:`TrackIDAnnotation`
+    Parameters
+    ----------
+    I, J : Annotation
     
-    >>> M = Confusion(A, B)
+    Returns
+    --------
+    matrix : Cooccurrence
+        
+    
+    Examples
+    --------
+    
+    >>> M = Cooccurrence(A, B)
 
     Get total confusion duration (in seconds) between id_A and id_B::
     
@@ -367,7 +374,7 @@ class Confusion(CoMatrix):
         n_i = len(I.labels())
         n_j = len(J.labels())
         Mij = np.zeros((n_i, n_j))
-        super(Confusion, self).__init__(I.labels(), J.labels(), Mij, default=0.)
+        super(Cooccurrence, self).__init__(I.labels(), J.labels(), Mij, default=0.)
                 
         ilabels, jlabels = self.labels
         
@@ -378,7 +385,7 @@ class Confusion(CoMatrix):
                 j_coverage = J(jlabel).timeline.coverage()
                 # self[ilabel, jlabel] = i_coverage(j_coverage, \
                 #                               mode='intersection').duration()
-                super(Confusion, self).__setitem__((ilabel, jlabel), \
+                super(Cooccurrence, self).__setitem__((ilabel, jlabel), \
                 i_coverage(j_coverage, mode='intersection').duration())
     
     def __setitem__(self, key, value):
@@ -388,7 +395,7 @@ class Confusion(CoMatrix):
         raise NotImplementedError('')
 
 
-class CoTFIDF(Confusion):
+class CoTFIDF(Cooccurrence):
     """
     Term Frequency Inverse Document Frequency (TF-IDF) confusion matrix:
     - documents are J labels
@@ -418,18 +425,21 @@ class CoTFIDF(Confusion):
         self.M = tf * idf
         
 
-class AutoConfusion(Confusion):
+class AutoCooccurrence(Cooccurrence):
     """
     Auto confusion matrix 
     
-    :param I: (ID-based) annotation
-    :type I: :class:`TrackIDAnnotation`
-
-    :param neighborhood:
-    :type neighborhood: 
+    Parameters
+    ----------
+    I : Annotation
     
-    >>> M = AutoConfusion(A, neighborhood=10)
-
+    neighborhood : float, optional
+    
+    Examples
+    --------
+    
+    >>> M = AutoCooccurrence(A, neighborhood=10)
+    
     Get total confusion duration (in seconds) between id_A and id_B::
     
     >>> confusion = M[id_A, id_B]
@@ -442,10 +452,12 @@ class AutoConfusion(Confusion):
     """
     def __init__(self, I, neighborhood=0.):
         
-        map_func = lambda segment : neighborhood << segment >> neighborhood
+        # extend each segment on left and right by neighborhood seconds
+        segment_func = lambda s : neighborhood << s >> neighborhood
+        xI = I.copy(segment_func=map_func)
         
-        xI = I.toTrackIDAnnotation().copy(map_func=map_func)        
-        super(AutoConfusion, self).__init__(xI, xI)
+        # auto-cooccurrence
+        super(AutoCooccurrence, self).__init__(xI, xI)
 
 if __name__ == "__main__":
     import doctest
