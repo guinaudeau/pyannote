@@ -22,6 +22,7 @@ from segment import Segment
 from timeline import Timeline
 from mapping import Mapping, ManyToOneMapping
 from collections import Hashable
+import operator
 
 UNIQUE_TRACK = '__@__'
 UNIQUE_LABEL = '__@__'
@@ -208,11 +209,7 @@ class Annotation(object):
         Returns
         -------
         labels : set
-            Set of labels for `segment`
-        
-        Raises
-        ------
-        KeyError if `segment` is not annotated.
+            Set of labels for `segment` if it exists, empty set otherwise.
         
         Examples
         --------
@@ -223,15 +220,71 @@ class Annotation(object):
             >>> annotation[segment, 'speaker2'] = 'John'
             >>> print sorted(annotation.get_labels(segment))
             ['Bernard', 'John']
-            >>> annotation.get_labels(Segment(1, 2))
-            Traceback (most recent call last):
-            ...
-            KeyError: <Segment(1, 2)>
+            >>> print annotation.get_labels(Segment(1, 2))
+            set([])
             
         """
         
-        return set([self.__data[segment][track] \
-                    for track in self.__data[segment]])
+        if segment not in self:
+            return set([])
+        else:
+            return set([self.__data[segment][track] \
+                        for track in self.__data[segment]])
+    
+    def argmax(self, segment=None):
+        """Most frequent label
+        
+        If `segment` is provided, argmax will return the label with longest
+        intersection.
+        If `segment` is None, argmax will simply return the label with longest
+        overall duration.
+        
+        If no label intersects segment, returns None
+        
+        Parameters
+        ----------
+        segment : Segment, optional
+            Section of annotation where to look for the most frequent label.
+            Defaults to annotation timeline extent.
+        
+        Returns
+        -------
+        label : any existing label or None
+        
+        Examples
+        --------
+            
+            >>> annotation = Annotation(multitrack=False, modality='speaker')
+            >>> annotation[Segment(0, 10)] = 'Alice'
+            >>> annotation[Segment(8, 20)] = 'Bob'
+            >>> print "%s is such a talker!" % annotation.argmax()
+            Bob is such a talker!
+            >>> segment = Segment(22, 23)
+            >>> if not annotation.argmax(segment):
+            ...    print "No label intersecting %s" % segment
+            No label intersection [22 --> 23]
+        
+        """
+        
+        # if annotation is empty, obviously there is no most frequent label
+        if not self:
+            return None
+        
+        # if segment is not provided, just look for the overall most frequent
+        # label (ie. set segment to the extent of the annotation)
+        if segment is None:
+            segment = self.timeline.extent()
+        
+        # compute intersection duration for each label
+        durations = {lbl: (self.__label_timeline[lbl] & segment).duration()\
+                     for lbl in self.labels()}
+        
+        # find the most frequent label
+        label = max(durations.iteritems(), key=operator.itemgetter(1))[0]
+        
+        # in case all durations were zero, there is no most frequent label
+        return label if durations[label] > 0 else None
+    
     
     # Function used to parse key used to access annotation elements
     # eg. annotation[segment] or annotation[segment, track]
