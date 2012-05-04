@@ -21,22 +21,27 @@ Tagging
 Cluster-wise tagging
 ********************
 
-.. autoclass:: pyannote.algorithm.tagging.hungarian.HungarianTagger
+.. automodule:: pyannote.algorithm.tagging.label
+
+
+.. autoclass:: pyannote.algorithm.tagging.label.LabelTagger
     :members:
     :undoc-members:
 
+.. autoclass:: pyannote.algorithm.tagging.label.HungarianTagger
+    :members:
+    :undoc-members:
 
-.. autoclass:: pyannote.algorithm.tagging.argmax.ArgMaxTagger
+.. autoclass:: pyannote.algorithm.tagging.label.ArgMaxTagger
     :members:
     :undoc-members:
 
 Segment-wise tagging
 ********************
 
-.. autoclass:: pyannote.algorithm.tagging.segment.ConservativeSegmentTagger
+.. automodule:: pyannote.algorithm.tagging.segment
+
+.. autoclass:: pyannote.algorithm.tagging.segment.DirectTagger
     :members:
     :undoc-members:
 
-.. autoclass:: pyannote.algorithm.tagging.timeline.ConservativeTimelineTagger
-    :members:
-    :undoc-members:

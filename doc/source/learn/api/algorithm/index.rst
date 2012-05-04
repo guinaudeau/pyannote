@@ -23,8 +23,4 @@ Algorithms
    
    mapping
    tagging
-   .. segmentation
-   .. detection
-   .. diarization
-   .. identification
 

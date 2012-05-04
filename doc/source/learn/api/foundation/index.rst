@@ -25,5 +25,5 @@ Foundation
    timeline
    annotation
    mapping
-   .. matrix
+   matrix
 

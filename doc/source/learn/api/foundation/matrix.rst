@@ -16,16 +16,11 @@
 Label-indexed matrix
 ====================
 
-.. autoclass:: pyannote.base.comatrix.Confusion
+.. autoclass:: pyannote.base.matrix.Cooccurrence
     :members:
     :undoc-members:
 
-.. autoclass:: pyannote.base.comatrix.CoTFIDF
+.. autoclass:: pyannote.base.matrix.CoTFIDF
     :members:
     :undoc-members:
-    :show-inheritance:
 
-.. autoclass:: pyannote.base.comatrix.AutoConfusion
-    :members:
-    :undoc-members:
-    :show-inheritance:

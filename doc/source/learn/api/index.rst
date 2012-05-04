@@ -27,5 +27,4 @@ Evaluation metric are available in section *Evaluation*.
    
    foundation/index
    algorithm/index
-   metric/index
    
