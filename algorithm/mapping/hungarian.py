@@ -22,24 +22,20 @@ import numpy as np
 from munkres import Munkres
 from base import BaseMapper
 from pyannote.base.mapping import OneToOneMapping
-from pyannote.base.comatrix import Confusion
+from pyannote.base.matrix import Cooccurrence
 
 class HungarianMapper(BaseMapper):
-    """Label mapper based on the Hungarian algorithm
+    """
+    Label mapper based on the Hungarian algorithm
     
     Given two annotations of the same document, the Hungarian algorithm aims
-    at solving the following equations:
-    
-    
-    
-    
-    See [1]_ 
+    at solving the following equations.
     
     
     Parameters
     ----------
-    confusion : Confusion class or sub-class
-        Defaults to Confusion.
+    confusion : Cooccurrence class or sub-class
+        Defaults to Cooccurrence.
     force : bool
         force mapping even for labels with zero confusion
         Defaults to False.
@@ -50,7 +46,6 @@ class HungarianMapper(BaseMapper):
     
     Examples
     --------
-    
         >>> mapper = HungarianMapper()
         >>> A = Annotation(multitrack=False, modality="speaker")
         >>> A[]
@@ -72,7 +67,7 @@ class HungarianMapper(BaseMapper):
         self.__force = force
         self.__munkres = Munkres()
         if confusion is None:
-            self.__confusion = Confusion
+            self.__confusion = Cooccurrence
         else:
             self.__confusion = confusion
     
@@ -88,7 +83,7 @@ class HungarianMapper(BaseMapper):
     confusion = property(fget=__get_confusion, \
                      fset=None, \
                      fdel=None, \
-                     doc="Confusion.")
+                     doc="Cooccurrence.")
     
     def __get_force(self): 
         return self.__force
@@ -99,7 +94,7 @@ class HungarianMapper(BaseMapper):
     
     def associate(self, A, B):
         
-        # Confusion matrix
+        # Cooccurrence matrix
         matrix = self.confusion(A, B)
         M = OneToOneMapping(A.modality, B.modality)
         
@@ -129,8 +124,8 @@ class HungarianMapper(BaseMapper):
             M += (None, [blabel])
         
         return M
-        
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

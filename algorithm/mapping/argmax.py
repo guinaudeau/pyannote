@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyannote.base.mapping import ManyToOneMapping
-from pyannote.base.comatrix import Confusion
+from pyannote.base.matrix import Cooccurrence
 from base import BaseMapper
 
 class ArgMaxMapper(BaseMapper):
@@ -28,7 +28,7 @@ class ArgMaxMapper(BaseMapper):
     def __init__(self, confusion=None):
         super(ArgMaxMapper, self).__init__()
         if confusion is None:
-            self.__confusion = Confusion
+            self.__confusion = Cooccurrence
         else:
             self.__confusion = confusion
     
@@ -37,11 +37,11 @@ class ArgMaxMapper(BaseMapper):
     confusion = property(fget=__get_confusion, \
                      fset=None, \
                      fdel=None, \
-                     doc="Confusion.")
+                     doc="Cooccurrence.")
     
     def associate(self, A, B):
         
-        # Confusion matrix
+        # Cooccurrence matrix
         matrix = self.confusion(A, B)
         
         # ArgMax

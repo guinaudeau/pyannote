@@ -22,7 +22,7 @@ import networkx as nx
 
 import pyannote.algorithm.community
 from pyannote.base.mapping import Mapping, OneToOneMapping, NoMatch, MElement 
-from pyannote.base.comatrix import Confusion, AutoConfusion
+from pyannote.base.matrix import Cooccurrence, AutoCooccurrence
 from base import BaseMapper
 
 class Louvain(BaseMapper):
@@ -56,8 +56,8 @@ class Louvain(BaseMapper):
 
     def __autoconfusion_graph(self, A):
     
-        # AutoConfusion matrix
-        M = AutoConfusion(A, neighborhood=0., normalize=self.normalize)
+        # AutoCooccurrence matrix
+        M = AutoCooccurrence(A, neighborhood=0., normalize=self.normalize)
     
         # Shape and labels
         Na, Na = M.shape
@@ -79,14 +79,14 @@ class Louvain(BaseMapper):
     
     def __confusion_graph(self, A, B):
     
-        # Confusion matrix
-        M = Confusion(A, B, normalize=self.normalize)
+        # Cooccurrence matrix
+        M = Cooccurrence(A, B, normalize=self.normalize)
     
         # Shape and labels
         Na, Nb = M.shape
         alabels, blabels = M.labels
     
-        # Confusion graph
+        # Cooccurrence graph
         G = nx.Graph()
         for a, alabel in enumerate(alabels):
             anode = MElement(A.modality, alabel)
