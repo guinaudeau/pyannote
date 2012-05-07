@@ -20,11 +20,10 @@
 
 """
 
-The ``pyannote.algorithm.mapping`` module contains the various mapping algorithms available in ``PyAnnote``.
+Given two ``Annotation`` objects `A` and `B` of the same audio/video document, label mapping consists in finding the optimal association between `A` labels and `B` labels. 
+Depending on the algorithm and the definition of an `optimal` mapping, it can return a one-to-one, many-to-one, one-to-many or many-to-many mapping. 
 
-Mapping consists in finding the optimal association between labels from two different annotations. 
-
-The output of such algorithms can be one-to-one, many-to-one, one-to-many or many-to-many label mapping.
+Several mapping algorithms are available in the ``pyannote.algorithm.mapping`` module.
 
 """
 
