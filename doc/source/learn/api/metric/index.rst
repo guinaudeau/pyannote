@@ -13,11 +13,19 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Evaluation
-==========
+Metrics
+=======
+
+
+.. automodule:: pyannote.metric
 
 .. toctree::
    :maxdepth: 2
    
+   base
+   mapping
+   segmentation
+   detection
    diarization
    identification
+   

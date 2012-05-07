@@ -13,15 +13,16 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Diarization
-===========
+Detection
+=========
 
-.. automodule:: pyannote.metric.diarization
+.. automodule:: pyannote.metric.detection
 
-.. autoclass:: pyannote.metric.diarization.DiarizationErrorRate
+.. autoclass:: pyannote.metric.detection.DetectionErrorRate
     :members:
     :show-inheritance:
     :inherited-members:
     :undoc-members:
     :private-members:
     :special-members:
+
