@@ -19,11 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-PyAnnote
-========
-
-    Collaborative annotation of multimedia content.
-
+PyAnnote is a Python module for collaborative annotation of multimedia content.
 """
 
 __author__ = 'Herve Bredin <bredin@limsi.fr>'
@@ -42,10 +38,11 @@ __license__ = """
      along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__date__ = '24/02/2012'
-__version__ = '0.1.1'
+__date__ = ''
+__version__ = 'dev'
 
 from base import *
-# import parser
-import metric
-import algorithms
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
