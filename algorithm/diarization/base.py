@@ -21,7 +21,7 @@
 import numpy as np
 import networkx as nx
 from pyannote.base.annotation import Annotation
-from pyannote.base.comatrix import CoMatrix
+from pyannote.base.matrix import LabelMatrix
 
 DIARIZATION_DISTANCE = '__distance__'
 
@@ -94,7 +94,7 @@ class DiarizationGraph(nx.Graph):
             for j, b in enumerate(self.nodes()):
                 if i > j and self.has_edge(a, b):
                     m[i, j] = self[a][b][DIARIZATION_DISTANCE]        
-        M = CoMatrix(nodes, nodes, m)
+        M = LabelMatrix(nodes, nodes, m)
         pairs = M.argmin(threshold=np.inf)
         return pairs        
     
@@ -111,7 +111,7 @@ class DiarizationGraph(nx.Graph):
     
     def get_base_node(self, segment, track):
         A = self.annotation
-        a = TrackAnnotation(dict, video=A.video, \
+        a = Annotation(dict, video=A.video, \
                             modality=A.modality)
         a[segment, track] = {}
         return a, {}   
