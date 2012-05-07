@@ -141,7 +141,7 @@ class Segment(object):
     
     See Also
     --------
-    start
+    pyannote.base.segment.Segment.start
 
     """
     
