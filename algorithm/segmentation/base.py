@@ -39,6 +39,19 @@ class PeriodicSegmenter(BaseSegmenter):
                       doc='Segmentation period.')
     
     def __call__(self, feature):
+        """
+        
+        Parameters
+        ----------
+        feature : :class:`pyannote.base.feature.BaseFeature`
+        
+        Returns
+        -------
+        segmentation : :class:`pyannote.base.timeline.Timeline`
+        
+        
+        """
+        
         extent = feature.extent()
         sliding_window = SlidingWindow(duration=self.period, \
                                        step=self.period, \

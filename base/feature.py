@@ -18,12 +18,29 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+"""
+
 import numpy as np
-from segment import Segment
-from timeline import Timeline
+from pyannote.base.segment import Segment
+from pyannote.base.timeline import Timeline
 
 class BaseFeature(object):
+    """
     
+    Parameters
+    ----------
+    data : numpy array
+    
+    toFrameRange : func
+    
+    toSegment : func
+    
+    video : string, optional
+        name of (audio or video) described document
+    
+    """
     def __init__(self, data, toFrameRange, toSegment, video=None):
         super(BaseFeature, self).__init__()
         self.__data = data
@@ -35,51 +52,70 @@ class BaseFeature(object):
         return self.__video
     def __set_video(self, value):
         self.__video = value
-    video = property(fget=__get_video, \
-                     fset=__set_video, \
-                     fdel=None, \
-                     doc="Processed video.")
+    video = property(fget=__get_video, fset=__set_video)
+    """Path to (or any identifier of) described video"""
     
     def __get_data(self): 
-        return self.__data
-    data = property(fget=__get_data, \
-                    fset=None, \
-                    fdel=None, \
-                    doc="Raw features (numpy array).")
+        return np.array(self.__data)
+    data = property(fget=__get_data)
+    """Raw feature data (numpy array)"""
     
     def __get_toFrameRange(self): 
         return self.__toFrameRange
     def __set_toFrameRange(self, value): 
         self.__toFrameRange = value
-    toFrameRange = property(fget=__get_toFrameRange, \
-                            fset=__set_toFrameRange, \
-                            fdel=None, \
-                            doc="Segment to frame range conversion function.")
+    toFrameRange = property(fget=__get_toFrameRange, fset=__set_toFrameRange)
+    """Segment to frame range conversion function."""
     
     def __get_toSegment(self): 
         return self.__toSegment
     def __set_toSegment(self, value):
         self.__toSegment = value
-    toSegment = property(fget=__get_toSegment, \
-                         fset=__set_toSegment, \
-                         fdel=None, \
-                         doc="Frame range to segment conversion function.")
+    toSegment = property(fget=__get_toSegment, fset=__set_toSegment)
+    """Frame range to segment conversion function."""
+    
+    def __call__(self, subset, mode='loose'):
+        """Use expression "feature(subset, mode='strict')"
+        
+        Parameters
+        ----------
+        subset : Segment or Timeline
+        
+        mode : {'strict', 'loose'}
+            Default `mode` is 'losse'.
+        
+        Returns
+        -------
+        data : numpy array
+            In 'strict' mode, `data` only contains features for segments that
+            are fully included in provided segment or timeline coverage.
+            In 'loose' mode, `data` contains features for every segment
+            intersecting provided segment or timeline.
+        
+        Examples
+        --------
+        
+        """
+    
+    
+    
+    
     
     def __call__(self, subset):
         
         # extract segment feature vectors
         if isinstance(subset, Segment):
-
+            
             # get frame range corresponding to the segment
             i0, n = self.toFrameRange(subset)
-
+            
             # perform the actual extraction
             return np.take(self.data, range(i0, i0+n), axis=0, \
                            out=None, mode='clip')
         
         # extract timeline feature vectors
         elif isinstance(subset, Timeline):
-
+            
             # provided timeline has to be a partition
             # ie must not contain any overlapping segments
             if subset < 0:
@@ -90,31 +126,45 @@ class BaseFeature(object):
             for segment in subset.coverage():
                 i0, n = self.toFrameRange(segment)
                 indices += range(i0, i0+n)
-
+            
             # perform the actual extraction
             return np.take(self.data, indices, axis=0, out=None, mode='raise')
         
         else:
             raise TypeError('')
+    
+    # def __getitem__(self, key):
+    #     if isinstance(key, int):
+    #         return np.take(self.data, [key], axis=0, out=None, mode='raise')
+    #     elif isinstance(key, slice):
+    #         return np.take(self.data, \
+    #                        range(key.start, key.stop, key.step \
+    #                                                   if key.step else 1), \
+    #                        axis=0, out=None, mode='raise')
+    #     else:
+    #         raise TypeError('')
+    
+    # def extent(self):
+    #     N, D = self.data.shape
+    #     return self.toSegment(0, N)
 
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            return np.take(self.data, [key], axis=0, out=None, mode='raise')
-        elif isinstance(key, slice):
-            return np.take(self.data, \
-                           range(key.start, key.stop, key.step \
-                                                      if key.step else 1), \
-                           axis=0, out=None, mode='raise')
-        else:
-            raise TypeError('')
-    
-    def extent(self):
-        N, D = self.data.shape
-        return self.toSegment(0, N)
-    
 
 class SlidingWindow(object):
-    """
+    """Sliding window
+    
+    Parameters
+    ----------
+    duration : float, optional
+        Window duration, in seconds. Default is 30 ms.
+    step : float, optional
+        Step between two consecutive position, in seconds. Default is 10 ms.
+    start : float, optional
+        First position of window, in seconds. Default is 0.
+    end : float, optional
+    
+    Examples
+    --------
+    
     >>> sw = SlidingWindow(duration, step, start)    
     >>> frame_range = (a, b)
     >>> frame_range == sw.toFrameRange(sw.toSegment(*frame_range))
@@ -136,48 +186,68 @@ class SlidingWindow(object):
         return self.__start
     def __set_start(self, value):
         self.__start = value
-    start = property(fget=__get_start, \
-                     fset=__set_start, \
-                     fdel=None, \
-                     doc="Sliding window start time in seconds.")
-
+    start = property(fget=__get_start, fset=__set_start)
+    """Sliding window start time in seconds."""
+    
     def __get_end(self): 
         return self.__end
     def __set_end(self, value):
         self.__end = value
-    end = property(fget=__get_end, \
-                     fset=__set_end, \
-                     fdel=None, \
-                     doc="Sliding window end time in seconds.")
-
+    end = property(fget=__get_end, fset=__set_end)
+    """Sliding window end time in seconds."""
+    
     def __get_step(self): 
         return self.__step
     def __set_step(self, value):
         self.__step = value
-    step = property(fget=__get_step, \
-                    fset=__set_step, \
-                    fdel=None, \
-                    doc="Sliding window step in seconds.")
-
+    step = property(fget=__get_step, fset=__set_step)
+    """Sliding window step in seconds."""
+    
     def __get_duration(self): 
         return self.__duration
     def __set_duration(self, value):
         self.__duration = value
-    duration = property(fget=__get_duration, \
-                        fset=__set_duration, \
-                        fdel=None, \
-                        doc="Sliding window duration in seconds.")
-
-    def __closest_frame(self, t):
+    duration = property(fget=__get_duration, fset=__set_duration)
+    """Sliding window duration in seconds."""
+    
+    def __closest_frame(self, timestamp):
+        """Closest frame to timestamp.
+        
+        Parameters
+        ----------
+        timestamp : float
+            Timestamp, in seconds.
+            
+        Returns
+        -------
+        index : int
+            Index of frame whose middle is the closest to `timestamp`
+        
         """
-        Finds index of closest frame to timestamp t
-        """
-        frame = np.rint(.5 + (t - self.start - .5*self.duration) / self.step)
+        frame = np.rint(.5+(timestamp-self.start-.5*self.duration)/self.step)
         return int(frame)
     
-    def toFrameRange(self, segment):
-        """
-        Segment to 0-indexed frame range
+    def toFrameRange(self, segment, mode='loose'):
+        """Convert segment to 0-indexed frame range
+        
+        Parameters
+        ----------
+        segment : Segment
+        
+        Returns
+        -------
+        i0 : int
+            Index of first frame
+        n : int
+            Number of frames
+        
+        Examples
+        --------
+        
+            >>> window = SlidingWindow()
+            >>> print window.toFrameRange(Segment(10, 15))
+            i0, n
+        
         """
         # find closest frame to segment start
         i0 = self.__closest_frame(segment.start)
@@ -188,16 +258,33 @@ class SlidingWindow(object):
         n = j0 - i0
         return i0, n
     
-    def toSegment(self, i0, n):
-        """
-        i0: 0-indexed frame number
-        n: number of frames
+    def toSegment(self, i0, n, mode='loose'):
+        """Convert 0-indexed frame range to segment
         
-        Each frame represents a unique segment of duration 'step', 
-        centered on the middle of the frame
+        Each frame represents a unique segment of duration 'step', centered on
+        the middle of the frame. 
         
-        The very first frame (i0 == 0) is the exception.
-        It is extended to the left so that it also represents the very beginning of the file
+        The very first frame (i0 = 0) is the exception. It is extended to the
+        sliding window start time.
+
+        Parameters
+        ----------
+        i0 : int
+            Index of first frame
+        n : int 
+            Number of frames
+            
+        Returns
+        -------
+        segment : Segment
+        
+        Examples
+        --------
+        
+            >>> window = SlidingWindow()
+            >>> print window.toSegment(3, 2)
+            [ --> ]
+        
         """
         
         # frame start time
@@ -218,23 +305,45 @@ class SlidingWindow(object):
         return segment
         
     def __iter__(self):
+        """Sliding window iterator
+        
+        Use expression 'for segment in sliding_window'
+        
+        Examples
+        --------
+        
+            >>> window = SlidingWindow(end=0.1)
+            >>> for segment in window:
+            ...     print segment
+            [0 --> 0.03]
+            [0.01 --> 0.04]
+            [0.02 --> 0.05]
+            [0.03 --> 0.06]
+            [0.04 --> 0.07]
+            [0.05 --> 0.08]
+            [0.06 --> 0.09]
+            [0.07 --> 0.1]
+            [0.08 --> 0.1]
+            [0.09 --> 0.1]
+        
+        """
         
         if self.end is None:
             raise ValueError('Please set end time first.')
         extent = Segment(start=self.start, end=self.end)  
-
+        
         position = 0
         while(True):
             start = self.start + position * self.step
-            end   = start + self.duration
+            end = start + self.duration
             window = extent & Segment(start=start, end=end)
             if window:
                 yield window
                 position += 1
             else:
                 break
-        
-class SlidingWindowFeature(BaseFeature):
+
+class PeriodicFeature(BaseFeature):
     
     def __init__(self, data, sliding_window, video=None):
         
@@ -286,4 +395,3 @@ class TimelineFeature(BaseFeature):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-  
