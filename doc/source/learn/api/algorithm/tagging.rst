@@ -18,30 +18,38 @@ Tagging
 
 .. automodule:: pyannote.algorithm.tagging
 
-Cluster-wise tagging
-********************
+Base type
+*********
+
+.. autoclass:: pyannote.algorithm.tagging.base.BaseTagger
+    :members: _tag_timeline, _tag_annotation, __call__
+
+Label tagging
+**************
 
 .. automodule:: pyannote.algorithm.tagging.label
 
-
 .. autoclass:: pyannote.algorithm.tagging.label.LabelTagger
-    :members:
-    :undoc-members:
+    :members: __call__
 
 .. autoclass:: pyannote.algorithm.tagging.label.HungarianTagger
-    :members:
-    :undoc-members:
+    :members: __call__
+    :show-inheritance:
 
 .. autoclass:: pyannote.algorithm.tagging.label.ArgMaxTagger
-    :members:
-    :undoc-members:
+    :members: __call__
+    :show-inheritance:
 
-Segment-wise tagging
-********************
+Segment tagging
+***************
 
 .. automodule:: pyannote.algorithm.tagging.segment
 
-.. autoclass:: pyannote.algorithm.tagging.segment.DirectTagger
+.. autoclass:: pyannote.algorithm.tagging.segment.ConservativeDirectTagger
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyannote.algorithm.tagging.segment.ArgMaxDirectTagger
     :members:
     :undoc-members:
 

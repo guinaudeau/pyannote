@@ -16,15 +16,23 @@
 Label mapping
 =============
 
+.. automodule:: pyannote.base.mapping
+
 .. autoclass:: pyannote.base.mapping.Mapping
     :members:
-    :undoc-members:
+    :private-members:
+    :special-members:
 
 .. autoclass:: pyannote.base.mapping.ManyToOneMapping
     :members:
-    :undoc-members:
-	:inherited-members:
+    :inherited-members:
+    :show-inheritance:
+    :private-members:
+    :special-members:
 	
 .. autoclass:: pyannote.base.mapping.OneToOneMapping
     :members:
-    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :private-members:
+    :special-members:

@@ -18,8 +18,6 @@ Annotation
 
 .. autoclass:: pyannote.base.tag.Annotation
     :members:
-    :undoc-members:
 
 .. autoclass:: pyannote.base.tag.Unknown
     :members:
-    :undoc-members:

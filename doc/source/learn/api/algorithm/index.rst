@@ -23,4 +23,3 @@ Algorithms
    
    mapping
    tagging
-

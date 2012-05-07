@@ -23,8 +23,10 @@ The *Algorithms* section is divided into multiple subsection depending on the ap
 Evaluation metric are available in section *Evaluation*.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    
    foundation/index
    algorithm/index
+   metric/index
+   parser/index
    

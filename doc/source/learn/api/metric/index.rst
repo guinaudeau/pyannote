@@ -19,10 +19,5 @@ Evaluation
 .. toctree::
    :maxdepth: 2
    
-   .. mapping
-   .. tagging
-   .. segmentation
-   .. detection
    diarization
    identification
-

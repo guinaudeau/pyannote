@@ -18,18 +18,24 @@ Label Mapping
 
 .. automodule:: pyannote.algorithm.mapping
 
+Base type 
+*********
+
+.. autoclass:: pyannote.algorithm.mapping.base.BaseMapper
+    :members: __call__, associate
+    :special-members:
 
 One-to-one mapping
 ******************
 
 .. autoclass:: pyannote.algorithm.mapping.hungarian.HungarianMapper
     :members:
-    :undoc-members:
+    :show-inheritance:
 
 Many-to-one mapping
 *******************
 
 .. autoclass:: pyannote.algorithm.mapping.argmax.ArgMaxMapper
     :members:
-    :undoc-members:
+    :show-inheritance:
 

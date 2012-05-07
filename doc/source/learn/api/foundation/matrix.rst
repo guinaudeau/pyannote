@@ -16,11 +16,11 @@
 Label-indexed matrix
 ====================
 
+.. automodule:: pyannote.base.matrix
+
 .. autoclass:: pyannote.base.matrix.Cooccurrence
     :members:
-    :undoc-members:
 
 .. autoclass:: pyannote.base.matrix.CoTFIDF
     :members:
-    :undoc-members:
 
