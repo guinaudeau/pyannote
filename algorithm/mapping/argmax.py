@@ -23,26 +23,59 @@ from pyannote.base.matrix import Cooccurrence
 from base import BaseMapper
 
 class ArgMaxMapper(BaseMapper):
-    """    
+    """Many-to-one label mapping based on cost function.
+    
+    The `ArgMax` mapper relies on a cost function K to find the 
+    many-to-one mapping M between labels of two annotations `A` and `B` such
+    that M(a) = argmax K(a, b). 
+    
+    `cost` function K(a, b) typically is the total cooccurrence duration of
+    labels a and b.
+    
+    Parameters
+    ----------
+    cost : type
+        This parameter controls how function K is computed.
+        Defaults to :class:`pyannote.base.matrix.Cooccurrence`, 
+        i.e. total cooccurence duration 
+    
+    Examples
+    --------
+        
+        >>> A = Annotation(multitrack=False, modality='A')
+        >>> A[Segment(0, 4)] = 'a1'
+        >>> A[Segment(4, 15)] = 'a2'
+        >>> A[Segment(15, 17)] = 'a3'
+        >>> A[Segment(17, 25)] = 'a1'
+        >>> A[Segment(23, 30)] = 'a2'
+        
+        >>> B = Annotation(multitrack=False, modality='B')
+        >>> B[Segment(0, 10)] = 'b1'
+        >>> B[Segment(10, 15)] = 'b2'
+        >>> B[Segment(14, 20)] = 'b1'
+        >>> B[Segment(23, 30)] = 'b2'
+        
+        >>> mapper = HungarianMapper()
+        >>> mapping = mapper(A, B)
+        >>> print mapping
+        
+    
+    See Also
+    --------
+    pyannote.base.matrix.Cooccurrence, pyannote.base.matrix.CoTFIDF, pyannote.base.matrix
+    
     """
-    def __init__(self, confusion=None):
+    def __init__(self, cost=None):
         super(ArgMaxMapper, self).__init__()
-        if confusion is None:
-            self.__confusion = Cooccurrence
+        if cost is None:
+            self.__cost = Cooccurrence
         else:
-            self.__confusion = confusion
+            self.__cost = cost
     
-    def __get_confusion(self):
-        return self.__confusion
-    confusion = property(fget=__get_confusion, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Cooccurrence.")
-    
-    def associate(self, A, B):
+    def _associate(self, A, B):
         
         # Cooccurrence matrix
-        matrix = self.confusion(A, B)
+        matrix = self.__cost(A, B)
         
         # ArgMax
         pairs = matrix.argmax(axis=0, threshold=0, ties='any')
