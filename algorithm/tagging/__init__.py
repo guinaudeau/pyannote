@@ -25,7 +25,7 @@ a target ``Timeline`` (or ``Annotation``).
 """
 
 from label import HungarianTagger, ArgMaxTagger
-from segment import DirectTagger
+from segment import ConservativeDirectTagger, ArgMaxDirectTagger
 
 if __name__ == "__main__":
     import doctest

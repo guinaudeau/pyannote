@@ -24,35 +24,111 @@ Module ``pyannote.algorithm.tagging.segment`` provides segment-wise tagging algo
 
 from base import BaseTagger
 
-class DirectTagger(BaseTagger):
+class ConservativeDirectTagger(BaseTagger):
     """
-    Direct segment/track tagging based on intersecting tracks.
+    Conservative direct segment tagger
     
-    Parameters
-    ----------
-    conflict : bool, optional
-        In case 
-        Defaults to False.
+    Only supports annotation tagging.
     
     
-    
-    
-    
-    
-    By default (conflict=False), tagger quietly discards (do not tag) segments 
-    where conflicts/uncertainties happen.
-    Example of conflicts/uncertainties are:
-    - multiple matching labels for a same segment/track couple
-    - multiple matching tracks for a same segment in mono-track conditions
-    When conflict=True, an error is raised when conflicts happen.
     """
     
-    def __init__(self, conflict=False):
-        super(DirectTagger, self).__init__(annotation=True, timeline=True)
-        self.conflict = conflict
+    def __init__(self):
+        super(ConservativeDirectTagger, self).__init__(annotation=True, \
+                                                       timeline=False)
+    
+    def _tag_annotation(self, source, annotation):
+        """Annotation tagging
+        
+        Parameters
+        ----------
+        source : Annotation
+            Source annotation whose labels will be propagated
+        annotation : Annotation
+            Target annotation whose tracks will be tagged.
+        
+        Returns
+        -------
+        tagged : Annotation
+            Tagged `annotation`
+        
+        """
+        
+        # initialize tagged annotation as a copy of target annotation
+        tagged = annotation.copy()
+        
+        # tag each segment of target annotation, one after the other
+        for segment in tagged:
+            
+            # extract the part of source annotation
+            # intersecting current target segment
+            t = source(segment, mode='loose')
+            
+            # if there is no intersecting segment
+            # just skip to the next one
+            if not t:
+                continue
+            
+            # if tagged annotation is multitrack, only tag segment 
+            # when target has exactly one track and source only one
+            # co-occurring label
+            if tagged.multitrack:
+                
+                # don't do anything if target has more than one track
+                tracks = set(tagged[segment, :])
+                if len(tracks) > 1:
+                    continue
+                
+                # don't do anything if source has more than one label
+                labels = t.labels()
+                if len(labels) > 1:
+                    continue
+                
+                tagged[segment, tracks.pop()] = labels[0]
+            
+            # if tagged annotation is single-track, only tag segment
+            # when source has exactly one co-occurring label
+            else:
+                
+                # don't do anything if source has more than one label
+                labels = t.labels()
+                if len(labels) > 1:
+                    continue
+                
+                tagged[segment] = labels[0]
+        
+        return tagged
+
+
+class ArgMaxDirectTagger(BaseTagger):
+    """
+    ArgMax direct segment tagger
+    
+    It supports both timeline and annotation tagging.
+    
+    **Timeline tagging.**
+    Each segment in target timeline is tagged with the `N` intersecting labels
+    with greatest co-occurrence duration:
+        - `N` is set to 1 in case source annotation is single-track. 
+        - In case of a multi-track source, `N` is set to the the maximum number 
+          of simultaneous tracks in intersecting source segments.
+    
+    **Annotation tagging.**
+    
+    """
+    
+    def __init__(self):
+        super(ArgMaxDirectTagger, self).__init__(annotation=True, \
+                                                 timeline=True)
     
     def _tag_timeline(self, source, timeline):
-        """
+        """Timeline tagging
+        
+        Each segment in target `timeline` is tagged with the `N` intersecting
+        labels with greatest co-occurrence duration:
+            - `N` is set to 1 in case source annotation is single-track. 
+            - In case of a multi-track source, `N` is set to the the maximum
+              number of simultaneous tracks in intersecting source segments.
         
         Parameters
         ----------
@@ -78,28 +154,38 @@ class DirectTagger(BaseTagger):
             # intersecting current target segment
             t = source(segment, mode='loose')
             
-            # if source is multi-track
-            if source.multitrack:
-                # -- multi-track
-                tracks = {}
-                for src_segment in t:
-                    for track, label in t[src_segment, :].iteritems():
-                        if track not in tracks:
-                            tracks[track] = set([])
-                        tracks[track].add(label)
-                for track in tracks:
-                    labels = tracks[track]
-                    if len(labels) == 1:
-                        T[segment, track] = labels.pop()
-                    elif len(labels) > 1:
-                        # pass
-                        print '2+ labels for %s/%s' % (segment, track)
-                        # raise ValueError('2+ labels for %s/%s' \
-                        #                  % (segment, track))
-                    else:
-                        pass
+            # if there is no intersecting segment
+            # just skip to the next one
+            if not t:
+                continue
             
-            # if source (and therefore tagged target) is single-track,
+            # if source is multi-track
+            # find largest number of co-occurring tracks ==> N
+            # find N labels with greatest intersection duration
+            # tag N tracks with those N labels
+            if T.multitrack:
+                
+                # find largest number of simultaneous tracks (n_tracks)
+                n_tracks = max([len(t[s, :]) for s in t])
+                
+                # find n_tracks labels with greatest intersection duration
+                # and add them to the segment
+                for i in range(n_tracks):
+                    
+                    # find current best label
+                    label = t.argmax(segment)
+                    
+                    # if there is no label in stock
+                    # just stop tagging this segment
+                    if not label:
+                        break
+                    # if current best label exists
+                    # create a new track and go for it.
+                    else:
+                        T[segment, T.new_track(segment)] = label
+                        t = t(label, invert=True)
+            
+            # if source is single-track,
             # tag current target segment with greatest intersection duration
             else:
                 # find label with greatest intersection
@@ -111,7 +197,7 @@ class DirectTagger(BaseTagger):
         return T
     
     def _tag_annotation(self, source, annotation):
-        """
+        """Annotation tagging
         
         Parameters
         ----------
@@ -127,43 +213,55 @@ class DirectTagger(BaseTagger):
         
         """
         
+        # initialize tagged annotation as a copy of target annotation
+        tagged = annotation.copy()
         
-        new_target = annotation.copy()
-        
-        if new_target.multitrack:
-            for segment in new_target:
-                tracks = new_target[segment, :]
-                if len(tracks) != 1:
-                    if self.conflict:
-                        raise ValueError('Segment %s has %d tracks.' \
-                                         % (segment, len(tracks)))
+        # tag each segment of target annotation, one after the other
+        for segment in tagged:
+            
+            # extract the part of source annotation
+            # intersecting current target segment
+            t = source(segment, mode='loose')
+            
+            # if there is no intersecting segment
+            # just skip to the next one
+            if not t:
+                continue
+            
+            # if tagged annotation is multitrack
+            # tag each track one after the other using argmax labels
+            if tagged.multitrack:
+                
+                # tag each track one after the other
+                # always choose label with greatest intersection duration
+                for track in tagged[segment, :]:
+                    
+                    # find current best label
+                    label = t.argmax(segment)
+                    
+                    # if there is no label in stock
+                    # just stop tagging this segment
+                    if not label:
+                        break
+                    
+                    # if current best label exists, 
+                    # go for it and tag track
                     else:
-                        continue
-                track = tracks.popitem()[0]
-                possible_labels = set([])
-                timeline = source.timeline(segment, mode='loose')
-                for s in timeline:
-                    possible_labels.update(source.get_labels(s))
-                if len(possible_labels) == 1:
-                    new_target[segment, track] = possible_labels.pop()
-                else:
-                    if self.conflict:
-                        raise ValueError('Segment/track %s/%s has %d labels.' \
-                              % (segment, track, len(possible_labels)))
-        else:
-            for segment in new_target:
-                possible_labels = set([])
-                timeline = source.timeline(segment, mode='loose')
-                for s in timeline:
-                    possible_labels.update(source.get_labels(s))
-                if len(possible_labels) == 1:
-                    new_target[segment] = possible_labels.pop()
-                else:
-                    if self.conflict:
-                        raise ValueError('Segment %s has %d labels.' \
-                              % (segment, len(possible_labels)))
+                        tagged[segment, track] = label
+                        t = t(label, invert=True)
+            
+            # if tagged annotation is single-track
+            # do the same (except there is only one track...)
+            else:
+                
+                # find label with greatest intersection
+                label = t.argmax(segment)
+                # if it exists, go for it!
+                if label:
+                    tagged[segment] = label
         
-        return new_target
+        return tagged
+
 
 if __name__ == "__main__":
     import doctest
