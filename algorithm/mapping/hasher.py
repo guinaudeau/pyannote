@@ -34,7 +34,7 @@ class IDHasher(BaseMapper):
         self.__hashA = hashA
         self.__hashB = hashB
         
-    def associate(self, A, B):
+    def _associate(self, A, B):
         
         partitionA = {a:self.__hashA(a) for a in A.labels()}
         partitionB = {b:self.__hashB(b) for b in B.labels()}

@@ -108,7 +108,7 @@ class Louvain(BaseMapper):
         
         return G
     
-    def associate(self, A, B):
+    def _associate(self, A, B):
         
         G = self.__confusion_graph(A, B)
     
