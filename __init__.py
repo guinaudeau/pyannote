@@ -39,7 +39,7 @@ __license__ = """
 """
 
 __date__ = ''
-__version__ = 'dev'
+__version__ = '0.2'
 
 from base import *
 
