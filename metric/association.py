@@ -142,4 +142,9 @@ def accuracy(hypothesis, reference=None, detailed=False):
                 }
     else:
         return rate
-        
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

@@ -45,10 +45,10 @@ class SegmentationPrecision(Precision):
         
     def get_details(self, reference, hypothesis, **kwargs):
         
-        if not reference.is_segmentation():
-            raise ValueError('Provided reference is not a segmentation.')
-        if not hypothesis.is_segmentation():
-            raise ValueError('Provided hypothesis is not a segmentation.')
+        if not reference.is_partition():
+            raise ValueError('Provided reference is not a partition.')
+        if not hypothesis.is_partition():
+            raise ValueError('Provided hypothesis is not a partition.')
         if reference.extent() != hypothesis.extent():
             raise ValueError('Reference and hypothesis extents do not match.')
                 
@@ -86,9 +86,9 @@ class SegmentationRecall(Recall):
         
     def get_details(self, reference, hypothesis, **kwargs):
         
-        if not reference.is_segmentation():
+        if not reference.is_partition():
             raise ValueError('Provided reference is not a segmentation.')
-        if not hypothesis.is_segmentation():
+        if not hypothesis.is_partition():
             raise ValueError('Provided hypothesis is not a segmentation.')
         if reference.extent() != hypothesis.extent():
             raise ValueError('Reference and hypothesis extents do not match.')
@@ -106,3 +106,8 @@ class SegmentationRecall(Recall):
                 detail[RECALL_RELEVANT_RETRIEVED] += 1
         
         return detail
+        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

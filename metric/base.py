@@ -139,3 +139,7 @@ class Recall(BaseErrorRate):
 
 def f_measure(precision, recall, beta=1.):
     return (1+beta*beta)*precision*recall / (beta*beta*precision+recall)
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

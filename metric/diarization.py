@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.algorithms.mapping.hungarian import HungarianMapper
+from pyannote.algorithm.mapping.hungarian import HungarianMapper
 
 from identification import IdentificationErrorRate, \
                            IER_CONFUSION, \
@@ -42,7 +42,7 @@ class DiarizationErrorRate(IdentificationErrorRate):
                                                          hypothesis % mapping)
 
 from base import BaseErrorRate
-from pyannote.base.comatrix import Confusion
+from pyannote.base.matrix import Cooccurrence
 import numpy as np
 
 PURITY_NAME = 'purity'
@@ -59,7 +59,7 @@ class DiarizationPurity(BaseErrorRate):
     
     def get_details(self, reference, hypothesis, **kwargs):
         detail = self.init_details()
-        matrix = Confusion(reference, hypothesis, normalize=False)        
+        matrix = Cooccurrence(reference, hypothesis, normalize=False)        
         detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
         detail[PURITY_TOTAL] = np.sum(matrix.M)
         return detail
@@ -109,7 +109,7 @@ class DiarizationHomogeneity(BaseErrorRate):
     def get_details(self, reference, hypothesis, **kwargs):
         detail = self.init_details()
             
-        matrix = Confusion(reference, hypothesis, normalize=False)
+        matrix = Cooccurrence(reference, hypothesis, normalize=False)
         duration = np.sum(matrix.M)
         rduration = np.sum(matrix.M, axis=1)
         hduration = np.sum(matrix.M, axis=0)
@@ -163,3 +163,7 @@ class DiarizationCompleteness(DiarizationHomogeneity):
     def get_details(self, reference, hypothesis, **kwargs):
         return super(DiarizationCompleteness, self).get_details(hypothesis, \
                                                             reference)
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

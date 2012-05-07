@@ -93,3 +93,7 @@ class DetectionErrorRate(BaseErrorRate):
         string += "  - %s: %.2f %%\n" % (self.name, \
                                          100*detail[self.name])
         return string
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

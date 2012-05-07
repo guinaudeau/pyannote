@@ -21,7 +21,7 @@
 # --------------------------------------------------------------------------- #
 
 from identification import IDMatcher
-from pyannote.base.tag import Unknown
+from pyannote.base.annotation import Unknown
 
 class REPEREIDMatcher(IDMatcher):
     """
@@ -71,7 +71,7 @@ class REPEREIDMatcher(IDMatcher):
 # --------------------------------------------------------------------------- #
 
 from base import BaseErrorRate
-from pyannote.algorithms.tagging.timeline import ConservativeTimelineTagger
+from pyannote.algorithm.tagging.segment import ArgMaxDirectTagger
 
 EGER_TOTAL = 'total'
 
@@ -155,7 +155,7 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         self.matcher = REPEREIDMatcher()
         self.confusion = confusion
         self.anonymous = anonymous
-        self.tagger = ConservativeTimelineTagger()
+        self.tagger = ArgMaxDirectTagger()
 
     def get_details(self, reference, hypothesis, annotated=None):
         
@@ -165,9 +165,9 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         hypothesis = self.tagger(hypothesis, annotated)
         
         for frame in annotated:
-
-            ref = reference.ids(frame)
-            hyp = hypothesis.ids(frame)
+            
+            ref = reference.get_labels(frame)
+            hyp = hypothesis.get_labels(frame)
             
             if not self.anonymous:
                 ref = self.matcher.named_from(ref)
@@ -401,4 +401,7 @@ if  __name__ == '__main__':
 # --------------------------------------------------------------------------- #
     
 
-        
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

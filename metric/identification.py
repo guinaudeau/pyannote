@@ -175,3 +175,7 @@ class IdentificationErrorRate(BaseErrorRate):
         string += "  - false alarm: %.2f seconds\n" % (detail[IER_FALSE_ALARM])
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
