@@ -25,100 +25,96 @@ from pyannote.base.mapping import OneToOneMapping
 from pyannote.base.matrix import Cooccurrence
 
 class HungarianMapper(BaseMapper):
-    """
-    Label mapper based on the Hungarian algorithm
+    """One-to-one label mapping based on the Hungarian algorithm
     
-    Given two annotations of the same document, the Hungarian algorithm aims
-    at solving the following equations.
-    
+    The `Hungarian` mapper relies on the Hungarian algorithm [1]_ to find the 
+    one-to-one mapping M between labels of two annotations `A` and `B` that
+    maximizes ∑ K(a, M(a)) where `cost` function K(a, b) typically is the
+    cooccurrence duration of labels a and b.
     
     Parameters
     ----------
-    confusion : Cooccurrence class or sub-class
-        Defaults to Cooccurrence.
-    force : bool
-        force mapping even for labels with zero confusion
-        Defaults to False.
-    
-    Returns
-    -------
-    mapper : HungarianMapper
+    cost : type
+        This parameter controls how function K is computed.
+        Defaults to :class:`pyannote.base.matrix.Cooccurrence`, 
+        i.e. total cooccurence duration 
     
     Examples
     --------
-        >>> mapper = HungarianMapper()
-        >>> A = Annotation(multitrack=False, modality="speaker")
-        >>> A[]
-        >>> B = Annotation(multitrack=True, modality="face")
-        >>> speaker_face = mapper(A, B)
         
-        >>> print speaker_face('Bernard')
-        'Bernard'
+        >>> from pyannote import Segment, Annotation
+        
+        >>> A = Annotation(multitrack=False, modality='A')
+        >>> A[Segment(0, 4)] = 'a1'
+        >>> A[Segment(4, 15)] = 'a2'
+        >>> A[Segment(15, 17)] = 'a3'
+        >>> A[Segment(17, 25)] = 'a1'
+        >>> A[Segment(23, 30)] = 'a2'
+        
+        >>> B = Annotation(multitrack=False, modality='B')
+        >>> B[Segment(0, 10)] = 'b1'
+        >>> B[Segment(10, 15)] = 'b2'
+        >>> B[Segment(14, 20)] = 'b1'
+        >>> B[Segment(23, 30)] = 'b2'
+        
+        >>> mapper = HungarianMapper()
+        >>> mapping = mapper(A, B)
+        >>> print mapping
+        (
+           a1 <--> b1
+           a2 <--> b2
+           a3 <--> 
+        )
+        
     
     References
     ----------
-    [1] "Hungarian algorithm", http://en.wikipedia.org/wiki/Hungarian_algorithm
-    [2] J. Poignant, H. Bredin et al., "Unsupervised Speaker Identification
-    using Overlaid Texts in TV Broadcast", submitted to Interspeech 2012.
+.. [1] "Hungarian algorithm", http://en.wikipedia.org/wiki/Hungarian_algorithm
+    
+    See Also
+    --------
+    pyannote.base.matrix.Cooccurrence, pyannote.base.matrix.CoTFIDF, pyannote.base.matrix
     
     """
-    def __init__(self, confusion=None, force=False):
+    def __init__(self, cost=None):
         super(HungarianMapper, self).__init__()
-        self.__force = force
+        
+        # Hungarian association solver / Munkres algorithm
         self.__munkres = Munkres()
-        if confusion is None:
-            self.__confusion = Cooccurrence
+        
+        # By default, uses label cooccurrence duration
+        if cost is None:
+            self.__cost = Cooccurrence
         else:
-            self.__confusion = confusion
+            self.__cost = confusion
     
-    def __get_munkres(self): 
-        return self.__munkres
-    munkres = property(fget=__get_munkres, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Munkres algorithm.")
-
-    def __get_confusion(self): 
-        return self.__confusion
-    confusion = property(fget=__get_confusion, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Cooccurrence.")
-    
-    def __get_force(self): 
-        return self.__force
-    force = property(fget=__get_force, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Force mapping?")
-    
-    def associate(self, A, B):
+    def _associate(self, A, B):
         
         # Cooccurrence matrix
-        matrix = self.confusion(A, B)
+        matrix = self.__cost(A, B)
         M = OneToOneMapping(A.modality, B.modality)
         
         # Shape and labels
         Na, Nb = matrix.shape
         alabels, blabels = matrix.labels
-
+        
         # Cost matrix
         N = max(Nb, Na)
         C = np.zeros((N, N))
         C[:Nb, :Na] = (np.max(matrix.M) - matrix.M).T
-    
+        
         # Optimal one-to-one mapping
-        mapping = self.munkres.compute(C)
-    
+        mapping = self.__munkres.compute(C)
+        
         for b, a in mapping:
             if (b < Nb) and (a < Na):
-                if self.force or (matrix[alabels[a], blabels[b]] > 0):
+                if matrix[alabels[a], blabels[b]] > 0:
                     M += ([alabels[a]], [blabels[b]])
-    
+        
         # A --> NoMatch
         for alabel in set(alabels)-M.left_set:
             M += ([alabel], None)
-    
+        
         # NoMatch <-- B
         for blabel in set(blabels)-M.right_set:
             M += (None, [blabel])
