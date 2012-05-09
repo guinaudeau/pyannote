@@ -24,7 +24,7 @@ The ``pyannote.base`` module contains the foundation object of ``PyAnnote``.
 
 """
 
-from segment import Segment
+from segment import Segment, SlidingWindow
 from timeline import Timeline
 from annotation import Annotation
 
