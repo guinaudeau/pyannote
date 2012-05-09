@@ -18,6 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+from nist import *
+from repere import *
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
