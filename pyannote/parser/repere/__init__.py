@@ -23,13 +23,9 @@ This module contains parser for common file formats used in the REPERE challenge
 See http://www.defi-repere.fr/
 """
 
-# __all__ = ['REPEREParser', 'TRSParser', 'XGTFParser']
 __all__ = ['REPEREParser']
 
 from repere import REPEREParser
-# from trs import TRSParser
-# from xgtf import XGTFParser
-
 
 if __name__ == "__main__":
     import doctest
