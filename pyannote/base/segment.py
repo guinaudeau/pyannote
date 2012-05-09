@@ -543,7 +543,7 @@ class SlidingWindow(object):
         frame = np.rint(.5+(timestamp-self.start-.5*self.duration)/self.step)
         return int(frame)
     
-    def segmentToRange(self, segment, mode='loose'):
+    def segmentToRange(self, segment):
         """Convert segment to 0-indexed frame range
         
         Parameters
@@ -574,7 +574,7 @@ class SlidingWindow(object):
         n = j0 - i0
         return i0, n
     
-    def rangeToSegment(self, i0, n, mode='loose'):
+    def rangeToSegment(self, i0, n):
         """Convert 0-indexed frame range to segment
         
         Each frame represents a unique segment of duration 'step', centered on
