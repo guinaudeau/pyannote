@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
     name='PyAnnote',
-    version='0.2',
+    version='0.2.1',
     description='Python module for collaborative annotation of multimedia content',
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
