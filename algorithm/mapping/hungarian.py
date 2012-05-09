@@ -86,7 +86,7 @@ class HungarianMapper(BaseMapper):
         if cost is None:
             self.__cost = Cooccurrence
         else:
-            self.__cost = confusion
+            self.__cost = cost
     
     def _associate(self, A, B):
         
