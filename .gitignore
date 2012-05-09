@@ -1,2 +1,3 @@
 *.pyc
-doc/build
+pyannote/doc/build
+dist/
