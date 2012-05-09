@@ -34,7 +34,7 @@ class BaseErrorRate(object):
                      fset=__set_name, \
                      fdel=None, \
                      doc="Metric name.")
-
+    
     def __accumulate(self, detail):
         for value in self.__values:
             self.__details[value] += detail[value]
@@ -62,7 +62,20 @@ class BaseErrorRate(object):
     
     def __abs__(self):
         return self.get_rate(self.__details)
-
+    
+    def __getitem__(self, key):
+        """Get specific detail value
+        
+        Use expression 'error['KEYWORD']'
+        
+        Parameters
+        ----------
+        key : str
+            Name of a valid detail value.
+        
+        """
+        return self.__details[key]
+        
     def init_details(self):
         detail = {value: 0. for value in self.__values}
         return detail
