@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,15 +7,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyannote.metric.diarization &mdash; pyannote 1 documentation</title>
+    <title>pyannote.metric.diarization &mdash; PyAnnote 0.2 documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '1',
+        VERSION:     '0.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,11 +24,9 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="search" type="application/opensearchdescription+xml"
-          title="Search within pyannote 1 documentation"
-          href="../../../_static/opensearch.xml"/>
-    <link rel="top" title="pyannote 1 documentation" href="../../../index.html" />
-    <link rel="up" title="pyannote" href="../../pyannote.html" /> 
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,9 +38,11 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../../index.html">pyannote 1 documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Module code</a> &raquo;</li>
-          <li><a href="../../pyannote.html" accesskey="U">pyannote</a> &raquo;</li> 
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,78 +55,172 @@
 <span class="c">#!/usr/bin/env python</span>
 <span class="c"># encoding: utf-8</span>
 
-<span class="kn">from</span> <span class="nn">pyannote.algorithms.hungarian</span> <span class="kn">import</span> <span class="n">hungarian</span>
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
 
-<div class="viewcode-block" id="der"><a class="viewcode-back" href="../../../api/metric.html#pyannote.metric.diarization.der">[docs]</a><span class="k">def</span> <span class="nf">der</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Diarization error rate -- the lower (0.) the better.</span>
-<span class="sd">    </span>
-<span class="sd">    as defined in &#39;Fall 2004 Rich Transcription (RT-04F) Evaluation Plan&#39;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-    <span class="c"># best mapping {hypothesis --&gt; reference}</span>
-    <span class="n">mapping</span> <span class="o">=</span> <span class="n">hungarian</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">)</span>  
+<span class="kn">from</span> <span class="nn">pyannote.algorithm.mapping.hungarian</span> <span class="kn">import</span> <span class="n">HungarianMapper</span>
+
+<span class="kn">from</span> <span class="nn">identification</span> <span class="kn">import</span> <span class="n">IdentificationErrorRate</span><span class="p">,</span> \
+                           <span class="n">IER_CONFUSION</span><span class="p">,</span> \
+                           <span class="n">IER_FALSE_ALARM</span><span class="p">,</span> \
+                           <span class="n">IER_MISS</span><span class="p">,</span> \
+                           <span class="n">IER_TOTAL</span><span class="p">,</span> \
+                           <span class="n">IER_CORRECT</span>
+
+<span class="n">DER_NAME</span> <span class="o">=</span> <span class="s">&#39;diarization error rate&#39;</span>
+
+<div class="viewcode-block" id="DiarizationErrorRate"><a class="viewcode-back" href="../../../learn/api/metric/diarization.html#pyannote.metric.diarization.DiarizationErrorRate">[docs]</a><span class="k">class</span> <span class="nc">DiarizationErrorRate</span><span class="p">(</span><span class="n">IdentificationErrorRate</span><span class="p">):</span>
     
-    <span class="c"># common (up-sampled) timeline</span>
-    <span class="n">common_timeline</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">reference</span><span class="o">.</span><span class="n">timeline</span> <span class="o">+</span> <span class="n">hypothesis</span><span class="o">.</span><span class="n">timeline</span><span class="p">)</span>
+<div class="viewcode-block" id="DiarizationErrorRate.__init__"><a class="viewcode-back" href="../../../learn/api/metric/diarization.html#pyannote.metric.diarization.DiarizationErrorRate.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationErrorRate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">DER_NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__hungarian</span> <span class="o">=</span> <span class="n">HungarianMapper</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="DiarizationErrorRate.get_details"><a class="viewcode-back" href="../../../learn/api/metric/diarization.html#pyannote.metric.diarization.DiarizationErrorRate.get_details">[docs]</a>    <span class="k">def</span> <span class="nf">get_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">):</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__hungarian</span><span class="p">(</span><span class="n">hypothesis</span><span class="p">,</span> <span class="n">reference</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationErrorRate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_details</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> \
+                                                         <span class="n">hypothesis</span> <span class="o">%</span> <span class="n">mapping</span><span class="p">)</span>
+</div></div>
+<span class="kn">from</span> <span class="nn">base</span> <span class="kn">import</span> <span class="n">BaseErrorRate</span>
+<span class="kn">from</span> <span class="nn">pyannote.base.matrix</span> <span class="kn">import</span> <span class="n">Cooccurrence</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">PURITY_NAME</span> <span class="o">=</span> <span class="s">&#39;purity&#39;</span>
+<span class="n">PURITY_TOTAL</span> <span class="o">=</span> <span class="s">&#39;total&#39;</span>
+<span class="n">PURITY_CORRECT</span> <span class="o">=</span> <span class="s">&#39;correct&#39;</span>
+
+<span class="k">class</span> <span class="nc">DiarizationPurity</span><span class="p">(</span><span class="n">BaseErrorRate</span><span class="p">):</span>
     
-    <span class="c"># align reference on common timeline</span>
-    <span class="n">R</span> <span class="o">=</span> <span class="n">reference</span> <span class="o">&gt;&gt;</span> <span class="n">common_timeline</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span> \
+            <span class="n">PURITY_TOTAL</span><span class="p">,</span> \
+            <span class="n">PURITY_CORRECT</span><span class="p">])</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationPurity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">PURITY_NAME</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
     
-    <span class="c"># translate and align hypothesis on common timeline</span>
-    <span class="n">H</span> <span class="o">=</span> <span class="p">(</span><span class="n">hypothesis</span> <span class="o">%</span> <span class="n">mapping</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">common_timeline</span>
+    <span class="k">def</span> <span class="nf">get_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_details</span><span class="p">()</span>
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">Cooccurrence</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>        
+        <span class="n">detail</span><span class="p">[</span><span class="n">PURITY_CORRECT</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">detail</span><span class="p">[</span><span class="n">PURITY_TOTAL</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">detail</span>
     
-    <span class="n">total</span> <span class="o">=</span> <span class="mf">0.</span>
-    <span class="n">error</span> <span class="o">=</span> <span class="mf">0.</span>
-    <span class="n">miss</span> <span class="o">=</span> <span class="mf">0.</span>
-    <span class="n">fa</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">def</span> <span class="nf">get_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detail</span><span class="p">):</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="n">detail</span><span class="p">[</span><span class="n">PURITY_CORRECT</span><span class="p">]</span>
+        <span class="n">denominator</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="n">detail</span><span class="p">[</span><span class="n">PURITY_TOTAL</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">denominator</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">numerator</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">1.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">1.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numerator</span><span class="o">/</span><span class="n">denominator</span>
+       
+    <span class="k">def</span> <span class="nf">pretty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detail</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - duration: </span><span class="si">%.2f</span><span class="s"> seconds</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">detail</span><span class="p">[</span><span class="n">PURITY_TOTAL</span><span class="p">])</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - correct: </span><span class="si">%.2f</span><span class="s"> seconds</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">detail</span><span class="p">[</span><span class="n">PURITY_CORRECT</span><span class="p">])</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - </span><span class="si">%s</span><span class="s">: </span><span class="si">%.2f</span><span class="s"> </span><span class="si">%%</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="n">detail</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+<span class="n">COVERAGE_NAME</span> <span class="o">=</span> <span class="s">&#39;coverage&#39;</span>
+
+<span class="k">class</span> <span class="nc">DiarizationCoverage</span><span class="p">(</span><span class="n">DiarizationPurity</span><span class="p">):</span>
     
-    <span class="c"># loop on all segments</span>
-    <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">common_timeline</span><span class="p">:</span>
-        
-        <span class="c"># --- local IDs ---</span>
-        
-        <span class="c"># set of IDs in reference segment</span>
-        <span class="n">r</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">ids</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span> <span class="k">if</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">R</span> <span class="k">else</span> <span class="nb">set</span><span class="p">([])</span>
-        <span class="n">Nr</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-        
-        <span class="c"># set of IDs in hypothesis segment</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">ids</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span> <span class="k">if</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">H</span> <span class="k">else</span> <span class="nb">set</span><span class="p">([])</span>
-        <span class="n">Nh</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        
-        <span class="c"># --- local errors ---</span>
-        <span class="c"># local errors</span>
-        
-        <span class="c"># number of correct matches</span>
-        <span class="n">N_correct</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span> <span class="o">&amp;</span> <span class="n">h</span><span class="p">)</span>
-        
-        <span class="c"># number of incorrect matches</span>
-        <span class="n">N_error</span>   <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">Nr</span><span class="p">,</span> <span class="n">Nh</span><span class="p">)</span> <span class="o">-</span> <span class="n">N_correct</span>
-        
-        <span class="c"># number of misses</span>
-        <span class="n">N_miss</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nr</span> <span class="o">-</span> <span class="n">Nh</span><span class="p">)</span>
-        
-        <span class="c"># number of false alarms</span>
-        <span class="n">N_fa</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nh</span> <span class="o">-</span> <span class="n">Nr</span><span class="p">)</span>
-        
-        <span class="c"># --- global errors ---</span>
-        
-        <span class="c"># segment duration</span>
-        <span class="n">duration</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
-        
-        <span class="c"># total duration in reference</span>
-        <span class="n">total</span> <span class="o">+=</span> <span class="n">duration</span> <span class="o">*</span> <span class="n">Nr</span>
-        
-        <span class="c"># total match error</span>
-        <span class="n">error</span> <span class="o">+=</span> <span class="n">duration</span> <span class="o">*</span> <span class="n">N_error</span>
-        
-        <span class="c"># total misses</span>
-        <span class="n">miss</span> <span class="o">+=</span> <span class="n">duration</span> <span class="o">*</span> <span class="n">N_miss</span>
-        
-        <span class="c"># total false alarms</span>
-        <span class="n">fa</span> <span class="o">+=</span> <span class="n">duration</span> <span class="o">*</span> <span class="n">N_fa</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationCoverage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">COVERAGE_NAME</span>
     
-    <span class="k">return</span> <span class="p">(</span><span class="n">error</span> <span class="o">+</span> <span class="n">miss</span> <span class="o">+</span> <span class="n">fa</span><span class="p">)</span> <span class="o">/</span> <span class="n">total</span></div>
+    <span class="k">def</span> <span class="nf">get_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationCoverage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_details</span><span class="p">(</span><span class="n">hypothesis</span><span class="p">,</span> \
+                                                            <span class="n">reference</span><span class="p">)</span>
+
+<span class="n">HOMOGENEITY_NAME</span> <span class="o">=</span> <span class="s">&#39;homogeneity&#39;</span>
+<span class="n">HOMOGENEITY_ENTROPY</span> <span class="o">=</span> <span class="s">&#39;entropy&#39;</span>
+<span class="n">HOMOGENEITY_CROSS_ENTROPY</span> <span class="o">=</span> <span class="s">&#39;cross-entropy&#39;</span>
+
+<span class="k">class</span> <span class="nc">DiarizationHomogeneity</span><span class="p">(</span><span class="n">BaseErrorRate</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span> \
+            <span class="n">HOMOGENEITY_ENTROPY</span><span class="p">,</span> \
+            <span class="n">HOMOGENEITY_CROSS_ENTROPY</span><span class="p">])</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationHomogeneity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">HOMOGENEITY_NAME</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">get_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_details</span><span class="p">()</span>
+            
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">Cooccurrence</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">rduration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">hduration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="c"># Reference entropy and reference/hypothesis cross-entropy</span>
+        <span class="n">cross_entropy</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">entropy</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ilabel</span> <span class="ow">in</span> <span class="n">matrix</span><span class="o">.</span><span class="n">iter_ilabels</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+            <span class="n">ratio</span> <span class="o">=</span> <span class="n">rduration</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">duration</span>
+            <span class="n">entropy</span> <span class="o">-=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span>                
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">jlabel</span> <span class="ow">in</span> <span class="n">matrix</span><span class="o">.</span><span class="n">iter_jlabels</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                <span class="n">coduration</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="n">ilabel</span><span class="p">,</span> <span class="n">jlabel</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">coduration</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">cross_entropy</span> <span class="o">-=</span> <span class="p">(</span><span class="n">coduration</span> <span class="o">/</span> <span class="n">duration</span><span class="p">)</span> <span class="o">*</span> \
+                                     <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">coduration</span> <span class="o">/</span> <span class="n">hduration</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                        
+        <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_CROSS_ENTROPY</span><span class="p">]</span> <span class="o">=</span> <span class="n">cross_entropy</span> 
+        <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_ENTROPY</span><span class="p">]</span> <span class="o">=</span> <span class="n">entropy</span>
+             
+        <span class="k">return</span> <span class="n">detail</span>
+    
+    <span class="k">def</span> <span class="nf">get_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detail</span><span class="p">):</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_CROSS_ENTROPY</span><span class="p">]</span>
+        <span class="n">denominator</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_ENTROPY</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">denominator</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">numerator</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">1.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">numerator</span><span class="o">/</span><span class="n">denominator</span>
+       
+    <span class="k">def</span> <span class="nf">pretty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detail</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - </span><span class="si">%s</span><span class="s">: </span><span class="si">%.2f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> \
+                  <span class="p">(</span><span class="n">HOMOGENEITY_ENTROPY</span><span class="p">,</span> <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_ENTROPY</span><span class="p">])</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - </span><span class="si">%s</span><span class="s">: </span><span class="si">%.2f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> \
+                  <span class="p">(</span><span class="n">HOMOGENEITY_CROSS_ENTROPY</span><span class="p">,</span> \
+                  <span class="n">detail</span><span class="p">[</span><span class="n">HOMOGENEITY_CROSS_ENTROPY</span><span class="p">])</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;  - </span><span class="si">%s</span><span class="s">: </span><span class="si">%.2f</span><span class="s"> </span><span class="si">%%</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="n">detail</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+<span class="n">COMPLETENESS_NAME</span> <span class="o">=</span> <span class="s">&#39;completeness&#39;</span>
+
+<span class="k">class</span> <span class="nc">DiarizationCompleteness</span><span class="p">(</span><span class="n">DiarizationHomogeneity</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationCompleteness</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">COMPLETENESS_NAME</span>
+    
+    <span class="k">def</span> <span class="nf">get_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DiarizationCompleteness</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_details</span><span class="p">(</span><span class="n">hypothesis</span><span class="p">,</span> \
+                                                            <span class="n">reference</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
 </pre></div>
 
           </div>
@@ -161,13 +254,15 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../../index.html">pyannote 1 documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Module code</a> &raquo;</li>
-          <li><a href="../../pyannote.html" >pyannote</a> &raquo;</li> 
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Hervé BREDIN.
+        &copy; Copyright 2012, Herve Bredin.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

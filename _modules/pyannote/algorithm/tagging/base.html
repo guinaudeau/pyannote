@@ -1,0 +1,251 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.algorithm.tagging.base &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.algorithm.tagging.base</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+
+
+<span class="kn">from</span> <span class="nn">pyannote.base.timeline</span> <span class="kn">import</span> <span class="n">Timeline</span>
+<span class="kn">from</span> <span class="nn">pyannote.base.annotation</span> <span class="kn">import</span> <span class="n">Annotation</span>
+
+<div class="viewcode-block" id="BaseTagger"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.base.BaseTagger">[docs]</a><span class="k">class</span> <span class="nc">BaseTagger</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for tagging algorithms.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    annotation : bool, optional</span>
+<span class="sd">        True if tagger supports ``Annotation`` tagging. Defaults to False</span>
+<span class="sd">    timeline : bool, optional</span>
+<span class="sd">        True if tagger supports ``Timeline`` tagging. Default to False.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tagger : BaseTagger</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">timeline</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BaseTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">annotation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Annotation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">timeline</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Timeline</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__get_taggable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span>
+    <span class="n">taggable</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_taggable</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Taggable objects.&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="BaseTagger._tag_timeline"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.base.BaseTagger._tag_timeline">[docs]</a>    <span class="k">def</span> <span class="nf">_tag_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">timeline</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Must be implemented by inheriting ``Timeline`` tagger.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        timeline : Timeline</span>
+<span class="sd">            Target timeline whose segments will be tagged.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged : Annotation</span>
+<span class="sd">            Tagged `timeline`</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;._tag_timeline() is not implemented.&#39;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="BaseTagger._tag_annotation"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.base.BaseTagger._tag_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">_tag_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">annotation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Must be implemented by inheriting ``Annotation`` tagger.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        annotation : Annotation</span>
+<span class="sd">            Target annotation whose tracks will be tagged.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged : Annotation</span>
+<span class="sd">            Tagged `annotation`</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;._tag_annotation() is not implemented.&#39;</span><span class="p">)</span>
+    </div>
+    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check source and target format.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source, target : any object.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        (source, target) if `source` and `target` are compatible with tagger.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        TypeError if `source` is not an ``Annotation`` or ``target`` is not </span>
+<span class="sd">        taggable by the tagger.</span>
+<span class="sd">        ValueError if `source` vidoe and `target` video are not the same.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># source must be Annotation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;untaggable source type: &#39;</span><span class="si">%s</span><span class="s">&#39;. Must be &quot;</span>
+                            <span class="s">&quot;Annotation.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__taggable</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;untaggable target type: &#39;</span><span class="si">%s</span><span class="s">&#39;.&quot;</span> \
+                            <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">,)</span>
+        
+        <span class="c"># source and target videos must match</span>
+        <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">video</span> <span class="o">!=</span> <span class="n">target</span><span class="o">.</span><span class="n">video</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;source/target video mismatch: &#39;</span><span class="si">%s</span><span class="s">&#39; and &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> \
+                             <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">video</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">video</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span>
+    
+<div class="viewcode-block" id="BaseTagger.__call__"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.base.BaseTagger.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tag `target` based on `source` labels.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        target : Timeline or Annotation</span>
+<span class="sd">            Target timeline (or annotation) whose segment (or tracks) will be</span>
+<span class="sd">            tagged</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged: Annotation</span>
+<span class="sd">            Tagged target.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">source</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tag_timeline</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Annotation</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tag_annotation</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

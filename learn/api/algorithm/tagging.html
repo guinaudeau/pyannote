@@ -1,0 +1,474 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tagging &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Algorithms" href="index.html" />
+    <link rel="next" title="Metrics" href="../metric/index.html" />
+    <link rel="prev" title="Label Mapping" href="mapping.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../metric/index.html" title="Metrics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mapping.html" title="Label Mapping"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Algorithms</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pyannote.algorithm.tagging">
+<span id="tagging"></span><h1>Tagging<a class="headerlink" href="#module-pyannote.algorithm.tagging" title="Permalink to this headline">¶</a></h1>
+<p>Tagging algorithms aim at propagating labels from one source <tt class="docutils literal"><span class="pre">Annotation</span></tt> onto
+a target <tt class="docutils literal"><span class="pre">Timeline</span></tt> (or <tt class="docutils literal"><span class="pre">Annotation</span></tt>).</p>
+<div class="section" id="base-type">
+<h2>Base type<a class="headerlink" href="#base-type" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.base.BaseTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.base.</tt><tt class="descname">BaseTagger</tt><big>(</big><em>annotation=False</em>, <em>timeline=False</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/base.html#BaseTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.base.BaseTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for tagging algorithms.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>annotation</strong> : bool, optional</p>
+<blockquote>
+<div><p>True if tagger supports <tt class="docutils literal"><span class="pre">Annotation</span></tt> tagging. Defaults to False</p>
+</div></blockquote>
+<p><strong>timeline</strong> : bool, optional</p>
+<blockquote>
+<div><p>True if tagger supports <tt class="docutils literal"><span class="pre">Timeline</span></tt> tagging. Default to False.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first last"><strong>tagger</strong> : BaseTagger</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.base.BaseTagger._tag_timeline">
+<tt class="descname">_tag_timeline</tt><big>(</big><em>source</em>, <em>timeline</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/base.html#BaseTagger._tag_timeline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.base.BaseTagger._tag_timeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Must be implemented by inheriting <tt class="docutils literal"><span class="pre">Timeline</span></tt> tagger.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>timeline</strong> : Timeline</p>
+<blockquote>
+<div><p>Target timeline whose segments will be tagged.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged</strong> : Annotation</p>
+<blockquote class="last">
+<div><p>Tagged <cite>timeline</cite></p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.base.BaseTagger._tag_annotation">
+<tt class="descname">_tag_annotation</tt><big>(</big><em>source</em>, <em>annotation</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/base.html#BaseTagger._tag_annotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.base.BaseTagger._tag_annotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Must be implemented by inheriting <tt class="docutils literal"><span class="pre">Annotation</span></tt> tagger.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>annotation</strong> : Annotation</p>
+<blockquote>
+<div><p>Target annotation whose tracks will be tagged.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged</strong> : Annotation</p>
+<blockquote class="last">
+<div><p>Tagged <cite>annotation</cite></p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.base.BaseTagger.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>source</em>, <em>target</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/base.html#BaseTagger.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.base.BaseTagger.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tag <cite>target</cite> based on <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>target</strong> : Timeline or Annotation</p>
+<blockquote>
+<div><p>Target timeline (or annotation) whose segment (or tracks) will be
+tagged</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged: Annotation</strong> :</p>
+<blockquote class="last">
+<div><p>Tagged target.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyannote.algorithm.tagging.label">
+<span id="label-tagging"></span><h2>Label tagging<a class="headerlink" href="#module-pyannote.algorithm.tagging.label" title="Permalink to this headline">¶</a></h2>
+<p>Label tagging algorithms are defined in module 
+<tt class="docutils literal"><span class="pre">pyannote.algorithm.tagging.label</span></tt>.</p>
+<p>They can be used to propagate labels from one <tt class="docutils literal"><span class="pre">Annotation</span></tt> (called <cite>source</cite>) 
+to another <tt class="docutils literal"><span class="pre">Annotation</span></tt> (called <cite>target</cite>).</p>
+<p>They act as translation algorithms where each <cite>target</cite> label is either given a unique <cite>source</cite> label translation or left unchanged.</p>
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.label.LabelTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.label.</tt><tt class="descname">LabelTagger</tt><big>(</big><em>mapper</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/label.html#LabelTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.label.LabelTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic label tagging.</p>
+<dl class="docutils">
+<dt>Label tagging algorithms are made of two steps:</dt>
+<dd><ul class="first last simple">
+<li>first, a label mapping algorithm is applied to find the optimal
+mapping between target labels and source labels.</li>
+<li>then, any target label with a corresponding source label is translated
+using this optimal mapping.</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>mapper</strong> : any BaseMapper subclass</p>
+<blockquote class="last">
+<div><p>Mapping algorithm used to find the optimal mapping between source and 
+target labels.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="mapping.html#pyannote.algorithm.mapping.base.BaseMapper" title="pyannote.algorithm.mapping.base.BaseMapper"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.mapping.base.BaseMapper</span></tt></a></p>
+</div>
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.label.LabelTagger.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>source</em>, <em>target</em><big>)</big><a class="headerlink" href="#pyannote.algorithm.tagging.label.LabelTagger.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tag <cite>target</cite> based on <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>target</strong> : Timeline or Annotation</p>
+<blockquote>
+<div><p>Target timeline (or annotation) whose segment (or tracks) will be
+tagged</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged: Annotation</strong> :</p>
+<blockquote class="last">
+<div><p>Tagged target.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.label.HungarianTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.label.</tt><tt class="descname">HungarianTagger</tt><big>(</big><em>cost=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/label.html#HungarianTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.label.HungarianTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.algorithm.tagging.label.LabelTagger" title="pyannote.algorithm.tagging.label.LabelTagger"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.tagging.label.LabelTagger</span></tt></a></p>
+<p>Label tagging based on the Hungarian label mapping algorithm.</p>
+<p>Relies on the Hungarian mapping algorithm to find the optimal one-to-one
+mapping between <cite>target</cite> and <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>cost</strong> : type</p>
+<blockquote class="last">
+<div><p>Cost function for Hungarian mapping algorithms.
+Defaults to <a class="reference internal" href="../foundation/matrix.html#pyannote.base.matrix.Cooccurrence" title="pyannote.base.matrix.Cooccurrence"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.matrix.Cooccurrence</span></tt></a>.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pyannote.algorithm.tagging.label.LabelTagger" title="pyannote.algorithm.tagging.label.LabelTagger"><tt class="xref py py-class docutils literal"><span class="pre">LabelTagger</span></tt></a>, <a class="reference internal" href="mapping.html#pyannote.algorithm.mapping.hungarian.HungarianMapper" title="pyannote.algorithm.mapping.hungarian.HungarianMapper"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.mapping.hungarian.HungarianMapper</span></tt></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tagger</span> <span class="o">=</span> <span class="n">HungarianTagger</span><span class="p">(</span><span class="n">confusion</span><span class="o">=</span><span class="n">Cooccurrence</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tagged_target</span> <span class="o">=</span> <span class="n">tagger</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.label.HungarianTagger.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>source</em>, <em>target</em><big>)</big><a class="headerlink" href="#pyannote.algorithm.tagging.label.HungarianTagger.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tag <cite>target</cite> based on <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>target</strong> : Timeline or Annotation</p>
+<blockquote>
+<div><p>Target timeline (or annotation) whose segment (or tracks) will be
+tagged</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged: Annotation</strong> :</p>
+<blockquote class="last">
+<div><p>Tagged target.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.label.ArgMaxTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.label.</tt><tt class="descname">ArgMaxTagger</tt><big>(</big><em>cost=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/label.html#ArgMaxTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.label.ArgMaxTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.algorithm.tagging.label.LabelTagger" title="pyannote.algorithm.tagging.label.LabelTagger"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.tagging.label.LabelTagger</span></tt></a></p>
+<p>Label tagging based on the ArgMax label mapping algorithm.</p>
+<p>Relies on the ArgMax mapping algorithm to find the optimal many-to-one
+mapping between <cite>target</cite> and <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>cost</strong> : type</p>
+<blockquote class="last">
+<div><p>Defaults to Cooccurrence.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pyannote.algorithm.tagging.label.LabelTagger" title="pyannote.algorithm.tagging.label.LabelTagger"><tt class="xref py py-class docutils literal"><span class="pre">LabelTagger</span></tt></a>, <a class="reference internal" href="mapping.html#pyannote.algorithm.mapping.argmax.ArgMaxMapper" title="pyannote.algorithm.mapping.argmax.ArgMaxMapper"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.mapping.argmax.ArgMaxMapper</span></tt></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tagger</span> <span class="o">=</span> <span class="n">ArgMaxTagger</span><span class="p">(</span><span class="n">confusion</span><span class="o">=</span><span class="n">CoTFIDF</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tagged_target</span> <span class="o">=</span> <span class="n">tagger</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyannote.algorithm.tagging.label.ArgMaxTagger.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>source</em>, <em>target</em><big>)</big><a class="headerlink" href="#pyannote.algorithm.tagging.label.ArgMaxTagger.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tag <cite>target</cite> based on <cite>source</cite> labels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>source</strong> : Annotation</p>
+<blockquote>
+<div><p>Source annotation whose labels will be propagated</p>
+</div></blockquote>
+<p><strong>target</strong> : Timeline or Annotation</p>
+<blockquote>
+<div><p>Target timeline (or annotation) whose segment (or tracks) will be
+tagged</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>tagged: Annotation</strong> :</p>
+<blockquote class="last">
+<div><p>Tagged target.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyannote.algorithm.tagging.segment">
+<span id="segment-tagging"></span><h2>Segment tagging<a class="headerlink" href="#module-pyannote.algorithm.tagging.segment" title="Permalink to this headline">¶</a></h2>
+<p>Module <tt class="docutils literal"><span class="pre">pyannote.algorithm.tagging.segment</span></tt> provides segment-wise tagging algorithms.</p>
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.segment.ConservativeDirectTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.segment.</tt><tt class="descname">ConservativeDirectTagger</tt><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/segment.html#ConservativeDirectTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.segment.ConservativeDirectTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conservative direct segment tagger</p>
+<p>Only supports annotation tagging.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.algorithm.tagging.segment.ArgMaxDirectTagger">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.tagging.segment.</tt><tt class="descname">ArgMaxDirectTagger</tt><a class="reference internal" href="../../../_modules/pyannote/algorithm/tagging/segment.html#ArgMaxDirectTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.tagging.segment.ArgMaxDirectTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>ArgMax direct segment tagger</p>
+<p>It supports both timeline and annotation tagging.</p>
+<p><strong>Timeline tagging.</strong>
+Each segment in target timeline is tagged with the <cite>N</cite> intersecting labels
+with greatest co-occurrence duration:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>N</cite> is set to 1 in case source annotation is single-track.</li>
+<li>In case of a multi-track source, <cite>N</cite> is set to the the maximum number 
+of simultaneous tracks in intersecting source segments.</li>
+</ul>
+</div></blockquote>
+<p><strong>Annotation tagging.</strong></p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tagging</a><ul>
+<li><a class="reference internal" href="#base-type">Base type</a></li>
+<li><a class="reference internal" href="#module-pyannote.algorithm.tagging.label">Label tagging</a></li>
+<li><a class="reference internal" href="#module-pyannote.algorithm.tagging.segment">Segment tagging</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mapping.html"
+                        title="previous chapter">Label Mapping</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../metric/index.html"
+                        title="next chapter">Metrics</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/algorithm/tagging.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../metric/index.html" title="Metrics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mapping.html" title="Label Mapping"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Algorithms</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

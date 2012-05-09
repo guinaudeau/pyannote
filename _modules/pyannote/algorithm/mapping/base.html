@@ -1,0 +1,256 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.algorithm.mapping.base &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.algorithm.mapping.base</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">pyannote.base.mapping</span> <span class="kn">import</span> <span class="n">Mapping</span>
+
+<div class="viewcode-block" id="BaseMapper"><a class="viewcode-back" href="../../../../learn/api/algorithm/mapping.html#pyannote.algorithm.mapping.base.BaseMapper">[docs]</a><span class="k">class</span> <span class="nc">BaseMapper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mapping algorithm base class</span>
+<span class="sd">    </span>
+<span class="sd">    Any mapping algorithm must inherit from this base class and implement the </span>
+<span class="sd">    ``_associate(A, B)`` method.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">_associate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find the optimal mapping between `A` and `B` labels</span>
+<span class="sd">        </span>
+<span class="sd">        BaseMapper sub-classes must implement this method.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        A, B : :class:`pyannote.base.annotation.Annotation`</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        mapping : :class:`pyannote.base.mapping.Mapping`</span>
+<span class="sd">            Mapping between `A` and `B` labels.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;BaseMapper sub-class must implement &quot;</span>
+                                  <span class="s">&quot;_associate(A, B) method.&quot;</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="BaseMapper.__call__"><a class="viewcode-back" href="../../../../learn/api/algorithm/mapping.html#pyannote.algorithm.mapping.base.BaseMapper.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find the optimal mapping between `A` and `B` labels</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        A, B : :class:`pyannote.base.annotation.Annotation`</span>
+<span class="sd">            </span>
+<span class="sd">        init : :class:`pyannote.base.mapping.Mapping`, optional</span>
+<span class="sd">            Initial constraint on label mapping. </span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        mapping : :class:`pyannote.base.mapping.Mapping`</span>
+<span class="sd">            Optimal mapping between `A` and `B` labels.</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; A = Annotation(multitrack=False, modality=&quot;left&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; A[Segment(0, 1)] = &#39;a1&#39;</span>
+<span class="sd">            &gt;&gt;&gt; A[Segment(1, 2)] = &#39;a2&#39;</span>
+<span class="sd">            &gt;&gt;&gt; A[Segment(2, 3)] = &#39;a3&#39;</span>
+<span class="sd">            &gt;&gt;&gt; A[Segment(3, 4)] = &#39;a4&#39;</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; B = Annotation(multitrack=False, modality=&quot;right&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; B[Segment(0, 1)] = &#39;b1&#39;</span>
+<span class="sd">            &gt;&gt;&gt; B[Segment(1, 2)] = &#39;b2&#39;</span>
+<span class="sd">            &gt;&gt;&gt; B[Segment(2, 3)] = &#39;b3&#39;</span>
+<span class="sd">            &gt;&gt;&gt; B[Segment(3, 4)] = &#39;b4&#39;</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; init = Mapping(&quot;left&quot;, &quot;right&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; init += ((&#39;a1&#39;, &#39;a2&#39;), (&#39;b1&#39;, &#39;b2&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; init += ((&#39;a3&#39;, &#39;a4&#39;), (&#39;b3&#39;, &#39;b4&#39;))</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; mapper = BaseMapper()</span>
+<span class="sd">            &gt;&gt;&gt; optimal_mapping = mapper(A, B, init=init)</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        pyannote.base.mapping</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">alabels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">labels</span><span class="p">())</span>
+        <span class="n">blabels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">B</span><span class="o">.</span><span class="n">labels</span><span class="p">())</span>
+        
+        <span class="c"># when `init` is not provided</span>
+        <span class="c"># mapping has no constraint whatsoever </span>
+        <span class="c"># (any A label can be mapped to any B labels)</span>
+        <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">modality</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">modality</span><span class="p">)</span>
+            <span class="n">init</span> <span class="o">+=</span> <span class="p">(</span><span class="n">alabels</span><span class="p">,</span> <span class="n">blabels</span><span class="p">)</span>
+        
+        <span class="c"># make sure every A and B label is part of at least one sub-mapping</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">alabels</span> <span class="o">&lt;=</span> <span class="n">init</span><span class="o">.</span><span class="n">left_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Labels </span><span class="si">%s</span><span class="s"> are missing from initial mapping.&#39;</span> \
+                             <span class="o">%</span> <span class="n">alabels</span> <span class="o">-</span> <span class="n">init</span><span class="o">.</span><span class="n">left_set</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">blabels</span> <span class="o">&lt;=</span> <span class="n">init</span><span class="o">.</span><span class="n">right_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Labels </span><span class="si">%s</span><span class="s"> are missing from initial mapping.&#39;</span> \
+                             <span class="o">%</span> <span class="n">blabels</span> <span class="o">-</span> <span class="n">init</span><span class="o">.</span><span class="n">right_set</span><span class="p">)</span>
+        
+        <span class="c"># initialize empty mapping between A and B labels</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">modality</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">modality</span><span class="p">)</span>
+        
+        <span class="c"># process each part of initial mapping separately</span>
+        <span class="c"># and concatenate them at the end</span>
+        <span class="k">for</span> <span class="n">lblA</span><span class="p">,</span> <span class="n">lblB</span> <span class="ow">in</span> <span class="n">init</span><span class="p">:</span>
+            
+            <span class="c"># extract constrained sub-annotations</span>
+            <span class="c"># for later mapping between their labels</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">lblA</span><span class="p">)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">B</span><span class="p">(</span><span class="n">lblB</span><span class="p">)</span>
+            
+            <span class="c"># get actual `a` and `b` labels</span>
+            <span class="n">alabels</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">labels</span><span class="p">()</span>
+            <span class="n">blabels</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">labels</span><span class="p">()</span>
+            <span class="n">Na</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">alabels</span><span class="p">)</span>
+            <span class="n">Nb</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">blabels</span><span class="p">)</span>
+            
+            <span class="c"># if both `a` and `b` have at least one label</span>
+            <span class="c"># find the optimal association and add it to the overal mapping</span>
+            <span class="k">if</span> <span class="n">Na</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">Nb</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_associate</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+                <span class="n">M</span> <span class="o">+=</span> <span class="n">m</span>
+                
+            <span class="c"># otherwise, finding the optimal assocation is trivial</span>
+            <span class="k">else</span><span class="p">:</span>
+                
+                <span class="c"># when there is no `a` labels</span>
+                <span class="c"># simply map all `b` labels to nothing.</span>
+                <span class="k">if</span> <span class="n">Na</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">blabel</span> <span class="ow">in</span> <span class="n">blabels</span><span class="p">:</span>
+                        <span class="n">M</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="p">[</span><span class="n">blabel</span><span class="p">])</span>
+                        
+                <span class="c"># when there is no `b` labels</span>
+                <span class="c"># simply map all `a` labels to nothing.</span>
+                <span class="k">if</span> <span class="n">Nb</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">alabel</span> <span class="ow">in</span> <span class="n">alabels</span><span class="p">:</span>
+                        <span class="n">M</span> <span class="o">+=</span> <span class="p">([</span><span class="n">alabel</span><span class="p">],</span> <span class="bp">None</span><span class="p">)</span>
+        
+        <span class="c"># return the final mapping</span>
+        <span class="k">return</span> <span class="n">M</span>
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

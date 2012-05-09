@@ -1,0 +1,586 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.base.mapping &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.base.mapping</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+    
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="k">class</span> <span class="nc">NoMatch</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    format : str, optional</span>
+<span class="sd">            </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Keep track of the number of instances since last reset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset counter&quot;&quot;&quot;</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Increment &amp; get counter&quot;&quot;&quot;</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;NoMatch</span><span class="si">%03d</span><span class="s">&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NoMatch</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">NoMatch</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">format</span>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;Ø&#39;</span>
+        
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">NoMatch</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ID</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">class</span> <span class="nc">MElement</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modality</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MElement</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="n">modality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">element</span>
+    
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">element</span><span class="p">)</span> <span class="o">&amp;</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modality</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">modality</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">modality</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Mapping"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping">[docs]</a><span class="k">class</span> <span class="nc">Mapping</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Many-to-many label mapping</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    left : str, optional</span>
+<span class="sd">        Left-hand side modality. Defaults to &#39;left&#39;.</span>
+<span class="sd">    right : str</span>
+<span class="sd">        Right-hand side modality. Defaults to &#39;right&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    mapping : Mapping</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    </span>
+<span class="sd">        &gt;&gt;&gt; mapping = Mapping(&#39;speaker&#39;, &#39;face&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; mapping += ((&#39;A&#39;, &#39;B&#39;, &#39;C&#39;), (&#39;a&#39;, &#39;b&#39;))</span>
+<span class="sd">        &gt;&gt;&gt; mapping += ((&#39;D&#39;, ), (&#39;c&#39;, &#39;d&#39;, e))</span>
+<span class="sd">        &gt;&gt;&gt; print mapping</span>
+<span class="sd">        (</span>
+<span class="sd">           A B C --&gt; a b</span>
+<span class="sd">           D --&gt; c d e</span>
+<span class="sd">        )</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="s">&quot;left&quot;</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="s">&quot;right&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Mapping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        
+        <span class="c"># left &amp; right modality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__left</span> <span class="o">=</span> <span class="n">left</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__right</span> <span class="o">=</span> <span class="n">right</span>
+        
+        <span class="c"># left-to-right one-to-many label mapping</span>
+        <span class="c"># { left_label --&gt; sorted_right_labels_tuple }</span>
+        <span class="c"># </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># right-to-left one-to-many label mapping</span>
+        <span class="c"># { right_label --&gt; sorted_left_labels_tuple }</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_right_to_left</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># left-to-right many-to-many label mapping</span>
+        <span class="c"># { sorted_left_labels_tuple --&gt; sorted_right_labels_tuple }</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_many_to_many</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">def</span> <span class="nf">__get_left</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__left</span>
+    <span class="n">left</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_left</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Left-hand side modality&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_right</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__right</span>
+    <span class="n">right</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_right</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Right-hand side modality&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_left_set</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span><span class="p">)</span>
+    <span class="n">left_set</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_left_set</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Left-hand side set of labels&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_right_set</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_right_to_left</span><span class="p">)</span>
+    <span class="n">right_set</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_right_set</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Right-hand side set of labels&quot;&quot;&quot;</span>
+    
+    <span class="c"># Normalize left_right argument to </span>
+    <span class="c"># ( tuple(sorted_left_labels), tuple(sorted_right_labels) )</span>
+    <span class="k">def</span> <span class="nf">_check_and_normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left_right</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left_right</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">left_right</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected 2-tuple of list of labels&#39;</span><span class="p">)</span>
+        
+        <span class="n">left</span> <span class="o">=</span> <span class="n">left_right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="n">left_right</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">left</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">left</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected list, tuple or set for left part.&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">right</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">right</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected list, tuple or set for right part.&#39;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span>
+    
+<div class="viewcode-block" id="Mapping.empty"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty copy&quot;&quot;&quot;</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">M</span>
+    </div>
+<div class="viewcode-block" id="Mapping.copy"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Duplicate mapping&quot;&quot;&quot;</span>
+        
+        <span class="c"># starts with an empty mapping</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="c"># add </span>
+        <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">mapping</span> <span class="o">+=</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mapping</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__add__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__add__">[docs]</a>    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;mapping + (left_labels, right_labels)&#39;</span>
+<span class="sd">                    or &#39;mapping + other_mapping&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Mapping or couple of labels</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        mapping : Mapping</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; mapping1 = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; mapping1 += ((&#39;A&#39;, &#39;B&#39;, &#39;C&#39;), (&#39;a&#39;, &#39;b&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; mapping2 = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; mapping2 += ((&#39;D&#39;,), (&#39;c&#39;, &#39;d&#39;, &#39;e&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; mapping = mapping1 + mapping2</span>
+<span class="sd">            &gt;&gt;&gt; print mapping</span>
+<span class="sd">            (</span>
+<span class="sd">               A B C --&gt; a b</span>
+<span class="sd">               D --&gt; c d e</span>
+<span class="sd">            )</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">mapping</span> <span class="o">+=</span> <span class="n">other</span>
+        <span class="k">return</span> <span class="n">mapping</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__iadd__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__iadd__">[docs]</a>    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;mapping += (left_labels, right_labels)&#39;</span>
+<span class="sd">                    or &#39;mapping += other_mapping&#39;</span>
+<span class="sd">                    </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">            &gt;&gt;&gt; mapping = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; mapping += ((&#39;A&#39;, &#39;B&#39;, &#39;C&#39;), (&#39;a&#39;, &#39;b&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; print mapping</span>
+<span class="sd">            (</span>
+<span class="sd">               A B C --&gt; a b</span>
+<span class="sd">            )</span>
+<span class="sd">            &gt;&gt;&gt; other_mapping = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; other_mapping += ((&#39;D&#39;,), (&#39;c&#39;, &#39;d&#39;, &#39;e&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; mapping += other_mapping</span>
+<span class="sd">            &gt;&gt;&gt; print mapping</span>
+<span class="sd">            (</span>
+<span class="sd">               A B C --&gt; a b</span>
+<span class="sd">               D --&gt; c d e</span>
+<span class="sd">            )</span>
+<span class="sd">            </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">left</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">right</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
+               <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;incompatible mapping modalities&#39;</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="bp">self</span> <span class="o">+=</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_and_normalize</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        
+        <span class="n">already_mapped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_set</span>
+        <span class="k">if</span> <span class="n">already_mapped</span><span class="p">:</span>
+            <span class="n">already_mapped</span> <span class="o">=</span> <span class="n">already_mapped</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">) is already mapped to </span><span class="si">%s</span><span class="s">.&#39;</span> <span class="o">%</span> \
+                             <span class="p">(</span><span class="n">already_mapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> \
+                              <span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span><span class="p">[</span><span class="n">already_mapped</span><span class="p">]))</span>
+            
+        <span class="n">already_mapped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">right</span><span class="p">)</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_set</span>
+        <span class="k">if</span> <span class="n">already_mapped</span><span class="p">:</span>
+            <span class="n">already_mapped</span> <span class="o">=</span> <span class="n">already_mapped</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">) is already mapped to </span><span class="si">%s</span><span class="s">.&#39;</span> <span class="o">%</span> \
+                             <span class="p">(</span><span class="n">already_mapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> \
+                              <span class="bp">self</span><span class="o">.</span><span class="n">_right_to_left</span><span class="p">[</span><span class="n">already_mapped</span><span class="p">]))</span>
+        
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">left</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">right</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">right</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_right_to_left</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">left</span>
+        
+        <span class="k">if</span> <span class="n">left</span> <span class="o">==</span> <span class="nb">tuple</span><span class="p">():</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">NoMatch</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">right</span> <span class="o">==</span> <span class="nb">tuple</span><span class="p">():</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">NoMatch</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_many_to_many</span><span class="p">[</span><span class="n">left</span><span class="p">]</span> <span class="o">=</span> <span class="n">right</span>
+        
+        <span class="k">return</span> <span class="bp">self</span>
+        
+    <span class="c"># --- iterator ---</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__iter__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Left/right mapping iterator</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; mapping = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; mapping += ((&#39;A&#39;, &#39;B&#39;, &#39;C&#39;), (&#39;a&#39;, &#39;b&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; mapping += ((&#39;D&#39;,), (&#39;c&#39;, &#39;d&#39;, &#39;e&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; for left, right in mapping:</span>
+<span class="sd">            ...    print &#39;%s --&gt; %s&#39; % (&#39; &#39;.join(sorted(left)), \</span>
+<span class="sd">                                        &#39; &#39;.join(sorted(right)))</span>
+<span class="sd">            A B C --&gt; a b</span>
+<span class="sd">            D --&gt; c d e</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_many_to_many</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">NoMatch</span><span class="p">):</span>
+                <span class="n">left</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">left</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">NoMatch</span><span class="p">):</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+            
+            <span class="k">yield</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__contains__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__contains__">[docs]</a>    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;label in mapping&#39;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_set</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__hash__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__hash__">[docs]</a>    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression hash(mapping)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_set</span><span class="p">)))</span> <span class="o">+</span> \
+               <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right_set</span><span class="p">)))</span>
+    </div>
+<div class="viewcode-block" id="Mapping.__eq__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__eq__">[docs]</a>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;mapping == other_mapping&#39;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_left_to_right</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">_right_to_left</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_right_to_left</span>
+        </div>
+    <span class="k">def</span> <span class="nf">to_partition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="n">partition</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">partition</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">MElement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span> <span class="n">C</span> \
+                              <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">left</span><span class="p">})</span>
+            <span class="n">partition</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">MElement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span> <span class="n">C</span> \
+                              <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">right</span><span class="p">})</span>
+            <span class="n">C</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">partition</span>
+        
+    <span class="k">def</span> <span class="nf">to_expected_partition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_set</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_set</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">{</span><span class="n">element</span><span class="p">:</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">left</span> <span class="o">|</span> <span class="n">right</span><span class="p">)}</span>
+
+        <span class="n">partition</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">left</span><span class="p">:</span>
+            <span class="n">partition</span><span class="p">[</span><span class="n">MElement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">element</span><span class="p">)]</span> <span class="o">=</span> <span class="n">expected</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">right</span><span class="p">:</span>
+            <span class="n">partition</span><span class="p">[</span><span class="n">MElement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="n">element</span><span class="p">)]</span> <span class="o">=</span> <span class="n">expected</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">partition</span>
+        
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="k">if</span> <span class="n">left</span> <span class="k">else</span> <span class="n">NoMatch</span><span class="p">()):</span> \
+                    <span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">right</span><span class="p">)</span> <span class="k">if</span> <span class="n">right</span> <span class="k">else</span> <span class="n">NoMatch</span><span class="p">())</span> \
+                    <span class="k">for</span> <span class="n">right</span><span class="p">,</span> <span class="n">left</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="k">if</span> <span class="n">left</span> <span class="k">else</span> <span class="n">NoMatch</span><span class="p">()):</span> \
+                    <span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">right</span><span class="p">)</span> <span class="k">if</span> <span class="n">right</span> <span class="k">else</span> <span class="n">NoMatch</span><span class="p">())</span> \
+                    <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">}</span>
+    
+    <span class="k">def</span> <span class="nf">to_expected_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        
+        <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_set</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_set</span>
+        <span class="n">both</span> <span class="o">=</span> <span class="n">left</span> <span class="o">&amp;</span> <span class="n">right</span>
+        
+        <span class="n">expected_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">both</span><span class="p">:</span>
+            <span class="n">expected_dict</span><span class="p">[</span><span class="n">element</span><span class="p">]</span> <span class="o">=</span> <span class="n">element</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">left</span><span class="o">-</span><span class="n">both</span><span class="p">:</span>
+            <span class="n">expected_dict</span><span class="p">[</span><span class="n">element</span><span class="p">]</span> <span class="o">=</span> <span class="n">NoMatch</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">right</span><span class="o">-</span><span class="n">both</span><span class="p">:</span>
+            <span class="n">expected_dict</span><span class="p">[</span><span class="n">NoMatch</span><span class="p">()]</span> <span class="o">=</span> <span class="n">element</span>
+        
+        <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">value</span><span class="p">:</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">expected_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">expected_dict</span>
+    
+<div class="viewcode-block" id="Mapping.__str__"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.Mapping.__str__">[docs]</a>    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Human-readable representation</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; mapping = Mapping()</span>
+<span class="sd">            &gt;&gt;&gt; mapping += ((&#39;A&#39;, &#39;B&#39;, &#39;C&#39;), (&#39;a&#39;, &#39;b&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; mapping += ((&#39;D&#39;,), (&#39;c&#39;, &#39;d&#39;, &#39;e&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; print mapping</span>
+<span class="sd">            (</span>
+<span class="sd">               A B C --&gt; a b</span>
+<span class="sd">               D --&gt; c d e</span>
+<span class="sd">            )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">string</span> <span class="o">=</span> <span class="s">&quot;(</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="s">&#39;   </span><span class="si">%s</span><span class="s"> &lt;--&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">left</span><span class="p">)),</span> \
+                                           <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">right</span><span class="p">)))</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;)&quot;</span>
+        <span class="k">return</span> <span class="n">string</span>
+</div></div>
+<div class="viewcode-block" id="ManyToOneMapping"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.ManyToOneMapping">[docs]</a><span class="k">class</span> <span class="nc">ManyToOneMapping</span><span class="p">(</span><span class="n">Mapping</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Many-to-one mapping&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="ManyToOneMapping._check_and_normalize"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.ManyToOneMapping._check_and_normalize">[docs]</a>    <span class="k">def</span> <span class="nf">_check_and_normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extra verification for many-to-one mapping</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">elements1</span><span class="p">,</span> <span class="n">elements2</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ManyToOneMapping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>\
+                               <span class="o">.</span><span class="n">_check_and_normalize</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">elements2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Right mapping part (</span><span class="si">%s</span><span class="s">) must contain only one element.&#39;</span> <span class="o">%</span> <span class="n">elements2</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">elements1</span><span class="p">,</span> <span class="n">elements2</span>
+    </div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">fromMapping</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">mapping</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+            <span class="n">M</span> <span class="o">+=</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">M</span>
+        
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left_to_right</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">right</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+            
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>      
+</div>
+<div class="viewcode-block" id="OneToOneMapping"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.OneToOneMapping">[docs]</a><span class="k">class</span> <span class="nc">OneToOneMapping</span><span class="p">(</span><span class="n">ManyToOneMapping</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;One-to-one mapping&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="OneToOneMapping._check_and_normalize"><a class="viewcode-back" href="../../../learn/api/foundation/mapping.html#pyannote.base.mapping.OneToOneMapping._check_and_normalize">[docs]</a>    <span class="k">def</span> <span class="nf">_check_and_normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extra verification for one-to-one mapping</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">elements1</span><span class="p">,</span> <span class="n">elements2</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">OneToOneMapping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_check_and_normalize</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">elements1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Left mapping part (</span><span class="si">%s</span><span class="s">) must contain only one element.&#39;</span> <span class="o">%</span> <span class="n">elements1</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">elements1</span><span class="p">,</span> <span class="n">elements2</span>
+    </div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">fromMapping</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">mapping</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+            <span class="n">M</span> <span class="o">+=</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">M</span>
+    
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">single</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">OneToOneMapping</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="n">reverse</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">single</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="n">left</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">NoMatch</span><span class="p">)</span> <span class="k">else</span> <span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> \
+                 <span class="n">right</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">NoMatch</span><span class="p">)</span> <span class="k">else</span> <span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> \
+                 <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">D</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+            <span class="k">return</span> <span class="n">d</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">D</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

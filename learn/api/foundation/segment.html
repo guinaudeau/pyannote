@@ -1,0 +1,268 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Segment &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Foundation" href="index.html" />
+    <link rel="next" title="Timeline" href="timeline.html" />
+    <link rel="prev" title="Foundation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Foundation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Foundation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="segment">
+<h1>Segment<a class="headerlink" href="#segment" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyannote.base.segment.Segment">
+<em class="property">class </em><tt class="descclassname">pyannote.base.segment.</tt><tt class="descname">Segment</tt><big>(</big><em>start=0.0</em>, <em>end=0.0</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/segment.html#Segment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.segment.Segment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Temporal interval defined by its <cite>start</cite> and <cite>end</cite> times.</p>
+<p>Multiple segment operators are available &#8211; including intersection (&amp;),
+inclusion (in), emptiness test, start/end time shifting (+, -, &gt;&gt;, &lt;&lt;). 
+They are illustrated in <strong>Examples</strong> section.</p>
+<p>Comparison of two segments is also available (==, !=, &lt;, &lt;=, &gt;, &gt;=). 
+Two segments are equal iff they have identical start and end times.
+Segment S is smaller than segment T iff S.start &lt; T.start or if they have
+the same start time and S.end &lt; T.start.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>start, end</strong> : float, optional</p>
+<blockquote>
+<div><p><cite>start</cite> and <cite>end</cite> times, in seconds (the default is 0).</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>segment</strong> : Segment</p>
+<blockquote class="last">
+<div><p>New segment with <cite>start</cite> and <cite>end</cite> times.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Create a new temporal interval between 00:13.000 and 00:37.000.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">13.</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">37</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span>
+<span class="go">[13 --&gt; 37]</span>
+</pre></div>
+</div>
+<p>Inclusion, intersection, union &amp; gap</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s2</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">s1</span> <span class="ow">in</span> <span class="n">s2</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Segment </span><span class="si">%s</span><span class="s"> is included in segment </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">)</span>
+<span class="go">Segment [1 --&gt; 2] is included in segment [0 --&gt; 3].</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s3</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s1</span> <span class="o">&amp;</span> <span class="n">s3</span>
+<span class="go">∅</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s2</span> <span class="o">&amp;</span> <span class="n">s3</span>
+<span class="go">[2 --&gt; 3]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s2</span> <span class="o">|</span> <span class="n">s3</span>
+<span class="go">[0 --&gt; 5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s1</span> <span class="o">^</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="go">[2 --&gt; 5]</span>
+</pre></div>
+</div>
+<p>Test whether segment is empty or not.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="ow">not</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Segment is empty.&quot;</span>
+<span class="go">Segment is empty.</span>
+</pre></div>
+</div>
+<p>Start &amp; end time shifting</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">3</span>
+<span class="go">[6 --&gt; 7]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span>
+<span class="go">[3 --&gt; 7]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span> <span class="o">&lt;&lt;</span> <span class="mf">0.5</span>
+<span class="go">[3 --&gt; 3.5]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="mi">2</span> <span class="o">&lt;&lt;</span> <span class="n">s</span> <span class="o">&gt;&gt;</span> <span class="mf">0.5</span>
+<span class="go">[1 --&gt; 4.5]</span>
+</pre></div>
+</div>
+<p>Comparison</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s2</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s3</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s4</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">s3</span><span class="p">,</span> <span class="n">s4</span><span class="p">]):</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="n">s</span>
+<span class="go">[1 --&gt; 2]</span>
+<span class="go">[1 --&gt; 3]</span>
+<span class="go">[1 --&gt; 3]</span>
+<span class="go">[2 --&gt; 6]</span>
+</pre></div>
+</div>
+<p>Start time difference</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s2</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">23</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s2</span> <span class="o">-</span> <span class="n">s1</span>
+<span class="go">9.0</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.base.segment.Segment.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/segment.html#Segment.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.segment.Segment.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate segment.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.segment.Segment.duration">
+<tt class="descname">duration</tt><a class="headerlink" href="#pyannote.base.segment.Segment.duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get segment duration, in seconds.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.segment.Segment.end">
+<tt class="descname">end</tt><a class="headerlink" href="#pyannote.base.segment.Segment.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get/set end time, in seconds.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pyannote.base.segment.Segment.start" title="pyannote.base.segment.Segment.start"><tt class="xref py py-obj docutils literal"><span class="pre">pyannote.base.segment.Segment.start</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.segment.Segment.middle">
+<tt class="descname">middle</tt><a class="headerlink" href="#pyannote.base.segment.Segment.middle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get segment middle time, in seconds.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.segment.Segment.start">
+<tt class="descname">start</tt><a class="headerlink" href="#pyannote.base.segment.Segment.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start time, in seconds.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">13.</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">37</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span><span class="o">.</span><span class="n">start</span>
+<span class="go">13</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="mi">36</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span>
+<span class="go">[36 --&gt; 37]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Foundation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="timeline.html"
+                        title="next chapter">Timeline</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/foundation/segment.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="timeline.html" title="Timeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Foundation"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Foundation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

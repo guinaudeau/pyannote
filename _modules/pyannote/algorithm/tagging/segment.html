@@ -1,0 +1,369 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.algorithm.tagging.segment &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.algorithm.tagging.segment</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module ``pyannote.algorithm.tagging.segment`` provides segment-wise tagging algorithms. </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">base</span> <span class="kn">import</span> <span class="n">BaseTagger</span>
+
+<div class="viewcode-block" id="ConservativeDirectTagger"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.segment.ConservativeDirectTagger">[docs]</a><span class="k">class</span> <span class="nc">ConservativeDirectTagger</span><span class="p">(</span><span class="n">BaseTagger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Conservative direct segment tagger</span>
+<span class="sd">    </span>
+<span class="sd">    Only supports annotation tagging.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConservativeDirectTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">annotation</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+                                                       <span class="n">timeline</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_tag_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">annotation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Annotation tagging</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        annotation : Annotation</span>
+<span class="sd">            Target annotation whose tracks will be tagged.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged : Annotation</span>
+<span class="sd">            Tagged `annotation`</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># initialize tagged annotation as a copy of target annotation</span>
+        <span class="n">tagged</span> <span class="o">=</span> <span class="n">annotation</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c"># tag each segment of target annotation, one after the other</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">tagged</span><span class="p">:</span>
+            
+            <span class="c"># extract the part of source annotation</span>
+            <span class="c"># intersecting current target segment</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">source</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+            
+            <span class="c"># if there is no intersecting segment</span>
+            <span class="c"># just skip to the next one</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="p">:</span>
+                <span class="k">continue</span>
+            
+            <span class="c"># if tagged annotation is multitrack, only tag segment </span>
+            <span class="c"># when target has exactly one track and source only one</span>
+            <span class="c"># co-occurring label</span>
+            <span class="k">if</span> <span class="n">tagged</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+                
+                <span class="c"># don&#39;t do anything if target has more than one track</span>
+                <span class="n">tracks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="p">:])</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                
+                <span class="c"># don&#39;t do anything if source has more than one label</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">labels</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                
+                <span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">tracks</span><span class="o">.</span><span class="n">pop</span><span class="p">()]</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            
+            <span class="c"># if tagged annotation is single-track, only tag segment</span>
+            <span class="c"># when source has exactly one co-occurring label</span>
+            <span class="k">else</span><span class="p">:</span>
+                
+                <span class="c"># don&#39;t do anything if source has more than one label</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">labels</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                
+                <span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">tagged</span>
+
+</div>
+<div class="viewcode-block" id="ArgMaxDirectTagger"><a class="viewcode-back" href="../../../../learn/api/algorithm/tagging.html#pyannote.algorithm.tagging.segment.ArgMaxDirectTagger">[docs]</a><span class="k">class</span> <span class="nc">ArgMaxDirectTagger</span><span class="p">(</span><span class="n">BaseTagger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ArgMax direct segment tagger</span>
+<span class="sd">    </span>
+<span class="sd">    It supports both timeline and annotation tagging.</span>
+<span class="sd">    </span>
+<span class="sd">    **Timeline tagging.**</span>
+<span class="sd">    Each segment in target timeline is tagged with the `N` intersecting labels</span>
+<span class="sd">    with greatest co-occurrence duration:</span>
+<span class="sd">        - `N` is set to 1 in case source annotation is single-track. </span>
+<span class="sd">        - In case of a multi-track source, `N` is set to the the maximum number </span>
+<span class="sd">          of simultaneous tracks in intersecting source segments.</span>
+<span class="sd">    </span>
+<span class="sd">    **Annotation tagging.**</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ArgMaxDirectTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">annotation</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> \
+                                                 <span class="n">timeline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_tag_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">timeline</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeline tagging</span>
+<span class="sd">        </span>
+<span class="sd">        Each segment in target `timeline` is tagged with the `N` intersecting</span>
+<span class="sd">        labels with greatest co-occurrence duration:</span>
+<span class="sd">            - `N` is set to 1 in case source annotation is single-track. </span>
+<span class="sd">            - In case of a multi-track source, `N` is set to the the maximum</span>
+<span class="sd">              number of simultaneous tracks in intersecting source segments.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        timeline : Timeline</span>
+<span class="sd">            Target timeline whose segments will be tagged.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged : Annotation</span>
+<span class="sd">            Tagged `timeline`</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># initialize tagged timeline as an empty copy of source</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="c"># tag each segment of target timeline, one after the other</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
+            
+            <span class="c"># extract the part of source annotation</span>
+            <span class="c"># intersecting current target segment</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">source</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+            
+            <span class="c"># if there is no intersecting segment</span>
+            <span class="c"># just skip to the next one</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="p">:</span>
+                <span class="k">continue</span>
+            
+            <span class="c"># if source is multi-track</span>
+            <span class="c"># find largest number of co-occurring tracks ==&gt; N</span>
+            <span class="c"># find N labels with greatest intersection duration</span>
+            <span class="c"># tag N tracks with those N labels</span>
+            <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+                
+                <span class="c"># find largest number of simultaneous tracks (n_tracks)</span>
+                <span class="n">n_tracks</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">t</span><span class="p">])</span>
+                
+                <span class="c"># find n_tracks labels with greatest intersection duration</span>
+                <span class="c"># and add them to the segment</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tracks</span><span class="p">):</span>
+                    
+                    <span class="c"># find current best label</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                    
+                    <span class="c"># if there is no label in stock</span>
+                    <span class="c"># just stop tagging this segment</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="c"># if current best label exists</span>
+                    <span class="c"># create a new track and go for it.</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">new_track</span><span class="p">(</span><span class="n">segment</span><span class="p">)]</span> <span class="o">=</span> <span class="n">label</span>
+                        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            
+            <span class="c"># if source is single-track,</span>
+            <span class="c"># tag current target segment with greatest intersection duration</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># find label with greatest intersection</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                <span class="c"># if it exists, go for it!</span>
+                <span class="k">if</span> <span class="n">label</span><span class="p">:</span>
+                    <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        
+        <span class="k">return</span> <span class="n">T</span>
+    
+    <span class="k">def</span> <span class="nf">_tag_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">annotation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Annotation tagging</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : Annotation</span>
+<span class="sd">            Source annotation whose labels will be propagated</span>
+<span class="sd">        annotation : Annotation</span>
+<span class="sd">            Target annotation whose tracks will be tagged.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tagged : Annotation</span>
+<span class="sd">            Tagged `annotation`</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># initialize tagged annotation as a copy of target annotation</span>
+        <span class="n">tagged</span> <span class="o">=</span> <span class="n">annotation</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c"># tag each segment of target annotation, one after the other</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">tagged</span><span class="p">:</span>
+            
+            <span class="c"># extract the part of source annotation</span>
+            <span class="c"># intersecting current target segment</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">source</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+            
+            <span class="c"># if there is no intersecting segment</span>
+            <span class="c"># just skip to the next one</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="p">:</span>
+                <span class="k">continue</span>
+            
+            <span class="c"># if tagged annotation is multitrack</span>
+            <span class="c"># tag each track one after the other using argmax labels</span>
+            <span class="k">if</span> <span class="n">tagged</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+                
+                <span class="c"># tag each track one after the other</span>
+                <span class="c"># always choose label with greatest intersection duration</span>
+                <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="p">:]:</span>
+                    
+                    <span class="c"># find current best label</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                    
+                    <span class="c"># if there is no label in stock</span>
+                    <span class="c"># just stop tagging this segment</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    
+                    <span class="c"># if current best label exists, </span>
+                    <span class="c"># go for it and tag track</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+                        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            
+            <span class="c"># if tagged annotation is single-track</span>
+            <span class="c"># do the same (except there is only one track...)</span>
+            <span class="k">else</span><span class="p">:</span>
+                
+                <span class="c"># find label with greatest intersection</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                <span class="c"># if it exists, go for it!</span>
+                <span class="k">if</span> <span class="n">label</span><span class="p">:</span>
+                    <span class="n">tagged</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        
+        <span class="k">return</span> <span class="n">tagged</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+       
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

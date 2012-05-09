@@ -1,0 +1,1132 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.base.annotation &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.base.annotation</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">segment</span> <span class="kn">import</span> <span class="n">Segment</span>
+<span class="kn">from</span> <span class="nn">timeline</span> <span class="kn">import</span> <span class="n">Timeline</span>
+<span class="kn">from</span> <span class="nn">mapping</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">ManyToOneMapping</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Hashable</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+
+<span class="n">UNIQUE_TRACK</span> <span class="o">=</span> <span class="s">&#39;__@__&#39;</span>
+<span class="n">UNIQUE_LABEL</span> <span class="o">=</span> <span class="s">&#39;__@__&#39;</span>
+<span class="n">DEFAULT_TRACK_PREFIX</span> <span class="o">=</span> <span class="s">&#39;track&#39;</span>
+
+<div class="viewcode-block" id="Unknown"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Unknown">[docs]</a><span class="k">class</span> <span class="nc">Unknown</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">nextID</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;Unknown</span><span class="si">%03d</span><span class="s">&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Unknown</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">Unknown</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">format</span>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Unknown</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ID</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="Annotation"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation">[docs]</a><span class="k">class</span> <span class="nc">Annotation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Annotated timeline.</span>
+<span class="sd">    </span>
+<span class="sd">    An annotation is </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    multitrack : bool, optional</span>
+<span class="sd">        whether a segment can contain multiple track (True) or not (False).</span>
+<span class="sd">        Default is True (multi-track annotation).</span>
+<span class="sd">    modality : string, optional</span>
+<span class="sd">        name of annotated modality</span>
+<span class="sd">    video : string, optional</span>
+<span class="sd">        name of (audio or video) annotated document</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    annotation : Annotation</span>
+<span class="sd">        New empty annotation</span>
+<span class="sd">        </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">        &gt;&gt;&gt; annotation = Annotation(video=&#39;MyVideo&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print annotation.video</span>
+<span class="sd">        MyVideo</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multitrack</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        
+        <span class="nb">super</span><span class="p">(</span><span class="n">Annotation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        
+        <span class="c"># whether a segment can contain multiple track (True) or not (False)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__multitrack</span> <span class="o">=</span> <span class="n">multitrack</span>
+        
+        <span class="c"># name of annotated modality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__modality</span> <span class="o">=</span> <span class="n">modality</span>
+        
+        <span class="c"># path to (or any identifier of) segmented video</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__video</span> <span class="o">=</span> <span class="n">video</span>
+        
+        <span class="c"># this timeline is meant to store annotated segments.</span>
+        <span class="c"># it only contains segments with at least one labelled track.</span>
+        <span class="c"># a segment that is no longer annotated must be removed from it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+        
+        <span class="c"># this is where tracks and labels are actually stored.</span>
+        <span class="c"># it is a dictionary indexed by segments.</span>
+        <span class="c"># .__data[segment] is a dictionary indexed by tracks.</span>
+        <span class="c"># .__data[segment][track] contains the actual label.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># this is a dictionary indexed by labels.</span>
+        <span class="c"># .__label_timeline[label] is a timeline made of segments for which</span>
+        <span class="c"># there exists at least one track labelled by label.</span>
+        <span class="c"># when a label no longer exists, its entry must be removed.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># this is a dictionary indexed by labels</span>
+        <span class="c"># .__label_count[label] is a dictionary indexed by segments containing</span>
+        <span class="c"># at least one track labelled by label.</span>
+        <span class="c"># .__label_count[label][segment] contains the number of tracks labelled</span>
+        <span class="c"># as label in this segment. when zero, segment entry must be removed.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">def</span> <span class="nf">__get_multitrack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__multitrack</span>
+    <span class="n">multitrack</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_multitrack</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Can segments contain multiple tracks?&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_video</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__video</span>
+    <span class="n">video</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_video</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Path to (or any identifier of) annotated video</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">        &gt;&gt;&gt; annotation = Annotation(video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print annotation.video</span>
+<span class="sd">        MyVideo.avi</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_modality</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__modality</span>
+    <span class="n">modality</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_modality</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Name (or any identifier) of annotated modality</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">        &gt;&gt;&gt; annotation = Annotation(modality=&quot;speaker&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print annotation.modality</span>
+<span class="sd">        speaker</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__get_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">timeline</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_timeline</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Timeline made of every annotated segments</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; annotation = Annotation(multitrack=False, modality=&#39;speaker&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; annotation[Segment(0, 10)] = &#39;Alice&#39;</span>
+<span class="sd">    &gt;&gt;&gt; annotation[Segment(8, 20)] = &#39;Bob&#39;</span>
+<span class="sd">    &gt;&gt;&gt; print annotation.timeline</span>
+<span class="sd">    [</span>
+<span class="sd">       [0 --&gt; 10]</span>
+<span class="sd">       [8 --&gt; 20]</span>
+<span class="sd">    ]</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="c"># Make sure provided segment is valid.</span>
+    <span class="k">def</span> <span class="nf">__valid_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">Segment</span><span class="p">)</span> <span class="ow">and</span> <span class="n">segment</span>
+    
+    <span class="c"># Any hashable object can be used as a track name.</span>
+    <span class="k">def</span> <span class="nf">__valid_track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">track</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">track</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">)</span>
+    
+    <span class="c"># Strings or Unknown can be used as label.</span>
+    <span class="k">def</span> <span class="nf">__valid_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">(</span><span class="n">Unknown</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="Annotation.labels"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.labels">[docs]</a>    <span class="k">def</span> <span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Global list of labels</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        labels : list</span>
+<span class="sd">            Sorted list of existing labels (based on their string version)</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="Annotation.get_labels"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.get_labels">[docs]</a>    <span class="k">def</span> <span class="nf">get_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Local set of labels</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment : Segment</span>
+<span class="sd">            Segments to get label from.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        labels : set</span>
+<span class="sd">            Set of labels for `segment` if it exists, empty set otherwise.</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True)</span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(0, 2)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker2&#39;] = &#39;John&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print sorted(annotation.get_labels(segment))</span>
+<span class="sd">            [&#39;Bernard&#39;, &#39;John&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; print annotation.get_labels(Segment(1, 2))</span>
+<span class="sd">            set([])</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">([])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span> \
+                        <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]])</span>
+    </div>
+<div class="viewcode-block" id="Annotation.argmax"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.argmax">[docs]</a>    <span class="k">def</span> <span class="nf">argmax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Most frequent label</span>
+<span class="sd">        </span>
+<span class="sd">        If `segment` is provided, argmax will return the label with longest</span>
+<span class="sd">        intersection.</span>
+<span class="sd">        If `segment` is None, argmax will simply return the label with longest</span>
+<span class="sd">        overall duration.</span>
+<span class="sd">        </span>
+<span class="sd">        If no label intersects segment, returns None</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment : Segment, optional</span>
+<span class="sd">            Section of annotation where to look for the most frequent label.</span>
+<span class="sd">            Defaults to annotation timeline extent.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        label : any existing label or None</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=False, modality=&#39;speaker&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 10)] = &#39;Alice&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(8, 20)] = &#39;Bob&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print &quot;%s is such a talker!&quot; % annotation.argmax()</span>
+<span class="sd">            Bob is such a talker!</span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(22, 23)</span>
+<span class="sd">            &gt;&gt;&gt; if not annotation.argmax(segment):</span>
+<span class="sd">            ...    print &quot;No label intersecting %s&quot; % segment</span>
+<span class="sd">            No label intersection [22 --&gt; 23]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># if annotation is empty, obviously there is no most frequent label</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        
+        <span class="c"># if segment is not provided, just look for the overall most frequent</span>
+        <span class="c"># label (ie. set segment to the extent of the annotation)</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeline</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+        
+        <span class="c"># compute intersection duration for each label</span>
+        <span class="n">durations</span> <span class="o">=</span> <span class="p">{</span><span class="n">lbl</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">segment</span><span class="p">)</span><span class="o">.</span><span class="n">duration</span><span class="p">()</span>\
+                     <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">()}</span>
+        
+        <span class="c"># find the most frequent label</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">durations</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="c"># in case all durations were zero, there is no most frequent label</span>
+        <span class="k">return</span> <span class="n">label</span> <span class="k">if</span> <span class="n">durations</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span>
+    
+    
+    <span class="c"># Function used to parse key used to access annotation elements</span>
+    <span class="c"># eg. annotation[segment] or annotation[segment, track]</span></div>
+    <span class="k">def</span> <span class="nf">__parse_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        
+        <span class="c"># For multi-track annotation, </span>
+        <span class="c"># both segment and track name must be provided.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+               <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&quot;multi-track annotation, &quot;</span>
+                              <span class="s">&quot;expected &#39;annotation[segment, track]&#39;&quot;</span><span class="p">)</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">track</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="c"># For mono-track annotation,</span>
+        <span class="c"># only segment must be provided.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&quot;single-track annotation, &quot;</span>
+                               <span class="s">&quot;expected &#39;annotation[segment]&#39;&quot;</span><span class="p">)</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="c"># default name for unique track</span>
+            <span class="n">track</span> <span class="o">=</span> <span class="n">UNIQUE_TRACK</span>
+        
+        <span class="k">return</span> <span class="n">segment</span><span class="p">,</span> <span class="n">track</span>
+    
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;annotation[segment]&#39; for single-track annotation</span>
+<span class="sd">                   and &#39;annotation[segment, track]&#39; for multi-track annotation</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True)</span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(0, 2)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker2&#39;] = &#39;John&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print annotation[segment, &#39;speaker1&#39;]</span>
+<span class="sd">            Bernard</span>
+<span class="sd">            &gt;&gt;&gt; track2name = annotation[segment, :]</span>
+<span class="sd">            &gt;&gt;&gt; for track in sorted(track2name):</span>
+<span class="sd">            ...     print &#39;%s --&gt; %s&#39; % (track, track2name[track])</span>
+<span class="sd">            speaker1 --&gt; Bernard</span>
+<span class="sd">            speaker2 --&gt; John</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># Parse requested key</span>
+        <span class="n">segment</span><span class="p">,</span> <span class="n">track</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__parse_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c"># case 1: annotation[segment, :]</span>
+        <span class="c"># returns {track --&gt; label} dictionary</span>
+        <span class="k">if</span> <span class="n">track</span> <span class="o">==</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">])</span>
+        
+        <span class="c"># case 2: annotation[segment] or annotation[segment, track]</span>
+        <span class="c"># returns corresponding label</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add/update label</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;annotation[segment] = label&#39; for single-track annotation</span>
+<span class="sd">        and &#39;annotation[segment, track] = label&#39; for multi-track annotation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : any valid key (annotation[segment] or annotation[segment, track])</span>
+<span class="sd">        label : any valid label </span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            Add annotation</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True)</span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(0, 2)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker2&#39;] = &#39;John&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print annotation</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] speaker1 : Bernard</span>
+<span class="sd">                         speaker2 : John</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            Update annotation</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation[segment, &#39;speaker1&#39;] = &#39;Paul&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print annotation</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] speaker1 : Paul</span>
+<span class="sd">                         speaker2 : John</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># Parse provided key</span>
+        <span class="n">segment</span><span class="p">,</span> <span class="n">track</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__parse_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c"># Validate segment, track and label</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__valid_segment</span><span class="p">(</span><span class="n">segment</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&quot;invalid segment.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__valid_track</span><span class="p">(</span><span class="n">track</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;invalid track name.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__valid_label</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;invalid label.&#39;</span><span class="p">)</span>
+        
+        <span class="c"># In case segment/track annotation already exists</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span> <span class="ow">and</span> \
+           <span class="n">track</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]:</span>
+            
+            <span class="c"># do nothing if provided label is the same as existing one</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
+                <span class="k">return</span>
+            
+            <span class="c"># remove existing label if provided label </span>
+            <span class="c"># is different from existing one</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__delitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c"># Add segment if necessary</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">:</span>
+            <span class="c"># to global timeline</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span> <span class="o">+=</span> <span class="n">segment</span>
+            <span class="c"># to internal data dictionary</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># Store label for segment/track</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        
+        <span class="c"># Create label timeline if necessary</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+        
+        <span class="c"># Add segment to label timeline</span>
+        <span class="c"># Note: it won&#39;t be added twice if it already exists (see timeline API)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">+=</span> <span class="n">segment</span>
+        
+        <span class="c"># Create label count dictionary if necessary</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c"># Initialize label count for provided segment if necessar</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            
+        <span class="c"># Increment label count for provided segment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove label</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;del annotation[segment]&#39; for single-track annotation</span>
+<span class="sd">        and &#39;del annotation[segment, track]&#39; for multi-track annotation.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># Parse provided key</span>
+        <span class="n">segment</span><span class="p">,</span> <span class="n">track</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__parse_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c"># Special case: del T[segment, :]</span>
+        <span class="c"># delete all track labels, one after the other</span>
+        <span class="c"># (recursive calls to del T[segment, track])</span>
+        <span class="k">if</span> <span class="n">track</span> <span class="o">==</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__delitem__</span><span class="p">((</span><span class="n">segment</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+            <span class="k">return</span>
+        
+        <span class="c"># del T[segment, track] for multi-track annotation</span>
+        <span class="c"># or del T[segment (, UNIQUE_TRACK)] for single-track annotation</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span>
+        
+        <span class="c"># Remove track from internal data for provided segment</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span>
+        
+        <span class="c"># If segment no longer has any track</span>
+        <span class="c"># Remove segment as well</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]:</span>
+            <span class="c"># from internal data </span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+            <span class="c"># from global timeline</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+        
+        <span class="c"># Decrement label count for provided segment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+        
+        <span class="c"># If label count gets to zero</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            
+            <span class="c"># remove segment for label count dictionary</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span>
+            
+            <span class="c"># if label count dictionary is empty</span>
+            <span class="c"># remove label from dictionary</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">]:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_count</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+                
+            <span class="c"># remove segment from label timeline</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">segment</span><span class="p">]</span>
+            
+            <span class="c"># if timeline is empty</span>
+            <span class="c"># remove label timeline as well</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;len(annotation)&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Equivalent to &#39;len(annotation.timeline)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        number : int</span>
+<span class="sd">            Number of annotated segments</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.__len__</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;if annotation&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Equivalent to &#39;if annotation.timeline&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        empty : bool</span>
+<span class="sd">            False if annotation is empty (contains no annotated segment),</span>
+<span class="sd">            True otherwise</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.__nonzero__</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">included</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;included in annotation&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Equivalent to &#39;included in annotation.timeline&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        contains : bool</span>
+<span class="sd">            True if every segment in `included` is annotated,</span>
+<span class="sd">            False otherwise.</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.__contains__</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">included</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span>
+    
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sorted segment iterator</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.__iter__</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__reversed__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reverse-sorted segment iterator</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.__reversed__</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeline</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Annotation.iterlabels"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.iterlabels">[docs]</a>    <span class="k">def</span> <span class="nf">iterlabels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Annotation iterator</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            Iterate multi-track annotation</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker2&#39;] = &#39;John&#39;  </span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4), &#39;speaker1&#39;] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; for segment, track, label in annotation.iterlabels():</span>
+<span class="sd">            ...    print &#39;%s.%s --&gt; %s&#39; % (segment, track, label)</span>
+<span class="sd">            [0 --&gt; 2].speaker1 --&gt; Bernard</span>
+<span class="sd">            [0 --&gt; 2].speaker2 --&gt; John</span>
+<span class="sd">            [3 --&gt; 4].speaker1 --&gt; Albert</span>
+<span class="sd">            </span>
+<span class="sd">            Iterate single-track annotation</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=False)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2)] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4)] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; for segment, label in annotation.iterlabels():</span>
+<span class="sd">            ...    print &#39;%s --&gt; %s&#39; % (segment, label)</span>
+<span class="sd">            [0 --&gt; 2] --&gt; Bernard</span>
+<span class="sd">            [3 --&gt; 4] --&gt; Albert</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># iterate through sorted segments</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            
+            <span class="c"># iterate through tracks</span>
+            <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]):</span>
+                
+                <span class="c"># yield segment/track/label for multi-track annotation</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span>
+                    
+                <span class="c"># yield segment/label for single-track annotation</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">segment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span>
+    </div>
+<div class="viewcode-block" id="Annotation.empty"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty copy of an annotation.</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.empty</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True, video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker2&#39;] = &#39;John&#39;  </span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4), &#39;speaker1&#39;] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; empty = annotation.empty()</span>
+<span class="sd">            &gt;&gt;&gt; print empty.video</span>
+<span class="sd">            MyVideo.avi</span>
+<span class="sd">            &gt;&gt;&gt; print empty</span>
+<span class="sd">            [</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">,</span> \
+                       <span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">,</span> \
+                       <span class="n">modality</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">modality</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">T</span>
+    </div>
+<div class="viewcode-block" id="Annotation.copy"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment_func</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">track_func</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label_func</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Duplicate annotation.</span>
+<span class="sd">        </span>
+<span class="sd">        If `segment_func`, `track_func` or `label_func` are provided, they are </span>
+<span class="sd">        applied to segment, track and label before copying. </span>
+<span class="sd">        In a nutshell:</span>
+<span class="sd">           copy[segment_func(s), track_func(t)] = label_func[original[s, t]]</span>
+<span class="sd">        </span>
+<span class="sd">        Therefore `segment_func` can be used to remove a segment,</span>
+<span class="sd">        eg. in case segment_func(segment) is False, None or an empty Segment.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment_func, track_func, label_func : function</span>
+<span class="sd">            Segment, track and label transformation function</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        annotation : Annotation</span>
+<span class="sd">            A (possibly modified) copy of the annotation</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            Extend all segments by one segment on each side</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True, video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker2&#39;] = &#39;John&#39;  </span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4), &#39;speaker1&#39;] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; segment_func = lambda s: 1 &lt;&lt; s &gt;&gt; 1</span>
+<span class="sd">            &gt;&gt;&gt; copy = annotation.copy(segment_func=segment_func)</span>
+<span class="sd">            &gt;&gt;&gt; print copy</span>
+<span class="sd">            [</span>
+<span class="sd">               [-1 --&gt; 3] speaker1 : Bernard</span>
+<span class="sd">                          speaker2 : John</span>
+<span class="sd">               [2 --&gt; 5] speaker1 : Albert</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            Only keep annotation for segment longer than 1 second,</span>
+<span class="sd">            and reverse names</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=False)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2)] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4)] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; segment_func = lambda s: s if s.duration &gt; 1 else None</span>
+<span class="sd">            &gt;&gt;&gt; label_func = lambda l: l[::-1]</span>
+<span class="sd">            &gt;&gt;&gt; copy = annotation.copy(segment_func=segment_func, \</span>
+<span class="sd">                                       label_func=label_func)</span>
+<span class="sd">            &gt;&gt;&gt; print copy</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] : dranreB</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeline.copy</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># starts with an empty copy.</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="c"># If functions are not provided</span>
+        <span class="c"># make them pass-trough functions</span>
+        <span class="k">if</span> <span class="n">segment_func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">segment_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span>
+        <span class="k">if</span> <span class="n">track_func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">track_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span>
+        <span class="k">if</span> <span class="n">label_func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">label_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="n">l</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                <span class="n">new_segment</span> <span class="o">=</span> <span class="n">segment_func</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                
+                <span class="c"># Copy annotation only if transformed segment is valid</span>
+                <span class="c"># (make sure track and label are transformed as well)</span>
+                <span class="k">if</span> <span class="n">new_segment</span><span class="p">:</span>
+                    <span class="n">T</span><span class="p">[</span><span class="n">new_segment</span><span class="p">,</span> <span class="n">track_func</span><span class="p">(</span><span class="n">track</span><span class="p">)]</span> <span class="o">=</span> <span class="n">label_func</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                <span class="n">new_segment</span> <span class="o">=</span> <span class="n">segment_func</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+                
+                <span class="c"># Copy annotation only if transformed segment is valid</span>
+                <span class="c"># (make sure label is transformed as well)</span>
+                <span class="k">if</span> <span class="n">new_segment</span><span class="p">:</span>
+                    <span class="n">T</span><span class="p">[</span><span class="n">new_segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_func</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">T</span>
+                </div>
+    <span class="k">def</span> <span class="nf">__mod__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">translation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Translate labels</span>
+<span class="sd">        </span>
+<span class="sd">        Short-cut for Annotation.copy(label_func=translation)</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        translation: dict or ManyToOneMapping</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        translated : Annotation</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=False)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2)] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4)] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; translation = {&#39;Bernard&#39;: &#39;Bernie&#39;, &#39;Albert&#39;: &#39;Al&#39;}</span>
+<span class="sd">            &gt;&gt;&gt; translated = annotation % translation</span>
+<span class="sd">            &gt;&gt;&gt; print translated</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] : Bernie</span>
+<span class="sd">               [3 --&gt; 4] : Al</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translation</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported operand types(s) for &#39;\%&#39;: &quot;</span>
+                            <span class="s">&quot;Annotation and </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">translation</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="c"># translation is provided as a {&#39;original&#39; --&gt; &#39;translated&#39;} dict.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translation</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            
+            <span class="c"># only transform labels that have an actual translation</span>
+            <span class="c"># stored in the provided dictionary, keep the others as they are.</span>
+            <span class="n">label_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">translation</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> \
+                                   <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">translation</span> <span class="ow">and</span> <span class="n">translation</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> \
+                                   <span class="k">else</span> <span class="n">x</span>
+        
+        <span class="c"># translation is provided as a ManyToOneMapping</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translation</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">translation</span> <span class="o">=</span> <span class="n">ManyToOneMapping</span><span class="o">.</span><span class="n">fromMapping</span><span class="p">(</span><span class="n">translation</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected N-to-1 mapping.&#39;</span><span class="p">)</span>
+            
+            <span class="c"># only transform labels that actually have a mapping </span>
+            <span class="c"># see ManyToOneMapping.__call__() API</span>
+            <span class="n">label_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">translation</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">translation</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">else</span> <span class="n">x</span>
+        
+        <span class="c"># perform the actual translation</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">label_func</span><span class="o">=</span><span class="n">label_func</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Annotation.anonymize"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.anonymize">[docs]</a>    <span class="k">def</span> <span class="nf">anonymize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Anonmyize labels</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        anonymized : :class:`Annotation`</span>
+<span class="sd">            A copy where each label is replaced by an instance of ``Unknown``.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">translation</span> <span class="o">=</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">Unknown</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">()}</span> 
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">%</span> <span class="n">translation</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__get_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
+                        <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__label_timeline</span><span class="p">[</span><span class="n">label</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__data</span><span class="p">[</span><span class="n">segment</span><span class="p">][</span><span class="n">track</span><span class="p">]</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
+                        <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        
+        <span class="k">return</span> <span class="n">T</span>
+            
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sub-annotation extraction.</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;annotation(subset, ...)&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        If `subset` is a Segment or a Timeline, only extract segments that</span>
+<span class="sd">        are fully included into its coverage. Set mode to &#39;loose&#39; to extract</span>
+<span class="sd">        all intersecting segments. `invert` has no effect in this case.</span>
+<span class="sd">            </span>
+<span class="sd">        If `subset` is a label or a label iterator, only extract tracks with</span>
+<span class="sd">        provided labels. Set `invert` to True to extract **all but**</span>
+<span class="sd">        provided labels. `mode` has no effect in this case.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subset : Segment, Timeline, any valid label or label iterator</span>
+<span class="sd">        mode : {&#39;strict&#39;, &#39;loose&#39;}, optional</span>
+<span class="sd">            `mode` only has effect when `subset` is a Segment or Timeline.</span>
+<span class="sd">            Defaults to &#39;strict&#39;. </span>
+<span class="sd">        invert : bool, optional</span>
+<span class="sd">            `invert` only has effect when `subset` is a valid label or </span>
+<span class="sd">            label iterator. Defaults to False.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        annotation : Annotation</span>
+<span class="sd">            Extracted sub-annotation.</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True, video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker2&#39;] = &#39;John&#39;  </span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4), &#39;speaker1&#39;] = &#39;John&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(4, 5), &#39;speaker1&#39;] = &#39;Albert&#39;</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">            Extract sub-annotation for labels &#39;John&#39; and &#39;Nicholas&#39;</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; print annotation([&#39;John&#39;, &#39;Nicholas&#39;])</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] speaker2 : John</span>
+<span class="sd">               [3 --&gt; 4] speaker1 : John</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">            Extract sub-annotation for **all but** labels &#39;John&#39; and &#39;Albert&#39;</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; print annotation([&#39;John&#39;, &#39;Albert&#39;], invert=True)</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] speaker1 : Bernard</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">            Extract sub-annotation for segments fully included in [2 --&gt; 4.5]</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; print annotation(Segment(2, 4.5), mode=&#39;strict&#39;)</span>
+<span class="sd">            [</span>
+<span class="sd">               [3 --&gt; 4] speaker1 : John</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">            Extract sub-annotation for segments intersecting [2 --&gt; 4.5]</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; print annotation(Segment(2, 4.5), mode=&#39;loose&#39;)</span>
+<span class="sd">            [</span>
+<span class="sd">               [3 --&gt; 4] speaker1 : John</span>
+<span class="sd">               [4 --&gt; 5] speaker1 : Albert</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="n">subset</span>
+            
+            <span class="k">if</span> <span class="n">invert</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;strict&#39;</span><span class="p">:</span>
+                <span class="c"># keep segment if it is fully included in timeline coverage</span>
+                <span class="n">coverage</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+                <span class="n">segment_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span> <span class="p">:</span> <span class="n">s</span> <span class="k">if</span> <span class="n">coverage</span><span class="o">.</span><span class="n">covers</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span> 
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">segment_func</span><span class="o">=</span><span class="n">segment_func</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;loose&#39;</span><span class="p">:</span>
+                <span class="c"># keep segment if it intersects timeline coverage</span>
+                <span class="n">coverage</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+                <span class="n">segment_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span> <span class="p">:</span> <span class="n">s</span> <span class="k">if</span> <span class="p">(</span><span class="n">coverage</span> <span class="o">&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">segment_func</span><span class="o">=</span><span class="n">segment_func</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;unsupported mode.&#39;</span><span class="p">)</span>
+        
+        <span class="c"># Segment subset</span>
+        <span class="c"># --------------</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="n">subset</span>
+            
+            <span class="c"># --- Recursive call as a Timeline subset.            </span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+            <span class="n">timeline</span> <span class="o">+=</span> <span class="n">segment</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call__</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="n">invert</span><span class="p">)</span>            
+        
+        <span class="c"># get set of labels</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            
+            <span class="c"># if invert, get the complementary set of labels</span>
+            <span class="c"># otherwise, make sure it is a set (not list or tuple)</span>
+            <span class="k">if</span> <span class="n">invert</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">())</span>
+            
+            <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_label</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                        <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                        <span class="n">T</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+            
+            <span class="k">return</span> <span class="n">T</span>
+        
+        <span class="c"># get one single label</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># one single label == set of one label</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call__</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">subset</span><span class="p">]),</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="n">invert</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Human-friendly representation</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; annotation = Annotation(multitrack=True, video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker1&#39;] = &#39;Bernard&#39;</span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(0, 2), &#39;speaker2&#39;] = &#39;John&#39;  </span>
+<span class="sd">            &gt;&gt;&gt; annotation[Segment(3, 4), &#39;speaker1&#39;] = &#39;Albert&#39;</span>
+<span class="sd">            &gt;&gt;&gt; print annotation</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 2] speaker1 : Bernard</span>
+<span class="sd">                         speaker2 : John</span>
+<span class="sd">               [3 --&gt; 4] speaker1 : Albert</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">string</span> <span class="o">=</span> <span class="s">&quot;[</span><span class="se">\n</span><span class="s">&quot;</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+            
+            <span class="n">previous</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                
+                <span class="k">if</span> <span class="n">segment</span> <span class="o">!=</span> <span class="n">previous</span><span class="p">:</span>
+                    <span class="n">previous</span> <span class="o">=</span> <span class="n">segment</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s">&#39;   </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">previous</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+                    <span class="n">n_spaces</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">previous</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s">&#39;   </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="n">n_spaces</span><span class="p">,</span> <span class="n">track</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            
+            <span class="n">previous</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">segment</span> <span class="o">!=</span> <span class="n">previous</span><span class="p">:</span>
+                    <span class="n">previous</span> <span class="o">=</span> <span class="n">segment</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s">&#39;   </span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">previous</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+                    <span class="n">n_spaces</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">previous</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s">&#39;   </span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="n">nspaces</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+                    
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;]&quot;</span>
+        <span class="k">return</span> <span class="n">string</span>
+            
+<div class="viewcode-block" id="Annotation.new_track"><a class="viewcode-back" href="../../../learn/api/foundation/annotation.html#pyannote.base.annotation.Annotation.new_track">[docs]</a>    <span class="k">def</span> <span class="nf">new_track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">DEFAULT_TRACK_PREFIX</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Track name generator</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment : Segment</span>
+<span class="sd">        </span>
+<span class="sd">        prefix : str, optional</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        track : str</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError when annotation is single-track.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">multitrack</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;annotation is single-track&#39;</span><span class="p">)</span>
+            
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">existing_tracks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">segment</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">existing_tracks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+        <span class="n">new_track</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+        
+        <span class="k">while</span> <span class="n">new_track</span> <span class="ow">in</span> <span class="n">existing_tracks</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">new_track</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_track</span>
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

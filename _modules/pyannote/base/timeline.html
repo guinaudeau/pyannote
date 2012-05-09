@@ -1,0 +1,1253 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyannote.base.timeline &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyannote.base.timeline</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+
+<span class="c"># Copyright 2012 Herve BREDIN (bredin@limsi.fr)</span>
+
+<span class="c"># This file is part of PyAnnote.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is free software: you can redistribute it and/or modify</span>
+<span class="c">#     it under the terms of the GNU General Public License as published by</span>
+<span class="c">#     the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#     (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c">#     PyAnnote is distributed in the hope that it will be useful,</span>
+<span class="c">#     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#     GNU General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c">#     You should have received a copy of the GNU General Public License</span>
+<span class="c">#     along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># TODO: Faster implementation of .__contains__() (for use in .__iadd__()) </span>
+<span class="c">#       Possibly with an additional interal set of segments?</span>
+<span class="c">#       or with interpolated binary search.</span>
+
+<span class="kn">from</span> <span class="nn">segment</span> <span class="kn">import</span> <span class="n">Segment</span><span class="p">,</span> <span class="n">RevSegment</span><span class="p">,</span> <span class="n">SEGMENT_PRECISION</span>
+  
+<div class="viewcode-block" id="Timeline"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline">[docs]</a><span class="k">class</span> <span class="nc">Timeline</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ordered set of segments.</span>
+<span class="sd">    </span>
+<span class="sd">    A timeline can be seen as an ordered set of non-empty segments (Segment).</span>
+<span class="sd">    Segments can overlap -- though adding an already exisiting segment to a </span>
+<span class="sd">    timeline does nothing.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segments : Segment iterator, optional</span>
+<span class="sd">        initial set of segments</span>
+<span class="sd">    video : string, optional</span>
+<span class="sd">        name of (audio or video) segmented document</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    timeline : Timeline</span>
+<span class="sd">        New timeline </span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Create a new empty timeline</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">        &gt;&gt;&gt; if not timeline:</span>
+<span class="sd">        ...    print &quot;Timeline is empty.&quot;</span>
+<span class="sd">        Timeline is empty.</span>
+<span class="sd">    </span>
+<span class="sd">    Add one segment (+=)</span>
+<span class="sd">    </span>
+<span class="sd">        &gt;&gt;&gt; segment = Segment(0, 1)</span>
+<span class="sd">        &gt;&gt;&gt; timeline += segment</span>
+<span class="sd">        &gt;&gt;&gt; if len(timeline) == 1:</span>
+<span class="sd">        ...    print &quot;Timeline contains only one segment.&quot;</span>
+<span class="sd">        Timeline contains only one segment.</span>
+<span class="sd">    </span>
+<span class="sd">    Add all segments from another timeline</span>
+<span class="sd">    </span>
+<span class="sd">        &gt;&gt;&gt; other_timeline = Timeline([Segment(0.5, 3), Segment(6, 8)])</span>
+<span class="sd">        &gt;&gt;&gt; timeline += other_timeline</span>
+<span class="sd">        </span>
+<span class="sd">    Get timeline extent, coverage &amp; duration</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; extent = timeline.extent()</span>
+<span class="sd">        &gt;&gt;&gt; print extent</span>
+<span class="sd">        [0 --&gt; 8]</span>
+<span class="sd">        &gt;&gt;&gt; coverage = timeline.coverage()</span>
+<span class="sd">        &gt;&gt;&gt; print coverage</span>
+<span class="sd">        [</span>
+<span class="sd">           [0 --&gt; 3]</span>
+<span class="sd">           [6 --&gt; 8]</span>
+<span class="sd">        ]</span>
+<span class="sd">        &gt;&gt;&gt; duration = timeline.duration()</span>
+<span class="sd">        &gt;&gt;&gt; print &quot;Timeline covers a total of %g seconds.&quot; % duration</span>
+<span class="sd">        Timeline covers a total of 5 seconds.</span>
+<span class="sd">    </span>
+<span class="sd">    Iterate over (sorted) timeline segments</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; for segment in timeline:</span>
+<span class="sd">        ...    print segment</span>
+<span class="sd">        [0 --&gt; 1]</span>
+<span class="sd">        [0.5 --&gt; 3]</span>
+<span class="sd">        [6 --&gt; 8]</span>
+<span class="sd">    </span>
+<span class="sd">    Segmentation</span>
+<span class="sd">    </span>
+<span class="sd">        &gt;&gt;&gt; segmentation = timeline.segmentation()</span>
+<span class="sd">        &gt;&gt;&gt; print segmentation</span>
+<span class="sd">        [</span>
+<span class="sd">           [0 --&gt; 0.5]</span>
+<span class="sd">           [0.5 --&gt; 1]</span>
+<span class="sd">           [1 --&gt; 3]</span>
+<span class="sd">           [6 --&gt; 8]</span>
+<span class="sd">        ]</span>
+<span class="sd">        &gt;&gt;&gt; if timeline.is_segmentation():</span>
+<span class="sd">        ...    print &quot;Timeline is a segmentation.&quot;</span>
+<span class="sd">        &gt;&gt;&gt; if segmentation.is_segmentation():</span>
+<span class="sd">        ...    print &quot;Timeline is a segmentation.&quot;</span>
+<span class="sd">        Timeline is a segmentation.</span>
+<span class="sd">        </span>
+<span class="sd">    Gaps</span>
+<span class="sd">    </span>
+<span class="sd">        &gt;&gt;&gt; timeline = timeline.copy()</span>
+<span class="sd">        &gt;&gt;&gt; print timeline</span>
+<span class="sd">        [</span>
+<span class="sd">           [0 --&gt; 1]</span>
+<span class="sd">           [0.5 --&gt; 3]</span>
+<span class="sd">           [6 --&gt; 8]</span>
+<span class="sd">        ]</span>
+<span class="sd">        &gt;&gt;&gt; print timeline.gaps()</span>
+<span class="sd">        [</span>
+<span class="sd">           [3 --&gt; 6]</span>
+<span class="sd">        ]</span>
+<span class="sd">        &gt;&gt;&gt; segment = Segment(0, 10)</span>
+<span class="sd">        &gt;&gt;&gt; print timeline.gaps(segment)</span>
+<span class="sd">        [</span>
+<span class="sd">           [3 --&gt; 6]</span>
+<span class="sd">           [8 --&gt; 10]</span>
+<span class="sd">        ]</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        
+        <span class="nb">super</span><span class="p">(</span><span class="n">Timeline</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        
+        <span class="c"># path to (or any identifier of) segmented video</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__video</span> <span class="o">=</span> <span class="n">video</span>
+        
+        <span class="c"># this list is meant to store segments (as Segment object).</span>
+        <span class="c"># it is always sorted (using Segment comparison operators,</span>
+        <span class="c"># i.e. more or less sorted by segment start time).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span> <span class="o">=</span> <span class="p">[]</span> 
+        
+        <span class="c"># this list is meant to store reversed segments (as RevSegment object)</span>
+        <span class="c"># it is always sorted (using RevSegment comparison operators,</span>
+        <span class="c"># i.e. more or less sorted by segment end time).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">if</span> <span class="n">segments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># Add every segment, one after the other</span>
+                <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
+                    <span class="bp">self</span> <span class="o">+=</span> <span class="n">segment</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Timeline must be initialized using a&#39;</span>
+                                 <span class="s">&#39;Segment iterator.&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__get_video</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__video</span>
+    <span class="k">def</span> <span class="nf">__set_video</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__video</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="n">video</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">__get_video</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">__set_video</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Path to (or any identifier of) segmented video</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    </span>
+<span class="sd">    &gt;&gt;&gt; timeline = Timeline(video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; timeline.video = &quot;MyOtherVideo.avi&quot;</span>
+<span class="sd">    &gt;&gt;&gt; print timeline.video</span>
+<span class="sd">    MyOtherVideo.avi</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c"># Recursive binary search helper function</span>
+    <span class="k">def</span> <span class="nf">__search_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">sorted_list</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
+        
+        <span class="c"># Stop recursive search when position is found.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">left</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">right</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">right</span>
+            
+        <span class="c"># Binary search pivot</span>
+        <span class="n">mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">left</span><span class="o">+</span><span class="n">right</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        
+        <span class="k">if</span> <span class="n">element</span> <span class="o">&lt;</span> <span class="n">sorted_list</span><span class="p">[</span><span class="n">mid</span><span class="p">]:</span>
+            <span class="c"># Search in left part</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search_helper</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">sorted_list</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">mid</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Search in right part</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search_helper</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">sorted_list</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">sorted_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search insertion position in sorted list.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------        </span>
+<span class="sd">        element : any object with comparison operators</span>
+<span class="sd">            Element meant to be inserted into `sorted_list`</span>
+<span class="sd">        sorted_list : list of objects of same type as `element`</span>
+<span class="sd">            Sorted list into which `element` is to be inserted.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------        </span>
+<span class="sd">        index : int</span>
+<span class="sd">            Index of position where to insert `element` into `sorted_list`</span>
+<span class="sd">            so that the resulting list is still sorted.</span>
+<span class="sd">                </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># If list is empty, add unique element to the list</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        
+        <span class="c"># If element is smaller than the smallest element of the list,</span>
+        <span class="c"># add it at the beginning of the list</span>
+        <span class="k">if</span> <span class="n">element</span> <span class="o">&lt;</span> <span class="n">sorted_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+            
+        <span class="c"># If element is greater than the greatest element of the list,</span>
+        <span class="c"># add it at the end of the list</span>
+        <span class="k">if</span> <span class="n">element</span> <span class="o">&gt;</span> <span class="n">sorted_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_list</span><span class="p">)</span>
+    
+        <span class="c"># Otherwise, binary search for the correct position</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search_helper</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">sorted_list</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>    
+    
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;timeline += other&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Add new segment(s) to the timeline.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment or Segment iterator</span>
+<span class="sd">            Can be a Timeline since it is a Segment iterator.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        timeline : Timeline (self)</span>
+<span class="sd">            Original timeline with added segments.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># timeline += segment</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            
+            <span class="c"># do nothing if segment is empty of already exists</span>
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">other</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            
+            <span class="c"># position in Segment list</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span>
+                
+            <span class="c"># position in RevSegment list</span>
+            <span class="n">rehto</span> <span class="o">=</span> <span class="n">RevSegment</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+            <span class="n">xedni</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">rehto</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">)</span>
+                
+            <span class="c"># add segment in both lists</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">xedni</span><span class="p">,</span> <span class="n">rehto</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="bp">self</span>
+            
+        <span class="c"># timeline += other_timeline</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="c"># check for video conflict</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">video</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">video</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;video conflict:&quot;</span>
+                                 <span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39; and &#39;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">video</span><span class="p">))</span>
+        
+        <span class="c"># call timeline += segment for each segment in iterator/timeline</span>
+        <span class="c"># will raise a TypeError in case one segment cannot be added</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="bp">self</span> <span class="o">+=</span> <span class="n">segment</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported operand type(s) for +=:&quot;</span>
+                            <span class="s">&quot;must be Segment or Segment iterator.&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;timeline + other&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        __iadd__</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">timeline</span> <span class="o">+=</span> <span class="n">other</span>
+        <span class="k">return</span> <span class="n">timeline</span>
+    
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;len(timeline)&#39;</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        number : int</span>
+<span class="sd">            Number of segments in timeline</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;if timeline&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        valid : bool</span>
+<span class="sd">            False if timeline is empty (contains no segment),</span>
+<span class="sd">            True otherwise</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sorted segment iterator&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__reversed__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reverse-sorted segment iterator&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use the expressions &#39;timeline[i]&#39; or &#39;timeline[i:j]&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : int or slice</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        segment : Segment</span>
+<span class="sd">            key.th segment if key is int.</span>
+<span class="sd">        segments : list</span>
+<span class="sd">            list of segments if key is a slice.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        IndexError when requested segment is out of range.</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; segment = timeline[3]</span>
+<span class="sd">            &gt;&gt;&gt; print segment</span>
+<span class="sd">            [2 --&gt; 3]</span>
+<span class="sd">            &gt;&gt;&gt; segments = timeline[2:5]</span>
+<span class="sd">            &gt;&gt;&gt; print segments</span>
+<span class="sd">            [&lt;Segment(1, 8)&gt;, &lt;Segment(2, 3)&gt;, &lt;Segment(2, 4)&gt;]</span>
+<span class="sd">            &gt;&gt;&gt; segments = timeline[:3]</span>
+<span class="sd">            &gt;&gt;&gt; print segments</span>
+<span class="sd">            [&lt;Segment(0, 1)&gt;, &lt;Segment(1, 2)&gt;, &lt;Segment(1, 8)&gt;]</span>
+<span class="sd">            &gt;&gt;&gt; segment = timeline[12]</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">            ...</span>
+<span class="sd">            IndexError: list index out of range</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    
+<div class="viewcode-block" id="Timeline.index"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.index">[docs]</a>    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find position of segment</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment : Segment</span>
+<span class="sd">            Segment to look for (must exist in timeline).</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        index : int</span>
+<span class="sd">            Position of segment in timeline, such as timeline[index] == segment </span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        TypeError if segment is not a Segment</span>
+<span class="sd">        ValueError if segment does not exist in timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(2, 4)</span>
+<span class="sd">            &gt;&gt;&gt; position = timeline.index(segment)</span>
+<span class="sd">            &gt;&gt;&gt; print &quot;Segment %s is at position #%d.&quot; % (segment, position)</span>
+<span class="sd">            Segment [2 --&gt; 4] is at position #4.</span>
+<span class="sd">            &gt;&gt;&gt; segment = Segment(4, 12)</span>
+<span class="sd">            &gt;&gt;&gt; position = timeline.index(segment)</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">            ...</span>
+<span class="sd">            ValueError: timeline does not contain segment [4 --&gt; 12].</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported type: &#39;</span><span class="si">%s</span><span class="s">&#39;. &quot;</span> 
+                            <span class="s">&quot;Must be Segment.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="n">segment</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">index</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;timeline does not contain segment </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">segment</span><span class="p">)</span>
+    
+    <span class="c"># ------------------------------------------------------------------- #</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__intersecting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sorted list of intersecting segments&quot;&quot;&quot;</span>
+        
+        <span class="c"># if segment is empty, it intersects nothing.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">segment</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        
+        <span class="c"># any intersecting segment starts before segment ends </span>
+        <span class="c"># and ends after it starts</span>
+        
+        <span class="n">dummy_end</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">end</span><span class="o">-</span><span class="n">SEGMENT_PRECISION</span><span class="p">,</span> \
+                            <span class="n">segment</span><span class="o">.</span><span class="n">end</span><span class="o">-</span><span class="n">SEGMENT_PRECISION</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">dummy_end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span>
+        <span class="c"># property 1:</span>
+        <span class="c"># every segment in __segments[:index] starts before key ends</span>
+        
+        <span class="n">dummy_start</span> <span class="o">=</span> <span class="n">RevSegment</span><span class="p">(</span><span class="n">Segment</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">start</span><span class="o">+</span><span class="n">SEGMENT_PRECISION</span><span class="p">,</span> \
+                                         <span class="n">segment</span><span class="o">.</span><span class="n">start</span><span class="o">+</span><span class="n">SEGMENT_PRECISION</span><span class="p">))</span>
+        <span class="n">xedni</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">dummy_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">)</span>
+        <span class="c"># property 2:</span>
+        <span class="c"># every segment in __rsegments[xedni:] ends after key starts</span>
+        
+        <span class="c"># get segments with both properties</span>
+        <span class="n">both</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[:</span><span class="n">index</span><span class="p">])</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">[</span><span class="n">xedni</span><span class="p">:])</span>
+        
+        <span class="c"># make sure every RevSegment is converted to Segment</span>
+        <span class="c"># and return their sorted list</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">rsegment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">rsegment</span> <span class="ow">in</span> <span class="n">both</span><span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;intersection&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sub-timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;timeline(subset, mode=&#39;intersection&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subset : Segment or Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        mode : {&#39;strict&#39;, &#39;loose&#39;, &#39;intersection&#39;}</span>
+<span class="sd">            Default `mode` is &#39;intersection&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        timeline : Timeline</span>
+<span class="sd">            In &#39;strict&#39; mode, `timeline` only contains segments that are fully </span>
+<span class="sd">            included in provided segment or timeline coverage.</span>
+<span class="sd">            In &#39;loose&#39; mode, `timeine` contains every segment intersecting </span>
+<span class="sd">            provided segment or timeline.</span>
+<span class="sd">            &#39;intersection&#39; mode is similar to &#39;loose&#39; mode except sub-timeline</span>
+<span class="sd">            segments are trimmed to be fully included in provided segment or </span>
+<span class="sd">            timeline.</span>
+<span class="sd">             </span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline(Segment(1.5, 6.5), mode=&#39;loose&#39;)</span>
+<span class="sd">            [</span>
+<span class="sd">               [1 --&gt; 2]</span>
+<span class="sd">               [1 --&gt; 8]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">               [2 --&gt; 4]</span>
+<span class="sd">               [6 --&gt; 7]</span>
+<span class="sd">            ]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline(Segment(1.5, 3), mode=&#39;intersection&#39;)</span>
+<span class="sd">            [</span>
+<span class="sd">               [1.5 --&gt; 2]</span>
+<span class="sd">               [1.5 --&gt; 3]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">            ]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline(Segment(1.5, 4), mode=&#39;strict&#39;)</span>
+<span class="sd">            [</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">               [2 --&gt; 4]</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="p">(</span><span class="n">Segment</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported argument type: &#39;</span><span class="si">%s</span><span class="s">&#39;. Must be &quot;</span>
+                            <span class="s">&quot;Segment or Timeline.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="n">subset</span>     
+            <span class="n">isegments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__intersecting</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;strict&#39;</span><span class="p">:</span>
+                <span class="n">isegments</span> <span class="o">=</span> <span class="p">[</span><span class="n">isegment</span> <span class="k">for</span> <span class="n">isegment</span> <span class="ow">in</span> <span class="n">isegments</span> \
+                                      <span class="k">if</span> <span class="n">isegment</span> <span class="ow">in</span> <span class="n">segment</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;intersection&#39;</span><span class="p">:</span>
+                <span class="n">isegments</span> <span class="o">=</span> <span class="p">[</span><span class="n">isegment</span> <span class="o">&amp;</span> <span class="n">segment</span> <span class="k">for</span> <span class="n">isegment</span> <span class="ow">in</span> <span class="n">isegments</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;loose&#39;</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Unsupported mode (</span><span class="si">%s</span><span class="s">).&#39;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">segments</span><span class="o">=</span><span class="n">isegments</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+        
+        
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">subset</span><span class="o">.</span><span class="n">coverage</span><span class="p">():</span>
+                <span class="n">timeline</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call__</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">timeline</span>
+    
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;use &#39;+=&#39; operator to add and &#39;del&#39; operator&quot;</span>
+                                  <span class="s">&quot;to remove segment(s).&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;del timeline[i]&#39; or &#39;del timeline[segment]&#39; </span>
+<span class="sd">        </span>
+<span class="sd">        Remove segment(s) from timeline (corresponding to provided index)</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : int, slice or Segment</span>
+<span class="sd">            Index of segments or Segment to remove.</span>
+<span class="sd">            </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        TypeError if key is neither int, slice or Segment</span>
+<span class="sd">        ValueError if segment does not exist in timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(2,3)]</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2, 4), Segment(1, 8), Segment(6, 7)]</span>
+
+<span class="sd">            Try to remove unexisting segment</span>
+
+<span class="sd">            &gt;&gt;&gt; del timeline[Segment(3, 4)]</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">            ...</span>
+<span class="sd">            ValueError: timeline does not contain segment [3 --&gt; 4].</span>
+<span class="sd">            </span>
+<span class="sd">            Remove segment</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; del timeline[Segment(1, 2)]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 1]</span>
+<span class="sd">               [1 --&gt; 8]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">               [2 --&gt; 4]</span>
+<span class="sd">               [6 --&gt; 7]</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            Remove fourth segment</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; del timeline[3]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 1]</span>
+<span class="sd">               [1 --&gt; 8]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">               [6 --&gt; 7]</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">            Remove second and third segments</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; del timeline[1:3]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 1]</span>
+<span class="sd">               [6 --&gt; 7]</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="n">Segment</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&quot;unsupported type for key: &#39;</span><span class="si">%s</span><span class="s">&#39;. Must be int, &quot;</span>
+                           <span class="s">&quot;slice or Segment.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="c"># del timeline[i]</span>
+        <span class="c"># remove i.th segment</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="c"># find segment in reverse sorted list</span>
+            <span class="n">segment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">yek</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">RevSegment</span><span class="p">(</span><span class="n">segment</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+            <span class="c"># delete segment in both lists</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">[</span><span class="n">yek</span><span class="p">]</span>
+            
+        <span class="c"># del timeline[i:j]</span>
+        <span class="c"># remove i.th to (j-1).th segments</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
+                <span class="c"># find segment in sorted list</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+                <span class="c"># find segment in reverse sorted list</span>
+                <span class="n">xedni</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__search</span><span class="p">(</span><span class="n">RevSegment</span><span class="p">(</span><span class="n">segment</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+                <span class="c"># delete segment in both lists</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">[</span><span class="n">xedni</span><span class="p">]</span>
+                
+        <span class="c"># del timeline[segment]</span>
+        <span class="c"># remove segment (if it exists)                </span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            <span class="c"># find position of segment</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="c"># remove segment</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__delitem__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="Timeline.clear"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Faster &#39;del timeline[:]&#39;&quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[:]</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">[:]</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;timeline1 == timeline2&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">))</span> <span class="ow">and</span> \
+                    <span class="nb">all</span><span class="p">([</span><span class="n">segment</span> <span class="o">==</span> <span class="n">other</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Use expression &#39;timeline1 != timeline2&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">))</span> <span class="ow">or</span> \
+                    <span class="nb">any</span><span class="p">([</span><span class="n">segment</span> <span class="o">!=</span> <span class="n">other</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Human-friendly representation&quot;&quot;&quot;</span>
+        
+        <span class="n">string</span> <span class="o">=</span> <span class="s">&quot;[</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;   </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">segment</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s">&quot;]&quot;</span>
+        <span class="k">return</span> <span class="n">string</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;&lt;Timeline(</span><span class="si">%s</span><span class="s">)&gt;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span>
+    
+    
+    <span class="c"># =================================================================== #          </span>
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">included</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inclusion</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;segment in timeline&#39; or &#39;other_timeline in timeline&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        included : Segment or Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        contains : bool</span>
+<span class="sd">            True if every segment in `included` exists in timeline,</span>
+<span class="sd">            False otherwise</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">included</span><span class="p">,</span> <span class="p">(</span><span class="n">Segment</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported type &#39;</span><span class="si">%s</span><span class="s">&#39;. Must be&quot;</span>
+                            <span class="s">&quot;Segment or Timeline.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">included</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="c"># True if `included` segment exists in timeline,</span>
+        <span class="c"># False otherwise</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">included</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">included</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        
+        <span class="c"># True if every segment of included timeline </span>
+        <span class="c"># exists in timeline, False otherwise</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">included</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">included</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Timeline.covers"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.covers">[docs]</a>    <span class="k">def</span> <span class="nf">covers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">covered</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Coverage check</span>
+<span class="sd">        </span>
+<span class="sd">        Check whether timeline covers other segment or timeline.</span>
+<span class="sd">        </span>
+<span class="sd">        In &#39;strict&#39; mode, a segment is covered if at least one segment of </span>
+<span class="sd">        the timeline contains it.</span>
+<span class="sd">        </span>
+<span class="sd">        In &#39;loose&#39; mode, a segment is covered if their exists a set of segments</span>
+<span class="sd">        whose coverage fully contains it.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        covered : Segment or Timeline</span>
+<span class="sd">        mode : {&#39;strict&#39;, &#39;loose&#39;}, optional</span>
+<span class="sd">            Default is &#39;strict&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        covers : bool</span>
+<span class="sd">            True if timeline covers `covered`, False otherwise</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covered</span><span class="p">,</span> <span class="p">(</span><span class="n">Segment</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported type &#39;</span><span class="si">%s</span><span class="s">&#39;. Must be&quot;</span>
+                            <span class="s">&quot;Segment or Timeline.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">covered</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;loose&#39;</span><span class="p">,</span> <span class="s">&#39;strict&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;unsupported mode &#39;</span><span class="si">%s</span><span class="s">&#39;.&quot;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;strict&#39;</span><span class="p">:</span>
+            
+            <span class="c"># True if other segment is contained </span>
+            <span class="c"># by at least one segment of the timeline</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covered</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">any</span><span class="p">([</span><span class="n">covered</span> <span class="ow">in</span> <span class="n">segment</span> \
+                            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">(</span><span class="n">covered</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)])</span>
+            
+            <span class="c"># True if timeline covers all other timeline segment</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covered</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">covers</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span> \
+                            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">covered</span><span class="p">])</span>
+
+        <span class="c"># &#39;loose&#39; mode is equivalent to &#39;strict&#39; mode applied on coverage</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;loose&#39;</span><span class="p">:</span>
+            <span class="n">coverage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">coverage</span><span class="o">.</span><span class="n">covers</span><span class="p">(</span><span class="n">covered</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        
+    </div>
+    <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Intersection of two timelines (or a timeline and a segment)</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;timeline &amp; segment&#39; or &#39;timeline &amp; other_timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment or Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        intersection : Timeline</span>
+<span class="sd">            Coverage of the timeline made of the intersection of the original</span>
+<span class="sd">            timeline and the provided segment (or timeline segments).</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;intersection&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Union of two timelines (or a timeline and a segment)</span>
+<span class="sd">        </span>
+<span class="sd">        Use expression &#39;timeline | segment&#39; or &#39;timeline | other_timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment or Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        union : Timeline</span>
+<span class="sd">            Coverage of the timeline made of segments from both the original</span>
+<span class="sd">            timeline and the provided timeline (or segment)</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span> <span class="o">+</span> <span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="Timeline.empty"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Empty copy of a timeline.</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline(video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(2, 3)]</span>
+<span class="sd">            &gt;&gt;&gt; empty = timeline.empty()</span>
+<span class="sd">            &gt;&gt;&gt; print empty.video</span>
+<span class="sd">            MyVideo.avi</span>
+<span class="sd">            &gt;&gt;&gt; print empty</span>
+<span class="sd">            [</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="Timeline.copy"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment_func</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Duplicate timeline.</span>
+<span class="sd">        </span>
+<span class="sd">        If segment_func is provided, apply it to each segment first.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segment_func : function</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        timeline : Timeline</span>
+<span class="sd">            A (possibly modified) copy of the timeline</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline(video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(2, 3)]</span>
+<span class="sd">            &gt;&gt;&gt; cp = timeline.copy()</span>
+<span class="sd">            &gt;&gt;&gt; print cp.video</span>
+<span class="sd">            MyVideo.avi</span>
+<span class="sd">            &gt;&gt;&gt; print cp</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 1]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">            ]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="c"># If segment_func is not provided</span>
+        <span class="c"># make it a pass-through function</span>
+        <span class="k">if</span> <span class="n">segment_func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">segment_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">segment</span><span class="p">:</span> <span class="n">segment</span>
+
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">timeline</span> <span class="o">+=</span> <span class="n">segment_func</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">timeline</span>
+    </div>
+<div class="viewcode-block" id="Timeline.extent"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.extent">[docs]</a>    <span class="k">def</span> <span class="nf">extent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeline extent</span>
+<span class="sd">        </span>
+<span class="sd">        The extent of a timeline is the segment of minimum duration that</span>
+<span class="sd">        contains every segments of the timeline. It is unique, by definition.</span>
+<span class="sd">        The extent of an empty timeline is an empty segment.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        extent : Segment</span>
+<span class="sd">            Timeline extent</span>
+<span class="sd">            </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline(video=&quot;MyVideo.avi&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(9, 10)]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline.extent()</span>
+<span class="sd">            [0 --&gt; 10]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="c"># The extent of a timeline ranges from the start time</span>
+            <span class="c"># of the earliest segment to the end time of the latest one.</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__segments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">start</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__rsegments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">end</span>
+            <span class="k">return</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end_time</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># The extent of an empty timeline is an empty segment </span>
+            <span class="k">return</span> <span class="n">Segment</span><span class="p">()</span>        
+    </div>
+<div class="viewcode-block" id="Timeline.coverage"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.coverage">[docs]</a>    <span class="k">def</span> <span class="nf">coverage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeline coverage</span>
+<span class="sd">        </span>
+<span class="sd">        The coverage of timeline is the timeline with the minimum number of</span>
+<span class="sd">        segments with exactly the same time span as the original timeline.</span>
+<span class="sd">        It is (by definition) unique and does not contain any overlapping </span>
+<span class="sd">        segments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        coverage : Timeline</span>
+<span class="sd">            Timeline coverage</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># The coverage of an empty timeline is an empty timeline.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c"># Make sure video attribute is kept.</span>
+        <span class="n">coverage</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+        
+        <span class="c"># Principle: </span>
+        <span class="c">#   * gather all segments with no gap between them</span>
+        <span class="c">#   * add one segment per resulting group (their union |)</span>
+        <span class="c"># Note:</span>
+        <span class="c">#   Since segments are kept sorted internally, </span>
+        <span class="c">#   there is no need to perform an exhaustive segment clustering.</span>
+        <span class="c">#   We just have to consider them in their natural order.</span>
+        
+        <span class="c"># Initialize new coverage segment</span>
+        <span class="c"># as very first segment of the timeline</span>
+        <span class="n">new_segment</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            
+            <span class="c"># If there is no gap between new coverage segment and next segment,</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">segment</span> <span class="o">^</span> <span class="n">new_segment</span><span class="p">):</span>
+                <span class="c"># Extend new coverage segment using next segment</span>
+                <span class="n">new_segment</span> <span class="o">|=</span> <span class="n">segment</span>
+            
+            <span class="c"># If there actually is a gap,</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># Add new segment to the timeline coverage</span>
+                <span class="n">coverage</span> <span class="o">+=</span> <span class="n">new_segment</span>
+                <span class="c"># Initialize new coerage segment as next segment</span>
+                <span class="c"># (right after the gap)</span>
+                <span class="n">new_segment</span> <span class="o">=</span> <span class="n">segment</span>
+        
+        <span class="c"># Add new segment to the timeline coverage</span>
+        <span class="n">coverage</span> <span class="o">+=</span> <span class="n">new_segment</span>
+        
+        <span class="k">return</span> <span class="n">coverage</span>
+    </div>
+<div class="viewcode-block" id="Timeline.duration"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.duration">[docs]</a>    <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeline duration</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        duration : float</span>
+<span class="sd">            Duration of timeline coverage, in seconds.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># The timeline duration is the sum of the durations</span>
+        <span class="c"># of the segments in the timeline coverage. </span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">segment</span><span class="o">.</span><span class="n">duration</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="p">()])</span>
+    </div>
+<div class="viewcode-block" id="Timeline.gaps"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.gaps">[docs]</a>    <span class="k">def</span> <span class="nf">gaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">focus</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeline gaps</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        focus : None, Segment or Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        gaps : Timeline</span>
+<span class="sd">            Timeline made of all gaps from original timeline, and delimited</span>
+<span class="sd">            by provided segment or timeline.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        TypeError when `focus` is neither None, Segment nor Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">focus</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">focus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus</span><span class="p">,</span> <span class="p">(</span><span class="n">Segment</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;unsupported operand type(s) for -&#39;:&quot;</span>
+                            <span class="s">&quot;</span><span class="si">%s</span><span class="s"> and Timeline.&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">focus</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        
+        <span class="c"># segment focus</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+            
+            <span class="c"># starts with an empty timeline</span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+            
+            <span class="c"># `end` is meant to store the end time of former segment</span>
+            <span class="c"># initialize it with beginning of provided segment `focus`</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">focus</span><span class="o">.</span><span class="n">start</span>
+            
+            <span class="c"># focus on the intersection of timeline and provided segment</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">(</span><span class="n">focus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;intersection&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">coverage</span><span class="p">():</span>
+                
+                <span class="c"># add gap between each pair of consecutive segments</span>
+                <span class="c"># if there is no gap, segment is empty, therefore not added</span>
+                <span class="c"># see .__iadd__ for more information.</span>
+                <span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">segment</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+                
+                <span class="c"># keep track of the end of former segment</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">end</span>
+            
+            <span class="c"># add final gap (if not empty)</span>
+            <span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">focus</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+
+        <span class="c"># other_timeline - timeline</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">):</span>
+            
+            <span class="c"># starts with an empty timeline</span>
+            <span class="n">timeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+            
+            <span class="c"># add gaps for every segment in coverage of provided timeline</span>
+            <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">focus</span><span class="o">.</span><span class="n">coverage</span><span class="p">():</span>
+                <span class="n">timeline</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gaps</span><span class="p">(</span><span class="n">focus</span><span class="o">=</span><span class="n">segment</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">timeline</span>
+    </div>
+<div class="viewcode-block" id="Timeline.is_segmentation"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.is_segmentation">[docs]</a>    <span class="k">def</span> <span class="nf">is_segmentation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check whether timeline contains overlapping segments</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">            </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2, 3), Segment(2, 4)]</span>
+<span class="sd">            &gt;&gt;&gt; if timeline.is_segmentation():</span>
+<span class="sd">            ...    print &quot;Timeline has no overlapping segments.&quot;</span>
+<span class="sd">            ... else:</span>
+<span class="sd">            ...    print &quot;Timeline has overlapping segments.&quot;</span>
+<span class="sd">            Timeline has overlapping segments.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># Empty timelines have no overlapping segments</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        
+        <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">end</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="c"># use Segment.__nonzero__ (for precision-related reasons...)</span>
+            <span class="k">if</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">segment</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">end</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    </div>
+<div class="viewcode-block" id="Timeline.segmentation"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.segmentation">[docs]</a>    <span class="k">def</span> <span class="nf">segmentation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Non-overlapping timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Create the unique timeline with same coverage and same set of segment </span>
+<span class="sd">        boundaries as original timeline, but with no overlapping segments.</span>
+<span class="sd">        </span>
+<span class="sd">        A picture is worth a thousand words:</span>
+<span class="sd">        </span>
+<span class="sd">            Original timeline:</span>
+<span class="sd">            |------|    |------|     |----|</span>
+<span class="sd">              |--|    |-----|     |----------|</span>
+<span class="sd">        </span>
+<span class="sd">            Non-overlapping timeline</span>
+<span class="sd">            |-|--|-|  |-|---|--|  |--|----|--|</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        timeline : Timeline</span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(2,3)]</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(2, 4), Segment(6, 7)]</span>
+<span class="sd">            &gt;&gt;&gt; print timeline.segmentation()</span>
+<span class="sd">            [</span>
+<span class="sd">               [0 --&gt; 1]</span>
+<span class="sd">               [1 --&gt; 2]</span>
+<span class="sd">               [2 --&gt; 3]</span>
+<span class="sd">               [3 --&gt; 4]</span>
+<span class="sd">               [6 --&gt; 7]</span>
+<span class="sd">            ]</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># return a copy if it has no overlapping segments</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_segmentation</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c"># get all boundaries (sorted)</span>
+        <span class="c"># |------|    |------|     |----|</span>
+        <span class="c">#   |--|    |-----|     |----------|</span>
+        <span class="c"># becomes</span>
+        <span class="c"># | |  | |  | |   |  |  |  |    |  |</span>
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">start</span>
+            <span class="n">end</span>   <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">end</span>
+            <span class="k">if</span> <span class="n">start</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>
+                <span class="n">boundaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">end</span>   <span class="ow">not</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>
+                <span class="n">boundaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> 
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span>
+
+        <span class="c"># create new partition timeline</span>
+        <span class="c"># | |  | |  | |   |  |  |  |    |  |</span>
+        <span class="c"># becomes</span>
+        <span class="c"># |-|--|-|  |-|---|--|  |--|----|--|</span>
+
+        <span class="c"># start with an empty copy</span>
+        <span class="n">timeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+        
+        <span class="n">start</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">boundary</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            
+            <span class="n">new_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">boundary</span><span class="p">)</span>
+            
+            <span class="c"># only add segments that are covered by original timeline</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covers</span><span class="p">(</span><span class="n">new_segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">):</span>
+                <span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">boundary</span><span class="p">)</span>
+        
+            <span class="n">start</span> <span class="o">=</span> <span class="n">boundary</span>
+        
+        <span class="k">return</span> <span class="n">timeline</span>
+    </div>
+<div class="viewcode-block" id="Timeline.is_partition"><a class="viewcode-back" href="../../../learn/api/foundation/timeline.html#pyannote.base.timeline.Timeline.is_partition">[docs]</a>    <span class="k">def</span> <span class="nf">is_partition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check for partition</span>
+<span class="sd">        </span>
+<span class="sd">        A partition is a segmentation, covering its extent exactly.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        is_seg : bool</span>
+<span class="sd">            True if timeline is a partition </span>
+<span class="sd">            False otherwise.</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        Examples</span>
+<span class="sd">        ---------</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; timeline = Timeline()</span>
+<span class="sd">            &gt;&gt;&gt; timeline += [Segment(0, 1), Segment(1, 2), Segment(3, 4)]</span>
+<span class="sd">            &gt;&gt;&gt; if timeline.is_partition():</span>
+<span class="sd">            ...     print &quot;Timeline is a partition.&quot;</span>
+<span class="sd">            &gt;&gt;&gt; timeline += Segment(2, 3)</span>
+<span class="sd">            &gt;&gt;&gt; if timeline.is_partition():</span>
+<span class="sd">            ...     print &quot;Timeline is a partition.&quot;</span>
+<span class="sd">            Timeline is a partition.</span>
+<span class="sd">            &gt;&gt;&gt; timeline += Segment(3.5, 5)</span>
+<span class="sd">            &gt;&gt;&gt; if timeline.is_partition():</span>
+<span class="sd">            ...     print &quot;Timeline is a partition.&quot;</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">is_segmentation</span><span class="p">()</span> <span class="ow">and</span> \
+               <span class="n">Timeline</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">extent</span><span class="p">()],</span> <span class="n">video</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+    
+    
+</div></div>
+<span class="k">class</span> <span class="nc">Segmentation</span><span class="p">(</span><span class="n">Timeline</span><span class="p">):</span>    
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        
+<span class="k">class</span> <span class="nc">Partition</span><span class="p">(</span><span class="n">Segmentation</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

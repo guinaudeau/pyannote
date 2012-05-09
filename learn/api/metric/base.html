@@ -1,0 +1,671 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Base &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Metrics" href="index.html" />
+    <link rel="next" title="Mapping" href="mapping.html" />
+    <link rel="prev" title="Metrics" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapping.html" title="Mapping"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Metrics"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Metrics</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pyannote.metric.base">
+<span id="base"></span><h1>Base<a class="headerlink" href="#module-pyannote.metric.base" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyannote.metric.base.BaseErrorRate">
+<em class="property">class </em><tt class="descclassname">pyannote.metric.base.</tt><tt class="descname">BaseErrorRate</tt><big>(</big><em>name</em>, <em>values</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate._BaseErrorRate__accumulate">
+<tt class="descname">_BaseErrorRate__accumulate</tt><big>(</big><em>detail</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate._BaseErrorRate__accumulate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate._BaseErrorRate__compute">
+<tt class="descname">_BaseErrorRate__compute</tt><big>(</big><em>detail</em>, <em>accumulate=True</em>, <em>detailed=False</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate._BaseErrorRate__compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate._BaseErrorRate__get_name">
+<tt class="descname">_BaseErrorRate__get_name</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate._BaseErrorRate__get_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate._BaseErrorRate__set_name">
+<tt class="descname">_BaseErrorRate__set_name</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate._BaseErrorRate__set_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__abs__">
+<tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.__abs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>detailed=False</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__call__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__class__">
+<tt class="descname">__class__</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__class__" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">type</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__delattr__">
+<tt class="descname">__delattr__</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = &lt;dictproxy object at 0x1047e3da8&gt;</em><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__format__">
+<tt class="descname">__format__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__getattribute__">
+<tt class="descname">__getattribute__</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.__getitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get specific detail value</p>
+<p>Use expression &#8216;error[&#8216;KEYWORD&#8217;]&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>key</strong> : str</p>
+<blockquote class="last">
+<div><p>Name of a valid detail value.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><em>) &lt;==&gt; hash(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>name</em>, <em>values</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'pyannote.metric.base'</em><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.BaseErrorRate.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>S</em>, <em>...</em><big>)</big> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__reduce__">
+<tt class="descname">__reduce__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__reduce_ex__">
+<tt class="descname">__reduce_ex__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><em>) &lt;==&gt; repr(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__setattr__">
+<tt class="descname">__setattr__</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__sizeof__">
+<tt class="descname">__sizeof__</tt><big>(</big><big>)</big> &rarr; size of object in memory, in bytes<a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.__str__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__str__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.BaseErrorRate.__subclasshook__">
+<em class="property">static </em><tt class="descname">__subclasshook__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.get_details">
+<tt class="descname">get_details</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.get_details"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.get_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.get_rate">
+<tt class="descname">get_rate</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.get_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.get_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.init_details">
+<tt class="descname">init_details</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.init_details"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.init_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.BaseErrorRate.name">
+<tt class="descname">name</tt><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metric name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.BaseErrorRate.pretty">
+<tt class="descname">pretty</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#BaseErrorRate.pretty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.BaseErrorRate.pretty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.metric.base.Precision">
+<em class="property">class </em><tt class="descclassname">pyannote.metric.base.</tt><tt class="descname">Precision</tt><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Precision"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Precision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.metric.base.BaseErrorRate" title="pyannote.metric.base.BaseErrorRate"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.metric.base.BaseErrorRate</span></tt></a></p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.metric.base.Precision._BaseErrorRate__accumulate">
+<tt class="descname">_BaseErrorRate__accumulate</tt><big>(</big><em>detail</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision._BaseErrorRate__accumulate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision._BaseErrorRate__compute">
+<tt class="descname">_BaseErrorRate__compute</tt><big>(</big><em>detail</em>, <em>accumulate=True</em>, <em>detailed=False</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision._BaseErrorRate__compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision._BaseErrorRate__get_name">
+<tt class="descname">_BaseErrorRate__get_name</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision._BaseErrorRate__get_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision._BaseErrorRate__set_name">
+<tt class="descname">_BaseErrorRate__set_name</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision._BaseErrorRate__set_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__abs__">
+<tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>detailed=False</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__call__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__class__">
+<tt class="descname">__class__</tt><a class="headerlink" href="#pyannote.metric.base.Precision.__class__" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">type</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__delattr__">
+<tt class="descname">__delattr__</tt><a class="headerlink" href="#pyannote.metric.base.Precision.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = &lt;dictproxy object at 0x1047b89b8&gt;</em><a class="headerlink" href="#pyannote.metric.base.Precision.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__format__">
+<tt class="descname">__format__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__getattribute__">
+<tt class="descname">__getattribute__</tt><a class="headerlink" href="#pyannote.metric.base.Precision.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get specific detail value</p>
+<p>Use expression &#8216;error[&#8216;KEYWORD&#8217;]&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>key</strong> : str</p>
+<blockquote class="last">
+<div><p>Name of a valid detail value.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><em>) &lt;==&gt; hash(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__init__">
+<tt class="descname">__init__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Precision.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Precision.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'pyannote.metric.base'</em><a class="headerlink" href="#pyannote.metric.base.Precision.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.Precision.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>S</em>, <em>...</em><big>)</big> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#pyannote.metric.base.Precision.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__reduce__">
+<tt class="descname">__reduce__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__reduce_ex__">
+<tt class="descname">__reduce_ex__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><em>) &lt;==&gt; repr(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__setattr__">
+<tt class="descname">__setattr__</tt><a class="headerlink" href="#pyannote.metric.base.Precision.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__sizeof__">
+<tt class="descname">__sizeof__</tt><big>(</big><big>)</big> &rarr; size of object in memory, in bytes<a class="headerlink" href="#pyannote.metric.base.Precision.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__str__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.Precision.__subclasshook__">
+<em class="property">static </em><tt class="descname">__subclasshook__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.metric.base.Precision.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.get_details">
+<tt class="descname">get_details</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.get_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.get_rate">
+<tt class="descname">get_rate</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Precision.get_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Precision.get_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.init_details">
+<tt class="descname">init_details</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Precision.init_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Precision.name">
+<tt class="descname">name</tt><a class="headerlink" href="#pyannote.metric.base.Precision.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metric name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Precision.pretty">
+<tt class="descname">pretty</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Precision.pretty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Precision.pretty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.metric.base.Recall">
+<em class="property">class </em><tt class="descclassname">pyannote.metric.base.</tt><tt class="descname">Recall</tt><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Recall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Recall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.metric.base.BaseErrorRate" title="pyannote.metric.base.BaseErrorRate"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.metric.base.BaseErrorRate</span></tt></a></p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.metric.base.Recall._BaseErrorRate__accumulate">
+<tt class="descname">_BaseErrorRate__accumulate</tt><big>(</big><em>detail</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall._BaseErrorRate__accumulate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall._BaseErrorRate__compute">
+<tt class="descname">_BaseErrorRate__compute</tt><big>(</big><em>detail</em>, <em>accumulate=True</em>, <em>detailed=False</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall._BaseErrorRate__compute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall._BaseErrorRate__get_name">
+<tt class="descname">_BaseErrorRate__get_name</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall._BaseErrorRate__get_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall._BaseErrorRate__set_name">
+<tt class="descname">_BaseErrorRate__set_name</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall._BaseErrorRate__set_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__abs__">
+<tt class="descname">__abs__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>detailed=False</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__call__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__class__">
+<tt class="descname">__class__</tt><a class="headerlink" href="#pyannote.metric.base.Recall.__class__" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">type</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__delattr__">
+<tt class="descname">__delattr__</tt><a class="headerlink" href="#pyannote.metric.base.Recall.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__dict__">
+<tt class="descname">__dict__</tt><em class="property"> = &lt;dictproxy object at 0x1047b8980&gt;</em><a class="headerlink" href="#pyannote.metric.base.Recall.__dict__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__format__">
+<tt class="descname">__format__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__getattribute__">
+<tt class="descname">__getattribute__</tt><a class="headerlink" href="#pyannote.metric.base.Recall.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get specific detail value</p>
+<p>Use expression &#8216;error[&#8216;KEYWORD&#8217;]&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>key</strong> : str</p>
+<blockquote class="last">
+<div><p>Name of a valid detail value.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><em>) &lt;==&gt; hash(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__init__">
+<tt class="descname">__init__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Recall.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Recall.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__module__">
+<tt class="descname">__module__</tt><em class="property"> = 'pyannote.metric.base'</em><a class="headerlink" href="#pyannote.metric.base.Recall.__module__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.Recall.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>S</em>, <em>...</em><big>)</big> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#pyannote.metric.base.Recall.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__reduce__">
+<tt class="descname">__reduce__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__reduce_ex__">
+<tt class="descname">__reduce_ex__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><em>) &lt;==&gt; repr(x</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__setattr__">
+<tt class="descname">__setattr__</tt><a class="headerlink" href="#pyannote.metric.base.Recall.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__sizeof__">
+<tt class="descname">__sizeof__</tt><big>(</big><big>)</big> &rarr; size of object in memory, in bytes<a class="headerlink" href="#pyannote.metric.base.Recall.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__str__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.metric.base.Recall.__subclasshook__">
+<em class="property">static </em><tt class="descname">__subclasshook__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.metric.base.Recall.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.get_details">
+<tt class="descname">get_details</tt><big>(</big><em>reference</em>, <em>hypothesis</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.get_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.get_rate">
+<tt class="descname">get_rate</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Recall.get_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Recall.get_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.init_details">
+<tt class="descname">init_details</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.metric.base.Recall.init_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.metric.base.Recall.name">
+<tt class="descname">name</tt><a class="headerlink" href="#pyannote.metric.base.Recall.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metric name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.metric.base.Recall.pretty">
+<tt class="descname">pretty</tt><big>(</big><em>detail</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/metric/base.html#Recall.pretty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.metric.base.Recall.pretty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Metrics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mapping.html"
+                        title="next chapter">Mapping</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/metric/base.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapping.html" title="Mapping"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Metrics"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Metrics</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

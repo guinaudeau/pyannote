@@ -1,0 +1,747 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Label mapping &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Foundation" href="index.html" />
+    <link rel="next" title="Label-indexed matrix" href="matrix.html" />
+    <link rel="prev" title="Annotation" href="annotation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="matrix.html" title="Label-indexed matrix"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Foundation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pyannote.base.mapping">
+<span id="label-mapping"></span><h1>Label mapping<a class="headerlink" href="#module-pyannote.base.mapping" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyannote.base.mapping.Mapping">
+<em class="property">class </em><tt class="descclassname">pyannote.base.mapping.</tt><tt class="descname">Mapping</tt><big>(</big><em>left='left'</em>, <em>right='right'</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Many-to-many label mapping</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>left</strong> : str, optional</p>
+<blockquote>
+<div><p>Left-hand side modality. Defaults to &#8216;left&#8217;.</p>
+</div></blockquote>
+<p><strong>right</strong> : str</p>
+<blockquote>
+<div><p>Right-hand side modality. Defaults to &#8216;right&#8217;.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first last"><strong>mapping</strong> : Mapping</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">(</span><span class="s">&#39;speaker&#39;</span><span class="p">,</span> <span class="s">&#39;face&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,</span> <span class="p">),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__add__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__add__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping + (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping + other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><strong>other</strong> : Mapping or couple of labels</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><strong>mapping</strong> : Mapping</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping1</span> <span class="o">+</span> <span class="n">mapping2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>label</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__contains__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;label in mapping&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__eq__">
+<tt class="descname">__eq__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;mapping == other_mapping&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__hash__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression hash(mapping)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__iadd__">
+<tt class="descname">__iadd__</tt><big>(</big><em>other</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__iadd__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__iadd__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping += (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping += other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body"><strong>ValueError</strong> :</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="n">other_mapping</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left/right mapping iterator</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> --&gt; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">left</span><span class="p">)),</span>                                         <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">right</span><span class="p">)))</span>
+<span class="go">A B C --&gt; a b</span>
+<span class="go">D --&gt; c d e</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.__str__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Human-readable representation</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.Mapping.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.base.mapping.Mapping.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.Mapping.empty">
+<tt class="descname">empty</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#Mapping.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.Mapping.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empty copy</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.Mapping.left">
+<tt class="descname">left</tt><a class="headerlink" href="#pyannote.base.mapping.Mapping.left" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left-hand side modality</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.Mapping.left_set">
+<tt class="descname">left_set</tt><a class="headerlink" href="#pyannote.base.mapping.Mapping.left_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left-hand side set of labels</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.Mapping.right">
+<tt class="descname">right</tt><a class="headerlink" href="#pyannote.base.mapping.Mapping.right" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right-hand side modality</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.Mapping.right_set">
+<tt class="descname">right_set</tt><a class="headerlink" href="#pyannote.base.mapping.Mapping.right_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right-hand side set of labels</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.base.mapping.ManyToOneMapping">
+<em class="property">class </em><tt class="descclassname">pyannote.base.mapping.</tt><tt class="descname">ManyToOneMapping</tt><big>(</big><em>left='left'</em>, <em>right='right'</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#ManyToOneMapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.base.mapping.Mapping" title="pyannote.base.mapping.Mapping"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.mapping.Mapping</span></tt></a></p>
+<p>Many-to-one mapping</p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__add__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping + (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping + other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><strong>other</strong> : Mapping or couple of labels</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><strong>mapping</strong> : Mapping</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping1</span> <span class="o">+</span> <span class="n">mapping2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>label</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;label in mapping&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__delattr__">
+<tt class="descname">__delattr__</tt><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__eq__">
+<tt class="descname">__eq__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;mapping == other_mapping&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__format__">
+<tt class="descname">__format__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__getattribute__">
+<tt class="descname">__getattribute__</tt><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression hash(mapping)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__iadd__">
+<tt class="descname">__iadd__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__iadd__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping += (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping += other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body"><strong>ValueError</strong> :</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="n">other_mapping</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left/right mapping iterator</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> --&gt; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">left</span><span class="p">)),</span>                                         <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">right</span><span class="p">)))</span>
+<span class="go">A B C --&gt; a b</span>
+<span class="go">D --&gt; c d e</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>S</em>, <em>...</em><big>)</big> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__reduce__">
+<tt class="descname">__reduce__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__reduce_ex__">
+<tt class="descname">__reduce_ex__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><em>) &lt;==&gt; repr(x</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__setattr__">
+<tt class="descname">__setattr__</tt><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__sizeof__">
+<tt class="descname">__sizeof__</tt><big>(</big><big>)</big> &rarr; size of object in memory, in bytes<a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Human-readable representation</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__subclasshook__">
+<em class="property">static </em><tt class="descname">__subclasshook__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.ManyToOneMapping.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping._check_and_normalize">
+<tt class="descname">_check_and_normalize</tt><big>(</big><em>mapping</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#ManyToOneMapping._check_and_normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping._check_and_normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extra verification for many-to-one mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.ManyToOneMapping.empty">
+<tt class="descname">empty</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.ManyToOneMapping.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empty copy</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyannote.base.mapping.OneToOneMapping">
+<em class="property">class </em><tt class="descclassname">pyannote.base.mapping.</tt><tt class="descname">OneToOneMapping</tt><big>(</big><em>left='left'</em>, <em>right='right'</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#OneToOneMapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.base.mapping.ManyToOneMapping" title="pyannote.base.mapping.ManyToOneMapping"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.mapping.ManyToOneMapping</span></tt></a></p>
+<p>One-to-one mapping</p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__add__">
+<tt class="descname">__add__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__add__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping + (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping + other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><strong>other</strong> : Mapping or couple of labels</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><strong>mapping</strong> : Mapping</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping1</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping2</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping1</span> <span class="o">+</span> <span class="n">mapping2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>label</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;label in mapping&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.OneToOneMapping.__delattr__">
+<tt class="descname">__delattr__</tt><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__delattr__(&#8216;name&#8217;) &lt;==&gt; del x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__eq__">
+<tt class="descname">__eq__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression &#8216;mapping == other_mapping&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__format__">
+<tt class="descname">__format__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>default object formatter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.OneToOneMapping.__getattribute__">
+<tt class="descname">__getattribute__</tt><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__getattribute__(&#8216;name&#8217;) &lt;==&gt; x.name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use expression hash(mapping)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__iadd__">
+<tt class="descname">__iadd__</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__iadd__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use expression &#8216;mapping += (left_labels, right_labels)&#8217;</dt>
+<dd>or &#8216;mapping += other_mapping&#8217;</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body"><strong>ValueError</strong> :</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">other_mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="n">other_mapping</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left/right mapping iterator</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> --&gt; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">left</span><span class="p">)),</span>                                         <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">right</span><span class="p">)))</span>
+<span class="go">A B C --&gt; a b</span>
+<span class="go">D --&gt; c d e</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.base.mapping.OneToOneMapping.__new__">
+<em class="property">static </em><tt class="descname">__new__</tt><big>(</big><em>S</em>, <em>...</em><big>)</big> &rarr; a new object with type S, a subtype of T<a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__new__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__reduce__">
+<tt class="descname">__reduce__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__reduce__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__reduce_ex__">
+<tt class="descname">__reduce_ex__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__reduce_ex__" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper for pickle</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.OneToOneMapping.__repr__">
+<tt class="descname">__repr__</tt><big>(</big><em>) &lt;==&gt; repr(x</em><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.OneToOneMapping.__setattr__">
+<tt class="descname">__setattr__</tt><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__setattr__(&#8216;name&#8217;, value) &lt;==&gt; x.name = value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__sizeof__">
+<tt class="descname">__sizeof__</tt><big>(</big><big>)</big> &rarr; size of object in memory, in bytes<a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__sizeof__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Human-readable representation</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&#39;C&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;D&#39;</span><span class="p">,),</span> <span class="p">(</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   A B C --&gt; a b</span>
+<span class="go">   D --&gt; c d e</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyannote.base.mapping.OneToOneMapping.__subclasshook__">
+<em class="property">static </em><tt class="descname">__subclasshook__</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__subclasshook__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract classes can override this to customize issubclass().</p>
+<p>This is invoked early on by abc.ABCMeta.__subclasscheck__().
+It should return True, False or NotImplemented.  If it returns
+NotImplemented, the normal algorithm is used.  Otherwise, it
+overrides the normal algorithm (and the outcome is cached).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.mapping.OneToOneMapping.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping._check_and_normalize">
+<tt class="descname">_check_and_normalize</tt><big>(</big><em>mapping</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/mapping.html#OneToOneMapping._check_and_normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping._check_and_normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extra verification for one-to-one mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.mapping.OneToOneMapping.empty">
+<tt class="descname">empty</tt><big>(</big><big>)</big><a class="headerlink" href="#pyannote.base.mapping.OneToOneMapping.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empty copy</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="annotation.html"
+                        title="previous chapter">Annotation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="matrix.html"
+                        title="next chapter">Label-indexed matrix</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/foundation/mapping.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="matrix.html" title="Label-indexed matrix"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Foundation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

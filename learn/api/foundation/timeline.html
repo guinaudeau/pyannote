@@ -1,0 +1,571 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Timeline &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Foundation" href="index.html" />
+    <link rel="next" title="Annotation" href="annotation.html" />
+    <link rel="prev" title="Segment" href="segment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="segment.html" title="Segment"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Foundation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="timeline">
+<h1>Timeline<a class="headerlink" href="#timeline" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyannote.base.timeline.Timeline">
+<em class="property">class </em><tt class="descclassname">pyannote.base.timeline.</tt><tt class="descname">Timeline</tt><big>(</big><em>segments=None</em>, <em>video=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ordered set of segments.</p>
+<p>A timeline can be seen as an ordered set of non-empty segments (Segment).
+Segments can overlap &#8211; though adding an already exisiting segment to a 
+timeline does nothing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>segments</strong> : Segment iterator, optional</p>
+<blockquote>
+<div><p>initial set of segments</p>
+</div></blockquote>
+<p><strong>video</strong> : string, optional</p>
+<blockquote>
+<div><p>name of (audio or video) segmented document</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>timeline</strong> : Timeline</p>
+<blockquote class="last">
+<div><p>New timeline</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Create a new empty timeline</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="ow">not</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline is empty.&quot;</span>
+<span class="go">Timeline is empty.</span>
+</pre></div>
+</div>
+<p>Add one segment (+=)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">segment</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline contains only one segment.&quot;</span>
+<span class="go">Timeline contains only one segment.</span>
+</pre></div>
+</div>
+<p>Add all segments from another timeline</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">other_timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">([</span><span class="n">Segment</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">other_timeline</span>
+</pre></div>
+</div>
+<p>Get timeline extent, coverage &amp; duration</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">extent</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">extent</span>
+<span class="go">[0 --&gt; 8]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">coverage</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">coverage</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 3]</span>
+<span class="go">   [6 --&gt; 8]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">duration</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">duration</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Timeline covers a total of </span><span class="si">%g</span><span class="s"> seconds.&quot;</span> <span class="o">%</span> <span class="n">duration</span>
+<span class="go">Timeline covers a total of 5 seconds.</span>
+</pre></div>
+</div>
+<p>Iterate over (sorted) timeline segments</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="n">segment</span>
+<span class="go">[0 --&gt; 1]</span>
+<span class="go">[0.5 --&gt; 3]</span>
+<span class="go">[6 --&gt; 8]</span>
+</pre></div>
+</div>
+<p>Segmentation</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segmentation</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">segmentation</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segmentation</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 0.5]</span>
+<span class="go">   [0.5 --&gt; 1]</span>
+<span class="go">   [1 --&gt; 3]</span>
+<span class="go">   [6 --&gt; 8]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span><span class="o">.</span><span class="n">is_segmentation</span><span class="p">():</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline is a segmentation.&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">segmentation</span><span class="o">.</span><span class="n">is_segmentation</span><span class="p">():</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline is a segmentation.&quot;</span>
+<span class="go">Timeline is a segmentation.</span>
+</pre></div>
+</div>
+<p>Gaps</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [0.5 --&gt; 3]</span>
+<span class="go">   [6 --&gt; 8]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span>
+<span class="go">[</span>
+<span class="go">   [3 --&gt; 6]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="o">.</span><span class="n">gaps</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+<span class="go">[</span>
+<span class="go">   [3 --&gt; 6]</span>
+<span class="go">   [8 --&gt; 10]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.clear">
+<tt class="descname">clear</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Faster &#8216;del timeline[:]&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.copy">
+<tt class="descname">copy</tt><big>(</big><em>segment_func=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate timeline.</p>
+<p>If segment_func is provided, apply it to each segment first.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>segment_func</strong> : function</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>timeline</strong> : Timeline</p>
+<blockquote class="last">
+<div><p>A (possibly modified) copy of the timeline</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&quot;MyVideo.avi&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cp</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">cp</span><span class="o">.</span><span class="n">video</span>
+<span class="go">MyVideo.avi</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">cp</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [2 --&gt; 3]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.coverage">
+<tt class="descname">coverage</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.coverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timeline coverage</p>
+<p>The coverage of timeline is the timeline with the minimum number of
+segments with exactly the same time span as the original timeline.
+It is (by definition) unique and does not contain any overlapping 
+segments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>coverage</strong> : Timeline</p>
+<blockquote class="last">
+<div><p>Timeline coverage</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.covers">
+<tt class="descname">covers</tt><big>(</big><em>covered</em>, <em>mode='strict'</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.covers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.covers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coverage check</p>
+<p>Check whether timeline covers other segment or timeline.</p>
+<p>In &#8216;strict&#8217; mode, a segment is covered if at least one segment of 
+the timeline contains it.</p>
+<p>In &#8216;loose&#8217; mode, a segment is covered if their exists a set of segments
+whose coverage fully contains it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>covered</strong> : Segment or Timeline</p>
+<p><strong>mode</strong> : {&#8216;strict&#8217;, &#8216;loose&#8217;}, optional</p>
+<blockquote>
+<div><p>Default is &#8216;strict&#8217;</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>covers</strong> : bool</p>
+<blockquote class="last">
+<div><p>True if timeline covers <cite>covered</cite>, False otherwise</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.duration">
+<tt class="descname">duration</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timeline duration</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>duration</strong> : float</p>
+<blockquote class="last">
+<div><p>Duration of timeline coverage, in seconds.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.empty">
+<tt class="descname">empty</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empty copy of a timeline.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&quot;MyVideo.avi&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">empty</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">empty</span><span class="o">.</span><span class="n">video</span>
+<span class="go">MyVideo.avi</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">empty</span>
+<span class="go">[</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.extent">
+<tt class="descname">extent</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.extent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timeline extent</p>
+<p>The extent of a timeline is the segment of minimum duration that
+contains every segments of the timeline. It is unique, by definition.
+The extent of an empty timeline is an empty segment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>extent</strong> : Segment</p>
+<blockquote class="last">
+<div><p>Timeline extent</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&quot;MyVideo.avi&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+<span class="go">[0 --&gt; 10]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.gaps">
+<tt class="descname">gaps</tt><big>(</big><em>focus=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.gaps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.gaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timeline gaps</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>focus</strong> : None, Segment or Timeline</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>gaps</strong> : Timeline</p>
+<blockquote>
+<div><p>Timeline made of all gaps from original timeline, and delimited
+by provided segment or timeline.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body"><p class="first last"><strong>TypeError when `focus` is neither None, Segment nor Timeline</strong> :</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.index">
+<tt class="descname">index</tt><big>(</big><em>segment</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find position of segment</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>segment</strong> : Segment</p>
+<blockquote>
+<div><p>Segment to look for (must exist in timeline).</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>index</strong> : int</p>
+<blockquote>
+<div><p>Position of segment in timeline, such as timeline[index] == segment</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body"><p class="first"><strong>TypeError if segment is not a Segment</strong> :</p>
+<p class="last"><strong>ValueError if segment does not exist in timeline</strong> :</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)]</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">position</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Segment </span><span class="si">%s</span><span class="s"> is at position #</span><span class="si">%d</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+<span class="go">Segment [2 --&gt; 4] is at position #4.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">position</span> <span class="o">=</span> <span class="n">timeline</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">timeline does not contain segment [4 --&gt; 12].</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.is_partition">
+<tt class="descname">is_partition</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.is_partition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.is_partition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for partition</p>
+<p>A partition is a segmentation, covering its extent exactly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>is_seg</strong> : bool</p>
+<blockquote class="last">
+<div><p>True if timeline is a partition 
+False otherwise.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span><span class="o">.</span><span class="n">is_partition</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Timeline is a partition.&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span><span class="o">.</span><span class="n">is_partition</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Timeline is a partition.&quot;</span>
+<span class="go">Timeline is a partition.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="mf">3.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span><span class="o">.</span><span class="n">is_partition</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Timeline is a partition.&quot;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.is_segmentation">
+<tt class="descname">is_segmentation</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.is_segmentation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.is_segmentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether timeline contains overlapping segments</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">timeline</span><span class="o">.</span><span class="n">is_segmentation</span><span class="p">():</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline has no overlapping segments.&quot;</span>
+<span class="gp">... </span><span class="k">else</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;Timeline has overlapping segments.&quot;</span>
+<span class="go">Timeline has overlapping segments.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyannote.base.timeline.Timeline.segmentation">
+<tt class="descname">segmentation</tt><big>(</big><big>)</big><a class="reference internal" href="../../../_modules/pyannote/base/timeline.html#Timeline.segmentation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.base.timeline.Timeline.segmentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non-overlapping timeline</p>
+<p>Create the unique timeline with same coverage and same set of segment 
+boundaries as original timeline, but with no overlapping segments.</p>
+<p>A picture is worth a thousand words:</p>
+<blockquote>
+<div><p>Original timeline:
+<a href="#id1"><span class="problematic" id="id2">|&#8212;&#8212;|</span></a>    <a href="#id3"><span class="problematic" id="id4">|&#8212;&#8212;|</span></a>     <a href="#id5"><span class="problematic" id="id6">|&#8212;-|</span></a></p>
+<blockquote>
+<div><a href="#id7"><span class="problematic" id="id8">|&#8211;|</span></a>    <a href="#id9"><span class="problematic" id="id10">|&#8212;&#8211;|</span></a>     <a href="#id11"><span class="problematic" id="id12">|&#8212;&#8212;&#8212;-|</span></a></div></blockquote>
+<p>Non-overlapping timeline
+<a href="#id13"><span class="problematic" id="id14">|-|</span></a>&#8211;<a href="#id15"><span class="problematic" id="id16">|-|</span></a>  <a href="#id17"><span class="problematic" id="id18">|-|</span></a>&#8212;<a href="#id19"><span class="problematic" id="id20">|&#8211;|</span></a>  <a href="#id21"><span class="problematic" id="id22">|&#8211;|</span></a>&#8212;-<a href="#id23"><span class="problematic" id="id24">|&#8211;|</span></a></p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"><strong>timeline</strong> : Timeline</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="o">.</span><span class="n">segmentation</span><span class="p">()</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 1]</span>
+<span class="go">   [1 --&gt; 2]</span>
+<span class="go">   [2 --&gt; 3]</span>
+<span class="go">   [3 --&gt; 4]</span>
+<span class="go">   [6 --&gt; 7]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyannote.base.timeline.Timeline.video">
+<tt class="descname">video</tt><a class="headerlink" href="#pyannote.base.timeline.Timeline.video" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to (or any identifier of) segmented video</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&quot;MyVideo.avi&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="s">&quot;MyOtherVideo.avi&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="o">.</span><span class="n">video</span>
+<span class="go">MyOtherVideo.avi</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="segment.html"
+                        title="previous chapter">Segment</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="annotation.html"
+                        title="next chapter">Annotation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/foundation/timeline.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="annotation.html" title="Annotation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="segment.html" title="Segment"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Foundation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

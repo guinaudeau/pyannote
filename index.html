@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,15 +7,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to pyannote’s documentation! &mdash; pyannote 1 documentation</title>
+    <title>PyAnnote &mdash; PyAnnote 0.2 documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1',
+        VERSION:     '0.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,11 +24,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="search" type="application/opensearchdescription+xml"
-          title="Search within pyannote 1 documentation"
-          href="_static/opensearch.xml"/>
-    <link rel="top" title="pyannote 1 documentation" href="#" />
-    <link rel="next" title="Tutorial" href="tutorial.html" /> 
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="#" />
+    <link rel="next" title="Getting started" href="start.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,9 +39,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="start.html" title="Getting started"
              accesskey="N">next</a> |</li>
-        <li><a href="#">pyannote 1 documentation</a> &raquo;</li> 
+        <li><a href="#">PyAnnote 0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,26 +53,49 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="welcome-to-pyannote-s-documentation">
-<h1>Welcome to pyannote&#8217;s documentation!<a class="headerlink" href="#welcome-to-pyannote-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
+  <div class="section" id="pyannote">
+<h1>PyAnnote<a class="headerlink" href="#pyannote" title="Permalink to this headline">¶</a></h1>
+<p><tt class="docutils literal"><span class="pre">PyAnnote</span></tt> is a Python module for collaborative annotation of multimedia content.</p>
+<p>It provides a (hopefully) easy-to-use Python API to store and manipulate temporal annotations of multimedia content. Applications that can benefit from <tt class="docutils literal"><span class="pre">PyAnnote</span></tt> include video shot (or scene) boundary detection, speaker diarization, audio indexing based on automatic speech transcription or audio/visual person recognition, etc.</p>
+<p>Various evaluation metrics are implemented, for the most common automatic audio/video processing tasks such as temporal segmentation, speech activity detection, speaker diarization and identification, etc.</p>
+<p>A limited set of automatic annotation algorithms are available for now, that should be increased as <tt class="docutils literal"><span class="pre">PyAnnote</span></tt> evolve in the future.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/segment.html">Segment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/timeline.html">Timeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/annotation.html">Annotation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="start.html">Get started with PyAnnote</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="start.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="start.html#installation">Installation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/segment.html">Segment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/timeline.html">Timeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/annotation.html">Annotation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/metric.html">Metric</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/parser.html">Parser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="learn/index.html">Learn how to use PyAnnote</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learn/tutorial.html">Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learn/api/index.html">API Documentation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to PyAnnote</a></li>
 </ul>
+</div>
+</div>
+<div class="section" id="author-s">
+<h1>Author(s)<a class="headerlink" href="#author-s" title="Permalink to this headline">¶</a></h1>
+<p><tt class="docutils literal"><span class="pre">PyAnnote</span></tt> was started in 2012 by Herve Bredin (<a class="reference external" href="mailto:bredin&#37;&#52;&#48;limsi&#46;fr">bredin<span>&#64;</span>limsi<span>&#46;</span>fr</a>) in the framework of the <a class="reference external" href="http://www.defi-repere.fr/">REPERE challenge</a>, focusing on audiovisual people recognition in TV videos.</p>
+</div>
+<div class="section" id="licence">
+<h1>Licence<a class="headerlink" href="#licence" title="Permalink to this headline">¶</a></h1>
+<p><tt class="docutils literal"><span class="pre">PyAnnote</span></tt> is distributed under the GNU General Public License:</p>
+<div class="highlight-python"><pre>Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+    PyAnnote is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    PyAnnote is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with PyAnnote.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</pre>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
@@ -92,15 +115,17 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to pyannote&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#">PyAnnote</a><ul>
 </ul>
 </li>
+<li><a class="reference internal" href="#author-s">Author(s)</a></li>
+<li><a class="reference internal" href="#licence">Licence</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="tutorial.html"
-                        title="next chapter">Tutorial</a></p>
+  <p class="topless"><a href="start.html"
+                        title="next chapter">Getting started</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/index.txt"
@@ -133,13 +158,16 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="start.html" title="Getting started"
              >next</a> |</li>
-        <li><a href="#">pyannote 1 documentation</a> &raquo;</li> 
+        <li><a href="#">PyAnnote 0.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Hervé BREDIN.
+        &copy; Copyright 2012, Herve Bredin.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

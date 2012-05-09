@@ -1,0 +1,337 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../index.html" />
+    <link rel="up" title="Learn" href="index.html" />
+    <link rel="next" title="API Documentation" href="api/index.html" />
+    <link rel="prev" title="Learn" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api/index.html" title="API Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Learn"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Learn</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial will walk you through the main concepts of <tt class="docutils literal"><span class="pre">PyAnnote</span></tt> in a
+matter of minutes. Let&#8217;s get started:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="n">Segment</span><span class="p">,</span> <span class="n">Timeline</span><span class="p">,</span> <span class="n">Annotation</span>
+</pre></div>
+</div>
+<p>The main <tt class="docutils literal"><span class="pre">PyAnnote</span></tt> objects are segments, timelines and annotations.</p>
+<div class="section" id="segments">
+<h2>Segments<a class="headerlink" href="#segments" title="Permalink to this headline">¶</a></h2>
+<p>Segments are meant to store temporal intervals.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">start_time_in_seconds</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">end_time_in_seconds</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start_time_in_seconds</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end_time_in_seconds</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Segment </span><span class="si">%s</span><span class="s"> starts at </span><span class="si">%g</span><span class="s"> seconds and ends at </span><span class="si">%g</span><span class="s"> seconds.&quot;</span> <span class="o">%</span> \
+<span class="gp">... </span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">segment</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">segment</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+<span class="go">Segment [10 --&gt; 20] starts at 10 seconds and ends at 20 seconds.</span>
+</pre></div>
+</div>
+<p>Intersection of two segments is obtained via the operator &amp;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">other_segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">segment</span> <span class="o">&amp;</span> <span class="n">other_segment</span><span class="p">:</span>
+<span class="gp">... </span>     <span class="k">print</span> <span class="s">&quot;Intersection of </span><span class="si">%s</span><span class="s"> and </span><span class="si">%s</span><span class="s"> is </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> \
+<span class="gp">... </span>     <span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">other_segment</span><span class="p">,</span> <span class="n">segment</span> <span class="o">&amp;</span> <span class="n">other_segment</span><span class="p">)</span>
+<span class="go">Intersection of [10 --&gt; 20] and [15 --&gt; 25] is [15 --&gt; 20].</span>
+</pre></div>
+</div>
+<p>A segment can be reduced or extended using operators &gt;&gt; and &lt;&lt;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">segment</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span>
+<span class="go">[10 --&gt; 17]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="mi">3</span> <span class="o">&lt;&lt;</span> <span class="n">segment</span>
+<span class="go">[7 --&gt; 20]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="mi">1</span> <span class="o">&gt;&gt;</span> <span class="n">segment</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span>
+<span class="go">[11 --&gt; 18]</span>
+</pre></div>
+</div>
+<p>This is only a very short description of what you can do with segments.
+There are <strong>many</strong> more possibilities. Use <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span> <span class="pre">help(Segment)</span></tt> for a complete description.</p>
+</div>
+<div class="section" id="timelines">
+<h2>Timelines<a class="headerlink" href="#timelines" title="Permalink to this headline">¶</a></h2>
+<p>A timeline can be seen as a set of ordered segments, describing a given (audio or video) document, whose name is provided with the <tt class="docutils literal"><span class="pre">video</span></tt> parameter.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">timeline</span> <span class="o">=</span> <span class="n">Timeline</span><span class="p">(</span><span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">start_time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">timeline</span> <span class="o">+=</span> <span class="n">Segment</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">start_time</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Timeline contains </span><span class="si">%d</span><span class="s"> (possibly overlapping) segments.&quot;</span> <span class="o">%</span> \
+<span class="gp">... </span>                                                    <span class="nb">len</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+<span class="go">Timeline contains 5 (possibly overlapping) segments.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 2]</span>
+<span class="go">   [1 --&gt; 3]</span>
+<span class="go">   [2 --&gt; 4]</span>
+<span class="go">   [3 --&gt; 5]</span>
+<span class="go">   [4 --&gt; 6]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>Getting or deleting a segment is easy as well.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Third segment is </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">timeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="go">Third segment is [2 --&gt; 4].</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">timeline</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">timeline</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="n">segment</span>
+<span class="go">[0 --&gt; 2]</span>
+<span class="go">[1 --&gt; 3]</span>
+<span class="go">[4 --&gt; 6]</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">PyAnnote</span></tt> also allows to compute a timeline extent, coverage, duration or
+gaps. See <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span> <span class="pre">help(Timeline)</span></tt> for their detailed definition.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;The extent is segment </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">timeline</span><span class="o">.</span><span class="n">extent</span><span class="p">()</span>
+<span class="go">The extent is segment [0 --&gt; 6].</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;The coverage is:</span><span class="se">\n</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">timeline</span><span class="o">.</span><span class="n">coverage</span><span class="p">()</span>
+<span class="go">The coverage is:</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 3]</span>
+<span class="go">   [4 --&gt; 6]</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;It covers </span><span class="si">%g</span><span class="s"> seconds.&quot;</span> <span class="o">%</span> <span class="n">timeline</span><span class="o">.</span><span class="n">duration</span><span class="p">()</span>
+<span class="go">It covers 5 seconds.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;It contains the following gaps:</span><span class="se">\n</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">timeline</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span>
+<span class="go">It contains the following gaps:</span>
+<span class="go">[</span>
+<span class="go">   [3 --&gt; 4]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>Finally, one can extract a subset of a timeline.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">segment</span> <span class="o">=</span> <span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
+<span class="go">[</span>
+<span class="go">   [1 --&gt; 3]</span>
+<span class="go">   [4 --&gt; 5]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>In <em>loose</em> mode, any intersecting segments are kept unmodified.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;loose&#39;</span><span class="p">)</span>
+<span class="go">[</span>
+<span class="go">   [1 --&gt; 3]</span>
+<span class="go">   [4 --&gt; 6]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>In <em>strict</em> mode, only fully included segments are kept.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">timeline</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+<span class="go">[</span>
+<span class="go">   [1 --&gt; 3]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>This is only a very short description of what you can do with segments.
+There are <strong>many</strong> more possibilites. Use <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span> <span class="pre">help(Timeline)</span></tt> for a complete description.</p>
+</div>
+<div class="section" id="annotations">
+<h2>Annotations<a class="headerlink" href="#annotations" title="Permalink to this headline">¶</a></h2>
+<p>Annotations are probably the objects you will manipulate the most when using
+<tt class="docutils literal"><span class="pre">PyAnnote</span></tt>.</p>
+<p>For instance, let us create an annotation meant to store the output of a speaker
+identification algorithms for video <em>MyVideo.avi</em>.
+We can easily do so using the following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">speaker</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> \
+<span class="gp">... </span>                     <span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;speaker&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">speaker</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;Alice&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">speaker</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;Bob&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">speaker</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;Alice&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">speaker</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;Bob&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">segment</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">speaker</span><span class="o">.</span><span class="n">iterlabels</span><span class="p">():</span>
+<span class="gp">... </span>   <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> speaks during </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">segment</span><span class="p">)</span>
+<span class="go">Alice speaks during [0 --&gt; 10].</span>
+<span class="go">Bob speaks during [10 --&gt; 15].</span>
+<span class="go">Alice speaks during [14 --&gt; 20].</span>
+<span class="go">Bob speaks during [10 --&gt; 15].</span>
+</pre></div>
+</div>
+<p>If we want to focus on Alice&#8217;s speech turns, we can just extract the corresponding annotation subset (same for Bob):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">alice</span> <span class="o">=</span> <span class="n">speaker</span><span class="p">(</span><span class="s">&#39;Alice&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">alice</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 10] : Alice</span>
+<span class="go">   [14 --&gt; 20] : Alice</span>
+<span class="go">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bob</span> <span class="o">=</span> <span class="n">speaker</span><span class="p">(</span><span class="s">&#39;Bob&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Obviously, we can obtain some kind of statistics about speakers:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Alice spoke for </span><span class="si">%g</span><span class="s"> seconds.&quot;</span> <span class="o">%</span> <span class="n">alice</span><span class="o">.</span><span class="n">timeline</span><span class="o">.</span><span class="n">duration</span><span class="p">()</span>
+<span class="go">Alice spoke for 16 seconds.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;Alice and Bob spoke simultaneously at:</span><span class="se">\n</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> \
+<span class="gp">... </span>                          <span class="p">(</span><span class="n">alice</span><span class="o">.</span><span class="n">timeline</span> <span class="o">&amp;</span> <span class="n">bob</span><span class="o">.</span><span class="n">timeline</span><span class="p">)</span>
+<span class="go">Alice and Bob spoke simultaneously at:</span>
+<span class="go">[</span>
+<span class="go">   [14 --&gt; 15]</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>This is only a very short description of what you can do with segments.
+There are <strong>many</strong> more possibilites. Use <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span> <span class="pre">help(Annotation)</span></tt> for a
+complete description.</p>
+</div>
+<div class="section" id="what-s-next">
+<h2>What&#8217;s next?<a class="headerlink" href="#what-s-next" title="Permalink to this headline">¶</a></h2>
+<p>Now that you are familiar with <tt class="docutils literal"><span class="pre">PyAnnote</span></tt> foundation objects, I encourage you to have a look at the API to know a bit more about available algorithms and evaluation metrics.</p>
+<p>Here is a short example.</p>
+<p>Suppose you have lots of training data for speaker identification and that you are quite confident about the results it provides.
+Yet, for various reason, you could not gather any annotated data for face recognition and therefore could not build any face models.
+However, your face detection, tracking and clustering systems is quite robust as well.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">face</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="s">&#39;MyVideo.avi&#39;</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;face&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s">&#39;face2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">17</span><span class="p">),</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">17</span><span class="p">),</span> <span class="s">&#39;face2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person3&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">face</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="s">&#39;face1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;person2&#39;</span>
+</pre></div>
+</div>
+<p>Why not try to recognize faces based on audio data only?, based on the co-occurrence of face clusters and speaker speech turns.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote.algorithm.mapping</span> <span class="kn">import</span> <span class="n">HungarianMapper</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">HungarianMapper</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapper</span><span class="p">(</span><span class="n">face</span><span class="p">,</span> <span class="n">speaker</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   person2 &lt;--&gt; Bob</span>
+<span class="go">   person1 &lt;--&gt; Alice</span>
+<span class="go">   person3 &lt;--&gt;</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">face</span> <span class="o">%</span> <span class="n">mapping</span>
+<span class="go">[</span>
+<span class="go">   [0 --&gt; 4] face1 : Alice</span>
+<span class="go">   [4 --&gt; 15] face1 : Alice</span>
+<span class="go">              face2 : Bob</span>
+<span class="go">   [15 --&gt; 17] face1 : Bob</span>
+<span class="go">               face2 : person3</span>
+<span class="go">   [17 --&gt; 25] face1 : Alice</span>
+<span class="go">   [23 --&gt; 30] face1 : Bob</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#segments">Segments</a></li>
+<li><a class="reference internal" href="#timelines">Timelines</a></li>
+<li><a class="reference internal" href="#annotations">Annotations</a></li>
+<li><a class="reference internal" href="#what-s-next">What&#8217;s next?</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Learn</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api/index.html"
+                        title="next chapter">API Documentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/learn/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api/index.html" title="API Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Learn"
+             >previous</a> |</li>
+        <li><a href="../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Learn</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

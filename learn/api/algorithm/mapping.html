@@ -1,0 +1,327 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Label Mapping &mdash; PyAnnote 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyAnnote 0.2 documentation" href="../../../index.html" />
+    <link rel="up" title="Algorithms" href="index.html" />
+    <link rel="next" title="Tagging" href="tagging.html" />
+    <link rel="prev" title="Algorithms" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tagging.html" title="Tagging"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Algorithms"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Algorithms</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pyannote.algorithm.mapping">
+<span id="label-mapping"></span><h1>Label Mapping<a class="headerlink" href="#module-pyannote.algorithm.mapping" title="Permalink to this headline">¶</a></h1>
+<p>Given two <tt class="docutils literal"><span class="pre">Annotation</span></tt> objects <cite>A</cite> and <cite>B</cite> of the same audio/video document, label mapping consists in finding the optimal association between <cite>A</cite> labels and <cite>B</cite> labels. 
+Depending on the algorithm and the definition of an <cite>optimal</cite> mapping, it can return a one-to-one, many-to-one, one-to-many or many-to-many mapping.</p>
+<p>Several mapping algorithms are available in the <tt class="docutils literal"><span class="pre">pyannote.algorithm.mapping</span></tt> module.</p>
+<div class="section" id="base-type">
+<h2>Base type<a class="headerlink" href="#base-type" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyannote.algorithm.mapping.base.BaseMapper">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.mapping.base.</tt><tt class="descname">BaseMapper</tt><a class="reference internal" href="../../../_modules/pyannote/algorithm/mapping/base.html#BaseMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.mapping.base.BaseMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mapping algorithm base class</p>
+<p>Any mapping algorithm must inherit from this base class and implement the 
+<tt class="docutils literal"><span class="pre">_associate(A,</span> <span class="pre">B)</span></tt> method.</p>
+<dl class="method">
+<dt id="pyannote.algorithm.mapping.base.BaseMapper.__call__">
+<tt class="descname">__call__</tt><big>(</big><em>A</em>, <em>B</em>, <em>init=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/mapping/base.html#BaseMapper.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.mapping.base.BaseMapper.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the optimal mapping between <cite>A</cite> and <cite>B</cite> labels</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>A, B</strong> : <a class="reference internal" href="../foundation/annotation.html#pyannote.base.annotation.Annotation" title="pyannote.base.annotation.Annotation"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.annotation.Annotation</span></tt></a></p>
+<p><strong>init</strong> : <a class="reference internal" href="../foundation/mapping.html#pyannote.base.mapping.Mapping" title="pyannote.base.mapping.Mapping"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.mapping.Mapping</span></tt></a>, optional</p>
+<blockquote>
+<div><p>Initial constraint on label mapping.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>mapping</strong> : <a class="reference internal" href="../foundation/mapping.html#pyannote.base.mapping.Mapping" title="pyannote.base.mapping.Mapping"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.mapping.Mapping</span></tt></a></p>
+<blockquote class="last">
+<div><p>Optimal mapping between <cite>A</cite> and <cite>B</cite> labels.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../foundation/mapping.html#module-pyannote.base.mapping" title="pyannote.base.mapping"><tt class="xref py py-obj docutils literal"><span class="pre">pyannote.base.mapping</span></tt></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&quot;left&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a3&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a4&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&quot;right&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b3&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b4&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">init</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">(</span><span class="s">&quot;left&quot;</span><span class="p">,</span> <span class="s">&quot;right&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">init</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;a1&#39;</span><span class="p">,</span> <span class="s">&#39;a2&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;b1&#39;</span><span class="p">,</span> <span class="s">&#39;b2&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">init</span> <span class="o">+=</span> <span class="p">((</span><span class="s">&#39;a3&#39;</span><span class="p">,</span> <span class="s">&#39;a4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;b3&#39;</span><span class="p">,</span> <span class="s">&#39;b4&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BaseMapper</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">optimal_mapping</span> <span class="o">=</span> <span class="n">mapper</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="one-to-one-mapping">
+<h2>One-to-one mapping<a class="headerlink" href="#one-to-one-mapping" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyannote.algorithm.mapping.hungarian.HungarianMapper">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.mapping.hungarian.</tt><tt class="descname">HungarianMapper</tt><big>(</big><em>cost=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/mapping/hungarian.html#HungarianMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.mapping.hungarian.HungarianMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.algorithm.mapping.base.BaseMapper" title="pyannote.algorithm.mapping.base.BaseMapper"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.mapping.base.BaseMapper</span></tt></a></p>
+<p>One-to-one label mapping based on the Hungarian algorithm</p>
+<blockquote>
+<div>The <cite>Hungarian</cite> mapper relies on the Hungarian algorithm <a class="reference internal" href="#r1">[R1]</a> to find the 
+one-to-one mapping M between labels of two annotations <cite>A</cite> and <cite>B</cite> that
+maximizes ∑ K(a, M(a)) where <cite>cost</cite> function K(a, b) typically is the
+cooccurrence duration of labels a and b.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>cost</strong> : type</p>
+<blockquote class="last">
+<div><p>This parameter controls how function K is computed.
+Defaults to <a class="reference internal" href="../foundation/matrix.html#pyannote.base.matrix.Cooccurrence" title="pyannote.base.matrix.Cooccurrence"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.matrix.Cooccurrence</span></tt></a>, 
+i.e. total cooccurence duration</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">References</p>
+<table class="docutils citation" frame="void" id="r1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[R1]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id2">2</a>)</em> &#8220;Hungarian algorithm&#8221;, <a class="reference external" href="http://en.wikipedia.org/wiki/Hungarian_algorithm">http://en.wikipedia.org/wiki/Hungarian_algorithm</a></td></tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyannote</span> <span class="kn">import</span> <span class="n">Segment</span><span class="p">,</span> <span class="n">Annotation</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;A&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">17</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a3&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">25</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a2&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;B&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b2&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">HungarianMapper</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapper</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+<span class="go">(</span>
+<span class="go">   a1 &lt;--&gt; b1</span>
+<span class="go">   a2 &lt;--&gt; b2</span>
+<span class="go">   a3 &lt;--&gt; </span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="many-to-one-mapping">
+<h2>Many-to-one mapping<a class="headerlink" href="#many-to-one-mapping" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyannote.algorithm.mapping.argmax.ArgMaxMapper">
+<em class="property">class </em><tt class="descclassname">pyannote.algorithm.mapping.argmax.</tt><tt class="descname">ArgMaxMapper</tt><big>(</big><em>cost=None</em><big>)</big><a class="reference internal" href="../../../_modules/pyannote/algorithm/mapping/argmax.html#ArgMaxMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyannote.algorithm.mapping.argmax.ArgMaxMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyannote.algorithm.mapping.base.BaseMapper" title="pyannote.algorithm.mapping.base.BaseMapper"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.algorithm.mapping.base.BaseMapper</span></tt></a></p>
+<p>Many-to-one label mapping based on cost function.</p>
+<p>The <cite>ArgMax</cite> mapper relies on a cost function K to find the 
+many-to-one mapping M between labels of two annotations <cite>A</cite> and <cite>B</cite> such
+that M(a) = argmax K(a, b).</p>
+<p><cite>cost</cite> function K(a, b) typically is the total cooccurrence duration of
+labels a and b.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>cost</strong> : type</p>
+<blockquote class="last">
+<div><p>This parameter controls how function K is computed.
+Defaults to <a class="reference internal" href="../foundation/matrix.html#pyannote.base.matrix.Cooccurrence" title="pyannote.base.matrix.Cooccurrence"><tt class="xref py py-class docutils literal"><span class="pre">pyannote.base.matrix.Cooccurrence</span></tt></a>, 
+i.e. total cooccurence duration</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../foundation/matrix.html#pyannote.base.matrix.Cooccurrence" title="pyannote.base.matrix.Cooccurrence"><tt class="xref py py-obj docutils literal"><span class="pre">pyannote.base.matrix.Cooccurrence</span></tt></a>, <a class="reference internal" href="../foundation/matrix.html#pyannote.base.matrix.CoTFIDF" title="pyannote.base.matrix.CoTFIDF"><tt class="xref py py-obj docutils literal"><span class="pre">pyannote.base.matrix.CoTFIDF</span></tt></a>, <a class="reference internal" href="../foundation/matrix.html#module-pyannote.base.matrix" title="pyannote.base.matrix"><tt class="xref py py-obj docutils literal"><span class="pre">pyannote.base.matrix</span></tt></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;A&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">17</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a3&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">25</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;a2&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">Annotation</span><span class="p">(</span><span class="n">multitrack</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">modality</span><span class="o">=</span><span class="s">&#39;B&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">[</span><span class="n">Segment</span><span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">30</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;b2&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">HungarianMapper</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mapping</span> <span class="o">=</span> <span class="n">mapper</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mapping</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Label Mapping</a><ul>
+<li><a class="reference internal" href="#base-type">Base type</a></li>
+<li><a class="reference internal" href="#one-to-one-mapping">One-to-one mapping</a></li>
+<li><a class="reference internal" href="#many-to-one-mapping">Many-to-one mapping</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Algorithms</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tagging.html"
+                        title="next chapter">Tagging</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../../_sources/learn/api/algorithm/mapping.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tagging.html" title="Tagging"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Algorithms"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">PyAnnote 0.2 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Learn</a> &raquo;</li>
+          <li><a href="../index.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" >Algorithms</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Herve Bredin.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
