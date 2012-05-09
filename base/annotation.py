@@ -787,6 +787,18 @@ class Annotation(object):
         # perform the actual translation
         return self.copy(label_func=label_func)
     
+    def anonymize(self):
+        """Anonmyize labels
+    
+        Returns
+        -------
+        anonymized : :class:`Annotation`
+            A copy where each label is replaced by an instance of ``Unknown``.
+        
+        """
+        translation = {label: Unknown() for label in self.labels()} 
+        return self % translation
+    
     def __get_label(self, label):
         
         T = self.empty()
