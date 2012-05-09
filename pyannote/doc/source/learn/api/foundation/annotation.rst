@@ -16,8 +16,8 @@
 Annotation
 ==========
 
-.. autoclass:: pyannote.base.tag.Annotation
+.. autoclass:: pyannote.base.annotation.Annotation
     :members:
 
-.. autoclass:: pyannote.base.tag.Unknown
+.. autoclass:: pyannote.base.annotation.Unknown
     :members:
