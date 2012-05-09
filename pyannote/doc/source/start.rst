@@ -29,13 +29,11 @@ It was successfully tested with the following versions:
 Installation
 ************
 
-The recommended way to install ``PyAnnote`` is the following:
+The recommended way to install ``PyAnnote`` is to use ``easy_install``::
 
-	* Download latest stable version from `GitHub <https://github.com/hbredin/pyannote/downloads>`_,
-	* Extract the archive,
-	* Make sure its in your ``PYTHONPATH``.  
+	$ easy_install PyAnnote
 
-or you can get latest development code::
+or you can get latest development code from `GitHub <http://github.com/hbredin/pyannote>`_::
 
 	$ git clone git@github.com/hbredin/pyannote
 	$ git branch development
