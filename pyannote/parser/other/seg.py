@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from ..generic import GenericParser
-from pyannote.base.feature import SlidingWindow
+from pyannote.base.segment import SlidingWindow
 import warnings
 
 class SEGParser(GenericParser):

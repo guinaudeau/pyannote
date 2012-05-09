@@ -20,7 +20,8 @@
 
 import struct
 import numpy as np
-from pyannote.base.feature import SlidingWindow, SlidingWindowFeature
+from pyannote.base.segment import SlidingWindow
+from pyannote.base.feature import PeriodicFeature
 
 def _read_plp(path2plp):
     
@@ -66,7 +67,7 @@ class PLPParser(object):
     def feature(self):
         plp_record = _read_plp(self.path2plp)
         data = np.concatenate( [record for record in plp_record], axis=0 )
-        feature = SlidingWindowFeature(data, \
+        feature = PeriodicFeature(data, \
                                        sliding_window = self.sliding_window,
                                        video=self.video)
         return feature

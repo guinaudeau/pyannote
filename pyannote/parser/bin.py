@@ -20,9 +20,7 @@
 
 import struct
 import numpy as np
-from pyannote.base.feature import SlidingWindow, \
-                                  SlidingWindowFeature, \
-                                  TimelineFeature
+from pyannote.base.feature import PeriodicFeature, TimelineFeature
 
 def _read_bin(path2bin, dimension, base='<f4'):
     
@@ -56,9 +54,9 @@ class BINParser(object):
                                   video=self.video, )
         return feature
     
-    def sliding_window_feature(self, sliding_window):
+    def periodic_feature(self, sliding_window):
         data = _read_bin(self.path2bin, self.dimension, base=self.base)
-        feature = SlidingWindowFeature(data, \
+        feature = PeriodicFeature(data, \
                                        sliding_window = sliding_window, \
                                        video=self.video)
         return feature
