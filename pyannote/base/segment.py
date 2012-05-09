@@ -615,11 +615,10 @@ class SlidingWindow(object):
         
         if i0 == 0:
             # extend segment to the beginning of the timeline
-            delta = segment.start - self.start
-            segment = (delta << segment)
+            segment.start = self.start
         
         return segment
-        
+            
     def __iter__(self):
         """Sliding window iterator
         
