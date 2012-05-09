@@ -157,6 +157,31 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         self.anonymous = anonymous
         self.tagger = ArgMaxDirectTagger()
 
+    def __get_precision(self): 
+        if self[EGER_HYP_NAME] > 0:
+            precision = 1. * self[EGER_CORRECT_NAME] / self[EGER_HYP_NAME]
+        else:
+            precision = 1.
+        return precision        
+    precision = property(fget=__get_precision)
+    """Overall precision."""
+
+    def __get_recall(self): 
+        if self[EGER_HYP_NAME] > 0:
+            recall = 1. * self[EGER_CORRECT_NAME] / self[EGER_REF_NAME]
+        else:
+            recall = 1.        
+        return recall        
+    recall = property(fget=__get_recall)
+    """Overall recall."""
+
+    def __get_fmeasure(self):
+        precision = self.precision
+        recall = self.recall
+        return 2 * precision * recall / (precision + recall)
+    f_measure = property(fget=__get_fmeasure)
+    """Overall F1-measure."""
+
     def get_details(self, reference, hypothesis, annotated=None):
         
         detail = self.init_details()
