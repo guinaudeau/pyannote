@@ -79,7 +79,7 @@ class MissedDetectionError(CooccurrenceError):
                             self.reference)
 
 from identification import DefaultIDMatcher
-from association import OneToOneMapping, NoMatch
+from pyannote.base.mapping import OneToOneMapping, NoMatch
 from pyannote.base.annotation import Annotation
 
 class Diff(object):
