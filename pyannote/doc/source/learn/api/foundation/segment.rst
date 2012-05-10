@@ -19,3 +19,7 @@ Segment
 .. autoclass:: pyannote.base.segment.Segment
     :members:
     :undoc-members:
+
+.. autoclass:: pyannote.base.segment.SlidingWindow
+    :members:
+    :undoc-members:
