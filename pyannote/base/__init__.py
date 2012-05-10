@@ -28,7 +28,7 @@ from segment import Segment, SlidingWindow
 from timeline import Timeline
 from annotation import Annotation
 
-__all__ = ['Segment', 'Timeline', 'Annotation']
+__all__ = ['Segment', 'SlidingWindow', 'Timeline', 'Annotation']
 
 if __name__ == "__main__":
     import doctest
