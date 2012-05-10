@@ -470,13 +470,16 @@ class SlidingWindow(object):
     
     Parameters
     ----------
-    duration : float, optional
+    duration : float > 0, optional
         Window duration, in seconds. Default is 30 ms.
-    step : float, optional
+    step : float > 0, optional
         Step between two consecutive position, in seconds. Default is 10 ms.
     start : float, optional
-        First position of window, in seconds. Default is 0.
-    end : float, optional
+        First start position of window, in seconds. Default is 0.
+    end : float > `start`, optional
+        Default is infinity (ie. window keeps sliding forever)
+    end_mode : {'strict', 'loose', 'intersection'}, optional
+        Has no effect when `end` is infinity.
     
     Examples
     --------
@@ -491,47 +494,67 @@ class SlidingWindow(object):
     >>> abs(segment) - abs(segment & new_segment) < .5 * sw.step
     
     """
-    def __init__(self, duration=0.030, step=0.010, start=0.000, end=None):
+    def __init__(self, duration=0.030, step=0.010, \
+                       start=0.000, end=None, end_mode='intersection'):
         super(SlidingWindow, self).__init__()
+        
+        # duration must be a float > 0
+        if duration <= 0:
+            raise ValueError("'duration' must be a float > 0.")
         self.__duration = duration
+
+        # step must be a float > 0
+        if step <= 0:
+            raise ValueError("'step' must be a float > 0.")
         self.__step = step
+
+        # start must be a float.
         self.__start = start
-        self.__end = end
+
+        # if end is not provided, set it to infinity
+        if end is None:
+            self.__end = np.inf
+        else:
+            # end must be greater than start
+            if end <= start:
+                raise ValueError("'end' must be greater than 'start'.")
+            self.__end = end
+        
+        # allowed end modes are 'intersection', 'strict' or 'loose'
+        if not end_mode in ['intersection', 'strict', 'loose']:
+            self.__end_mode = end_mode
     
     def __get_start(self): 
         return self.__start
-    def __set_start(self, value):
-        self.__start = value
-    start = property(fget=__get_start, fset=__set_start)
+    start = property(fget=__get_start)
     """Sliding window start time in seconds."""
     
     def __get_end(self): 
         return self.__end
-    def __set_end(self, value):
-        self.__end = value
-    end = property(fget=__get_end, fset=__set_end)
+    end = property(fget=__get_end)
     """Sliding window end time in seconds."""
     
+    def __get_end_mode(self): 
+        return self.__end_mode
+    end_mode = property(fget=__get_end_mode)
+    """Sliding window end mode."""
+
     def __get_step(self): 
         return self.__step
-    def __set_step(self, value):
-        self.__step = value
-    step = property(fget=__get_step, fset=__set_step)
+    step = property(fget=__get_step)
     """Sliding window step in seconds."""
     
     def __get_duration(self): 
         return self.__duration
-    def __set_duration(self, value):
-        self.__duration = value
-    duration = property(fget=__get_duration, fset=__set_duration)
+    duration = property(fget=__get_duration)
     """Sliding window duration in seconds."""
     
-    def __closest_frame(self, timestamp):
+    def __closest_frame(self, t):
         """Closest frame to timestamp.
         
         Parameters
         ----------
-        timestamp : float
+        t : float
             Timestamp, in seconds.
             
         Returns
@@ -540,7 +563,7 @@ class SlidingWindow(object):
             Index of frame whose middle is the closest to `timestamp`
         
         """
-        frame = np.rint(.5+(timestamp-self.start-.5*self.duration)/self.step)
+        frame = np.rint(.5+(t-self.__start-.5*self.__duration)/self.__step)
         return int(frame)
     
     def segmentToRange(self, segment):
@@ -609,8 +632,8 @@ class SlidingWindow(object):
         # start += .5 * self.duration
         # subframe start time
         # start -= .5 * self.step
-        start = self.start + (i0-.5) * self.step + .5 * self.duration
-        duration = n * self.step
+        start = self.__start + (i0-.5)*self.__step + .5*self.__duration
+        duration = n*self.__step
         segment = Segment(start, start + duration)
         
         if i0 == 0:
@@ -618,7 +641,49 @@ class SlidingWindow(object):
             segment.start = self.start
         
         return segment
+        
+    def __getitem__(self, i):
+        """
+        Parameters
+        ----------
+        i : int
+            Index of sliding window position
             
+        Returns
+        -------
+        segment : :class:`Segment`
+            Sliding window at ith position.
+        
+        """
+        
+        # window start time at ith position
+        start = self.__start + i*self.__step
+        
+        # in case segment starts after the end,
+        # return an empty segment 
+        if start >= self.__end:
+            return Segment(start, start)
+        
+        # window end time at ith position
+        end = start + self.__duration
+        
+        # in case segment ends after the end,
+        if end > self.__end:
+            
+            # return a trimmed segment in 'intersection' mode
+            if self.__end_mode == 'intersection':
+                end = self.__end 
+
+            # return an empty segment in 'strict' mode
+            elif self.__end_mode == 'strict': 
+                start = end
+            
+            # return the full segment in 'loose' mode
+            # elif self.__end_mode == 'loose':
+            #     pass
+        
+        return Segment(start, end)
+        
     def __iter__(self):
         """Sliding window iterator
         
@@ -643,22 +708,53 @@ class SlidingWindow(object):
         
         """
         
-        if self.end is None:
-            raise ValueError('Please set end time first.')
-        extent = Segment(start=self.start, end=self.end)  
+        # get window first position
+        i = 0
+        window = self[i]
         
-        position = 0
-        while(True):
-            start = self.start + position * self.step
-            end = start + self.duration
-            window = extent & Segment(start=start, end=end)
-            if window:
-                yield window
-                position += 1
-            else:
-                break
-
-
+        # yield window while it's valid 
+        while(window):
+            yield window
+            
+            # get window next position
+            i += 1
+            window = self[i]
+    
+    def __len__(self):
+        """Number of positions
+        
+        Equivalent to len([segment for segment in window])
+        
+        Returns
+        -------
+        length : int
+            Number of positions taken by the sliding window
+            (from start times to end times)
+        
+        """
+        if np.isinf(self.__end):
+            raise ValueError('infinite sliding window.')
+        
+        # start looking for last position 
+        # based on frame closest to the end
+        i = self.__closest_frame(self.__end)
+        
+        # in 'strict' mode, look into previous frames
+        if self.__end_mode == 'strict':
+            while(not self[i]):
+                i -= 1
+            length = i+1
+        
+        # in 'loose' or 'intersection' mode, look into next frames
+        else:
+            while(self[i]):
+                i += 1
+            length = i
+        
+        return length
+        
+            
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
