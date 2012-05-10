@@ -19,11 +19,3 @@ Timeline
 .. autoclass:: pyannote.base.timeline.Timeline
     :members:
     :undoc-members:
-
-.. .. autoclass:: pyannote.base.timeline.Segmentation
-..     :members:
-..     :undoc-members:
-.. 
-.. .. autoclass:: pyannote.base.timeline.Partition
-..     :members:
-..     :undoc-members:
