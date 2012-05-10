@@ -24,6 +24,7 @@ Foundation
    segment
    timeline
    annotation
+   feature
    mapping
    matrix
 
