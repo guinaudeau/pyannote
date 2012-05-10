@@ -1,3 +1,4 @@
 *.pyc
 pyannote/doc/build
 dist/
+MANIFEST
