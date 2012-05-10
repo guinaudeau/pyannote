@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import sklearn.metrics
-from pyannote.base.association import Mapping, OneToOneMapping, NoMatch
+from pyannote.base.mapping import Mapping, OneToOneMapping, NoMatch
 
 def __get_labels_true_pred(hypothesis, reference=None):
     
