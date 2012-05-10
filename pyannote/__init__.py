@@ -38,8 +38,8 @@ __license__ = """
      along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__date__ = '2012/05/09'
-__version__ = '0.2.1'
+__date__ = ''
+__version__ = '0.3-dev'
 
 from base import *
 
