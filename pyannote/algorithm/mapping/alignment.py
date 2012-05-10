@@ -65,7 +65,7 @@ for video in VIDEOS:
     
     for section in uem:
         
-        sw = pyannote.base.feature.SlidingWindow(start=section.start, \
+        sw = pyannote.base.segment.SlidingWindow(start=section.start, \
                                                  end=section.end, \
                                                  step=step, \
                                                  duration=duration)
