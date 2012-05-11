@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='PyAnnote',
-    version='0.2.1',
+    version='0.2.2',
     description='Python module for collaborative annotation of multimedia content',
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
     url='http://packages.python.org/PyAnnote',
+    # packages= find_packages(),
     packages=['pyannote', 
               'pyannote.base',
               'pyannote.algorithm',
@@ -19,7 +20,7 @@ setup(
               'pyannote.parser',
               'pyannote.parser.repere',
               'pyannote.parser.nist'],
-    requires=['numpy (>=1.6.1)', 'scipy (>=0.8)', 'munkres (>=1.0.5)'],
+    install_requires=['numpy >=1.6.1', 'munkres >=1.0.5'],
     classifiers=[ 
        "Development Status :: 4 - Beta", 
        "Intended Audience :: Science/Research", 
