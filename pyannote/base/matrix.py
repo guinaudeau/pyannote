@@ -395,13 +395,13 @@ class Cooccurrence(LabelMatrix):
         raise NotImplementedError('')
 
 
+from pyannote.base.segment import SEGMENT_PRECISION
 class CoTFIDF(Cooccurrence):
-    """
-    Term Frequency Inverse Document Frequency (TF-IDF) confusion matrix:
-    - documents are J labels
-    - words are co-occurring I labels
+    """Term Frequency Inverse Document Frequency (TF-IDF) confusion matrix
     
-    C[i, j] = TF(i, j) x IDF(i)
+    C[i, j] = TF(i, j) x IDF(i) where
+        - documents are J labels
+        - words are co-occurring I labels
     
                   duration of word i in document j         confusion[i, j]
     TF(i, j) = --------------------------------------- = -------------------
@@ -414,14 +414,50 @@ class CoTFIDF(Cooccurrence):
                       Nj
            = -----------------------
              sum confusion[i, :] > 0
+    
+    Parameters
+    ---------
+    words : :class:`pyannote.base.annotation.Annotation`
+        Every label occurrence is considered a word 
+        (weighted by the duration of the segment)
+    documents : :class:`pyannote.base.annotation.Annotation`
+        Every label is considered a document.
+    idf : bool, optional
+        If `idf` is set to True, returns TF x IDF.
+        Otherwise, returns TF. Default is True
+    log : bool, optional
+        If `log` is True, returns TF x log IDF
+    
     """
-    def __init__(self, words=None, documents=None, log=False):
+    def __init__(self, words, documents, idf=True, log=False):
+        
+        # initialize as co-occurrence matrix
         super(CoTFIDF, self).__init__(words, documents)
         Nw, Nd = self.shape
-        tf = self.M / np.tile(np.sum(self.M, axis=0), (Nw, 1))
-        idf = np.tile(float(Nd) / np.maximum(1, np.sum(self.M > 0, axis=1)), (Nd, 1)).T
-        if log:
-            idf = np.log(idf)
+        
+        # total duration of all words cooccurring with each document
+        # np.sum(self.M, axis=0)[j] = 0 ==> self.M[i, j] = 0 for all i 
+        # so we can safely use np.maximum(1e-3, ...) to avoid DivideByZero
+        tf = self.M / np.tile(np.maximum(SEGMENT_PRECISION, \
+                                         np.sum(self.M, axis=0)), (Nw, 1))
+        
+        # use IDF only if requested (default is True ==> use IDF)
+        if idf:
+            
+            # number of documents cooccurring with each word
+            # np.sum(self.M > 0, axis=1)[i] = 0 ==> tf[i, j] = 0 for all i
+            # and therefore tf.idf [i, j ] = 0
+            # so we can safely use np.maximum(1, ...) to avoid DivideByZero
+            idf = np.tile(float(Nd)/np.maximum(1, np.sum(self.M > 0, axis=1)), \
+                          (Nd, 1)).T
+            
+            # use log only if requested (defaults is False ==> do not use log)
+            if log:
+                idf = np.log(idf)
+
+        else:
+            idf = 1.
+        
         self.M = tf * idf
         
 
