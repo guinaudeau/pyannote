@@ -18,20 +18,55 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from ..generic import GenericParser
 
-class MDTMParser(GenericParser):
-    """
-    .mdtm file parser
-    """
-    def __init__(self, path2mdtm, multitrack=False):
+from pyannote.base.segment import Segment
+from pyannote.parser.base import BaseTextualAnnotationParser
+
+class MDTMParser(BaseTextualAnnotationParser):
+    
+    def __init__(self):
+        multitrack = False
+        super(MDTMParser, self).__init__(multitrack)
+    
+    def _comment(self, line):
+        return False
+    
+    def _parse(self, line):
         
-        # source 1 start duration modality confidence subtype identifier
-        format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {NA} {ID}' 
-        super(MDTMParser, self).__init__(path2mdtm, \
-                                         format, \
-                                         multitrack = multitrack)
+        tokens = line.split()
+        # video 1 start duration modality confidence subtype identifier
+        
+        video = str(tokens[0])
+        #channel = tokens[1]
+        start_time = float(tokens[2])
+        duration = float(tokens[3])
+        modality = str(tokens[4])
+        #confidence = tokens[5]
+        #subtype = tokens[6]
+        label = str(tokens[7])
 
+        segment = Segment(start=start_time, end=start_time+duration)
+        return segment, None, label, video, modality
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+
+# from ..generic import GenericParser
+# 
+# class MDTMParser(GenericParser):
+#     """
+#     .mdtm file parser
+#     """
+#     def __init__(self, path2mdtm, multitrack=False):
+#         
+#         # source 1 start duration modality confidence subtype identifier
+#         format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {NA} {ID}' 
+#         super(MDTMParser, self).__init__(path2mdtm, \
+#                                          format, \
+#                                          multitrack = multitrack)
+# 
 # def toMDTM(annotation, confidence=None):
 #     """
 #     Meta Data Time-Mark
@@ -68,7 +103,3 @@ class MDTMParser(GenericParser):
 #                     
 #     return text
 # 
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
