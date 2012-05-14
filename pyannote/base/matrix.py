@@ -27,56 +27,70 @@ class LabelMatrix(object):
     
     Parameters
     ----------
-    ilabels, jlabels : list of labels, optional
-    Mij : NumPy array, optional
+    ilabels, jlabels : lists of labels, optional
+        
+    Mij : numpy array, optional
+        
     default : float, optional
+
+    Examples
+    --------
     
-    Returns
-    -------
-    matrix : LabelMatrix
-    
+        >>> M = LabelMatrix()
+        >>> M['John', 'Albert'] = 0.2
+        >>> M['Marc', 'Bob'] = 0.9
+        
+        
     """
     def __init__(self, ilabels=None, jlabels=None, Mij=None, default=0.):
         super(LabelMatrix, self).__init__()
         
-        # -- ilabels
+        # initial set of i.labels
         if ilabels is None:
             self.__ilabels = []
         elif isinstance(ilabels, list):
             self.__ilabels = list(ilabels)
         else:
-            raise ValueError('')
+            raise ValueError("unsupported value for 'ilabels'. "
+                             "expecting a list of labels.")
                 
-        # -- jlabels
+        # initial set of j.labels
         if jlabels is None:
             self.__jlabels = []
         elif isinstance(jlabels, list):
             self.__jlabels = list(jlabels)
         else:
-            raise ValueError('')
+            raise ValueError("unsupported value for 'jlabels'. "
+                             "expecting a list of labels.")
         
-        # --
+        # label <--> index correspondence
         self.__label2i = {ilabel:i for i, ilabel in enumerate(self.__ilabels)}
         self.__label2j = {jlabel:j for j, jlabel in enumerate(self.__jlabels)}
         
-        # --
+        # default value 
         self.__default = default
         
-        # --
+        # number of i.labels and j.labels
         ni = len(self.__ilabels)
         nj = len(self.__jlabels)
         
         if Mij is None:
+            # in case Mij is not provided but i.labels and/or j.labels are
+            # initialize internal numpy array with default value
             if ni or nj:
                 self.__Mij = self.__default * np.ones((ni, nj))
+            # in case neither i.labels, j.labels nor Mij is provided
+            # set internal array to None
             else:
                 self.__Mij = None
         else:
+            # in case Mij is provided
+            # make sure its shape corresponds to i.labels and j.labels
             self.__Mij = np.array(Mij)
+            
             Ni, Nj = self.__Mij.shape
             if (ni, nj) != (Ni, Nj):
-                raise ValueError('%d x %d matrix is expected (got %d x %d).' % \
-                                 (ni, nj, Ni, Nj))
+                raise ValueError('matrix/labels dimension mismatch.')
     
     def __get_default(self):
         return self.__default
@@ -86,13 +100,10 @@ class LabelMatrix(object):
     def __get_T(self): 
         return LabelMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
     T = property(fget=__get_T)
-    """Transposed co-matrix"""
+    """Transposed matrix (returned as :class:`LabelMatrix`)"""
     
     def __get_shape(self):
-        if self.__Mij is None:
-            return 0, 0
-        else:
-            return self.__Mij.shape
+        return (0, 0) if self.__Mij is None else self.__Mij.shape
     shape = property(fget=__get_shape)
     """Matrix shape"""
     
@@ -103,12 +114,12 @@ class LabelMatrix(object):
             raise ValueError('Shape mismatch %s %s' % (self.shape, M.shape))
         self.__Mij = M
     M = property(fget=__get_M, fset=__set_M)
-    "Matrix as Numpy array"
+    "Internal numpy array"
                  
     def __get_labels(self):
         return self.__ilabels, self.__jlabels
     labels = property(fget=__get_labels)
-    """Matrix labels"""
+    """Lists of labels"""
     
     def __getitem__(self, key):
         """"""
@@ -260,20 +271,24 @@ class LabelMatrix(object):
     def argmax(self, axis=None, threshold=None, ties='all'):
         """
         
-        :param axis:
-        :type axis: 0, 1 or None
+        Parameters
+        ----------
+        axis : {0, 1, None}, optional
+
+        threshold : float, optional
+            In case :data:`threshold` is provided and is higher than maximum 
+            value, then returns an empty list.
         
-        :param threshold: threshold on maximum value
-        :type threshold: float
-
-        In case :data:`threshold` is provided and is higher than maximum value,
-        then, returns an empty list.
-
-        :param ties: tie handling -- keep all or just one?
-        :type ties: 'all' (default) or 'any'
+        ties : {'all', 'any'}, optional
+            Tie handling -- keep all or just one?
+        
+        Returns
+        -------
+        pairs : dict
+            pairs[ilabel] 
         
         :returns: dictionary of label pairs corresponding to maximum value in matrix.
-                
+              
         >>> C = Cooccurrence(A, B)
         >>> pairs = C.argmax(axis=0)
         >>> for a in A.labels():
@@ -282,6 +297,7 @@ class LabelMatrix(object):
         
         """
         
+        # {}
         if axis == 0:
             pairs = {}
             for i, ilabel in self.iter_ilabels(index=True):
@@ -292,6 +308,9 @@ class LabelMatrix(object):
                                          for j in np.argwhere(M == m)])
                 else:
                     pairs[ilabel] = set([])
+                    
+                # tie handling
+                # 
                 if ties == 'any' and len(pairs[ilabel]) > 1:
                     pairs[ilabel] = set([pairs[ilabel].pop()])
             return pairs
