@@ -21,6 +21,7 @@
 from nist import *
 from repere import *
 from other import *
+from feature import *
 
 if __name__ == "__main__":
     import doctest

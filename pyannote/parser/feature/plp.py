@@ -21,7 +21,7 @@
 import struct
 import numpy as np
 from pyannote.base.segment import SlidingWindow
-from pyannote.parser.base import BaseBinaryPeriodicFeatureParser
+from pyannote.parser.feature.base import BaseBinaryPeriodicFeatureParser
 
 class PLPParser(BaseBinaryPeriodicFeatureParser):
     """
