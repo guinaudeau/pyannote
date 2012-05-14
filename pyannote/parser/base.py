@@ -135,6 +135,8 @@ class BaseAnnotationParser(object):
             self.__loaded[key] = Annotation(video=video, modality=modality,
                                             multitrack=self.__multitrack)
         if self.__multitrack:
+            if track is None:
+                track = self.__loaded[key].new_track(segment)
             self.__loaded[key][segment, track] = label
         else:
             self.__loaded[key][segment] = label
