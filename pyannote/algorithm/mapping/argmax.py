@@ -77,17 +77,16 @@ class ArgMaxMapper(BaseMapper):
         # Cooccurrence matrix
         matrix = self.__cost(A, B)
         
-        # ArgMax
-        pairs = matrix.argmax(axis=0, threshold=0, ties='any')
+        # argmax
+        pairs = matrix.argmax(axis=1)
+        pairs = {a : b for a, b in pairs.iteritems() if matrix[a, b] > 0}
         
         # Reverse dict and group alabels by argmax
         sriap = {}
-        for a, b_s in pairs.iteritems():
-            if b_s:
-                b = b_s.pop()
-                if b not in sriap:
-                    sriap[b] = set([])
-                sriap[b].add(a)
+        for a, b in pairs.iteritems():
+            if b not in sriap:
+                sriap[b] = set([])
+            sriap[b].add(a)
         
         M = ManyToOneMapping(A.modality, B.modality)
         

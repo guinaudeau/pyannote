@@ -268,75 +268,23 @@ class LabelMatrix(object):
         C += other
         return C
     
-    def argmax(self, axis=None, threshold=None, ties='all'):
-        """
+    def argmax(self, axis=None):
         
-        Parameters
-        ----------
-        axis : {0, 1, None}, optional
-
-        threshold : float, optional
-            In case :data:`threshold` is provided and is higher than maximum 
-            value, then returns an empty list.
-        
-        ties : {'all', 'any'}, optional
-            Tie handling -- keep all or just one?
-        
-        Returns
-        -------
-        pairs : dict
-            pairs[ilabel] 
-        
-        :returns: dictionary of label pairs corresponding to maximum value in matrix.
-              
-        >>> C = Cooccurrence(A, B)
-        >>> pairs = C.argmax(axis=0)
-        >>> for a in A.labels():
-        ...    if a in pairs:
-        ...        print '%s --> %s' % (a, pairs[a])
-        
-        """
-        
-        # {}
+        indices = self.M.argmax(axis=axis)
         if axis == 0:
-            pairs = {}
-            for i, ilabel in self.iter_ilabels(index=True):
-                M = self.M[i,:]
-                m = np.max(M)
-                if threshold is None or m > threshold:
-                    pairs[ilabel] = set([self.__jlabels[j[0]] \
-                                         for j in np.argwhere(M == m)])
-                else:
-                    pairs[ilabel] = set([])
-                    
-                # tie handling
-                # 
-                if ties == 'any' and len(pairs[ilabel]) > 1:
-                    pairs[ilabel] = set([pairs[ilabel].pop()])
-            return pairs
+            return {self.__jlabels[j] : self.__ilabels[i]
+                    for j, i in enumerate(indices)}
         elif axis == 1:
-            return self.T.argmax(axis=0, threshold=threshold)
-            # pairs = {}
-            # for j, jlabel in self.iter_jlabels(index=True):
-            #     M = self.M[:,j]
-            #     m = np.max(M)
-            #     if threshold is None or m > threshold:
-            #         pairs[jlabel] = set([self.__ilabels[i[0]] \
-            #                              for i in np.argwhere(M == m)])
-            #     else:
-            #         pairs[jlabel] = set([])
-            # return pairs
+            return {self.__ilabels[i] : self.__jlabels[j] 
+                    for i, j in enumerate(indices)}
         else:
-            m = np.max(self.M)
-            if (threshold is None) or (m > threshold):
-                pairs = np.argwhere(self.M == m)
-            else:
-                pairs = []
-            return set([(self.__ilabels[i], self.__jlabels[j]) \
-                        for i, j in pairs])
+            i, j = np.unravel_index([indices], self.shape, order='C')
+            i = i[0]
+            j = j[0]
+            return {self.__ilabels[i] : self.__jlabels[j]}
     
-    def argmin(self, axis=None, threshold=None, ties='all'):
-        return (-self).argmax(axis=axis, threshold=-threshold)
+    def argmin(self, axis=None):
+        return (-self).argmax(axis=axis)
     
     def __str__(self):
         
