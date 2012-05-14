@@ -21,56 +21,62 @@
 import struct
 import numpy as np
 from pyannote.base.segment import SlidingWindow
-from pyannote.base.feature import PeriodicFeature
+from pyannote.parser.base import BaseBinaryPeriodicFeatureParser
 
-def _read_plp(path2plp):
-    
-    # open binary file
-    f = open(path2plp, 'rb')
-    
-    # read number of records
-    nrec_type = np.dtype('<i4')
-    nrec, = struct.unpack(nrec_type.str, f.read(nrec_type.itemsize))
-    
-    # read feature dimension
-    dim_type = np.dtype('<i4')
-    dim,  = struct.unpack(dim_type.str,  f.read(dim_type.itemsize))
-    
-    # read number of features per record
-    count_type = np.dtype('<i4')
-    count = np.fromfile(f, dtype=count_type, count=nrec, sep='')
-    
-    
-    # read features, for each record
-    vec_type = np.dtype(('<f4', (dim, )))
-    plp_record = []
-    for r in range(nrec):
-        plp_record.append(np.fromfile(f, dtype=vec_type, \
-                                     count=count[r], sep=''))
-    f.close()
-    
-    return plp_record
-
-
-class PLPParser(object):
+class PLPParser(BaseBinaryPeriodicFeatureParser):
     """
-    .plp file parser
+    
+    Parameters
+    ----------
+    sliding_window : :class:`pyannote.base.segment.SlidingWindow`, optional
+    
+    Notes
+    -----
+    Read multiple records as one big record.
+    
     """
-    def __init__(self, path2plp, \
-                       sliding_window = SlidingWindow(), \
-                       video=None):
+    def __init__(self, sliding_window=None):
         super(PLPParser, self).__init__()
-        self.path2plp = path2plp
-        self.sliding_window = sliding_window
-        self.video = video
+        if sliding_window is None:
+            sliding_window = SlidingWindow()
+        self.__sliding_window = sliding_window
     
-    def feature(self):
-        plp_record = _read_plp(self.path2plp)
-        data = np.concatenate( [record for record in plp_record], axis=0 )
-        feature = PeriodicFeature(data, \
-                                       sliding_window = self.sliding_window,
-                                       video=self.video)
-        return feature
+    def _read_header(self, fp):
+        """
+        Read the header of a .plp file.
+        
+        Parameters
+        ----------
+        fp : file
+        
+        Returns
+        -------
+        dtype : 
+            Feature vector type
+        sliding_window : :class:`pyannote.base.segment.SlidingWindow`
+            
+        count : 
+            Number of feature vectors
+        
+        """
+        
+        # read number of records
+        nrec_type = np.dtype('<i4')
+        nrec, = struct.unpack(nrec_type.str, fp.read(nrec_type.itemsize))
+        
+        # read feature dimension
+        dim_type = np.dtype('<i4')
+        dim,  = struct.unpack(dim_type.str,  fp.read(dim_type.itemsize))
+        
+        # read number of features per record
+        count_type = np.dtype('<i4')
+        count = np.fromfile(fp, dtype=count_type, count=nrec, sep='')
+        
+        dtype = np.dtype(('<f4', (dim, )))
+        count = np.sum(count)
+        
+        return dtype, self.__sliding_window, count
+
 
 if __name__ == "__main__":
     import doctest
