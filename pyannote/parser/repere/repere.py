@@ -18,43 +18,33 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from ..generic import GenericParser
 
-class REPEREParser(GenericParser):
-    """
-    .repere file parser
-    """
-    def __init__(self, path2repere, confidence=True, multitrack=False):
+from pyannote.base.segment import Segment
+from pyannote.parser.base import BaseTextualAnnotationParser
+
+class REPEREParser(BaseTextualAnnotationParser):
+    
+    def __init__(self):
+        multitrack = True
+        super(REPEREParser, self).__init__(multitrack)
+    
+    def _comment(self, line):
+        return False
+    
+    def _parse(self, line):
+        
+        tokens = line.split()
         # source start end modality identifier confidence
-        if confidence:
-            format = '{VIDEO} {START} {END} {MODALITY} {ID} {CONFIDENCE}'
-        else:
-            format = '{VIDEO} {START} {END} {MODALITY} {ID}'
-        super(REPEREParser, self).__init__(path2repere, \
-                                         format, \
-                                         multitrack = multitrack)
-
-
-
-
-# def toREPERE(annotation, confidence=False):
-#     """"""
-#     modality = annotation.modality
-#     video    = annotation.video
-#     text = ''
-#     annotation = abs(annotation)
-#     for s, segment in enumerate(annotation):
-#         start = segment.start
-#         end = segment.end
-#         for i, identifier in enumerate(annotation.identifiers(segment=segment)):
-#             if confidence:
-#                 score = annotation.confidence(segment, identifier)
-#                 # source start end modality identifier confidence
-#                 text += '%s %g %g %s %s %g\n' % (video, start, end, modality, identifier, score)
-#             else:
-#                 text += '%s %g %g %s %s\n' % (video, start, end, modality, identifier)
-#     return text
-
+        
+        video = str(tokens[0])
+        start_time = float(tokens[1])
+        end_time = float(tokens[2])
+        modality = str(tokens[3])
+        label = str(tokens[4])
+        #confidence = tokens[5]
+        
+        segment = Segment(start=start_time, end=end_time)
+        return segment, None, label, video, modality
 
 if __name__ == "__main__":
     import doctest
