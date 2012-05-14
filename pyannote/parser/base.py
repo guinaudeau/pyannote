@@ -25,7 +25,7 @@ class BaseTimelineParser(object):
         super(BaseTimelineParser, self).__init__()
         
         # (video, modality) ==> timeline
-        self.__loaded = {}
+        self.reset()
     
     def __get_videos(self):
         return sorted(self.__loaded)
@@ -37,7 +37,10 @@ class BaseTimelineParser(object):
             self.__loaded[video] = Timeline(video=video)
         self.__loaded[video] += segment
     
-    def read(self, path):
+    def reset(self):
+        self.__loaded = {}
+    
+    def read(self, path, video=None):
         raise NotImplementedError('')
     
     def __call__(self, video=None):
@@ -117,7 +120,7 @@ class BaseAnnotationParser(object):
     def __init__(self, multitrack):
         super(BaseAnnotationParser, self).__init__()
         self.__multitrack = multitrack
-        self.__loaded = {}
+        self.reset()
 
     def __get_videos(self):
         return sorted(set([v for (v, m) in self.__loaded]))
@@ -140,6 +143,12 @@ class BaseAnnotationParser(object):
             self.__loaded[key][segment, track] = label
         else:
             self.__loaded[key][segment] = label
+    
+    def reset(self):
+        self.__loaded = {}
+    
+    def read(self, path, video=None, modality=None):
+        raise NotImplementedError('')
     
     def __call__(self, video=None, modality=None):
         """
