@@ -25,7 +25,7 @@ from pyannote.parser.base import BaseTextualAnnotationParser
 class MDTMParser(BaseTextualAnnotationParser):
     
     def __init__(self):
-        multitrack = False
+        multitrack = True
         super(MDTMParser, self).__init__(multitrack)
     
     def _comment(self, line):
