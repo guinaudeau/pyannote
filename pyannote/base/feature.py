@@ -92,7 +92,7 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
         
         super(BasePrecomputedSegmentFeature, self).__init__(video=video)
         self.__data = data
-        self.__segment_iterator = segment_iterator
+        self._segment_iterator = segment_iterator
     
     def __get_data(self): 
         return self.__data
@@ -109,7 +109,7 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
         # get number of feature vectors 
         n = self.__data.shape[0]
         
-        for i, segment in enumerate(self.__segment_iterator):
+        for i, segment in enumerate(self._segment_iterator):
             
             # make sure we do not iterate too far...
             if i >= n:
@@ -201,7 +201,12 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
         
         super(PeriodicPrecomputedFeature, self).__init__(data, sliding_window, \
                                                          video=video)
-        
+    
+    def __get_sliding_window(self): 
+        return self._segment_iterator
+    sliding_window = property(fget=__get_sliding_window)
+    
+    
     def _segmentToRange(self, segment):
         """
         Parameters
@@ -213,7 +218,7 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
         i, n : int
         
         """
-        return self.__sliding_window.segmentToRange(segment)
+        return self.sliding_window.segmentToRange(segment)
     
     def _rangeToSegment(self, i, n):
         """
@@ -226,7 +231,7 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
         segment : :class:`pyannote.base.segment.Segment`
         
         """
-        return self.__sliding_window.rangeToSegment(i, n)        
+        return self.sliding_window.rangeToSegment(i, n)
 
 class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
     """Timeline-driven precomputed feature iterator.
@@ -254,13 +259,17 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
     def __init__(self, data, timeline, video=None):  
         super(TimelinePrecomputedFeature, self).__init__(data, timeline, \
                                                          video=video)
-        
+    
+    def __get_timeline(self): 
+        return self._segment_iterator
+    timeline = property(fget=__get_timeline)
+    
     def _segmentToRange(self, segment):
-        timeline = self.__timeline(segment, mode='loose')
+        timeline = self.timeline(segment, mode='loose')
         if timeline:
             # index of first segment in sub-timeline
             first_segment = timeline[0]
-            i = self.__timeline.index(first_segment)
+            i = self.timeline.index(first_segment)
             # number of segments in sub-timeline
             n = len(timeline)
         else:
@@ -270,8 +279,8 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
         return i, n
         
     def _rangeToSegment(self, i, n):
-        first_segment = self.__timeline[i]
-        last_segment = self.__timeline[i+n]
+        first_segment = self.timeline[i]
+        last_segment = self.timeline[i+n]
         return first_segment | last_segment    
 
 if __name__ == "__main__":
