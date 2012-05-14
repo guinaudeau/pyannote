@@ -12,3 +12,16 @@
   
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
+REPERE
+======
+
+.. automodule:: pyannote.parser.repere
+
+.. autoclass:: pyannote.parser.repere.repere.REPEREParser
+    :members:
+    :inherited-members:
+    :show-inheritance:
+    :private-members:
+    :special-members:
+

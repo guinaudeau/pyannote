@@ -13,19 +13,12 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-NIST
-====
+Other file formats
+==================
 
-.. automodule:: pyannote.parser.nist
+.. automodule:: pyannote.parser.other
 
-.. autoclass:: pyannote.parser.nist.mdtm.MDTMParser
-    :members:
-    :inherited-members:
-    :show-inheritance:
-    :private-members:
-    :special-members:
-
-.. autoclass:: pyannote.parser.nist.uem.UEMParser
+.. autoclass:: pyannote.parser.other.seg.SEGParser
     :members:
     :inherited-members:
     :show-inheritance:
