@@ -18,6 +18,57 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+
+class BaseAgglomerativeClustering(object):
+    
+    def __init__(self):
+        super(BaseAgglomerativeClustering, self).__init__()
+    
+    def _get_initial_models(self, annotation, feature):
+        raise NotImplementedError('')
+    
+    def _get_initial_matrix(self, models, annotation, feature):
+        raise NotImplementedError('')
+    
+    def _merge_models(self, models, labels, annotation, feature):
+        raise NotImplementedError('')
+        
+    def _update_matrix(self, matrix, models, labels, annotation, feature):
+        raise NotImplementedError('')
+        
+    def __call__(self, annotation, feature, out=):
+        
+        annotation = annotation.copy()
+        
+        # one model per label
+        models = self._get_initial_models(annotation, feature)
+        
+        # label distance matrix
+        M = self._get_label_distance(models, annotation, feature)
+        
+        while True:
+            
+            # find two closest labels and their distance
+            label1, label2 = M.argmin().popitems()
+            distance = M[label1, label2]
+            
+            # merge models
+            # label1 <-- label1 + label2
+            models[label1] = self._merge_models(models, [label1, label2], 
+                                                annotation, feature)
+            # remove (no-longer needed) model
+            del models[label2]
+            
+            # update annotation (label2 becomes label1)
+            annotation = annotation % {label2 : label1}
+            
+            # update distance matrix
+            M = self._update_matrix(M, models, [label1, label2], 
+                                    annotation, feature)
+            
+            # stoppin' criterion ?
+            
+        
 import numpy as np
 import networkx as nx
 from pyannote.base.annotation import Annotation
