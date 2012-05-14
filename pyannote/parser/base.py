@@ -20,8 +20,159 @@
 
 import struct
 import numpy as np
-from pyannote.base.feature import PeriodicPrecomputedFeature, \
-                                  TimelinePrecomputedFeature
+
+from pyannote.base.timeline import Timeline
+
+class BaseTimelineParser(object):
+    def __init__(self):
+        super(BaseTimelineParser, self).__init__()
+        
+        # (video, modality) ==> timeline
+        self.__loaded = {}
+    
+    def __get_videos(self):
+        return sorted(self.__loaded)
+    videos = property(fget=__get_videos)
+    """"""
+    
+    def _add(self, segment, video):
+        if video not in self.__loaded:
+            self.__loaded[video] = Timeline(video=video)
+        self.__loaded[video] += segment
+    
+    def read(self, path):
+        raise NotImplementedError('')
+    
+    def __call__(self, video=None):
+        """
+        
+        Parameters
+        ----------
+        video : str, optional
+            If None and there is more than one video 
+        
+        Returns
+        -------
+        timeline : :class:`pyannote.base.timeline.Timeline`
+        
+        """
+        
+        match = dict(self.__loaded)
+        
+        # filter out all timelines 
+        # but the ones for the requested video
+        if video is not None:
+            match = {v: timeline for v, timeline in match.iteritems()
+                                 if v == video }
+        
+        if len(match) == 0:
+            # empty annotation
+            return Timeline(video=video)
+        elif len(match) == 1:
+            return match.values()[0]
+        else:
+            raise ValueError('')
+
+class BaseTextualTimelineParser(BaseTimelineParser):
+    
+    def __init__(self):
+        super(BaseTextualTimelineParser, self).__init__()
+    
+    def _comment(self, line):
+        raise NotImplementedError('')
+    
+    def _parse(self, line):
+        raise NotImplementedError('')
+    
+    def read(self, path, video=None):
+        
+        # default video to path
+        if video is None:
+            video = path
+        
+        # open file and loop on each line
+        fp = open(path, 'r')
+        for line in fp:
+            
+            # strip line
+            line = line.strip()
+            
+            # comment ?
+            if self._comment(line):
+                continue
+            
+            # parse current line
+            s, v = self._parse(line)
+            
+            # found video ?
+            if v is None:
+                v = video
+                
+            # add segment
+            self._add(s, v)
+            
+        fp.close()
+        
+        
+# class BaseAnnotationParser(object):
+#     def __init__(self):
+#         super(BaseAnnotationParser, self).__init__()
+#         self.__loaded = {}
+# 
+#     def __get_videos(self):
+#         return sorted([v for (v, m) in self.__loaded])
+#     videos = property(fget=__get_videos)
+#     """"""
+#     
+#     def __get_modalities(self):
+#         return sorted([m for (v, m) in self.__loaded])
+#     modalities = property(fget=__get_modalities)
+#     
+#     def _add(self, segment, track, label, video, modality):
+#         key = (video, modality)
+#         if key not in self.__loaded:
+#             self.__loaded[key] = Annotation(video=video, modality=modality)
+#         self.__loaded[key][segment, track] = label
+#     
+#     def __call__(self, video=None, modality=None):
+#         """
+#         
+#         Parameters
+#         ----------
+#         video : str, optional
+#             If None and there is more than one video 
+#         modality : str, optional
+#         
+#         Returns
+#         -------
+#         annotation : :class:`pyannote.base.annotation.Annotation`
+#         
+#         """
+#         
+#         match = dict(self.__loaded)
+#         
+#         # filter out all annotations 
+#         # but the ones for the requested video
+#         if video is not None:
+#             match = {(v, m): ann for (v, m), ann in match.iteritems()
+#                                  if v == video }
+#         
+#         # filter out all remaining annotations 
+#         # but the ones for the requested modality
+#         if modality is not None:
+#             match = {(v, m): ann for (v, m), ann in match.iteritems()
+#                                  if m == modality}
+#         
+#         if len(match) == 0:
+#             # empty annotation
+#             return Annotation(video=video, modality=modality)
+#         elif len(match) == 1:
+#             return match.values()[0]
+#         else:
+#             raise ValueError('')
+# 
+
+from pyannote.base.feature import PeriodicPrecomputedFeature
 
 class BasePeriodicFeatureParser(object):
     
