@@ -113,6 +113,8 @@ class BaseTextualTimelineParser(BaseTimelineParser):
             
         fp.close()
         
+        return self
+        
 
 from pyannote.base.annotation import Annotation
 
@@ -230,6 +232,8 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
             self._add(s, t, l, v, m)
             
         fp.close()
+        
+        return self
 
 if __name__ == "__main__":
     import doctest
