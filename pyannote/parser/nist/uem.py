@@ -39,7 +39,6 @@ class UEMParser(BaseTextualTimelineParser):
         start_time = float(tokens[2])
         end_time = float(tokens[3])
         segment = Segment(start=start_time, end=end_time)
-        print segment
         
         return segment, video
 
