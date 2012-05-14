@@ -18,9 +18,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-import struct
-import numpy as np
-
 from pyannote.base.timeline import Timeline
 
 class BaseTimelineParser(object):
@@ -113,65 +110,118 @@ class BaseTextualTimelineParser(BaseTimelineParser):
             
         fp.close()
         
-        
-# class BaseAnnotationParser(object):
-#     def __init__(self):
-#         super(BaseAnnotationParser, self).__init__()
-#         self.__loaded = {}
-# 
-#     def __get_videos(self):
-#         return sorted([v for (v, m) in self.__loaded])
-#     videos = property(fget=__get_videos)
-#     """"""
-#     
-#     def __get_modalities(self):
-#         return sorted([m for (v, m) in self.__loaded])
-#     modalities = property(fget=__get_modalities)
-#     
-#     def _add(self, segment, track, label, video, modality):
-#         key = (video, modality)
-#         if key not in self.__loaded:
-#             self.__loaded[key] = Annotation(video=video, modality=modality)
-#         self.__loaded[key][segment, track] = label
-#     
-#     def __call__(self, video=None, modality=None):
-#         """
-#         
-#         Parameters
-#         ----------
-#         video : str, optional
-#             If None and there is more than one video 
-#         modality : str, optional
-#         
-#         Returns
-#         -------
-#         annotation : :class:`pyannote.base.annotation.Annotation`
-#         
-#         """
-#         
-#         match = dict(self.__loaded)
-#         
-#         # filter out all annotations 
-#         # but the ones for the requested video
-#         if video is not None:
-#             match = {(v, m): ann for (v, m), ann in match.iteritems()
-#                                  if v == video }
-#         
-#         # filter out all remaining annotations 
-#         # but the ones for the requested modality
-#         if modality is not None:
-#             match = {(v, m): ann for (v, m), ann in match.iteritems()
-#                                  if m == modality}
-#         
-#         if len(match) == 0:
-#             # empty annotation
-#             return Annotation(video=video, modality=modality)
-#         elif len(match) == 1:
-#             return match.values()[0]
-#         else:
-#             raise ValueError('')
-# 
 
+from pyannote.base.annotation import Annotation
+
+class BaseAnnotationParser(object):
+    def __init__(self, multitrack):
+        super(BaseAnnotationParser, self).__init__()
+        self.__multitrack = multitrack
+        self.__loaded = {}
+
+    def __get_videos(self):
+        return sorted(set([v for (v, m) in self.__loaded]))
+    videos = property(fget=__get_videos)
+    """"""
+    
+    def __get_modalities(self):
+        return sorted(set([m for (v, m) in self.__loaded]))
+    modalities = property(fget=__get_modalities)
+    """"""
+    
+    def _add(self, segment, track, label, video, modality):
+        key = (video, modality)
+        if key not in self.__loaded:
+            self.__loaded[key] = Annotation(video=video, modality=modality,
+                                            multitrack=self.__multitrack)
+        if self.__multitrack:
+            self.__loaded[key][segment, track] = label
+        else:
+            self.__loaded[key][segment] = label
+    
+    def __call__(self, video=None, modality=None):
+        """
+        
+        Parameters
+        ----------
+        video : str, optional
+            If None and there is more than one video 
+        modality : str, optional
+        
+        Returns
+        -------
+        annotation : :class:`pyannote.base.annotation.Annotation`
+        
+        """
+        
+        match = dict(self.__loaded)
+        
+        # filter out all annotations 
+        # but the ones for the requested video
+        if video is not None:
+            match = {(v, m): ann for (v, m), ann in match.iteritems()
+                                 if v == video }
+        
+        # filter out all remaining annotations 
+        # but the ones for the requested modality
+        if modality is not None:
+            match = {(v, m): ann for (v, m), ann in match.iteritems()
+                                 if m == modality}
+        
+        if len(match) == 0:
+            # empty annotation
+            return Annotation(video=video, modality=modality)
+        elif len(match) == 1:
+            return match.values()[0]
+        else:
+            raise ValueError('')
+
+
+class BaseTextualAnnotationParser(BaseAnnotationParser):
+    def __init__(self, multitrack):
+        super(BaseTextualAnnotationParser, self).__init__(multitrack)
+    
+    def _comment(self, line):
+        raise NotImplementedError('')
+    
+    def _parse(self, line):
+        raise NotImplementedError('')
+    
+    def read(self, path, video=None, modality=None):
+        
+        # default video to path
+        if video is None:
+            video = path
+        
+        # open file and loop on each line
+        fp = open(path, 'r')
+        for line in fp:
+            
+            # strip line
+            line = line.strip()
+            
+            # comment ?
+            if self._comment(line):
+                continue
+            
+            # parse current line
+            s, t, l, v, m = self._parse(line)
+            
+            # found video ?
+            if v is None:
+                v = video
+            
+            # found modality ?
+            if m is None:
+                m = modality
+            
+            # add label
+            self._add(s, t, l, v, m)
+            
+        fp.close()
+
+
+import numpy as np
 from pyannote.base.feature import PeriodicPrecomputedFeature
 
 class BasePeriodicFeatureParser(object):
