@@ -20,7 +20,9 @@ setup(
               'pyannote.parser',
               'pyannote.parser.repere',
               'pyannote.parser.nist'],
-    install_requires=['numpy >=1.6.1', 'munkres >=1.0.5'],
+    install_requires=['numpy >=1.6.1', 
+                      'munkres >=1.0.5', 
+                      'scikit-learn >=0.11'],
     classifiers=[ 
        "Development Status :: 4 - Beta", 
        "Intended Audience :: Science/Research", 
