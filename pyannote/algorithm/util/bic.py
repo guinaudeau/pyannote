@@ -30,9 +30,11 @@ class Gaussian(sklearn.mixture.GMM):
     """
     def __init__(self, penalty=7.0):
         
-        super(Gaussian, self).__init__(n_components=1, \
-                                       cvtype='full', \
-                                       random_state=None)
+        super(Gaussian, self).__init__(n_components=1,
+                                       covariance_type='full',
+                                       init_params='wmc',
+                                       random_state=None, 
+                                       n_iter=0)
 
         # Number of samples
         self.__n_samples = -1
@@ -59,18 +61,18 @@ class Gaussian(sklearn.mixture.GMM):
                          fdel=None, \
                          doc="Number of samples.")
                          
-    def __get_dimension(self): 
-        return self.n_features
-    dimension = property(fget=__get_dimension, \
-                         fset=None, \
-                         fdel=None, \
-                         doc="Feature space dimension.")
+    # def __get_dimension(self): 
+    #     return self.n_features
+    # dimension = property(fget=__get_dimension, \
+    #                      fset=None, \
+    #                      fdel=None, \
+    #                      doc="Feature space dimension.")
     
 
     def __update_nlogdet(self):
         # make sure cov is a square matrix
         D = self.dimension
-        cov = self.covars.reshape(D, D)
+        cov = self.covars_.reshape(D, D)
         # actual computation of N x log( det(sigma) )
         N = self.n_samples
         self.__nlogdet = N*np.log(np.linalg.det(cov))
@@ -87,9 +89,10 @@ class Gaussian(sklearn.mixture.GMM):
     def fit(self, X):
         # inherits .fit()
         # ... updates .means and .covars
-        super(Gaussian, self).fit(X, n_iter=0, init_params='wmc')
+        super(Gaussian, self).fit(X)
         # keeps track of number of samples
         N, D = X.shape
+        self.dimension = D
         self.n_samples = N
         return self
     
@@ -118,22 +121,22 @@ class Gaussian(sklearn.mixture.GMM):
         G.n_samples = n
         
         # set dimension of new Gaussian
-        G.n_features = D
+        G.dimension = D
         
         # set mean of new Gaussian
-        mu1 = self.means
-        mu2 = other.means        
+        mu1 = self.means_
+        mu2 = other.means_        
         mu = (n1 * mu1 + n2 * mu2) / (n1 + n2)
-        G.means = mu
+        G.means_ = mu
         
         # set covariance of new Gaussian
-        c1 = self.covars
-        c2 = other.covars
+        c1 = self.covars_
+        c2 = other.covars_
         c = (n1*c1 + \
              n2*c2 + \
              n1*np.dot(mu1.T, mu1) + \
              n2*np.dot(mu2.T, mu2)) / (n1+n2) - np.dot(mu.T, mu)
-        G.covars = c
+        G.covars_ = c
                 
         return G
             
