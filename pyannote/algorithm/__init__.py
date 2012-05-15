@@ -26,6 +26,7 @@ The ``pyannote.algorithm`` module contains the various algorithms available in  
 
 import mapping
 import tagging
+import clustering
 
 if __name__ == "__main__":
     import doctest

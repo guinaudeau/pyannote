@@ -21,27 +21,27 @@
 import numpy as np
 import sklearn.mixture
 
-class Gaussian(sklearn.mixture.GMM):
+class BIC_Gaussian(sklearn.mixture.GMM):
     """
     Gaussian for BIC segmentation & clustering
     
     g = g1 + g2 : merge gaussian
     d = g1 | g2 : delta BIC
     """
-    def __init__(self, penalty=7.0):
+    def __init__(self, penalty=3.5):
         
-        super(Gaussian, self).__init__(n_components=1,
+        super(BIC_Gaussian, self).__init__(n_components=1,
                                        covariance_type='full',
                                        init_params='wmc',
                                        random_state=None, 
                                        n_iter=0)
-
+        
         # Number of samples
         self.__n_samples = -1
-
+        
         # Pre-computed n * log |covar|
         self.__nlogdet = None
-
+        
         # Lambda for penalty on model size
         self.__penalty = penalty
     
@@ -60,15 +60,7 @@ class Gaussian(sklearn.mixture.GMM):
                          fset=None, \
                          fdel=None, \
                          doc="Number of samples.")
-                         
-    # def __get_dimension(self): 
-    #     return self.n_features
-    # dimension = property(fget=__get_dimension, \
-    #                      fset=None, \
-    #                      fdel=None, \
-    #                      doc="Feature space dimension.")
     
-
     def __update_nlogdet(self):
         # make sure cov is a square matrix
         D = self.dimension
@@ -88,8 +80,8 @@ class Gaussian(sklearn.mixture.GMM):
 
     def fit(self, X):
         # inherits .fit()
-        # ... updates .means and .covars
-        super(Gaussian, self).fit(X)
+        # ... updates .means_ and .covars_
+        super(BIC_Gaussian, self).fit(X)
         # keeps track of number of samples
         N, D = X.shape
         self.dimension = D
@@ -111,13 +103,12 @@ class Gaussian(sklearn.mixture.GMM):
             raise ValueError('Penalty coefficient mismatch')
         
         # new 'empty' Gaussian
-        cls = type(self)
-        G = cls(penalty=penalty)
+        G = BIC_Gaussian(penalty=penalty)
         
         # set number of samples for new Gaussian
         n1 = self.n_samples
         n2 = other.n_samples
-        n = n1 + n2        
+        n = n1 + n2
         G.n_samples = n
         
         # set dimension of new Gaussian
