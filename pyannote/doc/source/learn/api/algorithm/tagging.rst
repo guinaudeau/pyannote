@@ -45,6 +45,10 @@ Segment tagging
 
 .. automodule:: pyannote.algorithm.tagging.segment
 
+.. autoclass:: pyannote.algorithm.tagging.segment.DirectTagger
+    :members:
+    :undoc-members:
+
 .. autoclass:: pyannote.algorithm.tagging.segment.ConservativeDirectTagger
     :members:
     :undoc-members:
