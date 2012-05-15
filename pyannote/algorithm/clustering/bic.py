@@ -28,6 +28,11 @@ class BICClustering(BaseAgglomerativeClustering):
     def __init__(self, penalty=3.5):
         super(BICClustering, self).__init__()
         self.__penalty = penalty
+        self.__delta_bic_threshold = 0.
+    
+    def __get_delta_bic_threshold(self):
+        return self.__delta_bic_threshold
+    delta_bic_threshold = property(fget=__get_delta_bic_threshold)
     
     def _compute_model(self, label):
         # extract features for this label
@@ -36,20 +41,20 @@ class BICClustering(BaseAgglomerativeClustering):
         return BIC_Gaussian(penalty=self.__penalty).fit(data)
     
     def _initialize(self):
-        self.__M = LabelMatrix()
+        self._M = LabelMatrix(default=self.delta_bic_threshold)
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             model = self.models[label]
             for other_label in labels[l+1:]:
                 other_model = self.models[other_label]
                 distance = model - other_model
-                self.__M[label, other_label] = distance
-                self.__M[other_label, label] = distance
+                self._M[label, other_label] = distance
+                self._M[other_label, label] = distance
     
     def _next(self):
-        label1, label2 = self.__M.argmin().popitem()
-        distance = self.__M[label1, label2]
-        if distance < 0:
+        label1, label2 = self._M.argmin().popitem()
+        distance = self._M[label1, label2]
+        if distance < self.delta_bic_threshold:
             return sorted([label1, label2])
         else:
             return []
@@ -64,8 +69,8 @@ class BICClustering(BaseAgglomerativeClustering):
         
         # remove rows and columns for old labels
         for old_label in old_labels:
-            del self.__M[old_label, :]
-            del self.__M[:, old_label]
+            del self._M[old_label, :]
+            del self._M[:, old_label]
         
         # update row and column for new label
         labels = self.annotation.labels()
@@ -74,9 +79,79 @@ class BICClustering(BaseAgglomerativeClustering):
             if other_label != new_label:
                 other_model = self.models[other_label]
                 distance = model - other_model
-                self.__M[new_label, other_label] = distance
-                self.__M[other_label, new_label] = distance
+                self._M[new_label, other_label] = distance
+                self._M[other_label, new_label] = distance
 
+
+class BICRecombiner(BICClustering):
+    
+    def __init__(self, penalty=3.5, tolerance=0.5):
+        super(BICRecombiner, self).__init__(penalty=penalty)
+        self.__tolerance = tolerance
+    
+    def _xsegment(self, segment):
+        # extend segment by half tolerance on both side
+        return .5*self.__tolerance << segment >> .5*self.__tolerance
+        
+    def _initialize(self):
+        self._M = LabelMatrix(default=self.delta_bic_threshold)
+        labels = self.annotation.labels()
+        
+        for l, label in enumerate(labels):
+            
+            model = self.models[label]
+            
+            # extended coverage
+            cov = self.annotation(label).timeline.coverage()
+            xcov = cov.copy(segment_func=self._xsegment)
+            
+            for other_label in labels[l+1:]:
+                
+                # other extended coverage
+                other_cov = self.annotation(other_label).timeline.coverage()
+                other_xcov = other_cov.copy(segment_func=self._xsegment)
+                
+                # are labels contiguous?
+                if xcov & other_xcov:
+                    other_model = self.models[other_label]
+                    distance = model - other_model
+                    self._M[label, other_label] = distance
+                    self._M[other_label, label] = distance
+                # commented out because it is the default value
+                # else:
+                #     distance = self.delta_bic_threshold
+                #     self._M[label, other_label] = distance
+                #     self._M[other_label, label] = distance
+                
+    def _update(self, new_label, old_labels):
+        
+        # remove rows and columns for old labels
+        for old_label in old_labels:
+            del self._M[old_label, :]
+            del self._M[:, old_label]
+        
+        # update row and column for new label
+        labels = self.annotation.labels()
+        model = self.models[new_label]
+        
+        # extended coverage
+        cov = self.annotation(new_label).timeline.coverage()
+        xcov = cov.copy(segment_func=self._xsegment)
+        
+        for other_label in labels:
+            if other_label != new_label:
+                
+                # other extended coverage
+                other_cov = self.annotation(other_label).timeline.coverage()
+                other_xcov = other_cov.copy(segment_func=self._xsegment)
+                
+                # are labels contiguous?
+                if xcov & other_xcov:
+                    other_model = self.models[other_label]
+                    distance = model - other_model
+                    self._M[new_label, other_label] = distance
+                    self._M[other_label, new_label] = distance
+    
 
 if __name__ == "__main__":
     import doctest
