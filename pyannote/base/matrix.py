@@ -123,31 +123,62 @@ class LabelMatrix(object):
     
     def __getitem__(self, key):
         """"""
-        if isinstance(key, tuple) and len(key) == 2:
-            
-            ilabel = key[0]
-            jlabel = key[1]
-            
-            if isinstance(ilabel, (tuple, list, set)) and \
-               isinstance(jlabel, (tuple, list, set)):
-                C = LabelMatrix(default=self.default)
-                ilabels = sorted(ilabel)
-                jlabels = sorted(jlabel)
-                for ilabel in ilabels:
-                    for jlabel in jlabels:
-                        C[ilabel, jlabel] = self[ilabel, jlabel]
-                return C
-            else:            
-                if ilabel in self.__label2i and \
-                   jlabel in self.__label2j:
-                    return self.__Mij[self.__label2i[ilabel], \
-                                      self.__label2j[jlabel]]
-                else:
-                    return self.default
-        else:
+        
+        if not isinstance(key, tuple) or len(key) != 2:
             raise KeyError('')
-    
-    # =================================================================== #
+        
+        # get list of actual labels in matrix
+        I_lbls, J_lbls = self.labels
+        
+        # get requested labels
+        i_lbl = key[0]
+        j_lbl = key[1]
+        
+        # special case for M['one_existing_label', 'another_existing_label']
+        # return the actual stored value
+        
+        if not isinstance(i_lbl, set) and \
+           i_lbl != slice(None, None, None) and \
+           not isinstance(j_lbl, set) and \
+           j_lbl != slice(None, None, None):
+           try:
+               i = self.__label2i[i_lbl]
+               j = self.__label2j[j_lbl]
+               return self.__Mij[i, j]
+           except:
+               raise KeyError('cannot get element [%s, %s]' % (i_lbl, j_lbl))
+        
+        # M[{'Bernard', 'John', 'Albert'}, ... ]
+        if isinstance(i_lbl, set):
+            i_lbls = sorted(i_lbl)
+        # M[ :, ... ]
+        elif i_lbl == slice(None, None, None):
+            i_lbls = sorted(I_lbls)
+        # M[ 'Bernard', ... ]
+        else:
+            i_lbls = [i_lbl]
+        
+        # M[ ..., {'Bernard', 'John', 'Albert'}]
+        if isinstance(j_lbl, set):
+            j_lbls = sorted(j_lbl)
+        # M[ ..., : ]
+        elif j_lbl == slice(None, None, None):
+            j_lbls = sorted(J_lbls)
+        # M[ ..., 'Bernard']
+        else:
+            j_lbls = [j_lbl]
+        
+        M = LabelMatrix(default=self.default)
+        try:
+            for i_lbl in i_lbls:
+                i = self.__label2i[i_lbl]
+                for j_lbl in j_lbls:
+                    j = self.__label2j[j_lbl]
+                    M[i_lbl, j_lbl] = self.__Mij[i, j]
+        except:
+            raise KeyError('cannot get element [%s, %s]' % (i_lbl, j_lbl))
+            
+        return M
     
     def __add_ilabel(self, ilabel):
         n, m = self.shape
@@ -156,9 +187,7 @@ class LabelMatrix(object):
         self.__Mij = np.append(self.__Mij, \
                                self.default*np.ones((1, m)), \
                                axis=0)
-
-    # ------------------------------------------------------------------- #
-
+    
     def __add_jlabel(self, jlabel):
         n, m = self.shape
         self.__jlabels.append(jlabel)
@@ -171,39 +200,117 @@ class LabelMatrix(object):
     
     def __setitem__(self, key, value):
         """
+        Values must be set one by one.
         
         Use expression 'matrix[label_i, label_j] = value
         
         """
-        if isinstance(key, tuple) and len(key) == 2:
-            
-            ilabel = key[0]
-            jlabel = key[1]
-            
-            if isinstance(ilabel, (tuple, list, set)) or \
-               isinstance(jlabel, (tuple, list, set)):
-                raise ValueError('')
-            
-            if self.__Mij is None:
-                self.__ilabels.append(ilabel)
-                self.__jlabels.append(jlabel)
-                self.__label2i[ilabel] = 0
-                self.__label2j[jlabel] = 0
-                self.__Mij = value * np.ones((1,1))
-            else:
-                if ilabel not in self.__label2i:
-                    self.__add_ilabel(ilabel)
-                if jlabel not in self.__label2j:
-                    self.__add_jlabel(jlabel)
-                i = self.__label2i[ilabel]
-                j = self.__label2j[jlabel]
-                self.__Mij[i, j] = value
         
-        else:
+        if not isinstance(key, tuple) or len(key) != 2:
             raise KeyError('')
+        
+        # get list of actual labels in matrix
+        I_lbls, J_lbls = self.labels
+        
+        # get requested labels
+        i_lbl = key[0]
+        j_lbl = key[1]
+        
+        if isinstance(i_lbl, set) or i_lbl == slice(None, None, None) or \
+           isinstance(j_lbl, set) or j_lbl == slice(None, None, None):
+           raise KeyError('')
+        
+        if self.__Mij is None:
+            self.__ilabels.append(i_lbl)
+            self.__jlabels.append(j_lbl)
+            self.__label2i[i_lbl] = 0
+            self.__label2j[j_lbl] = 0
+            self.__Mij = value * np.ones((1,1))
+        else:
+            if i_lbl not in self.__label2i:
+                self.__add_ilabel(i_lbl)
+            if j_lbl not in self.__label2j:
+                self.__add_jlabel(j_lbl)
+            i = self.__label2i[i_lbl]
+            j = self.__label2j[j_lbl]
+            self.__Mij[i, j] = value
+    
+    def _delete_ilabel(self, ilabel):
+        
+        # find position in list
+        i = self.__ilabels.index(ilabel)
+        # remove from list
+        self.__ilabels.remove(ilabel)
+        # update label to position dictionary
+        for i_lbl in self.__ilabels:
+            if self.__label2i[i_lbl] > i:
+                self.__label2i[i_lbl] -= 1
+        # remove corresponding row from internal matrix
+        self.__Mij = np.delete(self.__Mij, i, axis=0)
+        
+    def _delete_jlabel(self, jlabel):
+        
+        # find position in list
+        j = self.__jlabels.index(jlabel)
+        # remove from list
+        self.__jlabels.remove(jlabel)
+        # update label to position dictionary
+        for j_lbl in self.__jlabels:
+            if self.__label2j[j_lbl] > j:
+                self.__label2j[j_lbl] -= 1
+        # remove corresponding row from internal matrix
+        self.__Mij = np.delete(self.__Mij, j, axis=1)
     
     def __delitem__(self, key):
-        raise NotImplementedError('')
+        """
+        """
+        if not isinstance(key, tuple) or len(key) != 2:
+           raise KeyError('expecting: del M[ _ , :] or del M[:, _ ]')
+        
+        i_lbl = key[0]
+        j_lbl = key[1]
+        
+        if i_lbl != slice(None, None, None) and \
+           j_lbl != slice(None, None, None):
+           raise KeyError('expecting: del M[ _ , :] or del M[:, _ ]')
+        
+        # get list of actual labels in matrix
+        I_lbls, J_lbls = self.labels
+        
+        if i_lbl == slice(None, None, None):
+            
+            # M[ ..., {'Bernard', 'John', 'Albert'}]
+            if isinstance(j_lbl, set):
+                j_lbls = sorted(j_lbl)
+            # M[ ..., : ]
+            elif j_lbl == slice(None, None, None):
+                j_lbls = sorted(J_lbls)
+            # M[ ..., 'Bernard']
+            else:
+                j_lbls = [j_lbl]
+            
+            for j_lbl in j_lbls:
+                self._delete_jlabel(j_lbl)
+            
+            return
+        
+        elif j_lbl == slice(None, None, None):
+        
+            # M[{'Bernard', 'John', 'Albert'}, ... ]
+            if isinstance(i_lbl, set):
+                i_lbls = sorted(i_lbl)
+            # M[ :, ... ]
+            elif i_lbl == slice(None, None, None):
+                i_lbls = sorted(I_lbls)
+            # M[ 'Bernard', ... ]
+            else:
+                i_lbls = [i_lbl]
+            
+            for i_lbl in i_lbls:
+                self._delete_ilabel(i_lbl)
+                
+            return
+    
     
     def iter_ilabels(self, index=False):
         """
