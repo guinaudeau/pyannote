@@ -59,7 +59,7 @@ class DiarizationPurity(BaseErrorRate):
     
     def get_details(self, reference, hypothesis, **kwargs):
         detail = self.init_details()
-        matrix = Cooccurrence(reference, hypothesis, normalize=False)        
+        matrix = Cooccurrence(reference, hypothesis)
         detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
         detail[PURITY_TOTAL] = np.sum(matrix.M)
         return detail
@@ -109,7 +109,7 @@ class DiarizationHomogeneity(BaseErrorRate):
     def get_details(self, reference, hypothesis, **kwargs):
         detail = self.init_details()
             
-        matrix = Cooccurrence(reference, hypothesis, normalize=False)
+        matrix = Cooccurrence(reference, hypothesis)
         duration = np.sum(matrix.M)
         rduration = np.sum(matrix.M, axis=1)
         hduration = np.sum(matrix.M, axis=0)
