@@ -522,7 +522,9 @@ class SlidingWindow(object):
         
         # allowed end modes are 'intersection', 'strict' or 'loose'
         if not end_mode in ['intersection', 'strict', 'loose']:
-            self.__end_mode = end_mode
+            raise ValueError("unsupported 'end_mode'.")
+        self.__end_mode = end_mode
+    
     
     def __get_start(self): 
         return self.__start
@@ -752,8 +754,19 @@ class SlidingWindow(object):
             length = i
         
         return length
-        
-            
+    
+    
+    def copy(self):
+        """Duplicate sliding window"""
+        duration = self.duration
+        step = self.step
+        start = self.start
+        end = self.end
+        end_mode = self.end_mode
+        sliding_window = SlidingWindow(duration=duration, step=step,
+                                       start=start, end=end, 
+                                       end_mode=end_mode)
+        return sliding_window
         
 if __name__ == "__main__":
     import doctest
