@@ -23,6 +23,61 @@ Module ``pyannote.algorithm.tagging.segment`` provides segment-wise tagging algo
 """
 
 from base import BaseTagger
+from pyannote.base.annotation import Annotation
+
+class DirectTagger(BaseTagger):
+    """
+    Direct segment tagger
+        
+    **Timeline tagging.**
+    Each segment in target timeline is tagged with all intersecting labels.
+    
+    """
+    
+    def __init__(self):
+        super(DirectTagger, self).__init__(annotation=False, \
+                                                 timeline=True)
+    
+    def _tag_timeline(self, source, timeline):
+        """Timeline tagging
+        
+        Each segment in target `timeline` is tagged all intersecting labels.
+        
+        Parameters
+        ----------
+        source : Annotation
+            Source annotation whose labels will be propagated
+        timeline : Timeline
+            Target timeline whose segments will be tagged.
+        
+        Returns
+        -------
+        tagged : (multitrack) Annotation
+            Tagged `timeline`
+        
+        """
+        
+        # initialize tagged timeline as an empty copy of source
+        T = Annotation(video=source.video, modality=source.modality,
+                       multitrack=True)
+        
+        # tag each segment of target timeline, one after the other
+        for segment in timeline:
+            
+            # extract the part of source annotation
+            # intersecting current target segment
+            t = source(segment, mode='loose')
+            
+            # if there is no intersecting segment
+            # just skip to the next one
+            if not t:
+                continue
+            
+            for label in t.labels():
+                T[segment, T.new_track(segment)] = label
+        
+        return T
+    
 
 class ConservativeDirectTagger(BaseTagger):
     """
