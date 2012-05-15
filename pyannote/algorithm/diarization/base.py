@@ -24,164 +24,78 @@ class BaseAgglomerativeClustering(object):
     def __init__(self):
         super(BaseAgglomerativeClustering, self).__init__()
     
-    def _get_initial_models(self, annotation, feature):
+    def __get_annotation(self):
+        return self.__annotation
+    annotation = property(fget=__get_annotation)
+    """Current state of annotation"""
+    
+    def __get_feature(self):
+        return self.__feature
+    feature = property(fget=__get_feature)
+    """Original feature"""
+    
+    def __get_models(self):
+        return self.__models
+    models = property(fget=__get_models)
+    """One model per label"""
+    
+    def _compute_model(self, label):
         raise NotImplementedError('')
     
-    def _get_initial_matrix(self, models, annotation, feature):
+    def _initialize(self):
+        raise NotImplementedError('')
+        
+    def _next(self):
+        raise NotImplementedError('')
+        
+    def _merge_models(self, labels):
         raise NotImplementedError('')
     
-    def _merge_models(self, models, labels, annotation, feature):
+    def _update(self, new_label, old_labels):
         raise NotImplementedError('')
+    
+    def __call__(self, annotation, feature):
         
-    def _update_matrix(self, matrix, models, labels, annotation, feature):
-        raise NotImplementedError('')
-        
-    def __call__(self, annotation, feature, out=):
-        
-        annotation = annotation.copy()
+        # initial annotation (will be modified)
+        self.__annotation = annotation.copy()
+        # initial feature (should stay untouched)
+        self.__feature = feature
         
         # one model per label
-        models = self._get_initial_models(annotation, feature)
+        self.__models = {}
+        for label in self.annotation.labels():
+            self.__models[label] = self._compute_model(label)
         
-        # label distance matrix
-        M = self._get_label_distance(models, annotation, feature)
+        # initialize what needs to be initialized
+        self._initialize()
         
         while True:
             
-            # find two closest labels and their distance
-            label1, label2 = M.argmin().popitems()
-            distance = M[label1, label2]
+            # find labels that should be merged next
+            labels = self._next()
+            
+            # nothing to merge? stop.
+            if not labels:
+                break
             
             # merge models
-            # label1 <-- label1 + label2
-            models[label1] = self._merge_models(models, [label1, label2], 
-                                                annotation, feature)
-            # remove (no-longer needed) model
-            del models[label2]
+            new_label = labels[0]
+            self.__models[new_label] = self._merge_models(labels)
             
-            # update annotation (label2 becomes label1)
-            annotation = annotation % {label2 : label1}
+            # remove old models
+            old_labels = labels[1:]
+            for old_label in old_labels:
+                del self.__models[old_label]
             
-            # update distance matrix
-            M = self._update_matrix(M, models, [label1, label2], 
-                                    annotation, feature)
+            # update internal annotation
+            translation = {old_label : new_label for old_label in old_labels}
+            self.__annotation = self.__annotation % translation
             
-            # stoppin' criterion ?
-            
+            # update what needs to be updated
+            self._update(new_label, old_labels)
         
-import numpy as np
-import networkx as nx
-from pyannote.base.annotation import Annotation
-from pyannote.base.matrix import LabelMatrix
+        return self.__annotation.copy()
 
-DIARIZATION_DISTANCE = '__distance__'
-
-class DiarizationGraph(nx.Graph):
-    
-    def __init__(self):
-        super(DiarizationGraph, self).__init__()
-    
-    def __call__(self, annotation, **kwargs):
-        self.clear()
-        self.__annotation = annotation
-        self.__initialize()
-        self.__diarize()
-    
-    def __abs__(self):
-        A = Annotation(video=self.annotation.video, \
-                              modality=self.annotation.modality)
-                            
-        n_digits = np.int(np.ceil(np.log10(len(self)+1)))
-        format = '#%%0%dd' % n_digits
-        
-        for n, a in enumerate(self.nodes()):
-            for segment, track in a.itertracks():
-                A[segment, track] = {format % n: True}
-        
-        return A
-
-    # ------------------------------------------------------------------ #
-    
-    def __initialize(self):
-        
-        # add one node per segment/track
-        for segment, track in self.annotation.itertracks():
-            node, attr = self.get_base_node(segment, track)
-            self.add_node(node, **attr)
-        
-        # add edges with finite distance
-        for a in self.nodes_iter():
-            for b in self.nodes_iter():
-                if (a != b) and \
-                   (not self.has_edge(b, a)):
-                    d = self.get_nodes_distance(a, b)
-                    if d < np.inf:
-                        self.add_edge(a, b, **{DIARIZATION_DISTANCE:d})
-    
-    # ------------------------------------------------------------------ #
-    
-    def __diarize(self):
-        pairs = self.__closest()
-        while(pairs):
-            a, b = pairs[0]
-            ab, attr = self.get_new_node(a, b)
-            self.add_node(ab, **attr)
-            self.remove_node(a)
-            self.remove_node(b)
-            for n in self.nodes_iter():
-                if n != ab:
-                    d = self.get_nodes_distance(n, ab)
-                    if d < np.inf:
-                        self.add_edge(ab, n, **{DIARIZATION_DISTANCE:d})
-            pairs = self.__closest()
-    
-    # ------------------------------------------------------------------ #
-        
-    def __closest(self):
-        nodes = self.nodes()
-        N = len(nodes)
-        m = np.inf * np.ones((N, N))
-        for i, a in enumerate(self.nodes()):
-            for j, b in enumerate(self.nodes()):
-                if i > j and self.has_edge(a, b):
-                    m[i, j] = self[a][b][DIARIZATION_DISTANCE]        
-        M = LabelMatrix(nodes, nodes, m)
-        pairs = M.argmin(threshold=np.inf)
-        return pairs        
-    
-    # ------------------------------------------------------------------ #
-    
-    def __get_annotation(self): 
-        return self.__annotation
-    annotation = property(fget=__get_annotation, \
-                       fset=None, \
-                       fdel=None, \
-                       doc="Initial annotation")
-    
-    # ================================================================== #
-    
-    def get_base_node(self, segment, track):
-        A = self.annotation
-        a = Annotation(dict, video=A.video, \
-                            modality=A.modality)
-        a[segment, track] = {}
-        return a, {}   
-    
-    # ------------------------------------------------------------------ #
-
-    def get_nodes_distance(self, a, b):
-        # Nodes that SHOULD NOT be merged have infinity distance        
-        raise NotImplementedError('')
-    
-    # ------------------------------------------------------------------ #
-
-    def get_new_node(self, a, b):
-        ab = a.copy()
-        for segment, track, data in b.itertracks(data=True):
-            ab[segment, track] = data
-        return ab, {}
-    
-    # ================================================================== #
 
 if __name__ == "__main__":
     import doctest
