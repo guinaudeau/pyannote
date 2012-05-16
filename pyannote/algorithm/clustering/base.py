@@ -20,7 +20,10 @@
 
 
 class BaseAgglomerativeClustering(object):
+    """
+    Base class for agglomerative clustering algorithms.
     
+    """
     def __init__(self):
         super(BaseAgglomerativeClustering, self).__init__()
     
