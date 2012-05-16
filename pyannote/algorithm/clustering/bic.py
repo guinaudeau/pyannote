@@ -32,7 +32,7 @@ class BICClustering(BaseAgglomerativeClustering):
     covariance_type : {'full', 'diag'}, optional
         Full or diagonal covariance matrix. Default is 'full'.
     penalty_coef : float, optional
-        Coefficient for model size penalty. Default is 3.5.
+        Coefficient of model size penalty. Default is 3.5.
         
     Examples
     --------
@@ -53,6 +53,7 @@ class BICClustering(BaseAgglomerativeClustering):
     def __get_penalty_coef(self):
         return self.__penalty_coef
     penalty_coef = property(fget=__get_penalty_coef)
+    """Coefficient of model size penalty."""
     
     def __get_bic_threshold(self):
         return self.__bic_threshold
@@ -61,6 +62,7 @@ class BICClustering(BaseAgglomerativeClustering):
     def __get_covariance_type(self):
         return self.__covariance_type
     covariance_type = property(fget=__get_covariance_type)
+    """Type of covariance matrix."""
     
     def _compute_model(self, label):
         # extract features for this label
@@ -75,7 +77,8 @@ class BICClustering(BaseAgglomerativeClustering):
             model = self.models[label]
             for other_label in labels[l+1:]:
                 other_model = self.models[other_label]
-                distance = model - other_model
+                distance, _ = model.bic(other_model, 
+                                        penalty_coef=self.penalty_coef)
                 self._M[label, other_label] = distance
                 self._M[other_label, label] = distance
     
