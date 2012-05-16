@@ -18,169 +18,100 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote import Segment, Timeline, Annotation
-from idx import IDXParser
+
+from pyannote.parser.base import BaseAnnotationParser
+from pyannote.parser.repere.idx import IDXParser
+from pyannote.base.segment import Segment, SEGMENT_PRECISION
 from lxml import objectify
 import re
 
-MODALITY_HEAD = 'head'
-MODALITY_WRITTEN = 'written'
-
-class XGTFParser(object):
-    """
-    .xgtf file parser
-    """
-    def __init__(self, path2xgtf, path2idx, video=None):
-        super(XGTFParser, self).__init__()
-        self.__xgtf = path2xgtf
-        self.__idx  = IDXParser(path2idx)
-        self.__xmlroot = objectify.parse(self.__xgtf).getroot()
-        if video is None:
-            self.__video = self.root.get('filename')
+class XGTFParser(BaseAnnotationParser):
+    
+    def __init__(self):
+        multitrack = True
+        super(XGTFParser, self).__init__(multitrack)
+    
+    def _parse_head(self, vpr):
+        return [vpr.getchildren()[0].get('value')]
+    
+    def _parse_time(self, vpr, idx):
+        frame = int(vpr.getchildren()[0].get('value'))
+        return idx(frame)
+    
+    def _parse_written(self, vpr, alone=False):
+        
+        string = vpr.getchildren()[0].get('value')
+        if not string:
+            return []
+            
+        labels = []
+        if alone:
+            #         group  #1         #2         #3     #4
+            p = re.compile('(.*?)<pers=(.*?)>.*?(</pers>)(.*)', re.DOTALL)
+            m = p.match(string)
+            while(m):
+                beforeOnSameLine = m.group(1).split('\\n')[-1].strip()
+                afterOnSameLine = m.group(4).split('\\n')[0].strip()
+                if beforeOnSameLine == '' and afterOnSameLine == '':
+                    labels.append(str(m.group(2)))
+                string = string[m.end(3):]
+                m = p.match(string)
         else:
-            self.__video = video
+            p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
+            m = p.match(string)
+            while(m):
+                labels.append(str(m.group(1)))
+                string = string[m.end():]
+                m = p.match(string)
+        
+        return labels
     
-    def __get_video(self): 
-        return self.__video
-    def __set_video(self, value):
-        self.__video = value
-    video = property(fget=__get_video, \
-                     fset=__set_video, \
-                     fdel=None, \
-                     doc="Annotated video.")
-
-    def __get_idx(self): 
-        return self.__idx
-    idx = property(fget=__get_idx, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Frame index.")
-
-    def __get_root(self): 
-        return self.__xmlroot.data.sourcefile
-    root = property(fget=__get_root, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="XML root.")
-    
-    def __extract_value(self, attr):
-        return attr.getchildren()[0].get('value')
-
-    def head(self, value=True):
-        annotation = Annotation(modality=MODALITY_HEAD, \
-                                       video=self.video)
-        # parse file looking for face info.
+    def read(self, path_xgtf, path_idx, video=None):
         
-        for element in self.root.iterchildren():
-            # only add PERSONNE objects
-            if element.get('name') != 'PERSONNE':
-                continue
+        # frame <--> timestamp mapping
+        idx = IDXParser(path_idx)
+        
+        # objectify xml file and get root
+        root = objectify.parse(path_xgtf).getroot().data.sourcefile
+        
+        if video is None:
+            video = root.get('filename')
+        
+        head = []
+        written = []
+        written_alone = []
+        
+        for element in root.iterchildren():
             
-            for vpr_object in element.iterchildren():
-                attr_name = vpr_object.get('name')
-                if attr_name == 'STARTFRAME':
-                    startframe = int(self.__extract_value(vpr_object))
-                elif attr_name == 'ENDFRAME':
-                    endframe = int(self.__extract_value(vpr_object))
-                elif attr_name == 'NOM':
-                    # sample:
-                    # <attribute name="NOM">
-                    #    <data:svalue value="Jerome_CAHUZAC"/>
-                    # </attribute>
-                    identifier = self.__extract_value(vpr_object)
-                else:
-                    pass
-            segment = Segment(start=self.idx(startframe), \
-                              end=self.idx(endframe))
-            
-            # faces are annotated every few seconds
-            # therefore, two faces might belong to the same segment
-            # make sure this is a new face in this segment 
-            # before adding it to the annotation
-            
-            if identifier not in annotation.IDs or \
-               segment not in annotation(identifier).timeline:
-                # really sure this is a new face for this segment?
-                # automatically generate track name (face0, face1, face2, ...)
-                name = annotation.auto_track_name(segment, prefix='face')
-                annotation[segment, name, identifier] = value
+            if element.get('name') in ['PERSONNE', 'TEXTE']:
+                
+                for vpr in element.iterchildren():
+                    
+                    attr_name = vpr.get('name')
+                    if attr_name == 'STARTFRAME':
+                        element_start = self._parse_time(vpr, idx)
+                    elif attr_name == 'ENDFRAME':
+                        element_end = self._parse_time(vpr, idx)
+                    elif attr_name == 'TRANSCRIPTION':
+                        written_alone = self._parse_written(vpr, alone=True)
+                        written = self._parse_written(vpr, alone=False)
+                    elif attr_name == 'NOM':
+                        head = self._parse_head(vpr)
+                
+                element_segment = Segment(start=element_start, end=element_end)
+                
+                for modality, new_lbls in {'written (alone)' : written_alone,
+                                           'written' : written, 
+                                           'head' : head}.iteritems():
+                    for lbl in new_lbls:
+                        lbls = self(video, modality).get_labels(element_segment)
+                        if lbl not in lbls:
+                            self._add(element_segment, None, lbl, 
+                                      video, modality)
         
-        return annotation
-        
-    def __extract_written(self, text, name_alone=False):
-        """
-        If name_alone is set to True, will only return identifiers that are
-        not surrounded by other text on the same line.
-        """
-        identifiers = []
-        if text:
-            if name_alone:
-                #         group  #1         #2         #3     #4
-                p = re.compile('(.*?)<pers=(.*?)>.*?(</pers>)(.*)', re.DOTALL)
-                m = p.match(text)
-                while(m):
-                    beforeOnSameLine = m.group(1).split('\\n')[-1].strip()
-                    afterOnSameLine = m.group(4).split('\\n')[0].strip()
-                    if beforeOnSameLine == '' and afterOnSameLine == '':
-                        identifiers.append(str(m.group(2)))
-                    text = text[m.end(3):]
-                    m = p.match(text)
-            else:
-                p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
-                m = p.match(text)
-                while(m):
-                    identifiers.append(str(m.group(1)))
-                    text = text[m.end():]  
-                    m = p.match(text)
-        
-        return identifiers
-    
-    def written(self, value=True, name_alone=False):
-        annotation = Annotation(modality=MODALITY_WRITTEN, \
-                                       video=self.video)
-
-        for element in self.root.iterchildren():
-            # only add PERSONNE objects
-            if element.get('name') != 'TEXTE':
-                continue
-            
-            for vpr_object in element.iterchildren():
-                attr_name = vpr_object.get('name')
-                if attr_name == 'STARTFRAME':
-                    startframe = int(self.__extract_value(vpr_object))
-                elif attr_name == 'ENDFRAME':
-                    endframe = int(self.__extract_value(vpr_object))
-                elif attr_name == 'TRANSCRIPTION':
-                    identifiers = \
-                    self.__extract_written(self.__extract_value(vpr_object), \
-                                           name_alone=name_alone)
-                else:
-                    pass
-            segment = Segment(start=self.idx(startframe), end=self.idx(endframe))
-            for i, identifier in enumerate(identifiers):
-                if identifier not in annotation.IDs or \
-                   segment not in annotation(identifier).timeline:
-                    name = annotation.auto_track_name(segment, prefix='text')
-                    annotation[segment, name, identifier] = value
-        
-        return annotation
-    
-    def annotated(self):
-        """"""
-        half_frame_duration = .5 * self.idx.delta
-        timeline = Timeline(video=self.video)
-        p = re.compile('([0-9]*):([0-9]*)')
-        for element in self.root.iterchildren():
-            text = element.get('framespan')
-            if text:
-                m = p.match(text)
-                frame_time  = self.idx(int(m.group(1)))
-                segment = Segment(start=frame_time - half_frame_duration, \
-                                  end=frame_time + half_frame_duration)            
-                timeline += segment
-        
-        return timeline        
+        return self
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
