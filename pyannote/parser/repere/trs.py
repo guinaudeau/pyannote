@@ -18,150 +18,111 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote import Segment, Timeline, Annotation
+from pyannote.parser.base import BaseAnnotationParser
+from pyannote.base.segment import Segment, SEGMENT_PRECISION
 from lxml import objectify
 import re
 
-MODALITY_SPEAKER = 'speaker'
-MODALITY_SPOKEN  = 'spoken'
-
-class TRSParser(object):
-    """
-    .trs file parser
-    """
-    def __init__(self, path2trs, video=None):
-        super(TRSParser, self).__init__()
-        self.__trs = path2trs
-        self.__xmlroot = objectify.parse(self.__trs).getroot()
-        self.__name = {}
-        self.__gender = {}
-        for speaker in self.root.Speakers.iterchildren():
-            self.__name[speaker.get('id')] = speaker.get('name')
-            self.__gender[speaker.get('id')] = speaker.get('type')
-        if video is None:
-            self.__video = self.root.get('audio_filename')
+class TRSParser(BaseAnnotationParser):
+    
+    def __init__(self):
+        multitrack = True
+        super(TRSParser, self).__init__(multitrack)
+    
+    def _complete(self):
+        for segment in self._incomplete:
+            segment.end = self._sync
+        self._incomplete = []
+    
+    def _parse_speakers(self, turn):
+        string = turn.get('speaker')
+        if string:
+            return string.strip().split()
         else:
-            self.__video = video
-    
-    def __get_video(self): 
-        return self.__video
-    def __set_video(self, value):
-        self.__video = value
-    video = property(fget=__get_video, \
-                     fset=__set_video, \
-                     fdel=None, \
-                     doc="Annotated video.")
-
-    def __get_root(self): 
-        return self.__xmlroot
-    root = property(fget=__get_root, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="XML root.")
-    
-    def __extract_spoken(self, text):
-        identifiers = []
-        if text:
-            p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
-            m = p.match(text)
-            while(m):
-                # split Jean-Marie_LEPEN,Marine_LEPEN ("les LEPEN")
-                for identifier in m.group(1).split(','):
-                    identifiers.append(str(identifier))
-                text = text[m.end():]
-                m = p.match(text)
+            return []
+            
+    def _parse_spoken(self, element):
+        string = element.tail
+        if not string:
+            return []
         
-        return identifiers
-        
-    def __extract_speakers(self, text):
-        identifiers = []
-        if text:
-            for i, identifier in enumerate(text.split()):
-                identifiers.append(identifier)
-        return identifiers
-
-    def __fix_incomplete(self, incomplete, latest_sync):
-        for s, segment in enumerate(incomplete):
-            segment.end = latest_sync
-        return []
+        labels = []
+        p = re.compile('.*?<pers=(.*?)>.*?</pers>', re.DOTALL)
+        m = p.match(string)
+        while(m):
+            # split Jean-Marie_LEPEN,Marine_LEPEN ("les LEPEN")
+            for label in m.group(1).split(','):
+                labels.append(str(label))
+            string = string[m.end():]
+            m = p.match(string)
+        return labels
     
-    def transcribed(self, non_transcribed='nontrans'):
-        timeline = Timeline(video=self.video)
-        for section in self.root.Episode.iterchildren():
-            if section.get('type') != non_transcribed:
-                section_start = float(section.get('startTime'))
-                section_end   = float(section.get('endTime'))
-                segment = Segment(start=section_start, end=section_end)
-                timeline += segment
-        return timeline
-                
-    def speaker(self, name=True, ):
-        annotation = Annotation(modality=MODALITY_SPEAKER, \
-                                       video=self.video)
-        # parse file looking for speaker info.
-        for section in self.root.Episode.iterchildren():
-            for turn in section.iterchildren():
-                turn_start = float(turn.get('startTime'))
-                turn_end   = float(turn.get('endTime'))
-                segment = Segment(start=turn_start, end=turn_end)
-                identifiers = self.__extract_speakers(turn.get('speaker'))
-                for i, identifier in enumerate(identifiers):
-                    track = annotation.auto_track_name(segment, prefix='speaker')
-                    value = {'gender': self.__gender[identifier]}
-                    if name:
-                        annotation[segment, track, self.__name[identifier]] = value
-                    else:
-                        annotation[segment, track, identifier] = value
-
-        return annotation
-    
-    def spoken(self, value=True):
+    def read(self, path, video=None):
         
-        annotation = Annotation(modality=MODALITY_SPOKEN, \
-                                       video=self.video)
-        incomplete = []
+        # objectify xml file and get root
+        root = objectify.parse(path).getroot()
         
-        for section in self.root.Episode.iterchildren():
+        if video is None:
+            video = root.get('audio_filename')
+        
+        # speaker names and genders
+        name = {}
+        gender = {}
+        for speaker in root.Speakers.iterchildren():
+            name[speaker.get('id')] = speaker.get('name')
+            gender[speaker.get('id')] = speaker.get('type')
+        
+        # incomplete segments 
+        # ie without an actual end time
+        self._incomplete = []
+        
+        for section in root.Episode.iterchildren():
+            
+            # transcription status
             section_start = float(section.get('startTime'))
-            section_end   = float(section.get('endTime'))
+            section_end = float(section.get('endTime'))
+            section_segment = Segment(start=section_start, end=section_end)
+            label = section.get('type')
+            self._add(section_segment, None, label, video, 'status')
             
-            # ==> SYNC
-            latest_sync = section_start
-            incomplete = self.__fix_incomplete(incomplete, latest_sync)
+            # sync
+            self._sync = section_start
+            self._complete()
             
             for turn in section.iterchildren():
+                
                 turn_start = float(turn.get('startTime'))
                 turn_end   = float(turn.get('endTime'))
+                turn_segment = Segment(start=turn_start, end=turn_end)
                 
-                # ==> SYNC
-                latest_sync = turn_start
-                incomplete = self.__fix_incomplete(incomplete, latest_sync)
+                labels = self._parse_speakers(turn)
+                for label in labels:
+                    self._add(turn_segment, None, name[label], video, 'speaker')
+
+                self._sync = turn_start
+                self._complete()
                 
                 for element in turn.iterchildren():
+                    
                     if element.tag == 'Sync':
-                        # ==> SYNC
-                        latest_sync = float(element.get('time'))
-                        incomplete = self.__fix_incomplete(incomplete, latest_sync)
+                        self._sync = float(element.get('time'))
+                        self._complete()
                     
-                    identifiers = self.__extract_spoken(element.tail)
-                    segment = Segment(start=latest_sync, end=latest_sync+1e-3)
-                    incomplete.append(segment)
-                    
-                    for i, identifier in enumerate(identifiers):
-                        track = annotation.auto_track_name(segment, prefix='spoken')
-                        annotation[segment, track, identifier] = value
+                    element_segment = Segment(start=self._sync,
+                                             end=self._sync+2*SEGMENT_PRECISION)
+                    self._incomplete.append(element_segment)
+                    labels = self._parse_spoken(element)
+                    for label in labels:
+                        self._add(element_segment, None, label, video, 'spoken')
                 
-                # ==> SYNC
-                latest_sync = turn_end
-                incomplete = self.__fix_incomplete(incomplete, latest_sync)
-                
-            # ==> SYNC
-            latest_sync = section_end
-            incomplete = self.__fix_incomplete(incomplete, latest_sync)
+                self._sync = turn_end
+                self._complete()
+            
+            self._sync = section_end
+            self._complete()
         
-        return annotation
-        
-        
+        return self
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
