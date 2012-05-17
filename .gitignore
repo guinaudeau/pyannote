@@ -2,3 +2,4 @@
 pyannote/doc/build
 dist/
 MANIFEST
+_debug_.py
