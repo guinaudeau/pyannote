@@ -30,13 +30,23 @@ class XGTFParser(BaseAnnotationParser):
     def __init__(self):
         multitrack = True
         super(XGTFParser, self).__init__(multitrack)
+        self.__idx = IDXParser()
+    
+    def _parse_frame(self, element):
+        
+        string = element.get('framespan')
+        if not string:
+            return Segment()
+        
+        p = re.compile('([0-9]*):([0-9]*)')
+        m = p.match(string)
+        return self.__idx[int(m.group(1))]
     
     def _parse_head(self, vpr):
         return [vpr.getchildren()[0].get('value')]
     
-    def _parse_time(self, vpr, idx):
-        frame = int(vpr.getchildren()[0].get('value'))
-        return idx(frame)
+    def _parse_time(self, vpr):
+        return self.__idx(int(vpr.getchildren()[0].get('value')))
     
     def _parse_written(self, vpr, alone=False):
         
@@ -69,7 +79,7 @@ class XGTFParser(BaseAnnotationParser):
     def read(self, path_xgtf, path_idx, video=None):
         
         # frame <--> timestamp mapping
-        idx = IDXParser(path_idx)
+        self.__idx.read(path_idx)
         
         # objectify xml file and get root
         root = objectify.parse(path_xgtf).getroot().data.sourcefile
@@ -83,15 +93,19 @@ class XGTFParser(BaseAnnotationParser):
         
         for element in root.iterchildren():
             
+            frame_segment = self._parse_frame(element)
+            if frame_segment and frame_segment not in self(video, "annotated"):
+                self._add(frame_segment, "_", "_", video, "annotated")
+            
             if element.get('name') in ['PERSONNE', 'TEXTE']:
                 
                 for vpr in element.iterchildren():
                     
                     attr_name = vpr.get('name')
                     if attr_name == 'STARTFRAME':
-                        element_start = self._parse_time(vpr, idx)
+                        element_start = self._parse_time(vpr)
                     elif attr_name == 'ENDFRAME':
-                        element_end = self._parse_time(vpr, idx)
+                        element_end = self._parse_time(vpr)
                     elif attr_name == 'TRANSCRIPTION':
                         written_alone = self._parse_written(vpr, alone=True)
                         written = self._parse_written(vpr, alone=False)
@@ -108,6 +122,8 @@ class XGTFParser(BaseAnnotationParser):
                         if lbl not in lbls:
                             self._add(element_segment, None, lbl, 
                                       video, modality)
+        
+        
         
         return self
 

@@ -19,50 +19,57 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+from pyannote.base.segment import Segment
 
 class IDXParser(object):
     
-    def __init__(self, path2idx):
-        
+    def __init__(self):
         super(IDXParser, self).__init__()
-        self.path2idx = path2idx
+    
+    def read(self, path):
         
+        # frame number to timestamp conversion
         self.__time = {}
-        f = open(self.path2idx, 'r')
+        
+        # open .idx file
+        f = open(path, 'r')
         for line in f:
-            # sample line:
             # 13 P     125911    0.384
-            # f0 f1    f2        f3
-            fields = line.split()
+            # idx type byte seconds
+            fields = line.strip().split()
             idx = int(fields[0])
-            sec = float(fields[3])
-            self.__time[idx] = sec
+            # type = fields[1]
+            # byte = int(fields[2])
+            seconds = float(fields[3])
+            self.__time[idx] = seconds
+            
+        # close .idx file
         f.close()
         
         # fix it.
         # average delta between two consecutive frames
         m = min(self.__time)
         M = max(self.__time)
-        self.__delta = np.median([self.__time[idx]-self.__time[idx-1] \
-                                  for idx in range(m+1, M) \
-                                  if idx in self.__time and (idx-1) in self.__time])
-        
-        count = 0
+        deltas = [self.__time[idx]-self.__time[idx-1] 
+                  for idx in range(m+1, M)
+                  if idx in self.__time and (idx-1) in self.__time]
+        self.__delta = float(np.median(deltas))
         for idx in range(m, M):
             if idx not in self.__time:
                 self.__time[idx] = self.__time[idx-1] + self.__delta
+        
+        return self
     
-    def __get_delta(self): 
-        return self.__delta
-    delta = property(fget=__get_delta, \
-                     fset=None, \
-                     fdel=None, \
-                     doc="Median frame duration.")
+    def __call__(self, i):
+        """Get timestamp"""
+        return self.__time[i]
     
-    
-    
-    def __call__(self, idx):
-        return self.__time[idx]
+    def __getitem__(self, i):
+        """Get frame"""
+        frame_middle = self.__time[i]
+        segment = Segment(start=frame_middle-.5*self.__delta,
+                          end=frame_middle+.5*self.__delta)
+        return segment
 
 if __name__ == "__main__":
     import doctest
