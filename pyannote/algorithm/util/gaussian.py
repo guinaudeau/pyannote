@@ -153,17 +153,24 @@ class Gaussian(mixture.GMM):
         # compute merged means
         means = self.means_
         other_means = other.means_
-        g.means_ = (n_samples*means + other_n_samples*other_means) / g.n_samples
+        new_means = (n_samples*means+other_n_samples*other_means)/g.n_samples
+        g.means_ = new_means
         
-        # compute merged covariances
-        covars = self.covars_
-        other_covars = other.covars_
-        g.covars_ = 1./g.n_samples * \
-                       (n_samples*covars \
-                        + other_n_samples*other_covars \
+        # compute merged covariance
+        covar = self.covar
+        other_covar = other.covar
+        new_covar = 1./g.n_samples * \
+                       (n_samples*covar \
+                        + other_n_samples*other_covar \
                         + n_samples*np.dot(means.T, means) \
                         + other_n_samples*np.dot(other_means.T, other_means)) \
-                    - np.dot(g.means_.T, g.means_)
+                    - np.dot(new_means.T, new_means)
+        
+        d = new_covar.shape[0]
+        if g._covariance_type == 'full':
+            g.covars_ = np.reshape(new_covar, (1, d, d))
+        elif g._covariance_type == 'diag':
+            g.covars_ = np.reshape(np.diag(new_covar), (1, d))
         
         return g
     
