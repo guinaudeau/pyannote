@@ -174,7 +174,6 @@ class Annotation(object):
     
     """
     
-    
     # Make sure provided segment is valid.
     def __valid_segment(self, segment):
         return isinstance(segment, Segment) and segment
@@ -185,7 +184,9 @@ class Annotation(object):
     
     # Strings or Unknown can be used as label.
     def __valid_label(self, label):
-        return isinstance(label, (Unknown, str))
+        return isinstance(label, Hashable) and \
+               not isinstance(label, (Segment, Timeline))
+        # return isinstance(label, (Unknown, str))
     
     def labels(self):
         """Global list of labels
@@ -815,7 +816,7 @@ class Annotation(object):
                         T[segment] = label
         
         return T
-            
+    
     def __call__(self, subset, mode='strict', invert=False):
         """Sub-annotation extraction.
         
