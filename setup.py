@@ -21,6 +21,7 @@ setup(
               'pyannote.parser.repere',
               'pyannote.parser.nist'],
     install_requires=['numpy >=1.6.1', 
+                      'scipy >=0.10.1',
                       'munkres >=1.0.5', 
                       'scikit-learn >=0.11',
                       'lxml >=2.3.4'],

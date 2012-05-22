@@ -18,6 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import scipy.stats
+import numpy as np
 class BaseErrorRate(object):
     
     def __init__(self, name, values):
@@ -25,7 +27,8 @@ class BaseErrorRate(object):
         self.__name = name
         self.__values = set(values)
         self.__details = self.init_details()
-
+        self.__rates = []
+    
     def __get_name(self): 
         return self.__name
     def __set_name(self, name):
@@ -34,6 +37,10 @@ class BaseErrorRate(object):
                      fset=__set_name, \
                      fdel=None, \
                      doc="Metric name.")
+    
+    def reset(self):
+        self.__details = self.init_details()
+        self.__rates = []
     
     def __accumulate(self, detail):
         for value in self.__values:
@@ -52,8 +59,13 @@ class BaseErrorRate(object):
     
     def __call__(self, reference, hypothesis, detailed=False, **kwargs):
         detail = self.get_details(reference, hypothesis, **kwargs)
+        self.__rates.append(self.get_rate(detail))
         return self.__compute(detail, accumulate=True, detailed=detailed)
-
+    
+    def confidence_interval(self, alpha=0.9):
+        mean, var, std = scipy.stats.bayes_mvs(self.__rates, alpha=alpha)
+        return mean
+    
     def __str__(self):
         detail = self.__compute(self.__details, \
                                 accumulate=False, \
