@@ -110,20 +110,6 @@ class BaseAgglomerativeClustering(object):
         raise NotImplementedError('%s sub-class must implement method'
                                   '_next()' % name)
     
-    def _stop(self):
-        """
-        Stopping criterion
-        
-        Returns
-        -------
-        stop : bool
-            True if stopping criterion is met, False otherwise
-            
-        """
-        name = self.__class.__name__
-        raise NotImplementedError('%s sub-class must implement method'
-                                  '_stop()' % name)
-    
     def _update(self, new_label, merged_labels):
         """
         Update algorithm internals after merging.
@@ -144,7 +130,19 @@ class BaseAgglomerativeClustering(object):
         raise NotImplementedError('%s sub-class must implement method'
                                   '_update()' % name)
     
-    def _final(self):
+    def _stop(self, value):
+        """
+        Stopping criterion
+        
+        Returns
+        -------
+        stop : bool
+            True if stopping criterion is met, False otherwise
+            
+        """
+        return False
+    
+    def _final(self, annotation):
         """By default, current version is returned"""
         return self.__annotation.copy()
     
@@ -214,9 +212,9 @@ class BaseAgglomerativeClustering(object):
             self._update(new_label, merged_labels)
             
             # keep track of iteration
-            self.__iterations.append((merged_labels, status))
+            self.__iterations.append((new_label, merged_labels, status))
         
-        return self._final()
+        return self._final(annotation)
 
 
 import numpy as np
@@ -295,6 +293,54 @@ class MatrixAgglomerativeClustering(BaseAgglomerativeClustering):
                 self.__matrix[label2, label1] = -np.inf
 
 
+import networkx as nx
+class GraphAgglomerativeClustering(MatrixAgglomerativeClustering):
+    
+    def __get_graph(self):
+        return self.__graph
+    graph = property(fget=__get_graph)
+    """Similarity graph."""
+    
+    def _initialize(self):
+        """
+        One node per track, with 'label' attribute.
+        Edge between two nodes is weighted
+        """
+        
+        super(GraphAgglomerativeClustering, self)._initialize()
+        
+        # initialize empty graph
+        self.__graph = nx.Graph()
+        
+        # add one node per label
+        labels = self.annotation.labels()
+        for label in labels:
+            self.__graph.add_node(label, label=label)
+        
+        # add edges
+        for l, label in enumerate(labels):
+            for other_label in labels[l+1:]:
+                similarity = max(0., self.matrix[label, other_label])
+                self.__graph.add_edge(label, other_label, weight=similarity)
+                
+        # from matplotlib import pyplot as plt
+        # plt.ion()
+        # pos = nx.spring_layout(self.__graph)
+        # nx.draw(self.__graph, pos)
+        
+        
+    def _update(self, new_label, merged_labels):
+        """
+        Update similarity matrix for newly created label
+        """
+        
+        super(GraphAgglomerativeClustering, self)._update(new_label,
+                                                          merged_labels)
+        
+        # update node labels
+        for label in merged_labels:
+            self.__graph.node[label]['label'] = new_label
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

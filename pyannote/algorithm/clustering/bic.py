@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyannote.algorithm.clustering.similarity import BaseSimilarityMixin
+from pyannote.algorithm.util.gaussian import Gaussian
 class BICSimilarityMixin(BaseSimilarityMixin):
     
     def __get_penalty_coef(self):
@@ -66,8 +67,6 @@ class BICSimilarityMixin(BaseSimilarityMixin):
 
 from pyannote.algorithm.clustering.base import MatrixAgglomerativeClustering
 from pyannote.algorithm.clustering.stop import NegativeStoppingCriterionMixin
-from pyannote.algorithm.util.gaussian import Gaussian
-
 class BICClustering(NegativeStoppingCriterionMixin, BICSimilarityMixin, \
                     MatrixAgglomerativeClustering):
     """
@@ -123,6 +122,32 @@ class BICRecombiner(ContiguousConstraintMixin, BICClustering):
         super(BICRecombiner, self).__init__(covariance_type=covariance_type, 
                                             penalty_coef=penalty_coef)
         self.tolerance = tolerance
+
+
+from pyannote.algorithm.clustering.base import GraphAgglomerativeClustering
+from pyannote.algorithm.util.community import modularity
+import numpy as np
+class BICClusteringModularity(BICSimilarityMixin, GraphAgglomerativeClustering):
+    
+    def __init__(self, covariance_type='full', penalty_coef=3.5):
+        super(BICClusteringModularity, self).__init__()
+        self.penalty_coef = penalty_coef
+        self.covariance_type = covariance_type
+    
+    def _next(self):
+        merged_labels, similarity = super(GraphAgglomerativeClustering,
+                                          self)._next()
+        partition = {node: data['label'] 
+                     for node, data in self.graph.nodes_iter(data=True)}
+        return merged_labels, modularity(partition, self.graph)
+    
+    def _final(self, annotation):
+        final = annotation.copy()
+        imax = np.argmax([v for l, L, v in self.iterations])
+        for new_label, old_labels, value in self.iterations[:imax+1]:
+            translation = {label : new_label for label in old_labels}
+            final = final % translation
+        return final
 
 
 if __name__ == "__main__":
