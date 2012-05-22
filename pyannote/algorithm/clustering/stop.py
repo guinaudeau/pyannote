@@ -23,7 +23,7 @@
 
 class BaseStoppingCriterionMixin(object):
     
-    def _stop(self):
+    def _stop(self, value):
         name = self.__class.__name__
         raise NotImplementedError('%s sub-class must implement method'
                                   '_stop()' % name)
@@ -32,12 +32,6 @@ class NegativeStoppingCriterionMixin(BaseStoppingCriterionMixin):
     
     def _stop(self, value):
         return value < 0.
-
-class MaximumStoppingCriterionMixin(BaseStoppingCriterionMixin):
-    
-    def _stop(self, value):
-        max_value = np.max([v for l, v in self.iterations])
-        return value < .9 * max_value
 
 if __name__ == "__main__":
     import doctest
