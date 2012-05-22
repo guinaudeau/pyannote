@@ -42,20 +42,122 @@ class BaseAgglomerativeClustering(object):
     models = property(fget=__get_models)
     """One model per label"""
     
+    # == Models ==
+    
     def _compute_model(self, label):
-        raise NotImplementedError('')
+        """
+        Compute model for a given `label`
+        
+        Parameters
+        ----------
+        label : valid Annotation label
+        
+        Returns
+        -------
+        model : anything
+            Any object that can serve as a model for `label` (if needed)
+        
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_compute_model()' % name)
+    
+    def _merge_models(self, merged_labels):
+        """
+        Compute new merged model
+        
+        Parameters
+        ----------
+        merged_labels : list
+            List of merged labels
+            
+        Returns
+        -------
+        model : anything
+            Any object that can serve as a model for the merged labels.
+        
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_merge_models()' % name)
+    
+    # ==
     
     def _initialize(self):
-        raise NotImplementedError('')
-        
-    def _next(self):
-        raise NotImplementedError('')
-        
-    def _merge_models(self, labels):
-        raise NotImplementedError('')
+        """
+        Initialize algorithm internals.
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_initialize()' % name)
     
-    def _update(self, new_label, old_labels):
-        raise NotImplementedError('')
+    def _next(self):
+        """
+        Next agglomerative clustering iteration.
+        
+        Returns
+        -------
+        labels : list
+            List of `labels` that should be merged.
+        
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_next()' % name)
+    
+    def _stop(self):
+        """
+        Stopping criterion
+        
+        Returns
+        -------
+        stop : bool
+            True if stopping criterion is met, False otherwise
+            
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_stop()' % name)
+    
+    def _update(self, new_label, merged_labels):
+        """
+        Update algorithm internals after merging.
+        
+        new_label <-- merged_labels
+        
+        
+        
+        Parameters
+        ----------
+        new_label : valid Annotation label
+        
+        merged_labels : list of valid Annotation labels
+        
+        
+        """
+        name = self.__class.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_update()' % name)
+    
+    def _final(self):
+        """By default, current version is returned"""
+        return self.__annotation.copy()
+    
+    # == Constraints ==
+    
+    def _initialize_constraint(self):
+        """By default, there is no constraint whatsoever"""
+        pass
+        
+    def _update_constraint(self, new_label, merged_labels):
+        """By default, there is no constraint whatsoever"""
+        pass
+        
+    def _mergeable(self, labels):
+        """By default, there is no constraint whatsoever.
+           Any set of labels are mergeable.
+        """
+        return True
     
     def __call__(self, annotation, feature):
         
@@ -69,24 +171,33 @@ class BaseAgglomerativeClustering(object):
         for label in self.annotation.labels():
             self.__models[label] = self._compute_model(label)
         
+        # initialize constraint if needed
+        self._initialize_constraint()
+        
         # initialize what needs to be initialized
         self._initialize()
+        
+        # keep track of iterations
+        self.__iterations = []
         
         while True:
             
             # find labels that should be merged next
-            labels = self._next()
+            merged_labels, status = self._next()
             
-            # nothing to merge? stop.
-            if not labels:
+            # keep track of iteration
+            self.__iterations.append((merged_labels, status))
+            
+            # nothing left to merge or reached stopping criterion?
+            if not merged_labels or self._stop(status):
                 break
             
             # merge models
-            new_label = labels[0]
-            self.__models[new_label] = self._merge_models(labels)
+            new_label = merged_labels[0]
+            self.__models[new_label] = self._merge_models(merged_labels)
             
             # remove old models
-            old_labels = labels[1:]
+            old_labels = merged_labels[1:]
             for old_label in old_labels:
                 del self.__models[old_label]
             
@@ -94,10 +205,83 @@ class BaseAgglomerativeClustering(object):
             translation = {old_label : new_label for old_label in old_labels}
             self.__annotation = self.__annotation % translation
             
+            # update constraint if needed
+            self._update_constraint(new_label, merged_labels)
+            
             # update what needs to be updated
-            self._update(new_label, old_labels)
+            self._update(new_label, merged_labels)
         
-        return self.__annotation.copy()
+        return self._final()
+
+
+import numpy as np
+from pyannote.base.matrix import LabelMatrix
+class TwoMostSimilarAgglomerativeClustering(BaseAgglomerativeClustering):
+    
+    def _compute_similarity(self, label, other_label):
+        name = self.__class__.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  '_compute_similarity()' % name)
+        
+    def _initialize(self):
+        """
+        Loop on all pairs of labels and fill similarity matrix
+        """
+        # initialize empty similarity matrix
+        self._similarity = LabelMatrix(default=-np.inf)
+        
+        # compute symmetric similarity matrix
+        labels = self.annotation.labels()
+        for l, label in enumerate(labels):
+            for other_label in labels[l+1:]:
+                similarity = self._compute_similarity(label, other_label)
+                self._similarity[label, other_label] = similarity
+                self._similarity[other_label, label] = similarity
+    
+    def _update(self, new_label, merged_labels):
+        """
+        Update similarity matrix for newly created label
+        """
+        
+        # remove rows and columns for old labels
+        for label in merged_labels:
+            if label == new_label:
+                continue
+            del self._similarity[label, :]
+            del self._similarity[:, label]
+        
+        # update row and column for new label
+        labels = self.annotation.labels()
+        for label in labels:
+            if label == new_label:
+                continue
+            similarity = self._compute_similarity(new_label, label)
+            self._similarity[new_label, label] = similarity
+            self._similarity[label, new_label] = similarity
+    
+    def _next(self):
+        
+        while True:
+            
+            # find two most similar labels
+            label1, label2 = self._similarity.argmax().popitem()
+            
+            # if even the most similar labels are completely dissimilar
+            # return empty list
+            if self._similarity[label1, label2] == -np.inf:
+                return [], -np.inf
+            
+            # if labels are mergeable
+            if self._mergeable([label1, label2]):
+                similarity = self._similarity[label1, label2]
+                return sorted([label1, label2]), similarity
+            
+            # if labels are not mergeable, loop...
+            # (and make sure those two are not selected again)
+            else:
+                self._similarity[label1, label2] = -np.inf
+                self._similarity[label2, label1] = -np.inf
+
 
 
 if __name__ == "__main__":

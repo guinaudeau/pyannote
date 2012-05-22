@@ -19,11 +19,55 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.algorithm.clustering.base import BaseAgglomerativeClustering
-from pyannote.base.matrix import LabelMatrix
+class BICMixin(object):
+    
+    def __get_penalty_coef(self):
+        return self.__penalty_coef
+    def __set_penalty_coef(self, value):
+        self.__penalty_coef = float(value)
+    penalty_coef = property(fget=__get_penalty_coef, fset=__set_penalty_coef)
+    """Coefficient of model size penalty."""
+    
+    def __get_covariance_type(self):
+        return self.__covariance_type
+    def __set_covariance_type(self, value):
+        self.__covariance_type = str(value)
+    covariance_type = property(fget=__get_covariance_type,
+                               fset=__set_covariance_type)
+    """Type of covariance matrix."""
+    
+    def _compute_model(self, label):
+        """
+        One Gaussian per track
+        """
+        # extract features for this label
+        data = self.feature(self.annotation(label).timeline)
+        # fit gaussian and return it
+        return Gaussian(covariance_type=self.covariance_type).fit(data)
+    
+    def _compute_similarity(self, label, other_label):
+        """
+        Delta BIC between two Gaussians
+        """
+        model = self.models[label]
+        other_model = self.models[other_label]
+        dissimilarity, _ = model.bic(other_model,
+                                     penalty_coef=self.penalty_coef)
+        return (-dissimilarity)
+    
+    def _merge_models(self, labels):
+        """
+        Fast merge of two Gaussians
+        """
+        new_model = self.models[labels[0]]
+        for label in labels[1:]:
+            new_model = new_model.merge(self.models[label])
+        return new_model
+
+from pyannote.algorithm.clustering.base import TwoMostSimilarAgglomerativeClustering
 from pyannote.algorithm.util.gaussian import Gaussian
 
-class BICClustering(BaseAgglomerativeClustering):
+class BICClustering(BICMixin, TwoMostSimilarAgglomerativeClustering):
     """
     BIC clustering 
     
@@ -46,83 +90,21 @@ class BICClustering(BaseAgglomerativeClustering):
     
     def __init__(self, covariance_type='full', penalty_coef=3.5):
         super(BICClustering, self).__init__()
-        self.__penalty_coef = penalty_coef
-        self.__bic_threshold = 0.
-        self.__covariance_type = covariance_type
+        self.penalty_coef = penalty_coef
+        self.covariance_type = covariance_type
     
-    def __get_penalty_coef(self):
-        return self.__penalty_coef
-    penalty_coef = property(fget=__get_penalty_coef)
-    """Coefficient of model size penalty."""
+    def _stop(self, similarity):
+        return similarity < 0.
     
-    def __get_bic_threshold(self):
-        return self.__bic_threshold
-    bic_threshold = property(fget=__get_bic_threshold)
-    
-    def __get_covariance_type(self):
-        return self.__covariance_type
-    covariance_type = property(fget=__get_covariance_type)
-    """Type of covariance matrix."""
-    
-    def _compute_model(self, label):
-        # extract features for this label
-        data = self.feature(self.annotation(label).timeline)
-        # fit gaussian and return it
-        return Gaussian(covariance_type=self.covariance_type).fit(data)
-    
-    def _initialize(self):
-        self._M = LabelMatrix(default=self.bic_threshold)
-        labels = self.annotation.labels()
-        for l, label in enumerate(labels):
-            model = self.models[label]
-            for other_label in labels[l+1:]:
-                other_model = self.models[other_label]
-                distance, _ = model.bic(other_model, 
-                                        penalty_coef=self.penalty_coef)
-                self._M[label, other_label] = distance
-                self._M[other_label, label] = distance
-    
-    def _next(self):
-        label1, label2 = self._M.argmin().popitem()
-        distance = self._M[label1, label2]
-        if distance < self.bic_threshold:
-            return sorted([label1, label2])
-        else:
-            return []
-    
-    def _merge_models(self, labels):
-        new_model = self.models[labels[0]]
-        for label in labels[1:]:
-            new_model = new_model.merge(self.models[label])
-        return new_model
-    
-    def _update(self, new_label, old_labels):
-        
-        # remove rows and columns for old labels
-        for old_label in old_labels:
-            del self._M[old_label, :]
-            del self._M[:, old_label]
-        
-        # update row and column for new label
-        labels = self.annotation.labels()
-        model = self.models[new_label]
-        for other_label in labels:
-            if other_label != new_label:
-                other_model = self.models[other_label]
-                distance, _ = model.bic(other_model,
-                                        penalty_coef=self.penalty_coef)
-                self._M[new_label, other_label] = distance
-                self._M[other_label, new_label] = distance
-
-
-class BICRecombiner(BICClustering):
+from pyannote.algorithm.clustering.constraint import ContiguousConstraintMixin
+class BICRecombiner(ContiguousConstraintMixin, BICClustering):
     """
     Recombine contiguous segments based on BIC criterion.
     
     Parameters
     ----------
     covariance_type : {'full', 'diag'}, optional
-        Full or diagonal covariance matrix. Default is 'full'.
+        Full or diagonal covariance matrix. Default is 'diag'.
     penalty_coef : float, optional
         Coefficient for model size penalty. Default is 3.5.
     tolerance : float, optional
@@ -141,77 +123,7 @@ class BICRecombiner(BICClustering):
     def __init__(self, covariance_type='diag', penalty_coef=3.5, tolerance=0.5):
         super(BICRecombiner, self).__init__(covariance_type=covariance_type, 
                                             penalty_coef=penalty_coef)
-        self.__tolerance = tolerance
-    
-    
-    def __get_tolerance(self):
-        return self.__tolerance
-    tolerance = property(fget=__get_tolerance)
-    
-    def _xsegment(self, segment):
-        # extend segment by half tolerance on both side
-        return .5*self.__tolerance << segment >> .5*self.__tolerance
-        
-    def _initialize(self):
-        self._M = LabelMatrix(default=self.bic_threshold)
-        labels = self.annotation.labels()
-        
-        for l, label in enumerate(labels):
-            
-            model = self.models[label]
-            
-            # extended coverage
-            cov = self.annotation(label).timeline.coverage()
-            xcov = cov.copy(segment_func=self._xsegment)
-            
-            for other_label in labels[l+1:]:
-                
-                # other extended coverage
-                other_cov = self.annotation(other_label).timeline.coverage()
-                other_xcov = other_cov.copy(segment_func=self._xsegment)
-                
-                # are labels contiguous?
-                if xcov & other_xcov:
-                    other_model = self.models[other_label]
-                    distance, _ = model.bic(other_model, 
-                                            penalty_coef=self.penalty_coef)
-                    self._M[label, other_label] = distance
-                    self._M[other_label, label] = distance
-                # commented out because it is the default value
-                # else:
-                #     distance = self.bic_threshold
-                #     self._M[label, other_label] = distance
-                #     self._M[other_label, label] = distance
-                
-    def _update(self, new_label, old_labels):
-        
-        # remove rows and columns for old labels
-        for old_label in old_labels:
-            del self._M[old_label, :]
-            del self._M[:, old_label]
-        
-        # update row and column for new label
-        labels = self.annotation.labels()
-        model = self.models[new_label]
-        
-        # extended coverage
-        cov = self.annotation(new_label).timeline.coverage()
-        xcov = cov.copy(segment_func=self._xsegment)
-        
-        for other_label in labels:
-            if other_label != new_label:
-                
-                # other extended coverage
-                other_cov = self.annotation(other_label).timeline.coverage()
-                other_xcov = other_cov.copy(segment_func=self._xsegment)
-                
-                # are labels contiguous?
-                if xcov & other_xcov:
-                    other_model = self.models[other_label]
-                    distance, _ = model.bic(other_model,
-                                         penalty_coef=self.penalty_coef)
-                    self._M[new_label, other_label] = distance
-                    self._M[other_label, new_label] = distance
+        self.tolerance = tolerance
     
 
 if __name__ == "__main__":
