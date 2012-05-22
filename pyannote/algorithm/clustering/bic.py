@@ -18,8 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-
-class BICMixin(object):
+from pyannote.algorithm.clustering.similarity import BaseSimilarityMixin
+class BICSimilarityMixin(BaseSimilarityMixin):
     
     def __get_penalty_coef(self):
         return self.__penalty_coef
@@ -64,10 +64,12 @@ class BICMixin(object):
             new_model = new_model.merge(self.models[label])
         return new_model
 
-from pyannote.algorithm.clustering.base import TwoMostSimilarAgglomerativeClustering
+from pyannote.algorithm.clustering.base import MatrixAgglomerativeClustering
+from pyannote.algorithm.clustering.stop import NegativeStoppingCriterionMixin
 from pyannote.algorithm.util.gaussian import Gaussian
 
-class BICClustering(BICMixin, TwoMostSimilarAgglomerativeClustering):
+class BICClustering(NegativeStoppingCriterionMixin, BICSimilarityMixin, \
+                    MatrixAgglomerativeClustering):
     """
     BIC clustering 
     
@@ -92,10 +94,7 @@ class BICClustering(BICMixin, TwoMostSimilarAgglomerativeClustering):
         super(BICClustering, self).__init__()
         self.penalty_coef = penalty_coef
         self.covariance_type = covariance_type
-    
-    def _stop(self, similarity):
-        return similarity < 0.
-    
+
 from pyannote.algorithm.clustering.constraint import ContiguousConstraintMixin
 class BICRecombiner(ContiguousConstraintMixin, BICClustering):
     """
@@ -124,7 +123,7 @@ class BICRecombiner(ContiguousConstraintMixin, BICClustering):
         super(BICRecombiner, self).__init__(covariance_type=covariance_type, 
                                             penalty_coef=penalty_coef)
         self.tolerance = tolerance
-    
+
 
 if __name__ == "__main__":
     import doctest

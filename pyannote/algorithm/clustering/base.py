@@ -42,6 +42,11 @@ class BaseAgglomerativeClustering(object):
     models = property(fget=__get_models)
     """One model per label"""
     
+    def __get_iterations(self):
+        return self.__iterations
+    iterations = property(fget=__get_iterations)
+    """Iterations log"""
+    
     # == Models ==
     
     def _compute_model(self, label):
@@ -185,9 +190,6 @@ class BaseAgglomerativeClustering(object):
             # find labels that should be merged next
             merged_labels, status = self._next()
             
-            # keep track of iteration
-            self.__iterations.append((merged_labels, status))
-            
             # nothing left to merge or reached stopping criterion?
             if not merged_labels or self._stop(status):
                 break
@@ -210,13 +212,23 @@ class BaseAgglomerativeClustering(object):
             
             # update what needs to be updated
             self._update(new_label, merged_labels)
+            
+            # keep track of iteration
+            self.__iterations.append((merged_labels, status))
         
         return self._final()
 
 
 import numpy as np
 from pyannote.base.matrix import LabelMatrix
-class TwoMostSimilarAgglomerativeClustering(BaseAgglomerativeClustering):
+class MatrixAgglomerativeClustering(BaseAgglomerativeClustering):
+    """
+    Agglomerative clustering based on label similarity matrix.
+    """
+    def __get_matrix(self):
+        return self.__matrix
+    matrix = property(fget=__get_matrix)
+    """Similarity matrix."""
     
     def _compute_similarity(self, label, other_label):
         name = self.__class__.__name__
@@ -228,15 +240,15 @@ class TwoMostSimilarAgglomerativeClustering(BaseAgglomerativeClustering):
         Loop on all pairs of labels and fill similarity matrix
         """
         # initialize empty similarity matrix
-        self._similarity = LabelMatrix(default=-np.inf)
+        self.__matrix = LabelMatrix(default=-np.inf)
         
         # compute symmetric similarity matrix
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             for other_label in labels[l+1:]:
                 similarity = self._compute_similarity(label, other_label)
-                self._similarity[label, other_label] = similarity
-                self._similarity[other_label, label] = similarity
+                self.__matrix[label, other_label] = similarity
+                self.__matrix[other_label, label] = similarity
     
     def _update(self, new_label, merged_labels):
         """
@@ -247,8 +259,8 @@ class TwoMostSimilarAgglomerativeClustering(BaseAgglomerativeClustering):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self._similarity[label, :]
-            del self._similarity[:, label]
+            del self.__matrix[label, :]
+            del self.__matrix[:, label]
         
         # update row and column for new label
         labels = self.annotation.labels()
@@ -256,32 +268,31 @@ class TwoMostSimilarAgglomerativeClustering(BaseAgglomerativeClustering):
             if label == new_label:
                 continue
             similarity = self._compute_similarity(new_label, label)
-            self._similarity[new_label, label] = similarity
-            self._similarity[label, new_label] = similarity
+            self.__matrix[new_label, label] = similarity
+            self.__matrix[label, new_label] = similarity
     
     def _next(self):
         
         while True:
             
             # find two most similar labels
-            label1, label2 = self._similarity.argmax().popitem()
+            label1, label2 = self.__matrix.argmax().popitem()
             
             # if even the most similar labels are completely dissimilar
             # return empty list
-            if self._similarity[label1, label2] == -np.inf:
+            if self.__matrix[label1, label2] == -np.inf:
                 return [], -np.inf
             
             # if labels are mergeable
             if self._mergeable([label1, label2]):
-                similarity = self._similarity[label1, label2]
+                similarity = self.__matrix[label1, label2]
                 return sorted([label1, label2]), similarity
             
             # if labels are not mergeable, loop...
             # (and make sure those two are not selected again)
             else:
-                self._similarity[label1, label2] = -np.inf
-                self._similarity[label2, label1] = -np.inf
-
+                self.__matrix[label1, label2] = -np.inf
+                self.__matrix[label2, label1] = -np.inf
 
 
 if __name__ == "__main__":
