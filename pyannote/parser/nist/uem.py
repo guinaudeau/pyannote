@@ -41,6 +41,13 @@ class UEMParser(BaseTextualTimelineParser):
         segment = Segment(start=start_time, end=end_time)
         
         return segment, video
+    
+    def _append(self, timeline, f, video):
+        
+        format = '%s 1 %%g %%g\n' % (video)
+        for segment in timeline:
+            f.write(format % (segment.start, segment.end))
+        
 
 if __name__ == "__main__":
     import doctest
