@@ -800,8 +800,20 @@ class Annotation(object):
         translation = {label: Unknown() for label in self.labels()} 
         return self % translation
     
-    def __get_label(self, label):
+    def smooth(self):
+        """Merge equi-label contiguous tracks"""
+        M = Annotation(multitrack=True, 
+                       video=self.video, modality=self.modality)
         
+        for label in self.labels():
+            coverage = self.__label_timeline[label].coverage()
+            for segment in coverage:
+                M[segment, M.new_track(segment)] = label
+        
+        return M
+        
+    def __get_label(self, label):
+        """Sub-annotation extraction for one label."""
         T = self.empty()
         
         if self.multitrack:
