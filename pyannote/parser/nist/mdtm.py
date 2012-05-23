@@ -47,7 +47,19 @@ class MDTMParser(BaseTextualAnnotationParser):
 
         segment = Segment(start=start_time, end=start_time+duration)
         return segment, None, label, video, modality
-
+    
+    def _append(self, annotation, f, video, modality):
+        
+        if annotation.multitrack:
+            format = '%s 1 %%g %%g %s NA %%s %%s\n' % (video, modality)
+            for segment, track, label in annotation.iterlabels():
+                f.write(format % (segment.start, segment.duration, 
+                                  track, label))
+        else:
+            format = '%s 1 %%g %%g %s NA NA %%s\n' % (video, modality)
+            for segment, label in annotation.iterlabels():
+                f.write(format % (segment.start, segment.duration, label))
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
