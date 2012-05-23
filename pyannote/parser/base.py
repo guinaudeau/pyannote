@@ -115,7 +115,30 @@ class BaseTextualTimelineParser(BaseTimelineParser):
         fp.close()
         
         return self
+    
+    def write(self, timeline, f=sys.stdout, video=None):
+        """
         
+        Parameters
+        ----------
+        timeline : :class:`pyannote.base.timeline.Timeline`
+            Timeline
+        f : file or str, optional
+            Default is stdout.
+        video : str, optional
+            When provided, overrides `timeline` video attribute.
+        """
+        
+        if video is None:
+            video = timeline.video
+        
+        if isinstance(f, file):
+            self._append(timeline, f, video)
+        else:
+            f = open(f, 'w')
+            self._append(timeline, f, video)
+            f.close()
+
 
 from pyannote.base.annotation import Annotation
 
