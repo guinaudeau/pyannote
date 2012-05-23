@@ -132,7 +132,12 @@ class Annotation(object):
     
     def __get_video(self): 
         return self.__video
-    video = property(fget=__get_video)
+    def __set_video(self, video):
+        self.__video = video
+        self.__timeline.video = video
+        for label in self.__label_timeline:
+            self.__label_timeline[label].video = video
+    video = property(fget=__get_video, fset=__set_video)
     """Path to (or any identifier of) annotated video
     
     Examples
