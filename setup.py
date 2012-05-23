@@ -24,6 +24,7 @@ setup(
                       'scipy >=0.10.1',
                       'munkres >=1.0.5', 
                       'scikit-learn >=0.11',
+                      'networkx >=1.6',
                       'lxml >=2.3.4'],
     classifiers=[ 
        "Development Status :: 4 - Beta", 

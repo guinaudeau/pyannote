@@ -18,9 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'BICRecombiner']
+__all__ = ['BICClustering', 'BICClusteringModularity', 'BICRecombiner']
 
-from bic import BICClustering, BICRecombiner
+from bic import BICClustering, BICClusteringModularity, BICRecombiner
 
 if __name__ == "__main__":
     import doctest
