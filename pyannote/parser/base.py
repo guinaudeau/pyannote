@@ -18,6 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 from pyannote.base.timeline import Timeline
 
 class BaseTimelineParser(object):
@@ -234,6 +235,37 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
         fp.close()
         
         return self
+    
+    def _append(self, annotation, f, video, modality):
+        raise NotImplementedError('')
+    
+    def write(self, annotation, f=sys.stdout, video=None, modality=None):
+        """
+        
+        Parameters
+        ----------
+        annotation : :class:`pyannote.base.annotation.Annotation`
+            Annotation
+        f : file or str, optional
+            Default is stdout.
+        video : str, optional
+            When provided, overrides `annotation` video attribute.
+        modality : str, optional
+            When provided, overrides `annotation` modality attribute.
+        """
+        
+        if video is None:
+            video = annotation.video
+        if modality is None:
+            modality = annotation.modality
+        
+        if isinstance(f, file):
+            self._append(annotation, f, video, modality)
+        else:
+            f = open(f, 'w')
+            self._append(annotation, f, video, modality)
+            f.close()
+    
 
 if __name__ == "__main__":
     import doctest
