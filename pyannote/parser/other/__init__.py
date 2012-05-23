@@ -18,9 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['SEGParser']
+__all__ = ['SEGParser', 'LSTParser']
 
 from seg import SEGParser
+from lst import LSTParser
 
 if __name__ == "__main__":
     import doctest
