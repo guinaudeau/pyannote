@@ -284,6 +284,7 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
         
         if isinstance(f, file):
             self._append(annotation, f, video, modality)
+            f.flush()
         else:
             f = open(f, 'w')
             self._append(annotation, f, video, modality)
