@@ -28,11 +28,18 @@ class LabelMatrix(object):
     Parameters
     ----------
     ilabels, jlabels : lists of labels, optional
-        
-    Mij : numpy array, optional
-        
+    
+    dtype : data-type, optional
+        The desired data-type for the array.  If not given, then
+        the type will be determined as the minimum type required
+        to hold the objects in the sequence
+    
     default : float, optional
-
+        `default` defaults to zero.
+    
+    Mij : numpy array, optional
+    
+    
     Examples
     --------
     
@@ -42,77 +49,91 @@ class LabelMatrix(object):
         
         
     """
-    def __init__(self, ilabels=None, jlabels=None, Mij=None, default=0.):
+    
+    def __check_initial_labels(self, labels):
+        if labels is None:
+            return []
+        elif isinstance(labels, list):
+            return labels
+        else:
+            raise ValueError("unsupported value for 'labels'. "
+                             "expecting a list of labels.")
+    
+    
+    def __init__(self, ilabels=None, jlabels=None, Mij=None,
+                       dtype=float, default=None):
+        
         super(LabelMatrix, self).__init__()
         
-        # initial set of i.labels
-        if ilabels is None:
-            self.__ilabels = []
-        elif isinstance(ilabels, list):
-            self.__ilabels = list(ilabels)
-        else:
-            raise ValueError("unsupported value for 'ilabels'. "
-                             "expecting a list of labels.")
-                
-        # initial set of j.labels
-        if jlabels is None:
-            self.__jlabels = []
-        elif isinstance(jlabels, list):
-            self.__jlabels = list(jlabels)
-        else:
-            raise ValueError("unsupported value for 'jlabels'. "
-                             "expecting a list of labels.")
-        
-        # label <--> index correspondence
-        self.__label2i = {ilabel:i for i, ilabel in enumerate(self.__ilabels)}
-        self.__label2j = {jlabel:j for j, jlabel in enumerate(self.__jlabels)}
-        
-        # default value 
-        self.__default = default
-        
-        # number of i.labels and j.labels
+        # -- initial sets of labels
+        self.__ilabels = self.__check_initial_labels(ilabels)
         ni = len(self.__ilabels)
+        
+        self.__jlabels = self.__check_initial_labels(jlabels)
         nj = len(self.__jlabels)
         
+        # -- default value (used for new labels)
+        if default is None:
+            default = 0
+        self.__default = default
+        
+        # -- dtype
+        self.__dtype = dtype
+        
+        # -- internal numpy array
+        
+        # if Mij is not provided, 
+        # create it only if needed (ie. provided labels)
         if Mij is None:
-            # in case Mij is not provided but i.labels and/or j.labels are
-            # initialize internal numpy array with default value
             if ni or nj:
-                self.__Mij = self.__default * np.ones((ni, nj))
-            # in case neither i.labels, j.labels nor Mij is provided
-            # set internal array to None
-            else:
-                self.__Mij = None
+                Mij = np.empty((ni, nj), dtype=dtype)
+                Mij.fill(self.__default)
         else:
-            # in case Mij is provided
-            # make sure its shape corresponds to i.labels and j.labels
-            self.__Mij = np.array(Mij)
+            # matching dtypes?
+            if Mij.dtype != self.__dtype:
+                raise ValueError('data type mismatch.')
             
-            Ni, Nj = self.__Mij.shape
-            if (ni, nj) != (Ni, Nj):
-                raise ValueError('matrix/labels dimension mismatch.')
+            # matching shapes?
+            if Mij.shape != (ni, nj):
+                raise ValueError('shape mismatch.')
+            Ni, Nj = Mij.shape
+        
+        self.__M = Mij
+        
+        # -- position of labels in internal array
+        self.__label2i = {ilabel:i for i, ilabel in enumerate(self.__ilabels)}
+        self.__label2j = {jlabel:j for j, jlabel in enumerate(self.__jlabels)}
     
     def __get_default(self):
         return self.__default
     default = property(fget=__get_default)
     """Default value"""
     
-    def __get_T(self): 
-        return LabelMatrix(self.__jlabels, self.__ilabels, self.__Mij.T)
+    def __get_dtype(self):
+        return self.__dtype
+    dtype = property(fget=__get_dtype)
+    """Data type"""
+    
+    def __get_T(self):
+        return LabelMatrix(ilabels=self.__jlabels, jlabels=self.__ilabels,
+                           Mij=self.__M.T, dtype=self.__dtype,
+                           default=self.__default)
     T = property(fget=__get_T)
-    """Transposed matrix (returned as :class:`LabelMatrix`)"""
+    """Transposed matrix"""
     
     def __get_shape(self):
-        return (0, 0) if self.__Mij is None else self.__Mij.shape
+        return (0, 0) if self.__M is None else self.__M.shape
     shape = property(fget=__get_shape)
     """Matrix shape"""
     
     def __get_M(self):
-        return self.__Mij
+        return self.__M
     def __set_M(self, M):
         if M.shape != self.shape:
-            raise ValueError('Shape mismatch %s %s' % (self.shape, M.shape))
-        self.__Mij = M
+            raise ValueError('shape mismatch.')
+        if M.dtype != self.__dtype:
+            raise ValueError('data type mismatch.')
+        self.__M = M
     M = property(fget=__get_M, fset=__set_M)
     "Internal numpy array"
                  
@@ -144,7 +165,7 @@ class LabelMatrix(object):
            try:
                i = self.__label2i[i_lbl]
                j = self.__label2j[j_lbl]
-               return self.__Mij[i, j]
+               return self.__M[i, j]
            except:
                raise KeyError('cannot get element [%s, %s]' % (i_lbl, j_lbl))
         
@@ -168,35 +189,47 @@ class LabelMatrix(object):
         else:
             j_lbls = [j_lbl]
         
-        M = LabelMatrix(default=self.default)
+        M = self.empty()
         try:
             for i_lbl in i_lbls:
                 i = self.__label2i[i_lbl]
                 for j_lbl in j_lbls:
                     j = self.__label2j[j_lbl]
-                    M[i_lbl, j_lbl] = self.__Mij[i, j]
+                    M[i_lbl, j_lbl] = self.__M[i, j]
         except:
             raise KeyError('cannot get element [%s, %s]' % (i_lbl, j_lbl))
             
         return M
     
     def __add_ilabel(self, ilabel):
-        n, m = self.shape
+        
+        # get current shape (before adding label)
+        n, m = self.__M.shape
+        
+        # append label at the end of list
         self.__ilabels.append(ilabel)
-        self.__label2i[ilabel] = n        
-        self.__Mij = np.append(self.__Mij, \
-                               self.default*np.ones((1, m)), \
-                               axis=0)
+        # store its position
+        self.__label2i[ilabel] = n
+        
+        # append default row to internal array
+        default_row = np.empty((1, m), dtype=self.__dtype)
+        default_row.fill(self.__default)
+        self.__M = np.append(self.__M, default_row, axis=0)
     
     def __add_jlabel(self, jlabel):
-        n, m = self.shape
-        self.__jlabels.append(jlabel)
-        self.__label2j[jlabel] = m
-        self.__Mij = np.append(self.__Mij, \
-                               self.default*np.ones((n, 1)), \
-                               axis=1)
         
-    # ------------------------------------------------------------------- #
+        # get current shape (before adding label)
+        n, m = self.shape
+        
+        # append label at the end of list
+        self.__jlabels.append(jlabel)
+        # store its position
+        self.__label2j[jlabel] = m
+        
+        # append default column to internal array
+        default_column = np.empty((n, 1), dtype=self.__dtype)
+        default_column.fill(self.__default)
+        self.__M = np.append(self.__M, default_column, axis=1)
     
     def __setitem__(self, key, value):
         """
@@ -220,12 +253,13 @@ class LabelMatrix(object):
            isinstance(j_lbl, set) or j_lbl == slice(None, None, None):
            raise KeyError('')
         
-        if self.__Mij is None:
+        if self.__M is None:
             self.__ilabels.append(i_lbl)
             self.__jlabels.append(j_lbl)
             self.__label2i[i_lbl] = 0
             self.__label2j[j_lbl] = 0
-            self.__Mij = value * np.ones((1,1))
+            self.__M = np.empty((1, 1), dtype=self.__dtype)
+            self.__M[0, 0] = value
         else:
             if i_lbl not in self.__label2i:
                 self.__add_ilabel(i_lbl)
@@ -233,7 +267,7 @@ class LabelMatrix(object):
                 self.__add_jlabel(j_lbl)
             i = self.__label2i[i_lbl]
             j = self.__label2j[j_lbl]
-            self.__Mij[i, j] = value
+            self.__M[i, j] = value
     
     def _delete_ilabel(self, ilabel):
         
@@ -246,7 +280,7 @@ class LabelMatrix(object):
             if self.__label2i[i_lbl] > i:
                 self.__label2i[i_lbl] -= 1
         # remove corresponding row from internal matrix
-        self.__Mij = np.delete(self.__Mij, i, axis=0)
+        self.__M = np.delete(self.__M, i, axis=0)
         
     def _delete_jlabel(self, jlabel):
         
@@ -259,7 +293,7 @@ class LabelMatrix(object):
             if self.__label2j[j_lbl] > j:
                 self.__label2j[j_lbl] -= 1
         # remove corresponding row from internal matrix
-        self.__Mij = np.delete(self.__Mij, j, axis=1)
+        self.__M = np.delete(self.__M, j, axis=1)
     
     def __delitem__(self, key):
         """
@@ -313,9 +347,6 @@ class LabelMatrix(object):
     
     
     def iter_ilabels(self, index=False):
-        """
-        
-        """
         for ilabel in self.__ilabels:
             if index:
                 yield self.__label2i[ilabel], ilabel
@@ -337,43 +368,35 @@ class LabelMatrix(object):
                 else:
                     yield ilabel, jlabel
     
-    # ------------------------------------------------------------------- #
-    
+    def empty(self):
+        """Empty copy"""
+        return LabelMatrix(dtype=self.__dtype, default=self.__default)
+        
     def copy(self):
         """Duplicate matrix.
         
         """
-        ilabels, jlabels = self.labels
-        C = LabelMatrix(list(ilabels), list(jlabels), \
-                     np.copy(self.M), default=self.default)
+        C = LabelMatrix(ilabels=list(self.__ilabels),
+                        jlabels=list(self.__jlabels), 
+                        Mij=np.copy(self.__M), dtype=self.__dtype,
+                        default=self.__default)
         return C
     
-    # ------------------------------------------------------------------- #
-
     def __neg__(self):
-        ilabels, jlabels = self.labels
-        C = LabelMatrix(list(ilabels), list(jlabels), -np.copy(self.M), \
-                     default=-self.default)
+        C = LabelMatrix(ilabels=list(self.__ilabels),
+                        jlabels=list(self.__jlabels), 
+                        Mij=-np.copy(self.__M), dtype=self.__dtype,
+                        default=-self.__default)
         return C
     
-    # ------------------------------------------------------------------- #
-
     def __iadd__(self, other):
-
-        if self.default != other.default:
-            warnings.warn('Incompatible default value. Uses %g.' % self.default)
-
         for ilabel, jlabel, value in other.iter_pairs(data=True):
             self[ilabel, jlabel] += value
-        
-        return self 
-
-    # ------------------------------------------------------------------- #
-
+        return self
+    
     def __add__(self, other):
-        C = self.copy()        
-        C += other
-        return C
+        C = self.copy()
+        return C.__iadd__(other)
     
     def argmax(self, axis=None):
         
@@ -444,30 +467,22 @@ class Cooccurrence(LabelMatrix):
     
     """
     def __init__(self, I, J):
-                
-        n_i = len(I.labels())
-        n_j = len(J.labels())
-        Mij = np.zeros((n_i, n_j))
-        super(Cooccurrence, self).__init__(I.labels(), J.labels(), Mij, default=0.)
-                
-        ilabels, jlabels = self.labels
         
-        for i, ilabel in self.iter_ilabels(index=True):
-            i_coverage = I(ilabel).timeline.coverage()
-            
-            for j, jlabel in self.iter_jlabels(index=True):
-                j_coverage = J(jlabel).timeline.coverage()
-                # self[ilabel, jlabel] = i_coverage(j_coverage, \
-                #                               mode='intersection').duration()
-                super(Cooccurrence, self).__setitem__((ilabel, jlabel), \
-                i_coverage(j_coverage, mode='intersection').duration())
-    
-    def __setitem__(self, key, value):
-        raise NotImplementedError('')
-    
-    def __delitem__(self, key):
-        raise NotImplementedError('')
-
+        # number of labels in annotations
+        ni = len(I.labels())
+        nj = len(J.labels())
+        # initialize matrix with cooccurrence zero
+        Mij = np.zeros((ni, nj), dtype=float)
+        super(Cooccurrence, self).__init__(ilabels=I.labels(), 
+                                           jlabels=J.labels(), 
+                                           Mij=Mij)
+        
+        for ilabel in self.iter_ilabels():
+            icov = I.label_coverage(ilabel)
+            for jlabel in self.iter_jlabels():
+                jcov = J.label_coverage(jlabel)
+                ijcov = icov(jcov, mode='intersection').duration()
+                self[ilabel, jlabel] = ijcov
 
 from pyannote.base.segment import SEGMENT_PRECISION
 class CoTFIDF(Cooccurrence):
@@ -528,7 +543,7 @@ class CoTFIDF(Cooccurrence):
             # use log only if requested (defaults is False ==> do not use log)
             if log:
                 idf = np.log(idf)
-
+                
         else:
             idf = 1.
         
