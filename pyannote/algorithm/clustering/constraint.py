@@ -148,13 +148,9 @@ class XTagsConstraintMixin(BaseConstraintMixin):
                 other_tags = set(self.__xtags(other_cov, mode='loose').labels())
                 
                 # are there any tag conflicts?
-                if tags ^ other_tags:
-                    self.__conflicting_xtags[label, other_label] = True
-                    self.__conflicting_xtags[other_label, label] = True
-                # False is the default value.
-                # else:
-                #     self.__conflicting_xtags[label, other_label] = False
-                #     self.__conflicting_xtags[other_label, label] = False
+                conflicting_xtags = bool(tags ^ other_tags)
+                self.__conflicting_xtags[other_label, label] = conflicting_xtags
+                self.__conflicting_xtags[label, other_label] = conflicting_xtags
     
     def _update_constraint(self, new_label, merged_labels):
         
