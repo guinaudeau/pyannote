@@ -27,6 +27,17 @@ from identification import IdentificationErrorRate, \
                            IER_TOTAL, \
                            IER_CORRECT
 
+class DiarizationReport(object):
+    def __init__(self):
+        super(DiarizationReport, self).__init__()
+        self.errors = [DiarizationErrorRate(), 
+                       DiarizationPurity(), DiarizationCoverage(),
+                       DiarizationHomogeneity(), DiarizationCompleteness()]
+                  
+    def __call__(self, reference, hypothesis, **kwargs):
+        for error in self.errors:
+            error(reference, hypothesis, **kwargs)
+
 DER_NAME = 'diarization error rate'
 
 class DiarizationErrorRate(IdentificationErrorRate):
@@ -36,7 +47,7 @@ class DiarizationErrorRate(IdentificationErrorRate):
         self.name = DER_NAME
         self.__hungarian = HungarianMapper()
     
-    def get_details(self, reference, hypothesis):
+    def get_details(self, reference, hypothesis, **kwargs):
         mapping = self.__hungarian(hypothesis, reference)
         return super(DiarizationErrorRate, self).get_details(reference, \
                                                          hypothesis % mapping)
