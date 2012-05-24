@@ -148,7 +148,7 @@ class BaseAgglomerativeClustering(object):
     
     # == Constraints ==
     
-    def _initialize_constraint(self):
+    def _initialize_constraint(self, **kwargs):
         """By default, there is no constraint whatsoever"""
         pass
         
@@ -162,7 +162,7 @@ class BaseAgglomerativeClustering(object):
         """
         return True
     
-    def __call__(self, annotation, feature):
+    def __call__(self, annotation, feature, **kwargs):
         
         # initial annotation (will be modified)
         self.__annotation = annotation.copy()
@@ -175,7 +175,7 @@ class BaseAgglomerativeClustering(object):
             self.__models[label] = self._compute_model(label)
         
         # initialize constraint if needed
-        self._initialize_constraint()
+        self._initialize_constraint(**kwargs)
         
         # initialize what needs to be initialized
         self._initialize()

@@ -27,10 +27,9 @@
 
 """
 
-
 class BaseConstraintMixin(object):
     
-    def _initialize_constraint(self):
+    def _initialize_constraint(self, **kwargs):
         name = self.__class.__name__
         raise NotImplementedError('%s sub-class must implement method'
                                   '_initialize_constraint()' % name)
@@ -61,7 +60,7 @@ class ContiguousConstraintMixin(BaseConstraintMixin):
         """
         return .5*self.tolerance << segment >> .5*self.tolerance
     
-    def _initialize_constraint(self):
+    def _initialize_constraint(self, **kwargs):
         """
         Two labels are mergeable if they are contiguous
         """
@@ -125,6 +124,77 @@ class ContiguousConstraintMixin(BaseConstraintMixin):
                 if not self.__contiguous[label, other_label]:
                     return False
         return True
+
+class XTagsConstraintMixin(BaseConstraintMixin):
+    
+    def _initialize_constraint(self, xtags=None, **kwargs):
+        """
+        """
+        
+        # keep track
+        self.__xtags = xtags
+        self.__conflicting_xtags = LabelMatrix(dtype=bool, default=False)
+        labels = self.annotation.labels()
+        for l, label in enumerate(labels):
+            
+            # set of tags intersecting label
+            cov = self.annotation.label_coverage(label)
+            tags = set(self.__xtags(cov, mode='loose').labels())
+            
+            for other_label in labels[l+1:]:
+                
+                # set of tags intersecting other label
+                other_cov = self.annotation.label_coverage(other_label)
+                other_tags = set(self.__xtags(other_cov, mode='loose').labels())
+                
+                # are there any tag conflicts?
+                if tags ^ other_tags:
+                    self.__conflicting_xtags[label, other_label] = True
+                    self.__conflicting_xtags[other_label, label] = True
+                # False is the default value.
+                # else:
+                #     self.__conflicting_xtags[label, other_label] = False
+                #     self.__conflicting_xtags[other_label, label] = False
+    
+    def _update_constraint(self, new_label, merged_labels):
+        
+        # remove rows and columns for old labels
+        for label in merged_labels:
+            if label == new_label:
+                continue
+            del self.__conflicting_xtags[label, :]
+            del self.__conflicting_xtags[:, label]
+        
+        # set of tags intersecting new label
+        cov = self.annotation.label_coverage(new_label)
+        tags = set(self.__xtags(cov, mode='loose').labels())
+        
+        # update row and column for new label
+        labels = self.annotation.labels()
+        
+        for label in labels:
+            
+            if label == new_label:
+                continue
+                
+            # set of tags intersection other label
+            other_cov = self.annotation.label_coverage(label)
+            other_tags = set(self.__xtags(other_cov, mode='loose').labels())
+            
+            # are there any tag conflicts
+            conflicting_xtags = bool(tags ^ other_tags)
+            self.__conflicting_xtags[new_label, label] = conflicting_xtags
+            self.__conflicting_xtags[label, new_label] = conflicting_xtags
+    
+    def _mergeable(self, labels):
+        for l, label in enumerate(labels):
+            for other_label in labels[l+1:]:
+                if self.__conflicting_xtags[label, other_label]:
+                    return False
+        return True
+
+
+
 
 if __name__ == "__main__":
     import doctest
