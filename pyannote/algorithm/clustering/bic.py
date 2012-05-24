@@ -42,7 +42,7 @@ class BICSimilarityMixin(BaseSimilarityMixin):
         One Gaussian per track
         """
         # extract features for this label
-        data = self.feature(self.annotation(label).timeline)
+        data = self.feature(self.annotation.label_timeline(label))
         # fit gaussian and return it
         return Gaussian(covariance_type=self.covariance_type).fit(data)
     
