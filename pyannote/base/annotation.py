@@ -178,6 +178,13 @@ class Annotation(object):
     ]
     
     """
+    def __get_timeline_fast(self):
+        return self.__timeline
+    _timeline = property(fget=__get_timeline_fast)
+    """
+    Much faster than .timeline but be careful not to modify the
+    returned timeline, unless you know what you are doing.
+    """
     
     # Make sure provided segment is valid.
     def __valid_segment(self, segment):
@@ -203,6 +210,35 @@ class Annotation(object):
         
         """
         return sorted(self.__label_count.keys(), key=str)
+    
+    def label_timeline(self, label, copy=True):
+        """Get label timeline.
+        
+        Parameters
+        ----------
+        label : existing label
+            
+        copy : bool, optional
+            copy=False is much faster but be careful not to modify the
+            returned timeline, unless you know what you are doing.
+        
+        Returns
+        -------
+        timeline : :class:`pyannote.base.timeline.Timeline`
+            Label timeline
+        
+        """
+        timeline = self.__label_timeline[label]
+        if copy:
+            return timeline.copy()
+        else:
+            return timeline
+    
+    def label_coverage(self, label):
+        return self.label_timeline(label, copy=False).coverage()
+    
+    def label_duration(self, label):
+        return self.label_timeline(label, copy=False).duration()
     
     def get_labels(self, segment):
         """Local set of labels
@@ -279,7 +315,7 @@ class Annotation(object):
         # if segment is not provided, just look for the overall most frequent
         # label (ie. set segment to the extent of the annotation)
         if segment is None:
-            segment = self.timeline.extent()
+            segment = self.__timeline.extent()
         
         # compute intersection duration for each label
         durations = {lbl: (self.__label_timeline[lbl] & segment).duration()\
