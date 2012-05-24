@@ -57,7 +57,7 @@ class TRSParser(BaseAnnotationParser):
             m = p.match(string)
         return labels
     
-    def read(self, path, video=None):
+    def read(self, path, video=None, **kwargs):
         
         # objectify xml file and get root
         root = objectify.parse(path).getroot()

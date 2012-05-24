@@ -41,10 +41,10 @@ class BaseTimelineParser(object):
     def reset(self):
         self.__loaded = {}
     
-    def read(self, path, video=None):
+    def read(self, path, video=None, **kwargs):
         raise NotImplementedError('')
     
-    def __call__(self, video=None):
+    def __call__(self, video=None, **kwargs):
         """
         
         Parameters
@@ -85,7 +85,7 @@ class BaseTextualTimelineParser(BaseTimelineParser):
     def _parse(self, line):
         raise NotImplementedError('')
     
-    def read(self, path, video=None):
+    def read(self, path, video=None, **kwargs):
         
         # default video to path
         if video is None:
@@ -173,10 +173,10 @@ class BaseAnnotationParser(object):
     def reset(self):
         self.__loaded = {}
     
-    def read(self, path, video=None, modality=None):
+    def read(self, path, video=None, modality=None, **kwargs):
         raise NotImplementedError('')
     
-    def __call__(self, video=None, modality=None):
+    def __call__(self, video=None, modality=None, **kwargs):
         """
         
         Parameters
@@ -224,7 +224,7 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
     def _parse(self, line):
         raise NotImplementedError('')
     
-    def read(self, path, video=None, modality=None):
+    def read(self, path, video=None, modality=None, **kwargs):
         
         # default video to path
         if video is None:
@@ -289,7 +289,7 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
             f = open(f, 'w')
             self._append(annotation, f, video, modality)
             f.close()
-    
+
 
 if __name__ == "__main__":
     import doctest

@@ -23,6 +23,48 @@ from repere import *
 from other import *
 from feature import *
 
+class Parser(object):
+    
+    def __guess(self, extension):
+        guess = {
+            # '.plp':    PLPParser, 
+            '.mdtm':   MDTMParser,
+            '.uem':    UEMParser,
+            # '.lst':    LSTParser, 
+            '.seg':    SEGParser,
+            '.repere': REPEREParser,
+            '.trs':    TRSParser, 
+            '.xgtf':   XGTFParser, 
+        }
+        return guess.get(extension, None)
+    
+    def __init__(self):
+        super(Parser, self).__init__()
+        self.__parser = None
+    
+    def __get_videos(self):
+        return self.__parser.videos
+    videos = property(fget=__get_videos)
+    
+    def __get_modalities(self):
+        return self.__parser.modalities
+    modalities = property(fget=__get_modalities)
+    
+    def read(self, path, video=None, modality=None, **kwargs):
+        import os
+        _, extension = os.path.splitext(path)
+        GuessParser = self.__guess(extension)
+        if GuessParser is None:
+            raise NotImplementedError('unknown extension %s.' % extension)
+        if self.__parser is None or not isinstance(self.__parser, GuessParser):
+            self.__parser = GuessParser()
+        self.__parser.read(path, video=video, modality=modality, **kwargs)
+        return self
+    
+    def __call__(self, video=None, modality=None, **kwargs):
+        return self.__parser(video=video, modality=modality, **kwargs)
+    
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

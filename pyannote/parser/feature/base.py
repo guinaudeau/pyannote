@@ -68,7 +68,7 @@ class BasePeriodicFeatureParser(object):
         """
         raise NotImplementedError('')
         
-    def read(self, path, video=None):
+    def read(self, path, video=None, **kwargs):
         """
         
         Parameters

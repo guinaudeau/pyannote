@@ -76,7 +76,7 @@ class XGTFParser(BaseAnnotationParser):
         
         return labels
     
-    def read(self, path_xgtf, path_idx, video=None):
+    def read(self, path_xgtf, path_idx=None, video=None):
         
         # frame <--> timestamp mapping
         self.__idx.read(path_idx)
@@ -122,8 +122,6 @@ class XGTFParser(BaseAnnotationParser):
                         if lbl not in lbls:
                             self._add(element_segment, None, lbl, 
                                       video, modality)
-        
-        
         
         return self
 
