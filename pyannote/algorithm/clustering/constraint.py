@@ -66,27 +66,28 @@ class ContiguousConstraintMixin(BaseConstraintMixin):
         Two labels are mergeable if they are contiguous
         """
         
-        self._mergeable = LabelMatrix(default=0.)
+        self.__contiguous = LabelMatrix(dtype=bool, default=False)
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             
             # extended coverage
-            cov = self.annotation(label).timeline.coverage()
+            cov = self.annotation.label_coverage(label)
             xcov = cov.copy(segment_func=self._xsegment)
             
             for other_label in labels[l+1:]:
                 
                 # other extended coverage
-                other_cov = self.annotation(other_label).timeline.coverage()
+                other_cov = self.annotation.label_coverage(other_label)
                 other_xcov = other_cov.copy(segment_func=self._xsegment)
                 
                 # are labels contiguous?
                 if xcov & other_xcov:
-                    self._mergeable[label, other_label] = 1.
-                    self._mergeable[other_label, label] = 1.
-                else:
-                    self._mergeable[label, other_label] = 0.
-                    self._mergeable[other_label, label] = 0.
+                    self.__contiguous[label, other_label] = True
+                    self.__contiguous[other_label, label] = True
+                # False is the default value.
+                # else:
+                #     self.__contiguous[label, other_label] = False
+                #     self.__contiguous[other_label, label] = False
     
     def _update_constraint(self, new_label, merged_labels):
         
@@ -94,11 +95,11 @@ class ContiguousConstraintMixin(BaseConstraintMixin):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self._mergeable[label, :]
-            del self._mergeable[:, label]
+            del self.__contiguous[label, :]
+            del self.__contiguous[:, label]
         
         # extended coverage
-        cov = self.annotation(new_label).timeline.coverage()
+        cov = self.annotation.label_coverage(new_label)
         xcov = cov.copy(segment_func=self._xsegment)
         
         # update row and column for new label
@@ -110,21 +111,18 @@ class ContiguousConstraintMixin(BaseConstraintMixin):
                 continue
                 
             # other extended coverage
-            other_cov = self.annotation(label).timeline.coverage()
+            other_cov = self.annotation.label_coverage(label)
             other_xcov = other_cov.copy(segment_func=self._xsegment)
                 
             # are labels contiguous?
-            if xcov & other_xcov:
-                self._mergeable[new_label, label] = 1.
-                self._mergeable[label, new_label] = 1.
-            else:
-                self._mergeable[new_label, label] = 0.
-                self._mergeable[label, new_label] = 0.
+            contiguous = bool(xcov & other_xcov)
+            self.__contiguous[new_label, label] = contiguous
+            self.__contiguous[label, new_label] = contiguous
     
     def _mergeable(self, labels):
         for l, label in enumerate(labels):
-            for other_label in labels[l+1, :]:
-                if self._mergeable[label, other_label] == 0.:
+            for other_label in labels[l+1:]:
+                if not self.__contiguous[label, other_label]:
                     return False
         return True
 
