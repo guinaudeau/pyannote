@@ -87,8 +87,6 @@ IER_FALSE_ALARM = 'false alarm'
 IER_MISS = 'miss'
 IER_NAME = 'identification error rate'
 
-from pyannote.algorithm.tagging import DirectTagger
-
 class IdentificationErrorRate(BaseErrorRate):
 
     def __init__(self, matcher=None):
@@ -106,7 +104,6 @@ class IdentificationErrorRate(BaseErrorRate):
             self.matcher = matcher
         else:
             self.matcher = DefaultIDMatcher()
-        self.tagger = DirectTagger()
     
     def get_details(self, reference, hypothesis, **kwargs):
         
@@ -117,10 +114,10 @@ class IdentificationErrorRate(BaseErrorRate):
         common_timeline = common_timeline.segmentation()
         
         # align reference on common timeline
-        R = self.tagger(reference, common_timeline)
+        R = reference >> common_timeline
         
         # translate and align hypothesis on common timeline
-        H = self.tagger(hypothesis, common_timeline)
+        H = hypothesis >> common_timeline
         
         # loop on all segments
         for segment in common_timeline:
