@@ -36,9 +36,9 @@ class DetectionErrorRate(BaseErrorRate):
         
         super(DetectionErrorRate, self).__init__(DER_NAME, values)
         
-    def get_details(self, reference, hypothesis, **kwargs):
+    def _get_details(self, reference, hypothesis, **kwargs):
         
-        detail = self.init_details()
+        detail = self._init_details()
         
         # common (up-sampled) timeline
         common_timeline = reference._timeline + hypothesis._timeline
@@ -75,7 +75,7 @@ class DetectionErrorRate(BaseErrorRate):
         
         return detail
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = 1. * (detail[DER_FALSE_ALARM] + detail[DER_MISS])
         denominator = 1. * detail[DER_TOTAL]
         if denominator == 0.:
@@ -86,7 +86,7 @@ class DetectionErrorRate(BaseErrorRate):
         else:
             return numerator/denominator
             
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - duration: %.2f seconds\n" % (detail[DER_TOTAL])
         string += "  - miss: %.2f seconds\n" % (detail[DER_MISS])

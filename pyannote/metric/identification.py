@@ -105,9 +105,9 @@ class IdentificationErrorRate(BaseErrorRate):
         else:
             self.matcher = DefaultIDMatcher()
     
-    def get_details(self, reference, hypothesis, **kwargs):
+    def _get_details(self, reference, hypothesis, **kwargs):
         
-        detail = self.init_details()
+        detail = self._init_details()
         
         # common (up-sampled) timeline
         common_timeline = reference._timeline + hypothesis._timeline
@@ -153,7 +153,7 @@ class IdentificationErrorRate(BaseErrorRate):
         
         return detail
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         
         numerator = 1. * (detail[IER_CONFUSION] + \
                           detail[IER_FALSE_ALARM] + \
@@ -167,7 +167,7 @@ class IdentificationErrorRate(BaseErrorRate):
         else:
             return numerator/denominator
        
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - duration: %.2f seconds\n" % (detail[IER_TOTAL])
         string += "  - correct: %.2f seconds\n" % (detail[IER_CORRECT])

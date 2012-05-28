@@ -182,9 +182,9 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
     f_measure = property(fget=__get_fmeasure)
     """Overall F1-measure."""
 
-    def get_details(self, reference, hypothesis, annotated=None):
+    def _get_details(self, reference, hypothesis, annotated=None):
         
-        detail = self.init_details()
+        detail = self._init_details()
         
         reference = self.tagger(reference, annotated)
         hypothesis = self.tagger(hypothesis, annotated)
@@ -255,7 +255,7 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         
         return detail
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = self.confusion * detail[EGER_CONFUSION_NAME_NAME] + \
                     self.confusion * detail[EGER_CONFUSION_NAME_ANON] + \
                     self.confusion * detail[EGER_CONFUSION_ANON_NAME] + \
@@ -273,7 +273,7 @@ class EstimatedGlobalErrorRate(BaseErrorRate):
         else:
             return numerator/denominator
     
-    def pretty(self, detail):
+    def _pretty(self, detail):
         
         string = ""
         
