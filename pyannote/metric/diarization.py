@@ -27,16 +27,54 @@ from identification import IdentificationErrorRate, \
                            IER_TOTAL, \
                            IER_CORRECT
 
-class DiarizationReport(object):
-    def __init__(self):
-        super(DiarizationReport, self).__init__()
-        self.errors = [DiarizationErrorRate(), 
-                       DiarizationPurity(), DiarizationCoverage(),
-                       DiarizationHomogeneity(), DiarizationCompleteness()]
-                  
-    def __call__(self, reference, hypothesis, **kwargs):
-        for error in self.errors:
-            error(reference, hypothesis, **kwargs)
+# from prettytable import PrettyTable
+# class DiarizationReport(object):
+#     
+#     def __init__(self, name, values):
+#         super(BaseErrorRate, self).__init__()
+#         self.__err_rates = {'DER' : DiarizationErrorRate(), 
+#                             'Purity' : DiarizationPurity(),
+#                             'Coverage' : DiarizationCoverage(),
+#                             'Homogeneity' : DiarizationHomogeneity(), 
+#                             'Completeness' : DiarizationCompleteness()}
+#     
+#     def reset(self):
+#         for err_rate in self.__err_rates.itervalues():
+#             err_rate.reset()
+#     
+#     def __call__(self, reference, hypothesis, **kwargs):
+#         return {err_rate.name : err_rate(reference, hypothesis, 
+#                                          detailed=False, **kwargs) 
+#                 for err_rate in self.__err_rates.itervalues()}
+#     
+#     def __abs__(self):
+#         return {err_rate.name : abs(err_rate) 
+#                 for err_rate in self.__err_rates.itervalues()}
+#     
+#     def confidence_interval(self, alpha=0.9):
+#         return {err_rate.name : err_rate.confidence_interval(alpha=alpha) 
+#                 for err_rate in self.__err_rates.itervalues()}
+#     
+#     def report(self, uri='URI', float_format='1.3'):
+#         
+#         if uri is None:
+#             uri = 'URI'
+#         
+#         
+#         table = PrettyTable()
+#         table.add_column(uri, [v for v,_ in self.__err_rates['DER']], align='l')
+#         
+#         for name, err_rate in self.__err_rates.iteritems():
+#             table.add_column(name, [r for _,r in err_rate], align='c')
+#             table.float_format[name] = float_format
+#         
+#         
+#         # 90% confidence interval | 0.123 < 0.345 < 0.567
+#         fmt = '%%sf < %%sf < %%sf' % (float_format, float_format, float_format)
+#         m, (l, u) = self.confidence_interval(alpha=0.9)
+#         table.add_row(['     90% confidence interval', fmt % (l, m, u)])
+#         
+#         return table
 
 DER_NAME = 'diarization error rate'
 
@@ -47,9 +85,9 @@ class DiarizationErrorRate(IdentificationErrorRate):
         self.name = DER_NAME
         self.__hungarian = HungarianMapper()
     
-    def get_details(self, reference, hypothesis, **kwargs):
+    def _get_details(self, reference, hypothesis, **kwargs):
         mapping = self.__hungarian(hypothesis, reference)
-        return super(DiarizationErrorRate, self).get_details(reference, \
+        return super(DiarizationErrorRate, self)._get_details(reference, \
                                                          hypothesis % mapping)
 
 from base import BaseErrorRate
@@ -68,14 +106,14 @@ class DiarizationPurity(BaseErrorRate):
             PURITY_CORRECT])
         super(DiarizationPurity, self).__init__(PURITY_NAME, values)
     
-    def get_details(self, reference, hypothesis, **kwargs):
-        detail = self.init_details()
+    def _get_details(self, reference, hypothesis, **kwargs):
+        detail = self._init_details()
         matrix = Cooccurrence(reference, hypothesis)
         detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
         detail[PURITY_TOTAL] = np.sum(matrix.M)
         return detail
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = 1. * detail[PURITY_CORRECT]
         denominator = 1. * detail[PURITY_TOTAL]
         if denominator == 0.:
@@ -86,7 +124,7 @@ class DiarizationPurity(BaseErrorRate):
         else:
             return numerator/denominator
        
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - duration: %.2f seconds\n" % (detail[PURITY_TOTAL])
         string += "  - correct: %.2f seconds\n" % (detail[PURITY_CORRECT])
@@ -101,8 +139,8 @@ class DiarizationCoverage(DiarizationPurity):
         super(DiarizationCoverage, self).__init__()
         self.name = COVERAGE_NAME
     
-    def get_details(self, reference, hypothesis, **kwargs):
-        return super(DiarizationCoverage, self).get_details(hypothesis, \
+    def _get_details(self, reference, hypothesis, **kwargs):
+        return super(DiarizationCoverage, self)._get_details(hypothesis, \
                                                             reference)
 
 HOMOGENEITY_NAME = 'homogeneity'
@@ -117,8 +155,8 @@ class DiarizationHomogeneity(BaseErrorRate):
             HOMOGENEITY_CROSS_ENTROPY])
         super(DiarizationHomogeneity, self).__init__(HOMOGENEITY_NAME, values)
     
-    def get_details(self, reference, hypothesis, **kwargs):
-        detail = self.init_details()
+    def _get_details(self, reference, hypothesis, **kwargs):
+        detail = self._init_details()
             
         matrix = Cooccurrence(reference, hypothesis)
         duration = np.sum(matrix.M)
@@ -142,7 +180,7 @@ class DiarizationHomogeneity(BaseErrorRate):
              
         return detail
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = 1. * detail[HOMOGENEITY_CROSS_ENTROPY]
         denominator = 1. * detail[HOMOGENEITY_ENTROPY]
         if denominator == 0.:
@@ -153,7 +191,7 @@ class DiarizationHomogeneity(BaseErrorRate):
         else:
             return 1. - numerator/denominator
        
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - %s: %.2f\n" % \
                   (HOMOGENEITY_ENTROPY, detail[HOMOGENEITY_ENTROPY])
@@ -171,8 +209,8 @@ class DiarizationCompleteness(DiarizationHomogeneity):
         super(DiarizationCompleteness, self).__init__()
         self.name = COMPLETENESS_NAME
     
-    def get_details(self, reference, hypothesis, **kwargs):
-        return super(DiarizationCompleteness, self).get_details(hypothesis, \
+    def _get_details(self, reference, hypothesis, **kwargs):
+        return super(DiarizationCompleteness, self)._get_details(hypothesis, \
                                                             reference)
 
 if __name__ == "__main__":
