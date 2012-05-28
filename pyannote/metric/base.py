@@ -20,14 +20,14 @@
 
 import scipy.stats
 import numpy as np
+
 class BaseErrorRate(object):
     
     def __init__(self, name, values):
         super(BaseErrorRate, self).__init__()
         self.__name = name
         self.__values = set(values)
-        self.__details = self.init_details()
-        self.__rates = []
+        self.reset()
     
     def __get_name(self): 
         return self.__name
@@ -38,18 +38,14 @@ class BaseErrorRate(object):
                      fdel=None, \
                      doc="Metric name.")
     
-    def reset(self):
-        self.__details = self.init_details()
-        self.__rates = []
-    
     def __accumulate(self, detail):
         for value in self.__values:
             self.__details[value] += detail[value]
-
+    
     def __compute(self, detail, accumulate=True, detailed=False):
         if accumulate:
-            self.__accumulate(detail)        
-        rate = self.get_rate(detail)
+            self.__accumulate(detail)
+        rate = self._get_rate(detail)
         if detailed:
             detail = dict(detail)
             detail.update({self.__name: rate})
@@ -58,22 +54,18 @@ class BaseErrorRate(object):
             return rate
     
     def __call__(self, reference, hypothesis, detailed=False, **kwargs):
-        detail = self.get_details(reference, hypothesis, **kwargs)
-        self.__rates.append(self.get_rate(detail))
+        detail = self._get_details(reference, hypothesis, **kwargs)
+        self.__rates.append((reference.video, self._get_rate(detail)))
         return self.__compute(detail, accumulate=True, detailed=detailed)
-    
-    def confidence_interval(self, alpha=0.9):
-        mean, var, std = scipy.stats.bayes_mvs(self.__rates, alpha=alpha)
-        return mean
     
     def __str__(self):
         detail = self.__compute(self.__details, \
                                 accumulate=False, \
                                 detailed=True)
-        return self.pretty(detail)
+        return self._pretty(detail)
     
     def __abs__(self):
-        return self.get_rate(self.__details)
+        return self._get_rate(self.__details)
     
     def __getitem__(self, key):
         """Get specific detail value
@@ -90,20 +82,51 @@ class BaseErrorRate(object):
             return dict(self.__details)
         else:
             return self.__details[key]
-        
-    def init_details(self):
-        detail = {value: 0. for value in self.__values}
-        return detail
-
-    def get_details(self, reference, hypothesis, **kwargs):
+    
+    def __iter__(self):
+        for v, r in self.__rates:
+            yield v, r
+    
+    def _get_details(self, reference, hypothesis, **kwargs):
         raise NotImplementedError('')
         
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         raise NotImplementedError('')
     
-    def pretty(self, detail):
+    def _pretty(self, detail):
         raise NotImplementedError('')
-
+    
+    def _init_details(self):
+        return {value: 0. for value in self.__values}
+    
+    def reset(self):
+        self.__details = self._init_details()
+        self.__rates = []
+    
+    def confidence_interval(self, alpha=0.9):
+        m,_,_ = scipy.stats.bayes_mvs([r for _,r in self.__rates], alpha=alpha)
+        return m
+    
+    # def report(self, uri='URI', name=None, float_format='1.3'):
+    #     if uri is None:
+    #         uri = 'URI'
+    #     if name is None:
+    #         name = self.name
+    #     from prettytable import PrettyTable
+    #     table = PrettyTable([uri, name])
+    #     table.float_format[name] = float_format
+    #     table.align[uri] = 'l'
+    #     for v, r in self.__rates:
+    #         table.add_row([v, r])
+    #     
+    #     table.add_row([' --> overall', abs(self)])
+    #     
+    #     # 90% confidence interval | 0.123 < 0.345 < 0.567
+    #     fmt = '%%sf < %%sf < %%sf' % (float_format, float_format, float_format)
+    #     m, (l, u) = self.confidence_interval(alpha=0.9)
+    #     table.add_row(['     90% confidence interval', fmt % (l, m, u)])
+    #     
+    #     return table
 
 PRECISION_NAME = 'precision'
 PRECISION_RETRIEVED = '# retrieved'
@@ -115,7 +138,7 @@ class Precision(BaseErrorRate):
                       PRECISION_RELEVANT_RETRIEVED])
         super(Precision, self).__init__(PRECISION_NAME, values)
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = detail[PRECISION_RELEVANT_RETRIEVED] 
         denominator = detail[PRECISION_RETRIEVED]
         if denominator == 0.:
@@ -126,7 +149,7 @@ class Precision(BaseErrorRate):
         else:
             return numerator/denominator
     
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - %s: %d\n" % (PRECISION_RETRIEVED, \
                                     detail[PRECISION_RETRIEVED])
@@ -145,7 +168,7 @@ class Recall(BaseErrorRate):
                       RECALL_RELEVANT_RETRIEVED])
         super(Recall, self).__init__(RECALL_NAME, values)
     
-    def get_rate(self, detail):
+    def _get_rate(self, detail):
         numerator = detail[RECALL_RELEVANT_RETRIEVED] 
         denominator = detail[RECALL_RELEVANT]
         if denominator == 0.:
@@ -156,7 +179,7 @@ class Recall(BaseErrorRate):
         else:
             return numerator/denominator
     
-    def pretty(self, detail):
+    def _pretty(self, detail):
         string = ""
         string += "  - %s: %d\n" % (RECALL_RELEVANT, \
                                     detail[RECALL_RELEVANT])
