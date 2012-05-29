@@ -23,23 +23,21 @@ from repere import *
 from other import *
 from feature import *
 
-class Parser(object):
+class AnnotationParser(object):
     
-    def __guess(self, extension):
-        guess = {
-            # '.plp':    PLPParser, 
+    supported = {
             '.mdtm':   MDTMParser,
-            '.uem':    UEMParser,
-            # '.lst':    LSTParser, 
             '.seg':    SEGParser,
             '.repere': REPEREParser,
             '.trs':    TRSParser, 
             '.xgtf':   XGTFParser, 
         }
-        return guess.get(extension, None)
+    
+    def __guess(self, extension):
+        return AnnotationParser.supported.get(extension, None)
     
     def __init__(self):
-        super(Parser, self).__init__()
+        super(AnnotationParser, self).__init__()
         self.__parser = None
     
     def __get_videos(self):
@@ -55,7 +53,9 @@ class Parser(object):
         _, extension = os.path.splitext(path)
         GuessParser = self.__guess(extension)
         if GuessParser is None:
-            raise NotImplementedError('unknown extension %s.' % extension)
+            raise NotImplementedError(
+            "unsupported file format '%s'. supported: %s." % 
+            (extension, AnnotationParser.supported.keys()))
         if self.__parser is None or not isinstance(self.__parser, GuessParser):
             self.__parser = GuessParser()
         self.__parser.read(path, video=video, modality=modality, **kwargs)
@@ -63,7 +63,40 @@ class Parser(object):
     
     def __call__(self, video=None, modality=None, **kwargs):
         return self.__parser(video=video, modality=modality, **kwargs)
+
+
+class TimelineParser(object):
     
+    supported = {
+            '.uem':   UEMParser,
+        }
+    
+    def __guess(self, extension):
+        return TimelineParser.supported.get(extension, None)
+    
+    def __init__(self):
+        super(TimelineParser, self).__init__()
+        self.__parser = None
+    
+    def __get_videos(self):
+        return self.__parser.videos
+    videos = property(fget=__get_videos)
+    
+    def read(self, path, video=None, **kwargs):
+        import os
+        _, extension = os.path.splitext(path)
+        GuessParser = self.__guess(extension)
+        if GuessParser is None:
+            raise NotImplementedError(
+            "unsupported file format '%s'. supported: %s." % 
+            (extension, TimelineParser.supported.keys()))
+        if self.__parser is None or not isinstance(self.__parser, GuessParser):
+            self.__parser = GuessParser()
+        self.__parser.read(path, video=video, **kwargs)
+        return self
+    
+    def __call__(self, video=None, **kwargs):
+        return self.__parser(video=video, **kwargs)
     
 if __name__ == "__main__":
     import doctest
