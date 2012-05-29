@@ -109,20 +109,21 @@ class DiarizationPurity(BaseErrorRate):
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
         matrix = Cooccurrence(reference, hypothesis)
-        detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+        
+        if np.prod(matrix.M.shape):
+            detail[PURITY_CORRECT] = 0.
+        else:
+            detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+        
         detail[PURITY_TOTAL] = np.sum(matrix.M)
+        
         return detail
     
     def _get_rate(self, detail):
-        numerator = 1. * detail[PURITY_CORRECT]
-        denominator = 1. * detail[PURITY_TOTAL]
-        if denominator == 0.:
-            if numerator == 0:
-                return 1.
-            else:
-                return 1.
+        if detail[PURITY_TOTAL] > 0.:
+            return detail[PURITY_CORRECT] / detail[PURITY_TOTAL]
         else:
-            return numerator/denominator
+            return 1.
        
     def _pretty(self, detail):
         string = ""
