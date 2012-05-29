@@ -902,7 +902,11 @@ class Annotation(object):
         If `subset` is a Segment or a Timeline, only extract segments that
         are fully included into its coverage. Set mode to 'loose' to extract
         all intersecting segments. `invert` has no effect in this case.
-            
+        'intersection' mode is the same as 'loose' except only the intersecting
+        part(s) is (are) kept. We also make sure two segments with the same 
+        intersection do not overwrite each other (track names are modified if
+        necessary).
+        
         If `subset` is a label or a label iterator, only extract tracks with
         provided labels. Set `invert` to True to extract **all but**
         provided labels. `mode` has no effect in this case.
@@ -910,7 +914,7 @@ class Annotation(object):
         Parameters
         ----------
         subset : Segment, Timeline, any valid label or label iterator
-        mode : {'strict', 'loose'}, optional
+        mode : {'strict', 'loose', 'intersection'}, optional
             `mode` only has effect when `subset` is a Segment or Timeline.
             Defaults to 'strict'. 
         invert : bool, optional
@@ -973,6 +977,7 @@ class Annotation(object):
             if invert:
                 raise NotImplementedError('')
             
+            
             if mode == 'strict':
                 # keep segment if it is fully included in timeline coverage
                 coverage = timeline.coverage()
@@ -983,6 +988,35 @@ class Annotation(object):
                 coverage = timeline.coverage()
                 segment_func = lambda s : s if (coverage & s) else False
                 return self.copy(segment_func=segment_func)
+            elif mode == 'intersection':
+                # keep segment if it intersects timeline coverage
+                # but only the intersecting part(s)
+                T = Annotation(multitrack=True, 
+                               video=self.video, modality=self.modality)
+                if self.multitrack:
+                    for segment, track, label in self.iterlabels():
+                        # segment can be split into multiple sub-segments
+                        new_segments = coverage & segment
+                        for new_segment in new_segments:
+                            if new_segment not in T:
+                                # first encounter: add seg./track as they are
+                                T[new_segment, track] = label
+                            else:
+                                if track not in T[new_segment, :]:
+                                    # first encounter: add track as they are
+                                    T[new_segment, track] = label
+                                else:
+                                    # second encounter: modify track name
+                                    ntrack = self.new_track(new_segment,
+                                                            prefix=track + '_')
+                                    T[new_segment, ntrack] = label
+                else:
+                    for segment, label in self.iterlabels():
+                        new_segments = coverage & segment
+                        for new_segment in new_segments:
+                            track = self.new_track(new_segment)
+                            T[new_segment, track] = label
+                return T
             else:
                 raise ValueError('unsupported mode.')
         
