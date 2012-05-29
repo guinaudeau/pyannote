@@ -977,15 +977,14 @@ class Annotation(object):
             if invert:
                 raise NotImplementedError('')
             
+            coverage = timeline.coverage()
             
             if mode == 'strict':
                 # keep segment if it is fully included in timeline coverage
-                coverage = timeline.coverage()
                 segment_func = lambda s : s if coverage.covers(s) else False 
                 return self.copy(segment_func=segment_func)
             elif mode == 'loose':
                 # keep segment if it intersects timeline coverage
-                coverage = timeline.coverage()
                 segment_func = lambda s : s if (coverage & s) else False
                 return self.copy(segment_func=segment_func)
             elif mode == 'intersection':
