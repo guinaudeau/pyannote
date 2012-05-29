@@ -88,7 +88,7 @@ for uri in args.groundtruth.videos:
         uem = args.uem(uri)
     
     if uem is not None:
-        ref = ref(uem, mode='strict')
+        ref = ref(uem, mode='intersection')
     
     for h, (path, hypothesis) in enumerate(args.hypothesis):
         
@@ -99,7 +99,7 @@ for uri in args.groundtruth.videos:
             
         hyp = hypothesis(uri)
         if uem is not None:
-            hyp = hyp(uem, mode='strict')
+            hyp = hyp(uem, mode='intersection')
         
         D = der[h](ref, hyp)
         row.append(D)
