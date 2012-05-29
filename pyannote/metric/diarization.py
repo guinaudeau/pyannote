@@ -111,9 +111,9 @@ class DiarizationPurity(BaseErrorRate):
         matrix = Cooccurrence(reference, hypothesis)
         
         if np.prod(matrix.M.shape):
-            detail[PURITY_CORRECT] = 0.
-        else:
             detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+        else:
+            detail[PURITY_CORRECT] = 0.
         
         detail[PURITY_TOTAL] = np.sum(matrix.M)
         
