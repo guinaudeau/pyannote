@@ -1013,7 +1013,7 @@ class Annotation(object):
                     for segment, label in self.iterlabels():
                         new_segments = coverage & segment
                         for new_segment in new_segments:
-                            track = self.new_track(new_segment)
+                            track = T.new_track(new_segment)
                             T[new_segment, track] = label
                 return T
             else:
