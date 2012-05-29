@@ -170,7 +170,7 @@ class DiarizationHomogeneity(BaseErrorRate):
         for i, ilabel in matrix.iter_ilabels(index=True):
             ratio = rduration[i] / duration
             if ratio > 0:
-                entropy -= ratio * np.log(ratio):
+                entropy -= ratio * np.log(ratio)
             for j, jlabel in matrix.iter_jlabels(index=True):
                 coduration = matrix[ilabel, jlabel]
                 if coduration > 0:
