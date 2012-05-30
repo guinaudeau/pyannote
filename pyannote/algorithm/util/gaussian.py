@@ -128,7 +128,8 @@ class Gaussian(mixture.GMM):
             return self._log_det_covar
             
         # otherwise, we need to compute and store it before returning it
-        self._log_det_covar = np.log(np.linalg.det(self.covar))
+        _, self._log_det_covar = np.linalg.slogdet(self.covar)
+        # self._log_det_covar = np.log(np.linalg.det(self.covar))
         return self._log_det_covar
     
     log_det_covar = property(fget=__get_log_det_covar)
