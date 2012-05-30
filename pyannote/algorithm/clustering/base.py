@@ -280,7 +280,7 @@ class MatrixAgglomerativeClustering(BaseAgglomerativeClustering):
             # return empty list
             if self.__matrix[label1, label2] == -np.inf:
                 return [], -np.inf
-            
+                
             # if labels are mergeable
             if self._mergeable([label1, label2]):
                 similarity = self.__matrix[label1, label2]
@@ -322,12 +322,6 @@ class GraphAgglomerativeClustering(MatrixAgglomerativeClustering):
             for other_label in labels[l+1:]:
                 similarity = max(0., self.matrix[label, other_label])
                 self.__graph.add_edge(label, other_label, weight=similarity)
-                
-        # from matplotlib import pyplot as plt
-        # plt.ion()
-        # pos = nx.spring_layout(self.__graph)
-        # nx.draw(self.__graph, pos)
-        
         
     def _update(self, new_label, merged_labels):
         """
