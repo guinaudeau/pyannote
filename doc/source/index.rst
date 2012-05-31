@@ -30,7 +30,7 @@ A limited set of automatic annotation algorithms are available for now, that sho
    
    Get started with PyAnnote <start>
    Learn how to use PyAnnote <learn/index>
-   Contribute to PyAnnote <contribute>
+   Contribute to PyAnnote <contribute/index>
    
 
 Author(s)
