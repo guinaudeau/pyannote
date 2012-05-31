@@ -21,15 +21,9 @@
 """This module defines stopping criterion mixin for agglomerative clustering.
 """
 
-class BaseStoppingCriterionMixin(object):
-    
-    def _stop(self, value):
-        name = self.__class.__name__
-        raise NotImplementedError('%s sub-class must implement method'
-                                  '_stop()' % name)
+from pyannote.algorithm.clustering.base import BaseStoppingCriterionMixin
 
 class NegativeStoppingCriterionMixin(BaseStoppingCriterionMixin):
-    
     def _stop(self, value):
         return value < 0.
 
