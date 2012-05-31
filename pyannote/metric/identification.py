@@ -78,7 +78,7 @@ class DefaultIDMatcher(IDMatcher):
 
 # --------------------------------------------------------------------------- #
 
-from base import BaseErrorRate
+from base import BaseMetric
 
 IER_TOTAL = 'total'
 IER_CORRECT = 'correct'
@@ -87,7 +87,7 @@ IER_FALSE_ALARM = 'false alarm'
 IER_MISS = 'miss'
 IER_NAME = 'identification error rate'
 
-class IdentificationErrorRate(BaseErrorRate):
+class IdentificationErrorRate(BaseMetric):
 
     def __init__(self, matcher=None):
 

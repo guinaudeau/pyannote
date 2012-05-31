@@ -18,14 +18,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from base import BaseErrorRate
+from base import BaseMetric
 
 DER_TOTAL = 'total'
 DER_FALSE_ALARM = 'false alarm'
 DER_MISS = 'miss'
 DER_NAME = 'detection error rate'
 
-class DetectionErrorRate(BaseErrorRate):
+class DetectionErrorRate(BaseMetric):
 
     def __init__(self):
         

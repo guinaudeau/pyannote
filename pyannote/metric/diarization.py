@@ -31,7 +31,7 @@ from identification import IdentificationErrorRate, \
 # class DiarizationReport(object):
 #     
 #     def __init__(self, name, values):
-#         super(BaseErrorRate, self).__init__()
+#         super(BaseMetric, self).__init__()
 #         self.__err_rates = {'DER' : DiarizationErrorRate(), 
 #                             'Purity' : DiarizationPurity(),
 #                             'Coverage' : DiarizationCoverage(),
@@ -90,7 +90,7 @@ class DiarizationErrorRate(IdentificationErrorRate):
         return super(DiarizationErrorRate, self)._get_details(reference, \
                                                          hypothesis % mapping)
 
-from base import BaseErrorRate
+from base import BaseMetric
 from pyannote.base.matrix import Cooccurrence
 import numpy as np
 
@@ -98,7 +98,7 @@ PURITY_NAME = 'purity'
 PURITY_TOTAL = 'total'
 PURITY_CORRECT = 'correct'
 
-class DiarizationPurity(BaseErrorRate):
+class DiarizationPurity(BaseMetric):
     
     def __init__(self):
         values = set([ \
@@ -148,7 +148,7 @@ HOMOGENEITY_NAME = 'homogeneity'
 HOMOGENEITY_ENTROPY = 'entropy'
 HOMOGENEITY_CROSS_ENTROPY = 'cross-entropy'
 
-class DiarizationHomogeneity(BaseErrorRate):
+class DiarizationHomogeneity(BaseMetric):
     
     def __init__(self):
         values = set([ \

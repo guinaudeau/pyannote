@@ -70,7 +70,7 @@ class REPEREIDMatcher(IDMatcher):
 
 # --------------------------------------------------------------------------- #
 
-from base import BaseErrorRate
+from base import BaseMetric
 from pyannote.algorithm.tagging.segment import ArgMaxDirectTagger
 
 EGER_TOTAL = 'total'
@@ -95,7 +95,7 @@ EGER_MISS_ANON = 'miss anonymous'
 
 EGER_NAME = 'estimated global error rate'
 
-class EstimatedGlobalErrorRate(BaseErrorRate):
+class EstimatedGlobalErrorRate(BaseMetric):
     """
     Estimated Global Error Rate
     

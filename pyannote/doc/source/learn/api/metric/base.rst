@@ -18,7 +18,7 @@ Base
 
 .. automodule:: pyannote.metric.base
 
-.. autoclass:: pyannote.metric.base.BaseErrorRate
+.. autoclass:: pyannote.metric.base.BaseMetric
     :members:
     :show-inheritance:
     :inherited-members:

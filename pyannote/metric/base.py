@@ -21,10 +21,11 @@
 import scipy.stats
 import numpy as np
 
-class BaseErrorRate(object):
-    
+class BaseMetric(object):
+    """
+    """
     def __init__(self, name, values):
-        super(BaseErrorRate, self).__init__()
+        super(BaseMetric, self).__init__()
         self.__name = name
         self.__values = set(values)
         self.reset()
@@ -106,33 +107,13 @@ class BaseErrorRate(object):
     def confidence_interval(self, alpha=0.9):
         m,_,_ = scipy.stats.bayes_mvs([r for _,r in self.__rates], alpha=alpha)
         return m
-    
-    # def report(self, uri='URI', name=None, float_format='1.3'):
-    #     if uri is None:
-    #         uri = 'URI'
-    #     if name is None:
-    #         name = self.name
-    #     from prettytable import PrettyTable
-    #     table = PrettyTable([uri, name])
-    #     table.float_format[name] = float_format
-    #     table.align[uri] = 'l'
-    #     for v, r in self.__rates:
-    #         table.add_row([v, r])
-    #     
-    #     table.add_row([' --> overall', abs(self)])
-    #     
-    #     # 90% confidence interval | 0.123 < 0.345 < 0.567
-    #     fmt = '%%sf < %%sf < %%sf' % (float_format, float_format, float_format)
-    #     m, (l, u) = self.confidence_interval(alpha=0.9)
-    #     table.add_row(['     90% confidence interval', fmt % (l, m, u)])
-    #     
-    #     return table
+
 
 PRECISION_NAME = 'precision'
 PRECISION_RETRIEVED = '# retrieved'
 PRECISION_RELEVANT_RETRIEVED = '# relevant retrieved'
 
-class Precision(BaseErrorRate):
+class Precision(BaseMetric):
     def __init__(self):
         values = set([PRECISION_RETRIEVED, \
                       PRECISION_RELEVANT_RETRIEVED])
@@ -162,7 +143,7 @@ RECALL_NAME = 'recall'
 RECALL_RELEVANT = '# relevant'
 RECALL_RELEVANT_RETRIEVED = '# relevant retrieved'
 
-class Recall(BaseErrorRate):
+class Recall(BaseMetric):
     def __init__(self):
         values = set([RECALL_RELEVANT, \
                       RECALL_RELEVANT_RETRIEVED])
