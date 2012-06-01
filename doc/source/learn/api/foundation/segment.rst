@@ -29,8 +29,8 @@ Segment
 
 .. autoclass:: Segment
     :members:
-    :undoc-members:
+    :special-members:
 
 .. autoclass:: SlidingWindow
     :members:
-    :undoc-members:
+    :special-members:

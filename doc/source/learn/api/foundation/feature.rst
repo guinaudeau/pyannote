@@ -33,7 +33,6 @@ Base type
 
 .. autoclass:: BaseSegmentFeature
     :members:
-    :private-members:
     :special-members:
 
 Pre-computed feature
@@ -42,18 +41,15 @@ Pre-computed feature
 .. autoclass:: BasePrecomputedSegmentFeature
     :members:
     :show-inheritance:
-    :private-members:
     :special-members:
 
 .. autoclass:: PeriodicPrecomputedFeature
     :members:
     :show-inheritance:
-    :private-members:
     :special-members:
 
 .. autoclass:: TimelinePrecomputedFeature
     :members:
     :show-inheritance:
-    :private-members:
     :special-members:
 

@@ -27,4 +27,4 @@ Timeline
 
 .. autoclass:: Timeline
     :members:
-    :undoc-members:
+    :special-members:

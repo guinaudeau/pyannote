@@ -16,13 +16,21 @@
 Identification
 ==============
 
-.. automodule:: pyannote.metric.identification
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.metric.identification.IdentificationErrorRate
+   pyannote.metric.repere.EstimatedGlobalErrorRate
 
 .. autoclass:: pyannote.metric.identification.IdentificationErrorRate
     :members:
     :show-inheritance:
     :inherited-members:
-    :undoc-members:
-    :private-members:
+    :special-members:
+
+.. autoclass:: pyannote.metric.repere.EstimatedGlobalErrorRate
+    :members:
+    :show-inheritance:
+    :inherited-members:
     :special-members:
 

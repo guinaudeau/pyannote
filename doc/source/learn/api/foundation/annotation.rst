@@ -28,6 +28,8 @@ Annotation
 
 .. autoclass:: Annotation
     :members:
+    :special-members:
 
 .. autoclass:: Unknown
     :members:
+    :special-members:

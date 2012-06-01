@@ -29,10 +29,14 @@ Matrix
 
 .. autoclass:: LabelMatrix
     :members:
+    :special-members:
 
 .. autoclass:: Cooccurrence
     :members:
+    :special-members:
 
 .. autoclass:: CoTFIDF
     :members:
+    :special-members:
+
 
