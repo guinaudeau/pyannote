@@ -18,9 +18,21 @@ Matrix
 
 .. automodule:: pyannote.base.matrix
 
-.. autoclass:: pyannote.base.matrix.Cooccurrence
+.. currentmodule:: pyannote.base.matrix
+
+.. autosummary::
+   :nosignatures:
+   
+   LabelMatrix
+   Cooccurrence
+   CoTFIDF
+
+.. autoclass:: LabelMatrix
     :members:
 
-.. autoclass:: pyannote.base.matrix.CoTFIDF
+.. autoclass:: Cooccurrence
+    :members:
+
+.. autoclass:: CoTFIDF
     :members:
 

@@ -16,18 +16,22 @@
 Feature
 =======
 
+.. automodule:: pyannote.base.feature
+
+.. currentmodule:: pyannote.base.feature
+
 .. autosummary::
    :nosignatures:
    
-   pyannote.base.feature.BaseSegmentFeature
-   pyannote.base.feature.BasePrecomputedSegmentFeature
-   pyannote.base.feature.PeriodicPrecomputedFeature
-   pyannote.base.feature.TimelinePrecomputedFeature
+   BaseSegmentFeature
+   BasePrecomputedSegmentFeature
+   PeriodicPrecomputedFeature
+   TimelinePrecomputedFeature
 
 Base type
 *********
 
-.. autoclass:: pyannote.base.feature.BaseSegmentFeature
+.. autoclass:: BaseSegmentFeature
     :members:
     :private-members:
     :special-members:
@@ -35,19 +39,19 @@ Base type
 Pre-computed feature
 ********************
 
-.. autoclass:: pyannote.base.feature.BasePrecomputedSegmentFeature
+.. autoclass:: BasePrecomputedSegmentFeature
     :members:
     :show-inheritance:
     :private-members:
     :special-members:
 
-.. autoclass:: pyannote.base.feature.PeriodicPrecomputedFeature
+.. autoclass:: PeriodicPrecomputedFeature
     :members:
     :show-inheritance:
     :private-members:
     :special-members:
 
-.. autoclass:: pyannote.base.feature.TimelinePrecomputedFeature
+.. autoclass:: TimelinePrecomputedFeature
     :members:
     :show-inheritance:
     :private-members:

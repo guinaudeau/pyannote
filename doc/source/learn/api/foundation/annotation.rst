@@ -16,14 +16,18 @@
 Annotation
 ==========
 
+.. automodule:: pyannote.base.annotation
+
+.. currentmodule:: pyannote.base.annotation
+
 .. autosummary::
    :nosignatures:
    
-   pyannote.base.annotation.Annotation
-   pyannote.base.annotation.Unknown
+   Annotation
+   Unknown
 
-.. autoclass:: pyannote.base.annotation.Annotation
+.. autoclass:: Annotation
     :members:
 
-.. autoclass:: pyannote.base.annotation.Unknown
+.. autoclass:: Unknown
     :members:

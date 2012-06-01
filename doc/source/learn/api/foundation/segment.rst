@@ -16,10 +16,21 @@
 Segment
 =======
 
-.. autoclass:: pyannote.base.segment.Segment
+.. automodule:: pyannote.base.segment
+
+.. currentmodule:: pyannote.base.segment
+
+.. autosummary::
+   :nosignatures:
+   
+   Segment
+   SlidingWindow
+
+
+.. autoclass:: Segment
     :members:
     :undoc-members:
 
-.. autoclass:: pyannote.base.segment.SlidingWindow
+.. autoclass:: SlidingWindow
     :members:
     :undoc-members:

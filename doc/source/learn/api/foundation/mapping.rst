@@ -18,24 +18,25 @@ Mapping
 
 .. automodule:: pyannote.base.mapping
 
+.. currentmodule:: pyannote.base.mapping
+
 .. autosummary::
    :nosignatures:
    
-   pyannote.base.mapping.Mapping
-   pyannote.base.mapping.ManyToOneMapping
-   pyannote.base.mapping.OneToOneMapping
+   Mapping
+   ManyToOneMapping
+   OneToOneMapping
 
-
-.. autoclass:: pyannote.base.mapping.Mapping
+.. autoclass:: Mapping
     :members:
     :special-members:
 
-.. autoclass:: pyannote.base.mapping.ManyToOneMapping
+.. autoclass:: ManyToOneMapping
     :members:
     :show-inheritance:
     :special-members:
 
-.. autoclass:: pyannote.base.mapping.OneToOneMapping
+.. autoclass:: OneToOneMapping
     :members:
     :show-inheritance:
     :special-members:

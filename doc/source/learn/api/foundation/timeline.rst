@@ -16,6 +16,15 @@
 Timeline
 ========
 
-.. autoclass:: pyannote.base.timeline.Timeline
+.. automodule:: pyannote.base.timeline
+
+.. currentmodule:: pyannote.base.timeline
+
+.. autosummary::
+   :nosignatures:
+   
+   Timeline
+
+.. autoclass:: Timeline
     :members:
     :undoc-members:
