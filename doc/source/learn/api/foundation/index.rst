@@ -19,7 +19,7 @@ Foundation
 .. automodule:: pyannote.base
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    segment
    timeline

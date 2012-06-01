@@ -13,32 +13,28 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Base
-====
+Base classes
+============
 
-.. automodule:: pyannote.metric.base
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.metric.base.BaseMetric
+   pyannote.metric.base.Precision
+   pyannote.metric.base.Recall
+
 
 .. autoclass:: pyannote.metric.base.BaseMetric
     :members:
-    :show-inheritance:
-    :inherited-members:
-    :undoc-members:
-    :private-members:
     :special-members:
 
 .. autoclass:: pyannote.metric.base.Precision
     :members:
     :show-inheritance:
-    :inherited-members:
-    :undoc-members:
-    :private-members:
     :special-members:
 
 .. autoclass:: pyannote.metric.base.Recall
     :members:
     :show-inheritance:
-    :inherited-members:
-    :undoc-members:
-    :private-members:
     :special-members:
 

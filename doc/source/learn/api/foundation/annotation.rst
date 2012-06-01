@@ -16,6 +16,12 @@
 Annotation
 ==========
 
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.base.annotation.Annotation
+   pyannote.base.annotation.Unknown
+
 .. autoclass:: pyannote.base.annotation.Annotation
     :members:
 

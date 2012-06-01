@@ -18,10 +18,34 @@ Diarization
 
 .. automodule:: pyannote.metric.diarization
 
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.metric.diarization.DiarizationErrorRate
+   pyannote.metric.diarization.DiarizationCoverage
+   pyannote.metric.diarization.DiarizationPurity
+   pyannote.metric.diarization.DiarizationHomogeneity
+   pyannote.metric.diarization.DiarizationCompleteness
+
 .. autoclass:: pyannote.metric.diarization.DiarizationErrorRate
+    :members: name, __call__, __abs__, __iter__, __getitem__, confidence_interval, reset, optimal_mapping
+
+.. autoclass:: pyannote.metric.diarization.DiarizationCoverage
     :members:
-    :show-inheritance:
     :inherited-members:
-    :undoc-members:
-    :private-members:
+    :special-members:
+
+.. autoclass:: pyannote.metric.diarization.DiarizationPurity
+    :members:
+    :inherited-members:
+    :special-members:
+
+.. autoclass:: pyannote.metric.diarization.DiarizationHomogeneity
+    :members:
+    :inherited-members:
+    :special-members:
+
+.. autoclass:: pyannote.metric.diarization.DiarizationCompleteness
+    :members:
+    :inherited-members:
     :special-members:

@@ -13,44 +13,43 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Feature iterators
-=================
+Feature
+=======
+
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.base.feature.BaseSegmentFeature
+   pyannote.base.feature.BasePrecomputedSegmentFeature
+   pyannote.base.feature.PeriodicPrecomputedFeature
+   pyannote.base.feature.TimelinePrecomputedFeature
 
 Base type
 *********
 
 .. autoclass:: pyannote.base.feature.BaseSegmentFeature
     :members:
-    :inherited-members:
-    :show-inheritance:
     :private-members:
     :special-members:
 
-Pre-computed feature iterators
-******************************
+Pre-computed feature
+********************
 
 .. autoclass:: pyannote.base.feature.BasePrecomputedSegmentFeature
     :members:
-    :inherited-members:
     :show-inheritance:
     :private-members:
     :special-members:
 
 .. autoclass:: pyannote.base.feature.PeriodicPrecomputedFeature
     :members:
-    :inherited-members:
     :show-inheritance:
     :private-members:
     :special-members:
 
 .. autoclass:: pyannote.base.feature.TimelinePrecomputedFeature
     :members:
-    :inherited-members:
     :show-inheritance:
     :private-members:
     :special-members:
-	
-Online feature iterators
-************************
-	
-	TODO.
+

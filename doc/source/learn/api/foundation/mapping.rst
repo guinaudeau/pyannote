@@ -13,26 +13,29 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Label mapping
-=============
+Mapping
+=======
 
 .. automodule:: pyannote.base.mapping
 
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.base.mapping.Mapping
+   pyannote.base.mapping.ManyToOneMapping
+   pyannote.base.mapping.OneToOneMapping
+
+
 .. autoclass:: pyannote.base.mapping.Mapping
     :members:
-    :private-members:
     :special-members:
 
 .. autoclass:: pyannote.base.mapping.ManyToOneMapping
     :members:
-    :inherited-members:
     :show-inheritance:
-    :private-members:
     :special-members:
-	
+
 .. autoclass:: pyannote.base.mapping.OneToOneMapping
     :members:
-    :inherited-members:
     :show-inheritance:
-    :private-members:
     :special-members:

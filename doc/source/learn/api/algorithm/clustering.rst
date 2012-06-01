@@ -16,3 +16,39 @@
 Clustering
 ==========
 
+.. automodule:: pyannote.algorithm.clustering
+
+Agglomerative clustering
+************************
+
+.. autoclass:: pyannote.algorithm.clustering.base.BaseAgglomerativeClustering
+    :members:
+
+
+Models
+``````
+
+.. automodule:: pyannote.algorithm.clustering.model
+
+.. autoclass:: pyannote.algorithm.clustering.model.BICModelMixin
+    :members:
+
+
+Constraints
+```````````
+
+.. automodule:: pyannote.algorithm.clustering.constraint
+
+.. autoclass:: pyannote.algorithm.clustering.constraint.ContiguousConstraintMixin
+    :members:
+
+
+Stopping criteria
+`````````````````
+
+.. automodule:: pyannote.algorithm.clustering.stop
+
+.. autoclass:: pyannote.algorithm.clustering.stop.NegativeStoppingCriterionMixin
+    :members:
+
+

@@ -13,8 +13,8 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-Label-indexed matrix
-====================
+Matrix
+======
 
 .. automodule:: pyannote.base.matrix
 

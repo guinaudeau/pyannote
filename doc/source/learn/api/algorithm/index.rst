@@ -19,7 +19,8 @@ Algorithms
 .. automodule:: pyannote.algorithm
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    mapping
    tagging
+   clustering

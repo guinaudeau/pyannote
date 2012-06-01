@@ -16,16 +16,10 @@
 Metrics
 =======
 
-
-.. automodule:: pyannote.metric
-
 .. toctree::
    :maxdepth: 2
    
    base
-   mapping
-   segmentation
-   detection
    diarization
    identification
-   
+
