@@ -21,8 +21,9 @@ File I/O
 .. toctree::
    :maxdepth: 2
    
-   nist
-   repere
-   other
+   annotation
+   timeline
    feature
+   other
+   diy
 

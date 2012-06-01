@@ -13,22 +13,24 @@
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-NIST
-====
+Timeline
+========
 
-.. automodule:: pyannote.parser.nist
+.. autosummary::
+   :nosignatures:
+   
+   pyannote.parser.TimelineParser
+   pyannote.parser.nist.uem.UEMParser
 
-.. autoclass:: pyannote.parser.nist.mdtm.MDTMParser
+.. autoclass:: pyannote.parser.TimelineParser
     :members:
     :inherited-members:
-    :show-inheritance:
     :private-members:
     :special-members:
 
 .. autoclass:: pyannote.parser.nist.uem.UEMParser
     :members:
     :inherited-members:
-    :show-inheritance:
     :private-members:
     :special-members:
 
