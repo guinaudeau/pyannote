@@ -30,7 +30,7 @@ Models
 
 .. automodule:: pyannote.algorithm.clustering.model
 
-.. autoclass:: pyannote.algorithm.clustering.model.BICModelMixin
+.. autoclass:: pyannote.algorithm.clustering.model.BICMMx
     :members:
 
 
@@ -39,7 +39,7 @@ Constraints
 
 .. automodule:: pyannote.algorithm.clustering.constraint
 
-.. autoclass:: pyannote.algorithm.clustering.constraint.ContiguousConstraintMixin
+.. autoclass:: pyannote.algorithm.clustering.constraint.ContiguousCMx
     :members:
 
 
@@ -48,7 +48,7 @@ Stopping criteria
 
 .. automodule:: pyannote.algorithm.clustering.stop
 
-.. autoclass:: pyannote.algorithm.clustering.stop.NegativeStoppingCriterionMixin
+.. autoclass:: pyannote.algorithm.clustering.stop.NegativeSMx
     :members:
 
 
