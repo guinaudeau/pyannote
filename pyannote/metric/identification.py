@@ -88,7 +88,19 @@ IER_MISS = 'miss'
 IER_NAME = 'identification error rate'
 
 class IdentificationErrorRate(BaseMetric):
-
+    """
+    
+    
+        ``ier = (confusion + false_alarm + miss) / total``
+    
+    where 
+        - ``confusion`` is the total confusion duration in seconds
+        - ``false_alarm`` is the total hypothesis duration where there are
+        - ``miss`` is 
+        - ``total`` is the total duration of all tracks
+    
+    
+    """
     def __init__(self, matcher=None):
 
         values = set([ \

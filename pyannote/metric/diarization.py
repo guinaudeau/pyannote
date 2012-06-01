@@ -18,6 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Module :mod:`pyannote.metric.diarization` defines evaluation metric for the diarization/clustering task.
+"""
+
 from pyannote.algorithm.mapping.hungarian import HungarianMapper
 
 from identification import IdentificationErrorRate, \
@@ -27,66 +31,59 @@ from identification import IdentificationErrorRate, \
                            IER_TOTAL, \
                            IER_CORRECT
 
-# from prettytable import PrettyTable
-# class DiarizationReport(object):
-#     
-#     def __init__(self, name, values):
-#         super(BaseMetric, self).__init__()
-#         self.__err_rates = {'DER' : DiarizationErrorRate(), 
-#                             'Purity' : DiarizationPurity(),
-#                             'Coverage' : DiarizationCoverage(),
-#                             'Homogeneity' : DiarizationHomogeneity(), 
-#                             'Completeness' : DiarizationCompleteness()}
-#     
-#     def reset(self):
-#         for err_rate in self.__err_rates.itervalues():
-#             err_rate.reset()
-#     
-#     def __call__(self, reference, hypothesis, **kwargs):
-#         return {err_rate.name : err_rate(reference, hypothesis, 
-#                                          detailed=False, **kwargs) 
-#                 for err_rate in self.__err_rates.itervalues()}
-#     
-#     def __abs__(self):
-#         return {err_rate.name : abs(err_rate) 
-#                 for err_rate in self.__err_rates.itervalues()}
-#     
-#     def confidence_interval(self, alpha=0.9):
-#         return {err_rate.name : err_rate.confidence_interval(alpha=alpha) 
-#                 for err_rate in self.__err_rates.itervalues()}
-#     
-#     def report(self, uri='URI', float_format='1.3'):
-#         
-#         if uri is None:
-#             uri = 'URI'
-#         
-#         
-#         table = PrettyTable()
-#         table.add_column(uri, [v for v,_ in self.__err_rates['DER']], align='l')
-#         
-#         for name, err_rate in self.__err_rates.iteritems():
-#             table.add_column(name, [r for _,r in err_rate], align='c')
-#             table.float_format[name] = float_format
-#         
-#         
-#         # 90% confidence interval | 0.123 < 0.345 < 0.567
-#         fmt = '%%sf < %%sf < %%sf' % (float_format, float_format, float_format)
-#         m, (l, u) = self.confidence_interval(alpha=0.9)
-#         table.add_row(['     90% confidence interval', fmt % (l, m, u)])
-#         
-#         return table
 
 DER_NAME = 'diarization error rate'
 
+
 class DiarizationErrorRate(IdentificationErrorRate):
+    """Diarization error rate
     
+    First, the optimal mapping between reference and hypothesis labels
+    is obtained using the Hungarian algorithm. Then, the actual diarization 
+    error rate is computed as the identification error rate with each hypothesis
+    label trasnlated into the corresponding reference label.
+    
+    * Diarization error rate between `reference` and `hypothesis` annotations
+        
+        >>> metric = DiarizationErrorRate()
+        >>> reference = Annotation(...)           # doctest: +SKIP
+        >>> hypothesis = Annotation(...)          # doctest: +SKIP
+        >>> value = metric(reference, hypothesis) # doctest: +SKIP
+        
+    * Compute global diarization error rate and confidence interval 
+      over multiple documents
+        
+        >>> for reference, hypothesis in ...      # doctest: +SKIP
+        ...    metric(reference, hypothesis)      # doctest: +SKIP
+        >>> global_value = abs(metric)            # doctest: +SKIP
+        >>> mean, (lower, upper) = metric.confidence_interval() # doctest: +SKIP
+        
+    * Get diarization error rate detailed components
+        
+        >>> components = metric(reference, hypothesis, detailed=True) #doctest +SKIP
+        
+    * Get accumulated components
+        
+        >>> components = metric[:]                # doctest: +SKIP
+        >>> metric['confusion']                   # doctest: +SKIP
+    
+    See Also
+    --------
+    :class:`pyannote.metric.base.BaseMetric`: details on accumumation
+    :class:`pyannote.metric.identification.IdentificationErrorRate`: identification error rate
+    
+    """
     def __init__(self):
         super(DiarizationErrorRate, self).__init__()
         self.name = DER_NAME
         self.__hungarian = HungarianMapper()
     
+    def optimal_mapping(self, reference, hypothesis):
+        """Optimal label mapping"""
+        return self.__hungarian(hypothesis, reference)
+    
     def _get_details(self, reference, hypothesis, **kwargs):
-        mapping = self.__hungarian(hypothesis, reference)
+        mapping = self.optimal_mapping(reference, hypothesis)
         return super(DiarizationErrorRate, self)._get_details(reference, \
                                                          hypothesis % mapping)
 
@@ -99,7 +96,7 @@ PURITY_TOTAL = 'total'
 PURITY_CORRECT = 'correct'
 
 class DiarizationPurity(BaseMetric):
-    
+    """Purity"""
     def __init__(self):
         values = set([ \
             PURITY_TOTAL, \
@@ -135,7 +132,7 @@ class DiarizationPurity(BaseMetric):
 COVERAGE_NAME = 'coverage'
 
 class DiarizationCoverage(DiarizationPurity):
-    
+    """Coverage"""
     def __init__(self):
         super(DiarizationCoverage, self).__init__()
         self.name = COVERAGE_NAME
@@ -149,7 +146,7 @@ HOMOGENEITY_ENTROPY = 'entropy'
 HOMOGENEITY_CROSS_ENTROPY = 'cross-entropy'
 
 class DiarizationHomogeneity(BaseMetric):
-    
+    """Homogeneity"""
     def __init__(self):
         values = set([ \
             HOMOGENEITY_ENTROPY, \
@@ -206,7 +203,7 @@ class DiarizationHomogeneity(BaseMetric):
 COMPLETENESS_NAME = 'completeness'
 
 class DiarizationCompleteness(DiarizationHomogeneity):
-    
+    """Completeness"""
     def __init__(self):
         super(DiarizationCompleteness, self).__init__()
         self.name = COMPLETENESS_NAME
