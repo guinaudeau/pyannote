@@ -20,74 +20,109 @@
 
 class BaseConstraintMixin(object):
     
-    def _setup_constraint(self, **kwargs):
+    def cmx_setup(self, **kwargs):
         pass
     
-    def _initialize_constraint(self, **kwargs):
+    def cmx_init(self, **kwargs):
         pass
     
-    def _update_constraint(self, new_label, merged_labels):
+    def cmx_update(self, new_label, merged_labels):
         pass
     
-    def _meet_constraint(self, labels):
+    def cmx_meet(self, labels):
         return True
 
 class BaseStoppingCriterionMixin(object):
     
-    def _setup_stop(self, **kwargs):
+    def smx_setup(self, **kwargs):
         pass
     
-    def _stop(self, value):
+    def smx_stop(self, value):
         return False
 
 class BaseModelMixin(object):
     
-    def _setup_model(self, **kwargs):
+    def mmx_setup(self, **kwargs):
         pass
     
-    def _compute_model(self, label):
+    def mmx_fit(self, label):
         name = self.__class__.__name__
         raise NotImplementedError('%s sub-class must implement method'
-                                  '_compute_model()' % name)
+                                  'mmx_fit()' % name)
     
-    def _model_similarity(self, label, other_label):
+    def mmx_compare(self, label, other_label):
         name = self.__class__.__name__
         raise NotImplementedError('%s sub-class must implement method'
-                                  '_model_similarity()' % name)
+                                  'mmx_compare()' % name)
     
-    def _merge_models(self, labels):
+    def mmx_merge(self, labels):
         name = self.__class__.__name__
         raise NotImplementedError('%s sub-class must implement method'
-                                  '_merge_models()' % name)
+                                  'mmx_merge()' % name)
 
+import networkx as nx
 class BaseAgglomerativeClustering(object):
     """
     Base class for agglomerative clustering algorithms.
     
     """
     
-    def getMixins(self, baseMixin):
+    def getMx(self, baseMx):
+        
+        # get all mixins subclass of baseMx
+        # but the class itself and the baseMx itself
         cls = self.__class__
-        return [mixin for mixin in cls.mro() 
-                      if issubclass(mixin, baseMixin) and
-                         mixin != cls and mixin != baseMixin]
+        MX =  [Mx for Mx in cls.mro() 
+                  if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
+        
+        # build the class inheritance directed graph {subclass --> class}
+        G = nx.DiGraph()
+        for m, Mx in enumerate(MX):
+            G.add_node(Mx)
+            for otherMx in MX[m+1:]:
+                if issubclass(Mx, otherMx):
+                    G.add_edge(Mx, otherMx)
+                elif issubclass(otherMx, Mx):
+                    G.add_edge(otherMx, Mx)
+        
+        # only keep the deeper subclasses in each component
+        MX = []
+        for components in nx.connected_components(G.to_undirected()):
+            g = G.subgraph(components)
+            MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
+        
+        return MX
     
     def __init__(self, **kwargs):
         super(BaseAgglomerativeClustering, self).__init__()
         
-        # setup every constraints
-        self._constraintMixins = self.getMixins(BaseConstraintMixin)
-        for constraintMixin in self._constraintMixins:
-            constraintMixin._setup_constraint(self, **kwargs)
+        # setup constraint mixins (CMx)
+        self.CMx = self.getMx(BaseConstraintMixin)
+        for cmx in self.CMx:
+            cmx.cmx_setup(self, **kwargs)
         
         # setup every stopping criteria
-        self._stopMixins = self.getMixins(BaseStoppingCriterionMixin)
-        for stopMixin in self._stopMixins:
-            stopMixin._setup_stop(self, **kwargs)
+        self.SMx = self.getMx(BaseStoppingCriterionMixin)
+        for smx in self.SMx:
+            smx.smx_setup(self, **kwargs)
         
-        # setup models
-        self._modelMixin = self.getMixins(BaseModelMixin)[-1]
-        self._modelMixin._setup_model(self, **kwargs)
+        # setup model
+        MMx = self.getMx(BaseModelMixin)
+        if len(MMx) == 0:
+            raise ValueError('Missing model mixin (MMx).')
+        elif len(MMx) > 1:
+            raise ValueError('Too many model mixins (MMx): %s' % MMx)
+        self.MMx = MMx[0]
+        self.MMx.mmx_setup(self, **kwargs)
+        
+        # setup internal
+        IMx = self.getMx(BaseInternalMixin)
+        if len(IMx) == 0:
+            raise ValueError('Missing internal mixin (IMx).')
+        elif len(IMx) > 1:
+            raise ValueError('Too many internal mixins(IMx) : %s' % IMx)
+        self.IMx = IMx[0]
+        self.IMx.imx_setup(self, **kwargs)
         
     def __get_annotation(self):
         return self.__annotation
@@ -109,107 +144,34 @@ class BaseAgglomerativeClustering(object):
     iterations = property(fget=__get_iterations)
     """Iterations log"""
     
-    # == Models ==
+    def fit(self, label):
+        return self.MMx.mmx_fit(self, label)
     
-    # def _compute_model(self, label):
-    #     """
-    #     Compute model for a given `label`
-    #     
-    #     Parameters
-    #     ----------
-    #     label : valid Annotation label
-    #     
-    #     Returns
-    #     -------
-    #     model : anything
-    #         Any object that can serve as a model for `label` (if needed)
-    #     
-    #     """
-    #     return None
-    # 
-    # def _merge_models(self, merged_labels):
-    #     """
-    #     Compute new merged model
-    #     
-    #     Parameters
-    #     ----------
-    #     merged_labels : list
-    #         List of merged labels
-    #         
-    #     Returns
-    #     -------
-    #     model : anything
-    #         Any object that can serve as a model for the merged labels.
-    #     
-    #     """
-    #     return None
-    # ==
+    def init(self):
+        self.IMx.imx_init(self)
     
-    # def _initialize(self):
-    #     """
-    #     Initialize algorithm internals.
-    #     """
-    #     pass
-    # 
-    # def _next(self):
-    #     """
-    #     Next agglomerative clustering iteration.
-    #     
-    #     Returns
-    #     -------
-    #     labels : list
-    #         List of `labels` that should be merged.
-    #     
-    #     """
-    #     return []
+    def next(self):
+        return self.IMx.imx_next(self)
     
-    # def _update(self, new_label, merged_labels):
-    #     """
-    #     Update algorithm internals after merging.
-    #     
-    #     new_label <-- merged_labels
-    #     
-    #     
-    #     
-    #     Parameters
-    #     ----------
-    #     new_label : valid Annotation label
-    #     
-    #     merged_labels : list of valid Annotation labels
-    #     
-    #     
-    #     """
-    #     pass
-    
-    def _stop(self, value):
-        """
-        Stopping criterion
-        
-        Returns
-        -------
-        stop : bool
-            True if stopping criterion is met, False otherwise
-            
-        """
+    def stop(self, status):
+        for smx in self.SMx:
+            if smx.smx_stop(self, status):
+                return True
         return False
     
-    def _final(self, annotation):
+    def merge(self, merged_labels):
+        return self.MMx.mmx_merge(self, merged_labels)
+    
+    def update(self, new_label, merged_labels):
+        self.IMx.imx_update(self, new_label, merged_labels)
+    
+    def final(self, annotation):
         """By default, current version is returned"""
         return self.__annotation.copy()
     
-    # == Constraints ==
-    
-    def _initialize_constraints(self, **kwargs):
-        for constraintMixin in self._constraintMixins:
-            constraintMixin._initialize_constraint(self, **kwargs)
-        
-    def _update_constraints(self, new_label, merged_labels):
-        for constraintMixin in self._constraintMixins:
-            constraintMixin._update_constraint(self, new_label, merged_labels)
-        
-    def _meet_constraints(self, labels):
-        for constraintMixin in self._constraintMixins:
-            if not constraintMixin._meet_constraint(self, labels):
+    def meet_constraints(self, labels):
+        for cmx in self.CMx:
+            if not cmx.cmx_meet(self, labels):
                 return False
         return True
     
@@ -223,13 +185,14 @@ class BaseAgglomerativeClustering(object):
         # one model per label
         self.__models = {}
         for label in self.annotation.labels():
-            self.__models[label] = self._compute_model(label)
+            self.__models[label] = self.fit(label)
         
-        # initialize what needs to be initialized
-        self._initialize()
+        # initialize internals
+        self.init()
         
-        # initialize constraints if needed
-        self._initialize_constraints(**kwargs)
+        # initialize constraints
+        for cmx in self.CMx:
+            cmx.cmx_init(self, **kwargs)
         
         # keep track of iterations
         self.__iterations = []
@@ -237,15 +200,15 @@ class BaseAgglomerativeClustering(object):
         while True:
             
             # find labels that should be merged next
-            merged_labels, status = self._next()
+            merged_labels, status = self.next()
             
             # nothing left to merge or reached stopping criterion?
-            if not merged_labels or self._stop(status):
+            if not merged_labels or self.stop(status):
                 break
             
             # merge models
             new_label = merged_labels[0]
-            self.__models[new_label] = self._merge_models(merged_labels)
+            self.__models[new_label] = self.merge(merged_labels)
             
             # remove old models
             old_labels = merged_labels[1:]
@@ -257,53 +220,54 @@ class BaseAgglomerativeClustering(object):
             self.__annotation = self.__annotation % translation
             
             # update what needs to be updated
-            self._update(new_label, merged_labels)
+            self.update(new_label, merged_labels)
             
             # update constraint if needed
-            self._update_constraints(new_label, merged_labels)
+            for cmx in self.CMx:
+                cmx.cmx_update(self, new_label, merged_labels)
             
             # keep track of iteration
             self.__iterations.append((new_label, merged_labels, status))
         
-        return self._final(annotation)
+        return self.final(annotation)
 
-class BaseIterationMixin(object):
+class BaseInternalMixin(object):
     
-    def _initialize(self):
+    def imx_setup(self, **kwargs):
         pass
     
-    def _update(self, new_label, merged_labels):
+    def imx_init(self):
         pass
     
-    def _next(self):
+    def imx_update(self, new_label, merged_labels):
         pass
-
+    
+    def imx_next(self):
+        pass
+        
+    
 import numpy as np
 from pyannote.base.matrix import LabelMatrix
 
-class MatrixMixin(BaseIterationMixin):
+class MatrixIMx(BaseInternalMixin):
     
-    def _get_similarity(self):
-        return self._similarity
-    similarity = property(fget=_get_similarity)
-    
-    def _initialize(self):
+    def imx_init(self):
         """
         Loop on all pairs of labels and fill similarity matrix
         """
         
         # initialize empty similarity matrix
-        self._similarity = LabelMatrix(default=-np.inf)
+        self.imx_similarity = LabelMatrix(default=-np.inf)
         
         # compute symmetric similarity matrix
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             for other_label in labels[l+1:]:
-                s = self._model_similarity(label, other_label)
-                self._similarity[label, other_label] = s
-                self._similarity[other_label, label] = s
+                s = self.MMx.mmx_compare(self, label, other_label)
+                self.imx_similarity[label, other_label] = s
+                self.imx_similarity[other_label, label] = s
     
-    def _update(self, new_label, merged_labels):
+    def imx_update(self, new_label, merged_labels):
         """
         Update similarity matrix for newly created label
         """
@@ -312,40 +276,40 @@ class MatrixMixin(BaseIterationMixin):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self._similarity[label, :]
-            del self._similarity[:, label]
+            del self.imx_similarity[label, :]
+            del self.imx_similarity[:, label]
         
         # update row and column for new label
         labels = self.annotation.labels()
         for label in labels:
             if label == new_label:
                 continue
-            s = self._model_similarity(new_label, label)
-            self._similarity[new_label, label] = s
-            self._similarity[label, new_label] = s
+            s = self.MMx.mmx_compare(self, new_label, label)
+            self.imx_similarity[new_label, label] = s
+            self.imx_similarity[label, new_label] = s
     
-    def _next(self):
+    def imx_next(self):
         
         while True:
             
             # find two most similar labels
-            label1, label2 = self._similarity.argmax().popitem()
+            label1, label2 = self.imx_similarity.argmax().popitem()
             
             # if even the most similar labels are completely dissimilar
             # return empty list
-            if self._similarity[label1, label2] == -np.inf:
+            if self.imx_similarity[label1, label2] == -np.inf:
                 return [], -np.inf
                 
             # if labels are mergeable
-            if self._meet_constraints([label1, label2]):
-                s = self._similarity[label1, label2]
+            if self.meet_constraints([label1, label2]):
+                s = self.imx_similarity[label1, label2]
                 return sorted([label1, label2]), s
             
             # if labels are not mergeable, loop...
             # (and make sure those two are not selected again)
             else:
-                self._similarity[label1, label2] = -np.inf
-                self._similarity[label2, label1] = -np.inf
+                self.imx_similarity[label1, label2] = -np.inf
+                self.imx_similarity[label2, label1] = -np.inf
 
 
 if __name__ == "__main__":

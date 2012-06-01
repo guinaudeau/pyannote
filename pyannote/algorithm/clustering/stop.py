@@ -23,9 +23,23 @@
 
 from pyannote.algorithm.clustering.base import BaseStoppingCriterionMixin
 
-class NegativeStoppingCriterionMixin(BaseStoppingCriterionMixin):
-    def _stop(self, value):
-        return value < 0.
+class FuncSMx(BaseStoppingCriterionMixin):
+    def smx_setup(self, func=None, **kwargs):
+        if func is None:
+            func = lambda x: False
+        self.smx_func = func
+    
+    def smx_stop(self, status):
+        return self.smx_func(status)
+
+class LessThanSMx(FuncSMx):
+    def smx_setup(self, threshold=0., **kwargs):
+        func = lambda x: x < threshold
+        super(LessThanSMx, self).smx_setup(func=func)
+
+class NegativeSMx(LessThanSMx):
+    def smx_setup(self, **kwargs):
+        super(NegativeSMx, self).smx_setup()
 
 if __name__ == "__main__":
     import doctest

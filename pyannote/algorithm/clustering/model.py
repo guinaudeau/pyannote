@@ -24,32 +24,32 @@
 from pyannote.algorithm.clustering.base import BaseModelMixin
 from pyannote.algorithm.util.gaussian import Gaussian
 
-class BICModelMixin(BaseModelMixin):
+class BICMMx(BaseModelMixin):
     
-    def _setup_model(self, covariance_type='full', penalty_coef=3.5, **kwargs):
-        self.penalty_coef = penalty_coef
-        self.covariance_type = covariance_type
+    def mmx_setup(self, covariance_type='full', penalty_coef=3.5, **kwargs):
+        self.mmx_covariance_type = covariance_type
+        self.mmx_penalty_coef = penalty_coef
     
-    def _compute_model(self, label):
+    def mmx_fit(self, label):
         """
         One Gaussian per track
         """
         # extract features for this label
         data = self.feature(self.annotation.label_timeline(label))
         # fit gaussian and return it
-        return Gaussian(covariance_type=self.covariance_type).fit(data)
+        return Gaussian(covariance_type=self.mmx_covariance_type).fit(data)
     
-    def _model_similarity(self, label, other_label):
+    def mmx_compare(self, label, other_label):
         """
         Delta BIC between two Gaussians
         """
         model = self.models[label]
         other_model = self.models[other_label]
         dissimilarity, _ = model.bic(other_model,
-                                     penalty_coef=self.penalty_coef)
+                                     penalty_coef=self.mmx_penalty_coef)
         return (-dissimilarity)
     
-    def _merge_models(self, labels):
+    def mmx_merge(self, labels):
         """
         Fast merge of two Gaussians
         """
@@ -57,6 +57,18 @@ class BICModelMixin(BaseModelMixin):
         for label in labels[1:]:
             new_model = new_model.merge(self.models[label])
         return new_model
+
+import numpy as np
+class BICSigmoidMMx(BICMMx):
+    
+    def mmx_setup(self, sigmoid=1e3, **kwargs):
+        super(BICSigmoidMMx, self).mmx_setup(**kwargs)
+        self.mmx_sigmoid = sigmoid
+    
+    def mmx_compare(self, label, other_label):
+        similarity = super(BICSigmoidMMx,
+                           self).mmx_compare(label, other_label)
+        return 1. / (1. + np.exp(-similarity/self.mmx_sigmoid))
 
 
 if __name__ == "__main__":

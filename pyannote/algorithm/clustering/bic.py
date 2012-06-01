@@ -19,12 +19,12 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.algorithm.clustering.base import MatrixMixin, \
+from pyannote.algorithm.clustering.base import MatrixIMx, \
                                                BaseAgglomerativeClustering
-from pyannote.algorithm.clustering.model import BICModelMixin
-from pyannote.algorithm.clustering.stop import NegativeStoppingCriterionMixin
-class BICClustering(NegativeStoppingCriterionMixin, BICModelMixin, \
-                    MatrixMixin, BaseAgglomerativeClustering):
+from pyannote.algorithm.clustering.model import BICMMx
+from pyannote.algorithm.clustering.stop import NegativeSMx
+class BICClustering(NegativeSMx, BICMMx, \
+                    MatrixIMx, BaseAgglomerativeClustering):
     """
     BIC clustering 
     
@@ -50,8 +50,8 @@ class BICClustering(NegativeStoppingCriterionMixin, BICModelMixin, \
                                             penalty_coef=penalty_coef, 
                                             **kwargs)
 
-from pyannote.algorithm.clustering.constraint import ContiguousConstraintMixin
-class BICRecombiner(ContiguousConstraintMixin, BICClustering):
+from pyannote.algorithm.clustering.constraint import ContiguousCMx
+class BICRecombiner(ContiguousCMx, BICClustering):
     """
     Recombine contiguous segments based on BIC criterion.
     
