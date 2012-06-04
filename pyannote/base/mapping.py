@@ -394,6 +394,9 @@ class Mapping(object):
         else:
             return expected_dict
     
+    def __getitem__(self, key):
+        return self._left_to_right[key]
+    
     def __str__(self):
         """Human-readable representation
         
