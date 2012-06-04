@@ -147,8 +147,25 @@ class BaseAgglomerativeClustering(object):
     def fit(self, label):
         return self.MMx.mmx_fit(self, label)
     
-    def init(self):
+    def init_internals(self, annotation, feature, **kwargs):
+        
+        # initial annotation (will be modified)
+        self.__annotation = annotation.copy()
+        # initial feature (should stay untouched)
+        self.__feature = feature
+        
+        # one model per label
+        self.__models = {}
+        for label in self.annotation.labels():
+            self.__models[label] = self.fit(label)
+        
         self.IMx.imx_init(self)
+    
+    def init_constraints(self, **kwargs):
+        
+        for cmx in self.CMx:
+            cmx.cmx_init(self, **kwargs)
+        
     
     def next(self):
         return self.IMx.imx_next(self)
@@ -177,22 +194,11 @@ class BaseAgglomerativeClustering(object):
     
     def __call__(self, annotation, feature, **kwargs):
         
-        # initial annotation (will be modified)
-        self.__annotation = annotation.copy()
-        # initial feature (should stay untouched)
-        self.__feature = feature
-        
-        # one model per label
-        self.__models = {}
-        for label in self.annotation.labels():
-            self.__models[label] = self.fit(label)
-        
         # initialize internals
-        self.init()
+        self.init_internals(annotation, feature, **kwargs)
         
         # initialize constraints
-        for cmx in self.CMx:
-            cmx.cmx_init(self, **kwargs)
+        self.init_constraints(**kwargs)
         
         # keep track of iterations
         self.__iterations = []
@@ -262,6 +268,8 @@ class MatrixIMx(BaseInternalMixin):
         # compute symmetric similarity matrix
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
+            # this is to ensure the order of labels in row & column
+            self.imx_similarity[label, label] = self.imx_similarity.default
             for other_label in labels[l+1:]:
                 s = self.MMx.mmx_compare(self, label, other_label)
                 self.imx_similarity[label, other_label] = s
