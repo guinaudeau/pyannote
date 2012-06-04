@@ -113,16 +113,17 @@ from pyannote.algorithm.util.modularity import Modularity
 from pyannote.algorithm.clustering.base import MatrixIMx
 class IncreaseModularityCMx(BaseConstraintMixin):
     
-    def cmx_setup(self, **kwargs):
+    def cmx_setup(self, edge_threshold=0.5, **kwargs):
         if not isinstance(self, MatrixIMx):
             raise ValueError('IncreaseModularityCMx requires MatrixIMx.')
+        self.cmx_edge_threshold = edge_threshold
     
     def cmx_init(self):
         g = nx.DiGraph()
         for i, j, s in self.imx_similarity.iter_pairs(data=True):
-            if s == -np.inf:
+            if s < self.cmx_edge_threshold:
                 continue
-            g.add_edge(i, j, weight=s)
+            g.add_edge(i, j, weight=1)
         self.cmx_modularity = Modularity(g, weight='weight')
         self.cmx_partition = {i:i for i in self.imx_similarity.iter_ilabels()}
         self.cmx_q = [self.cmx_modularity(self.cmx_partition)]
