@@ -127,7 +127,11 @@ class Annotation(object):
     
     def __get_multitrack(self):
         return self.__multitrack
-    multitrack = property(fget=__get_multitrack)
+    def __set_multitrack(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('Multitrack must be either True or False')
+        self.__multitrack = value
+    multitrack = property(fget=__get_multitrack, fset=__set_multitrack)
     """Can segments contain multiple tracks?"""
     
     def __get_video(self): 
