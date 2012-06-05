@@ -99,6 +99,10 @@ class XGTFParser(BaseAnnotationParser):
             
             if element.get('name') in ['PERSONNE', 'TEXTE']:
                 
+                written_alone = set([])
+                written = set([])
+                head = set([])
+                
                 for vpr in element.iterchildren():
                     
                     attr_name = vpr.get('name')
