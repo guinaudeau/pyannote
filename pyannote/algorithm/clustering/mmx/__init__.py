@@ -18,9 +18,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
+"""This module defines model mixins (MMx)."""
 
-from bic import BICClustering, QBICClustering
+__all__ = ['BICMMx', 'LevenshteinMMx']
+
+from gaussian import BICMMx
+from string import LevenshteinMMx
 
 if __name__ == "__main__":
     import doctest

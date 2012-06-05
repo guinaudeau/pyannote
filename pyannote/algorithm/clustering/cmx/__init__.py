@@ -18,9 +18,13 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
+"""This module defines constraint mixins (CMx) for agglomerative clustering.
+"""
 
-from bic import BICClustering, QBICClustering
+__all__ = ['ContiguousCMx', 'IncreaseModularityCMx']
+
+from graph import IncreaseModularityCMx
+from structure import ContiguousCMx
 
 if __name__ == "__main__":
     import doctest

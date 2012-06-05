@@ -18,28 +18,55 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This module defines stopping criterion mixin for agglomerative clustering.
-"""
 
-from pyannote.algorithm.clustering.base import BaseStoppingCriterionMixin
+class BaseStoppingCriterionMixin(object):
+    
+    def smx_setup(self, **kwargs):
+        pass
+    
+    def smx_init(self):
+        pass
+    
+    def smx_update(self, new_label, merged_labels):
+        pass
+    
+    def smx_stop(self, status):
+        return False
+    
+    def smx_final(self, annotation):
+        return self.annotation.copy()
 
 class FuncSMx(BaseStoppingCriterionMixin):
     def smx_setup(self, func=None, **kwargs):
         if func is None:
             func = lambda x: False
         self.smx_func = func
-    
     def smx_stop(self, status):
         return self.smx_func(status)
 
 class LessThanSMx(FuncSMx):
-    def smx_setup(self, threshold=0., **kwargs):
+    def smx_setup(self, threshold, **kwargs):
         func = lambda x: x < threshold
         super(LessThanSMx, self).smx_setup(func=func)
 
 class NegativeSMx(LessThanSMx):
     def smx_setup(self, **kwargs):
-        super(NegativeSMx, self).smx_setup()
+        super(NegativeSMx, self).smx_setup(threshold=0.)
+
+import numpy as np
+class MaximumSMx(BaseStoppingCriterionMixin):
+    def smx_init(self):
+        self.smx_iterations = []
+    
+    def smx_stop(self, status):
+        return False
+    
+    def smx_final(self, annotation):
+        imax = np.argmax(self.smx_iterations)
+        for i in range(imax):
+            new_label, merged_labels, _ = self.iterations[i]
+            annotation = annotation % {L:new_label for L in merged_labels}
+        return annotation
 
 if __name__ == "__main__":
     import doctest

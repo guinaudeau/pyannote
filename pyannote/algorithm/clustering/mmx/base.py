@@ -18,9 +18,29 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
+class BaseModelMixin(object):
+    
+    def mmx_setup(self, **kwargs):
+        pass
+    
+    def mmx_symmetric(self):
+        return False
+    
+    def mmx_fit(self, label):
+        name = self.__class__.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  'mmx_fit()' % name)
+    
+    def mmx_compare(self, label, other_label):
+        name = self.__class__.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  'mmx_compare()' % name)
+    
+    def mmx_merge(self, labels):
+        name = self.__class__.__name__
+        raise NotImplementedError('%s sub-class must implement method'
+                                  'mmx_merge()' % name)
 
-from bic import BICClustering, QBICClustering
 
 if __name__ == "__main__":
     import doctest

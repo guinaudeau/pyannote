@@ -19,12 +19,12 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.algorithm.clustering.base import MatrixIMx, \
-                                               BaseAgglomerativeClustering
-from pyannote.algorithm.clustering.model import BICMMx
-from pyannote.algorithm.clustering.stop import NegativeSMx
-class BICClustering(NegativeSMx, BICMMx, \
-                    MatrixIMx, BaseAgglomerativeClustering):
+from pyannote.algorithm.clustering.base import MatrixIMx, AgglomerativeClustering
+from pyannote.algorithm.clustering.mmx import BICMMx
+from pyannote.algorithm.clustering.cmx import ContiguousCMx
+from pyannote.algorithm.clustering.smx import NegativeSMx, MaximumModularitySMx
+
+class BICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, NegativeSMx):
     """
     BIC clustering 
     
@@ -45,13 +45,20 @@ class BICClustering(NegativeSMx, BICMMx, \
         
     """
     
-    def __init__(self, covariance_type='full', penalty_coef=3.5, **kwargs):
+    def __init__(self, covariance_type='full', penalty_coef=3.5):
         super(BICClustering, self).__init__(covariance_type=covariance_type,
-                                            penalty_coef=penalty_coef, 
-                                            **kwargs)
+                                            penalty_coef=penalty_coef)
 
-from pyannote.algorithm.clustering.constraint import ContiguousCMx
-class BICRecombiner(ContiguousCMx, BICClustering):
+
+class QBICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, MaximumModularitySMx):
+    
+    def __init__(self, covariance_type='full', penalty_coef=3.5):
+        super(QBICClustering, self).__init__(covariance_type=covariance_type,
+                                             penalty_coef=penalty_coef,
+                                             edge_threshold=0.0)
+
+
+class BICRecombiner(BICClustering, ContiguousCMx):
     """
     Recombine contiguous segments based on BIC criterion.
     

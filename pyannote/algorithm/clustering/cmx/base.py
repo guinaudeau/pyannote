@@ -18,9 +18,20 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
 
-from bic import BICClustering, QBICClustering
+class BaseConstraintMixin(object):
+    
+    def cmx_setup(self, **kwargs):
+        pass
+    
+    def cmx_init(self):
+        pass
+    
+    def cmx_update(self, new_label, merged_labels):
+        pass
+    
+    def cmx_meet(self, labels):
+        return True
 
 if __name__ == "__main__":
     import doctest

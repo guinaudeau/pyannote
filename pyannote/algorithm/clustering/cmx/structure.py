@@ -18,20 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This module defines constraint mixin (CMx) for agglomerative clustering.
-
-    A ConstraintMixin (CMx) must implement the following methods:
-    
-    * cmx_setup(**kwargs)
-    * cmx_init(**kwargs)
-    * cmx_update(new_label, old_labels)
-    * cmx_meet(labels)
-
-"""
-
-from pyannote.algorithm.clustering.base import BaseConstraintMixin
 
 from pyannote.base.matrix import LabelMatrix
+from pyannote.algorithm.clustering.cmx.base import BaseConstraintMixin
+
 class ContiguousCMx(BaseConstraintMixin):
     """
     Two labels are mergeable if they are contiguous
@@ -41,7 +31,7 @@ class ContiguousCMx(BaseConstraintMixin):
         self.cmx_tolerance = tolerance
         self.cmx_xsegment = lambda s: .5*tolerance << s >> .5*tolerance
     
-    def cmx_init(self, **kwargs):
+    def cmx_init(self):
         """
         Two labels are mergeable if they are contiguous
         """
@@ -105,40 +95,6 @@ class ContiguousCMx(BaseConstraintMixin):
                 if not self.cmx_contiguous[label, other_label]:
                     return False
         return True
-
-
-import networkx as nx
-import numpy as np
-from pyannote.algorithm.util.modularity import Modularity
-from pyannote.algorithm.clustering.base import MatrixIMx
-class IncreaseModularityCMx(BaseConstraintMixin):
-    
-    def cmx_setup(self, edge_threshold=0.5, **kwargs):
-        if not isinstance(self, MatrixIMx):
-            raise ValueError('IncreaseModularityCMx requires MatrixIMx.')
-        self.cmx_edge_threshold = edge_threshold
-    
-    def cmx_init(self):
-        g = nx.DiGraph()
-        for i, j, s in self.imx_similarity.iter_pairs(data=True):
-            if s < self.cmx_edge_threshold:
-                continue
-            g.add_edge(i, j, weight=1)
-        self.cmx_modularity = Modularity(g, weight='weight')
-        self.cmx_partition = {i:i for i in self.imx_similarity.iter_ilabels()}
-        self.cmx_q = [self.cmx_modularity(self.cmx_partition)]
-        
-    def cmx_update(self, new_label, merged_labels):
-        for label in merged_labels:
-            self.cmx_partition[label] = new_label
-        self.cmx_q.append(self.cmx_modularity(self.cmx_partition))
-    
-    def cmx_meet(self, labels):
-        partition = dict(self.cmx_partition)
-        for label in labels:
-            partition[label] = labels[0]
-        q = self.cmx_modularity(partition)
-        return q > self.cmx_q[-1]
 
 
 # class XTagsCMx(BaseConstraintMixin):
@@ -205,8 +161,6 @@ class IncreaseModularityCMx(BaseConstraintMixin):
 #                     return False
 #         return True
 # 
-
-
 
 if __name__ == "__main__":
     import doctest

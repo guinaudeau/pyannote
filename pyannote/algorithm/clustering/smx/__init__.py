@@ -18,9 +18,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
 
-from bic import BICClustering, QBICClustering
+"""This module defines stopping criterion mixins (SMx) for agglomerative clustering.
+"""
+
+__all__ = ['LessThanSMx', 'NegativeSMx', 'MaximumModularitySMx']
+
+from base import LessThanSMx, NegativeSMx
+from graph import MaximumModularitySMx
 
 if __name__ == "__main__":
     import doctest

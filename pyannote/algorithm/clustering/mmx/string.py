@@ -18,10 +18,33 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['BICClustering', 'QBICClustering']
+from pyannote.algorithm.clustering.mmx.base import BaseModelMixin
+from Levenshtein import jaro
+import numpy as np
 
-from bic import BICClustering, QBICClustering
+class LevenshteinMMx(BaseModelMixin):
+    
+    def mmx_symmetric(self):
+        return True
+    
+    def mmx_fit(self, label):
+        return tuple([label])
+    
+    def mmx_merge(self, labels):
+        new_model = []
+        for label in labels:
+            other_model = self.models[label]
+            print other_model
+            new_model.extend(other_model)
+        return tuple(new_model)
+    
+    def mmx_compare(self, label, other_label):
+        model = self.models[label]
+        other_model = self.models[other_label]
+        return np.mean([jaro(s, t) for s in model for t in other_model])
+
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
