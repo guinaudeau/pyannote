@@ -47,17 +47,17 @@ class MatrixIMx(BaseInternalMixin):
         """
         
         # initialize empty similarity matrix
-        self.imx_similarity = LabelMatrix(default=-np.inf)
+        self.imx_matrix = LabelMatrix(default=-np.inf)
         
         # compute symmetric similarity matrix
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             # this is to ensure the order of labels in row & column
-            self.imx_similarity[label, label] = self.imx_similarity.default
+            self.imx_matrix[label, label] = self.imx_matrix.default
             for other_label in labels[l+1:]:
                 s = self.MMx.mmx_compare(self, label, other_label)
-                self.imx_similarity[label, other_label] = s
-                self.imx_similarity[other_label, label] = s
+                self.imx_matrix[label, other_label] = s
+                self.imx_matrix[other_label, label] = s
     
     def imx_update(self, new_label, merged_labels):
         """
@@ -68,8 +68,8 @@ class MatrixIMx(BaseInternalMixin):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self.imx_similarity[label, :]
-            del self.imx_similarity[:, label]
+            del self.imx_matrix[label, :]
+            del self.imx_matrix[:, label]
         
         # update row and column for new label
         labels = self.annotation.labels()
@@ -77,20 +77,20 @@ class MatrixIMx(BaseInternalMixin):
             if label == new_label:
                 continue
             s = self.MMx.mmx_compare(self, new_label, label)
-            self.imx_similarity[new_label, label] = s
-            self.imx_similarity[label, new_label] = s
+            self.imx_matrix[new_label, label] = s
+            self.imx_matrix[label, new_label] = s
     
     def imx_do_not_merge(self, labels):
         for l, label in enumerate(labels):
             for other_label in labels[l+1:]:
-                self.imx_similarity[label, other_label] = -np.inf
-                self.imx_similarity[other_label, label] = -np.inf
+                self.imx_matrix[label, other_label] = -np.inf
+                self.imx_matrix[other_label, label] = -np.inf
     
     def imx_next(self):
         
         # find two most similar labels
-        label1, label2 = self.imx_similarity.argmax().popitem()
-        s = self.imx_similarity[label1, label2]
+        label1, label2 = self.imx_matrix.argmax().popitem()
+        s = self.imx_matrix[label1, label2]
         
         # if they are completely dissimilar, do not merge
         if s == -np.inf:

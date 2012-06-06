@@ -32,12 +32,12 @@ class IncreaseModularityCMx(BaseConstraintMixin):
     
     def cmx_init(self):
         g = nx.DiGraph()
-        for i, j, s in self.imx_similarity.iter_pairs(data=True):
+        for i, j, s in self.imx_matrix.iter_pairs(data=True):
             if s < self.cmx_edge_threshold:
                 continue
             g.add_edge(i, j, weight=1)
         self.cmx_modularity = Modularity(g, weight='weight')
-        self.cmx_partition = {i:i for i in self.imx_similarity.iter_ilabels()}
+        self.cmx_partition = {i:i for i in self.imx_matrix.iter_ilabels()}
         self.cmx_q = [self.cmx_modularity(self.cmx_partition)]
         
     def cmx_update(self, new_label, merged_labels):

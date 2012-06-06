@@ -33,13 +33,13 @@ class MaximumModularitySMx(MaximumSMx):
     
     def smx_init(self):
         g = nx.DiGraph()
-        for i, j, s in self.imx_similarity.iter_pairs(data=True):
+        for i, j, s in self.imx_matrix.iter_pairs(data=True):
             g.add_node(i)
             if s < self.smx_edge_threshold:
                 continue
             g.add_edge(i, j, weight=1)
         self.smx_Q = Modularity(g, weight='weight')
-        self.smx_partition = {i:i for i in self.imx_similarity.iter_ilabels()}
+        self.smx_partition = {i:i for i in self.imx_matrix.iter_ilabels()}
         self.smx_iterations = [self.smx_Q(self.smx_partition)]
         
     def smx_update(self, new_label, merged_labels):
