@@ -149,3 +149,28 @@ for h, (path, _) in enumerate(args.hypothesis):
 
 print table
 
+table = PrettyTable(header)
+table.align[''] = 'l'
+
+for h, (path, _) in enumerate(args.hypothesis):
+    
+    row = [path[length:]]
+    m, (l, u) = der[h].confidence_interval(alpha=0.9)
+    row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
+    
+    if args.purity:
+        m, (l, u) = purity[h].confidence_interval(alpha=0.9)
+        row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
+    if args.coverage:
+        m, (l, u) = coverage[h].confidence_interval(alpha=0.9)
+        row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
+    if args.homogeneity:
+        m, (l, u) = homogeneity[h].confidence_interval(alpha=0.9)
+        row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
+    if args.completeness:
+        m, (l, u) = completeness[h].confidence_interval(alpha=0.9)
+        row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
+    
+    table.add_row(row)
+
+print table
