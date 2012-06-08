@@ -826,8 +826,7 @@ class Annotation(object):
             
             # only transform labels that actually have a mapping 
             # see ManyToOneMapping.__call__() API
-            label_func = lambda x: translation(x) if translation(x) is not None
-                                                  else x
+            label_func = lambda x: translation(x) if translation(x) is not None else x
         
         # perform the actual translation
         return self.copy(label_func=label_func)
