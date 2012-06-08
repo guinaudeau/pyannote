@@ -814,9 +814,7 @@ class Annotation(object):
             
             # only transform labels that have an actual translation
             # stored in the provided dictionary, keep the others as they are.
-            label_func = lambda x: translation[x] \
-                                   if x in translation and translation[x] \
-                                   else x
+            label_func = lambda x: translation[x] if x in translation else x
         
         # translation is provided as a ManyToOneMapping
         elif isinstance(translation, Mapping):
@@ -828,7 +826,8 @@ class Annotation(object):
             
             # only transform labels that actually have a mapping 
             # see ManyToOneMapping.__call__() API
-            label_func = lambda x: translation(x) if translation(x) else x
+            label_func = lambda x: translation(x) if translation(x) is not None
+                                                  else x
         
         # perform the actual translation
         return self.copy(label_func=label_func)
