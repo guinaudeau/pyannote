@@ -53,7 +53,8 @@ class MatrixIMx(BaseInternalMixin):
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             # this is to ensure the order of labels in row & column
-            self.imx_matrix[label, label] = self.imx_matrix.default
+            s = self.MMx.mmx_compare(self, label, label)
+            self.imx_matrix[label, label] = s
             for other_label in labels[l+1:]:
                 s = self.MMx.mmx_compare(self, label, other_label)
                 self.imx_matrix[label, other_label] = s
@@ -88,8 +89,14 @@ class MatrixIMx(BaseInternalMixin):
     
     def imx_next(self):
         
-        # find two most similar labels
-        label1, label2 = self.imx_matrix.argmax().popitem()
+        # find two most similar labels 
+        # (and make sure those are not the same label)
+        while True:
+            label1, label2 = self.imx_matrix.argmax().popitem()
+            if label1 != label2:
+                break
+            self.imx_do_not_merge([label1, label2])
+        
         s = self.imx_matrix[label1, label2]
         
         # if they are completely dissimilar, do not merge
@@ -97,7 +104,6 @@ class MatrixIMx(BaseInternalMixin):
             return [], -np.inf
         
         return [label1, label2], s
-
 
 
 import networkx as nx
@@ -192,7 +198,6 @@ class AgglomerativeClustering(object):
     iterations = property(fget=__get_iterations)
     """Iterations log"""
     
-    
     # --- INTERNALS IMx ---
     
     def init_internals(self):
@@ -248,10 +253,9 @@ class AgglomerativeClustering(object):
     def stop(self, status):
         return self.SMx.smx_stop(self, status)
     
-    def final(self, annotation):
-        return self.SMx.smx_final(self, annotation)
+    # --- LET'S ROLL ----
     
-    def __call__(self, annotation, feature, **kwargs):
+    def start(self, annotation, feature, **kwargs):
         
         self.__annotation = annotation.copy()
         self.__feature = feature
@@ -268,7 +272,20 @@ class AgglomerativeClustering(object):
         
         # initialize stopping criterion
         self.init_stopping_criterion()
+    
+    
+    def iterate(self, constraints=True, stopping_criterion=True):
+        """
+        Iterator.
         
+        Parameters
+        ----------
+        constraints : bool, optional
+            Whether to apply constraints. Defaults to True.
+        stopping_criterion : bool, optional
+            Whether to apply stopping criterion. Defaults to True
+        
+        """
         while True:
             
             # find labels that should (and can) be merged next
@@ -282,7 +299,7 @@ class AgglomerativeClustering(object):
                     break
                 
                 # are they mergeable?
-                if self.meet_constraints(merged_labels):
+                if not constraints or self.meet_constraints(merged_labels):
                     break
                 
                 # if they are not,
@@ -290,7 +307,11 @@ class AgglomerativeClustering(object):
                 self.do_not_merge(merged_labels)
             
             # nothing left to merge or reached stopping criterion?
-            if not merged_labels or self.stop(status):
+            if not merged_labels:
+                print 'found nothing to merge.'
+                break
+            if stopping_criterion and self.stop(status):
+                print 'reached stopping criterion'
                 break
             
             # merge models
@@ -311,8 +332,23 @@ class AgglomerativeClustering(object):
             
             # keep track of this iteration
             self.__iterations.append((new_label, merged_labels, status))
+            
+            yield(self.__annotation)
+    
+    def __iter__(self):
+        return self.iterate()
+    
+    def finish(self, annotation):
+        return self.SMx.smx_final(self, annotation)
+    
+    def __call__(self, annotation, feature, **kwargs):
         
-        return self.final(annotation)
+        self.start(annotation, feature, **kwargs)
+        
+        for annotation in self:
+            pass
+        
+        return self.finish(annotation)
 
 
 if __name__ == "__main__":
