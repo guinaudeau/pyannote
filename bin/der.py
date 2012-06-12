@@ -25,13 +25,13 @@ argparser = ArgumentParser(description='A tool for evaluation of (speaker) diari
 argparser.add_argument('--version', action='version', 
                     version=('PyAnnote %s' % pyannote.__version__))
 
-import pyannote.parser
+from pyannote.parser import AnnotationParser, TimelineParser
 def groundtruth_parser(path):
-    return pyannote.parser.AnnotationParser().read(path)
+    return AnnotationParser().read(path)
 def hypothesis_parser(path):
-    return (path, pyannote.parser.AnnotationParser().read(path))
+    return (path, AnnotationParser().read(path))
 def uem_parser(path):
-    return pyannote.parser.TimelineParser().read(path)
+    return TimelineParser().read(path)
 
 argparser.add_argument('groundtruth', type=groundtruth_parser,
                        help='path to groundtruth diarization')
