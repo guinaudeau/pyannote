@@ -164,11 +164,11 @@ class DiarizationHomogeneity(BaseMetric):
         # Reference entropy and reference/hypothesis cross-entropy
         cross_entropy = 0.
         entropy = 0.
-        for i, ilabel in matrix.iter_ilabels(index=True):
+        for i, ilabel in enumerate(matrix.iter_ilabels()):
             ratio = rduration[i] / duration
             if ratio > 0:
                 entropy -= ratio * np.log(ratio)
-            for j, jlabel in matrix.iter_jlabels(index=True):
+            for j, jlabel in enumerate(matrix.iter_jlabels()):
                 coduration = matrix[ilabel, jlabel]
                 if coduration > 0:
                     cross_entropy -= (coduration / duration) * \
