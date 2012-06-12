@@ -19,36 +19,48 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import networkx as nx
 import warnings
 
 class LabelMatrix(object):
     """
-    2D-matrix indexed by labels.
+    Label similarity matrix
     
     Parameters
     ----------
-    ilabels, jlabels : lists of labels, optional
+    ilabels, jlabels : list, optional
+        List of labels. A label can be any hashable object.
+        
+    Mij : numpy array, optional
+        Internal numpy array matrix.
     
     dtype : data-type, optional
-        The desired data-type for the array.  If not given, then
-        the type will be determined as the minimum type required
-        to hold the objects in the sequence
+        The desired data-type for the array. 
+        Defaults to Mij.dtype or `float`.
     
-    default : float, optional
+    default : scalar, optional
         `default` defaults to zero.
-    
-    Mij : numpy array, optional
-    
     
     Examples
     --------
-    
+        
+        Create an empty label similarity matrix and fill it.
+        
         >>> M = LabelMatrix()
         >>> M['John', 'Albert'] = 0.2
         >>> M['Marc', 'Bob'] = 0.9
         
+        Read value 
         
     """
+    
+    @classmethod
+    def from_networkx_graph(cls, G, multigraph_weight=sum, weight='weight'):
+        M = np.array(nx.to_numpy_matrix(G, weight=weight,
+                                        multigraph_weight=multigraph_weight))
+        nodes = G.nodes()
+        return LabelMatrix(ilabels=nodes, jlabels=nodes, Mij=M)
+    
     
     def __check_initial_labels(self, labels):
         if labels is None:
@@ -136,14 +148,16 @@ class LabelMatrix(object):
         self.__M = M
     M = property(fget=__get_M, fset=__set_M)
     "Internal numpy array"
-                 
+    
     def __get_labels(self):
         return self.__ilabels, self.__jlabels
     labels = property(fget=__get_labels)
     """Lists of labels"""
     
     def __getitem__(self, key):
-        """"""
+        """
+        
+        """
         
         if not isinstance(key, tuple) or len(key) != 2:
             raise KeyError('')
@@ -251,7 +265,7 @@ class LabelMatrix(object):
         
         if isinstance(i_lbl, set) or i_lbl == slice(None, None, None) or \
            isinstance(j_lbl, set) or j_lbl == slice(None, None, None):
-           raise KeyError('')
+           raise KeyError('Cannot set multiple values at once.')
         
         if self.__M is None:
             self.__ilabels.append(i_lbl)
@@ -296,7 +310,23 @@ class LabelMatrix(object):
         self.__M = np.delete(self.__M, j, axis=1)
     
     def __delitem__(self, key):
-        """
+        """Remove labels from matrix
+        
+        Examples
+        --------
+            
+            Remove one label from the first set
+            
+            >>> del M[label, :]
+            
+            Remove one label from the second set
+            
+            >>> del M[:, label]
+            
+            Remove multiple labels at once
+            
+            >>> del M[set([label1, label2]), :]
+            
         """
         if not isinstance(key, tuple) or len(key) != 2:
            raise KeyError('expecting: del M[ _ , :] or del M[:, _ ]')
@@ -345,37 +375,32 @@ class LabelMatrix(object):
                 
             return
     
+    def iter_ilabels(self):
+        """
+        First set label iterator
+        """
+        return iter(self.__ilabels)
     
-    def iter_ilabels(self, index=False):
-        for ilabel in self.__ilabels:
-            if index:
-                yield self.__label2i[ilabel], ilabel
-            else:
-                yield ilabel
+    def iter_jlabels(self):
+        """
+        Second set label iterator
+        """
+        return iter(self.__jlabels)
     
-    def iter_jlabels(self, index=False):
-        for jlabel in self.__jlabels:
-            if index:
-                yield self.__label2j[jlabel], jlabel
-            else:
-                yield jlabel
-    
-    def iter_pairs(self, data=False):
+    def __iter__(self):
+        """
+        (ilabel, jlabel, value) iterator
+        """
         for ilabel in self.__ilabels:
             for jlabel in self.__jlabels:
-                if data:
-                    yield ilabel, jlabel, self[ilabel, jlabel]
-                else:
-                    yield ilabel, jlabel
+                yield ilabel, jlabel, self[ilabel, jlabel]
     
     def empty(self):
         """Empty copy"""
         return LabelMatrix(dtype=self.__dtype, default=self.__default)
         
     def copy(self):
-        """Duplicate matrix.
-        
-        """
+        """Duplicate matrix"""
         C = LabelMatrix(ilabels=list(self.__ilabels),
                         jlabels=list(self.__jlabels), 
                         Mij=np.copy(self.__M), dtype=self.__dtype,
@@ -383,6 +408,7 @@ class LabelMatrix(object):
         return C
     
     def __neg__(self):
+        """Matrix opposite"""
         C = LabelMatrix(ilabels=list(self.__ilabels),
                         jlabels=list(self.__jlabels), 
                         Mij=-np.copy(self.__M), dtype=self.__dtype,
@@ -390,16 +416,17 @@ class LabelMatrix(object):
         return C
     
     def __iadd__(self, other):
-        for ilabel, jlabel, value in other.iter_pairs(data=True):
+        """Add other matrix values"""
+        for ilabel, jlabel, value in other:
             self[ilabel, jlabel] += value
         return self
     
     def __add__(self, other):
+        """Add two matrices"""
         C = self.copy()
         return C.__iadd__(other)
     
     def argmax(self, axis=None):
-        
         indices = self.M.argmax(axis=axis)
         if axis == 0:
             return {self.__jlabels[j] : self.__ilabels[i]
@@ -438,7 +465,30 @@ class LabelMatrix(object):
             string += " ".join([fmt_value % self[i, j] for j in jlabels])
         
         return string
-
+    
+    def to_networkx_graph(self, weight='weight', selfloop=True):
+        """Graphical representation
+        
+        Parameters
+        ----------
+        weight : str, optional
+            Name of edge attribute. Defaults to 'weight'.
+        selfloop : bool, optional
+            When True, self edges (weighted with self similarity value) are
+            included in the generated graph. Defaults to True.
+        
+        Returns
+        -------
+        g : networkx.DiGraph
+        
+        """
+        G = nx.DiGraph()
+        for i, j, d in self:
+            if not selfloop and i==j:
+                continue
+            G.add_edge(i, j, {weight: d})
+        return G
+        
 class Cooccurrence(LabelMatrix):
     """
     Cooccurrence matrix between two annotations
@@ -473,9 +523,8 @@ class Cooccurrence(LabelMatrix):
         nj = len(J.labels())
         # initialize matrix with cooccurrence zero
         Mij = np.zeros((ni, nj), dtype=float)
-        super(Cooccurrence, self).__init__(ilabels=I.labels(), 
-                                           jlabels=J.labels(), 
-                                           Mij=Mij)
+        super(Cooccurrence, self).__init__(ilabels=I.labels(),
+                                           jlabels=J.labels())
         
         for ilabel in self.iter_ilabels():
             icov = I.label_coverage(ilabel)
