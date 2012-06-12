@@ -21,53 +21,73 @@
 
 import numpy as np
 import networkx as nx
+from pyannote.base.matrix import LabelMatrix
 
 class Modularity(object):
     """
+    Modularity
     
     Parameters
     ----------
-    graph : :class:`networkx.Graph`
-    
-    community : dict
-    
-    
+    G : networkx.Graph or networkx.DiGraph
+        Graph on which modularity is computed.
+    weight : str, optional
+        
+        Defaults to 'weight'
     
     """
     def __init__(self, G, weight='weight'):
         super(Modularity, self).__init__()
         
-        # rename nodes to integers (0 to nnodes-1)
-        self.__re_node = {node : n for n, node in enumerate(G.nodes())}
-        g = nx.convert_node_labels_to_integers(G)
-        
         # adjacency matrix
-        A = np.array(nx.to_numpy_matrix(g, weight=weight))
+        A = LabelMatrix.from_networkx_graph(G, weight=weight)
         
-        # total weight in graph
-        m = np.sum(A)
+        # total weights in graph
+        m = np.sum(A.M)
         
-        # node degree (total weight of outgoing edges)
-        kin = np.sum(A, axis=0)[:, np.newaxis]
-        kout = np.sum(A, axis=1)[:, np.newaxis]
+        # node degree (total weight of {in|out}going edges)
+        kin = np.sum(A.M, axis=0)[:, np.newaxis]
+        kout = np.sum(A.M, axis=1)[:, np.newaxis]
         
         # modularity matrix
-        self.__modularity = A/m - kout*kin.T/(m*m)
-        
+        A.M = A.M/m - kout*kin.T/(m*m)
+        self.Q = A
+    
     def __call__(self, partition):
-        """
-        """
-        # rename communities to integers (0 to ncommunities-1)
-        re_community = {cty:c for c, cty in enumerate(set(partition.values()))}
-        communities = [[] for _ in re_community]
-        for node, cty in partition.iteritems():
-            communities[re_community[cty]].append(self.__re_node[node])
+        """Compute modularity
         
-        D = np.zeros(self.__modularity.shape, dtype=bool)
-        for cty in communities:
-            for i, n in enumerate(cty):
-                for m in cty[i:]:
+        Parameters
+        ----------
+        partition : dict
+            Dictionary with node as keys and communities as values
+            
+        Returns
+        -------
+        modularity : float
+            Modularity for given `partition`
+        
+        """
+        
+        # same partition matrix
+        ilabels, jlabels = self.Q.labels
+        D = LabelMatrix(ilabels=ilabels, jlabels=jlabels, 
+                        dtype=bool, default=False)
+        clusters = {}
+        for node, k in partition.iteritems():
+            if k not in clusters:
+                clusters[k] = set([])
+            clusters[k].add(node)
+        for _, nodes in clusters.iteritems():
+            for n in nodes:
+                for m in nodes:
                     D[n, m] = True
-                    D[m, n] = True
         
-        return np.sum(D*self.__modularity)
+        # modularity
+        return np.sum(D.M * self.Q.M)
+    
+    # def graph_cut(self):
+    #     w, V = np.linalg.eig(self.Q.M)
+    #     v = V[:, np.argmax(w)]
+    #     return {node: 0 if v[n] < 0 else 1 
+    #             for n, node in enumerate(self.Q.iter_ilabels())}
+    
