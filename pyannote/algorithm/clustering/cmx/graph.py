@@ -32,7 +32,7 @@ class IncreaseModularityCMx(BaseConstraintMixin):
     
     def cmx_init(self):
         g = nx.DiGraph()
-        for i, j, s in self.imx_matrix.iter_pairs(data=True):
+        for i, j, s in self.imx_matrix:
             if s < self.cmx_edge_threshold:
                 continue
             g.add_edge(i, j, weight=1)
