@@ -33,7 +33,7 @@ class MaximumModularitySMx(MaximumSMx):
     
     def smx_init(self):
         g = nx.DiGraph()
-        for i, j, s in self.imx_matrix.iter_pairs(data=True):
+        for i, j, s in self.imx_matrix:
             g.add_node(i)
             if s < self.smx_edge_threshold:
                 continue
