@@ -21,6 +21,43 @@
 from pyannote.base.mapping import ManyToOneMapping
 from pyannote.base.matrix import Cooccurrence
 from base import BaseMapper
+import numpy as np
+
+class ConservativeDirectMapper(BaseMapper):
+    """
+    Maps left label a to right label b if b is the only one cooccurring with a.
+    """
+    def __init__(self):
+        super(ConservativeDirectMapper, self).__init__()
+    
+    def _associate(self, A, B):
+        
+        # Cooccurrence matrix
+        matrix = Cooccurrence(A, B)
+        
+        pairs = matrix.argmax(axis=1)
+        pairs = {a : b for a, b in pairs.iteritems() 
+                       if np.count_nonzero(matrix[a, :].M) == 1}
+        
+        # Reverse dict and group alabels by argmax
+        sriap = {}
+        for a, b in pairs.iteritems():
+            if b not in sriap:
+                sriap[b] = set([])
+            sriap[b].add(a)
+        
+        M = ManyToOneMapping(A.modality, B.modality)
+        
+        for b, a_s in sriap.iteritems():
+            M += (a_s, [b])
+        alabels, blabels = matrix.labels
+        for a in set(alabels)-M.left_set:
+            M += ([a], None)
+        for b in set(blabels)-M.right_set:
+            M += (None, [b])
+        
+        return M
+
 
 class ArgMaxMapper(BaseMapper):
     """Many-to-one label mapping based on cost function.
