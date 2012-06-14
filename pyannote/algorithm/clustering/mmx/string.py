@@ -34,7 +34,6 @@ class LevenshteinMMx(BaseModelMixin):
         new_model = []
         for label in labels:
             other_model = self.models[label]
-            print other_model
             new_model.extend(other_model)
         return tuple(new_model)
     
