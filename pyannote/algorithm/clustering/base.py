@@ -53,10 +53,10 @@ class MatrixIMx(BaseInternalMixin):
         labels = self.annotation.labels()
         for l, label in enumerate(labels):
             # this is to ensure the order of labels in row & column
-            s = self.MMx.mmx_compare(self, label, label)
+            s = self.mmx_compare(label, label)
             self.imx_matrix[label, label] = s
             for other_label in labels[l+1:]:
-                s = self.MMx.mmx_compare(self, label, other_label)
+                s = self.mmx_compare(label, other_label)
                 self.imx_matrix[label, other_label] = s
                 self.imx_matrix[other_label, label] = s
     
@@ -77,7 +77,7 @@ class MatrixIMx(BaseInternalMixin):
         for label in labels:
             if label == new_label:
                 continue
-            s = self.MMx.mmx_compare(self, new_label, label)
+            s = self.mmx_compare(new_label, label)
             self.imx_matrix[new_label, label] = s
             self.imx_matrix[label, new_label] = s
     
@@ -153,12 +153,9 @@ class AgglomerativeClustering(object):
         
         # setup stopping criteria
         SMx = self.getMx(BaseStoppingCriterionMixin)
-        if len(SMx) == 0:
-            SMx = [BaseStoppingCriterionMixin]
-        elif len(SMx) > 1:
+        if len(SMx) > 1:
             raise ValueError('Too many stopping criteria (SMx): %s' % SMx )
-        self.SMx = SMx[0]
-        self.SMx.smx_setup(self, **kwargs)
+        self.smx_setup(**kwargs)
         
         # setup model
         MMx = self.getMx(BaseModelMixin)
@@ -166,8 +163,7 @@ class AgglomerativeClustering(object):
             raise ValueError('Missing model mixin (MMx).')
         elif len(MMx) > 1:
             raise ValueError('Too many model mixins (MMx): %s' % MMx)
-        self.MMx = MMx[0]
-        self.MMx.mmx_setup(self, **kwargs)
+        self.mmx_setup(**kwargs)
         
         # setup internal
         IMx = self.getMx(BaseInternalMixin)
@@ -175,8 +171,7 @@ class AgglomerativeClustering(object):
             raise ValueError('Missing internal mixin (IMx).')
         elif len(IMx) > 1:
             raise ValueError('Too many internal mixins(IMx) : %s' % IMx)
-        self.IMx = IMx[0]
-        self.IMx.imx_setup(self, **kwargs)
+        self.imx_setup(**kwargs)
         
     def __get_annotation(self):
         return self.__annotation
@@ -201,26 +196,25 @@ class AgglomerativeClustering(object):
     # --- INTERNALS IMx ---
     
     def init_internals(self):
-        self.IMx.imx_init(self)
+        self.imx_init()
     
     def update_internals(self, new_label, merged_labels):
-        self.IMx.imx_update(self, new_label, merged_labels)
+        self.imx_update(new_label, merged_labels)
     
     def next(self):
-        return self.IMx.imx_next(self)
+        return self.imx_next()
     
     def do_not_merge(self, labels):
-        self.IMx.imx_do_not_merge(self, labels)
+        self.imx_do_not_merge(labels)
     
     # --- MODELS MMx ---
     
     def init_models(self):
-        self.__models = {L: self.MMx.mmx_fit(self, L) 
-                        for L in self.annotation.labels()}
+        self.__models = {L: self.mmx_fit(L) for L in self.annotation.labels()}
     
     def merge_models(self, merged_labels):
         new_label = merged_labels[0]
-        self.__models[new_label] = self.MMx.mmx_merge(self, merged_labels)
+        self.__models[new_label] = self.mmx_merge(merged_labels)
         old_labels = merged_labels[1:]
         for old_label in old_labels:
             del self.__models[old_label]
@@ -245,13 +239,13 @@ class AgglomerativeClustering(object):
     # --- STOPPING CRITERION SMx ---
     
     def init_stopping_criterion(self):
-        self.SMx.smx_init(self)
+        self.smx_init()
     
     def update_stopping_criterion(self, new_label, merged_labels):
-        self.SMx.smx_update(self, new_label, merged_labels)
+        self.smx_update(new_label, merged_labels)
     
     def stop(self, status):
-        return self.SMx.smx_stop(self, status)
+        return self.smx_stop(status)
     
     # --- LET'S ROLL ----
     
@@ -339,7 +333,7 @@ class AgglomerativeClustering(object):
         return self.iterate()
     
     def finish(self, annotation):
-        return self.SMx.smx_final(self, annotation)
+        return self.smx_final(annotation)
     
     def __call__(self, annotation, feature, **kwargs):
         
