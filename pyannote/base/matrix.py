@@ -138,6 +138,10 @@ class LabelMatrix(object):
     shape = property(fget=__get_shape)
     """Matrix shape"""
     
+    def __nonzero__(self):
+        n, m = self.shape
+        return n*m != 0
+    
     def __get_M(self):
         return self.__M
     def __set_M(self, M):
