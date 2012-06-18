@@ -282,6 +282,10 @@ class AgglomerativeClustering(object):
         """
         while True:
             
+            # if there only one label left, stop.
+            if len(self.annotation.labels()) <= 1:
+                break
+            
             # find labels that should (and can) be merged next
             while True:
                 
