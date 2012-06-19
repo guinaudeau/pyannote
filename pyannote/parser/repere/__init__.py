@@ -23,11 +23,36 @@ This module contains parser for common file formats used in the REPERE challenge
 See http://www.defi-repere.fr/
 """
 
-__all__ = ['REPEREParser', 'TRSParser', 'XGTFParser']
+__all__ = ['REPEREParser', 'TRSParser', 'XGTFParser', 'get_show_name']
 
 from repere import REPEREParser
 from trs import TRSParser
 from xgtf import XGTFParser
+
+def get_show_name(uri):
+    """
+    
+    Parameters
+    ----------
+    uri : str
+        Uniform Resource Identifier
+    
+    Returns
+    -------
+    show : str
+        Name of the show
+    
+    Examples
+    --------
+    
+        >>> print get_show_name('BFMTV_PlaneteShowbiz_20110705_195500')
+        BFMTV_PlaneteShowbiz
+    
+    """
+    tokens = uri.split('_')
+    channel = tokens[0]
+    show = tokens[1]
+    return channel + '_' + show
 
 if __name__ == "__main__":
     import doctest
