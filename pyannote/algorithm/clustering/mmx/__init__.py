@@ -20,10 +20,10 @@
 
 """This module defines model mixins (MMx)."""
 
-__all__ = ['BICMMx', 'LevenshteinMMx']
+__all__ = ['BICMMx', 'LevenshteinMMx', 'SameStringMMx']
 
 from gaussian import BICMMx
-from string import LevenshteinMMx
+from string import LevenshteinMMx, SameStringMMx
 
 if __name__ == "__main__":
     import doctest

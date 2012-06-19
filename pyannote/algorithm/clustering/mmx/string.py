@@ -22,6 +22,26 @@ from pyannote.algorithm.clustering.mmx.base import BaseModelMixin
 from Levenshtein import jaro
 import numpy as np
 
+
+class SameStringMMx(BaseModelMixin):
+    def mmx_symmetric(self):
+        return True
+    
+    def mmx_fit(self, label):
+        return tuple([label])
+    
+    def mmx_merge(self, labels):
+        new_model = []
+        for label in labels:
+            other_model = self.models[label]
+            new_model.extend(other_model)
+        return tuple(new_model)
+    
+    def mmx_compare(self, label, other_label):
+        model = self.models[label]
+        other_model = self.models[other_label]
+        return np.mean([float(s == t) for s in model for t in other_model])
+
 class LevenshteinMMx(BaseModelMixin):
     
     def mmx_symmetric(self):
