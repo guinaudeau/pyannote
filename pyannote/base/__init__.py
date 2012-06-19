@@ -24,13 +24,12 @@ The ``pyannote.base`` module contains the foundation object of ``PyAnnote``.
 
 """
 
-from segment import Segment, SlidingWindow
+__all__ = ['Segment', 'Timeline', 'Annotation', 'LabelMatrix']
+
+from segment import Segment
 from timeline import Timeline
 from annotation import Annotation
-from feature import PeriodicPrecomputedFeature, TimelinePrecomputedFeature
-
-__all__ = ['Segment', 'SlidingWindow', 'Timeline', 'Annotation', 
-           'PeriodicPrecomputedFeature', 'TimelinePrecomputedFeature']
+from matrix import LabelMatrix
 
 if __name__ == "__main__":
     import doctest
