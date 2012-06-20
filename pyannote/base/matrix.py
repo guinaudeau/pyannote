@@ -431,6 +431,11 @@ class LabelMatrix(object):
         return C.__iadd__(other)
     
     def argmax(self, axis=None):
+        
+        # if matrix is empty, return empty dictionary
+        if not self:
+            return {}
+        
         indices = self.M.argmax(axis=axis)
         if axis == 0:
             return {self.__jlabels[j] : self.__ilabels[i]
