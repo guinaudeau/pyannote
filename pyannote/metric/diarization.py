@@ -102,20 +102,33 @@ class DiarizationPurity(BaseMetric):
     
     Parameters
     ----------
+    detection_error: bool, optional
+        By default (detection_error = True), detection errors (false alarm
+        and/or miss detection) may artificially decrease purity.
+        When detection_error = False, purity is only computed on the segments
+        where both reference and hypothesis detected something.
     per_cluster : bool, optional
         By default (per_cluster = False), clusters are duration-weighted.
-        When per_cluster is True, each cluster is given the same weight.
+        When per_cluster = True, each cluster is given the same weight.
     
     """
-    def __init__(self, per_cluster=False):
+    def __init__(self, detection_error=True, per_cluster=False):
         values = set([ \
             PURITY_TOTAL, \
             PURITY_CORRECT])
         super(DiarizationPurity, self).__init__(PURITY_NAME, values)
         self.per_cluster = per_cluster
+        self.detection_error = detection_error
     
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
+        
+        if not self.detection_error:
+            joint_coverage = reference._timeline.coverage() & \
+                             hypothesis._timeline.coverage()
+            reference = reference(joint_coverage, mode='intersection')
+            hypothesis = hypothesis(joint_coverage, mode='intersection')
+        
         matrix = Cooccurrence(reference, hypothesis)
         
         if self.per_cluster:
@@ -163,13 +176,20 @@ class DiarizationCoverage(DiarizationPurity):
     
     Parameters
     ----------
+    detection_error: bool, optional
+        By default (detection_error = True), detection errors (false alarm
+        and/or miss detection) may artificially decrease coverage.
+        When detection_error = False, purity is only computed on the segments
+        where both reference and hypothesis detected something.
     per_cluster : bool, optional
         By default (per_cluster = False), classes are duration-weighted.
-        When per_cluster is True, each class is given the same weight.
+        When per_cluster = True, each class is given the same weight.
     
     """
-    def __init__(self, per_cluster=False):
-        super(DiarizationCoverage, self).__init__(per_cluster=per_cluster)
+    def __init__(self, detection_error=True, per_cluster=False):
+        super(DiarizationCoverage, self).__init__( \
+                                            detection_error=detection_error,
+                                            per_cluster=per_cluster)
         self.name = COVERAGE_NAME
     
     def _get_details(self, reference, hypothesis, **kwargs):
@@ -203,6 +223,7 @@ class DiarizationHomogeneity(BaseMetric):
         detail = self._init_details()
         
         matrix = Cooccurrence(reference, hypothesis)
+        
         duration = np.sum(matrix.M)
         rduration = np.sum(matrix.M, axis=1)
         hduration = np.sum(matrix.M, axis=0)
@@ -219,7 +240,7 @@ class DiarizationHomogeneity(BaseMetric):
                 if coduration > 0:
                     cross_entropy -= (coduration / duration) * \
                                      np.log(coduration / hduration[j])
-                        
+                    
         detail[HOMOGENEITY_CROSS_ENTROPY] = cross_entropy 
         detail[HOMOGENEITY_ENTROPY] = entropy
              
