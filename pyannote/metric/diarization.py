@@ -96,23 +96,43 @@ PURITY_TOTAL = 'total'
 PURITY_CORRECT = 'correct'
 
 class DiarizationPurity(BaseMetric):
-    """Purity"""
-    def __init__(self):
+    """Purity
+    
+    Compute purity of hypothesis clusters with respect to reference classes.
+    
+    Parameters
+    ----------
+    per_cluster : bool, optional
+        By default (per_cluster = False), clusters are duration-weighted.
+        When per_cluster is True, each cluster is given the same weight.
+    
+    """
+    def __init__(self, per_cluster=False):
         values = set([ \
             PURITY_TOTAL, \
             PURITY_CORRECT])
         super(DiarizationPurity, self).__init__(PURITY_NAME, values)
+        self.per_cluster = per_cluster
     
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
         matrix = Cooccurrence(reference, hypothesis)
         
-        if np.prod(matrix.M.shape):
-            detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+        if self.per_cluster:
+            # biggest class in each cluster
+            detail[PURITY_CORRECT] = \
+                        np.sum([matrix[L,K] / hypothesis.label_duration(K) 
+                                for K, L in matrix.argmax(axis=0).iteritems()])
+            # number of clusters (as float)
+            detail[PURITY_TOTAL] = float(matrix.shape[1])
         else:
-            detail[PURITY_CORRECT] = 0.
-        
-        detail[PURITY_TOTAL] = np.sum(matrix.M)
+            if np.prod(matrix.M.shape):
+                detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+            else:
+                detail[PURITY_CORRECT] = 0.
+            # total duration of clusters (with overlap)
+            detail[PURITY_TOTAL] = np.sum([hypothesis.label_duration(K) 
+                                           for K in hypothesis.labels()])
         
         return detail
     
@@ -121,25 +141,51 @@ class DiarizationPurity(BaseMetric):
             return detail[PURITY_CORRECT] / detail[PURITY_TOTAL]
         else:
             return 1.
-       
+    
     def _pretty(self, detail):
         string = ""
-        string += "  - duration: %.2f seconds\n" % (detail[PURITY_TOTAL])
-        string += "  - correct: %.2f seconds\n" % (detail[PURITY_CORRECT])
+        if self.per_cluster:
+            string += "  - clusters: %d\n" % (detail[PURITY_TOTAL])
+            string += "  - correct: %.2f\n" % (detail[PURITY_CORRECT])
+        else:
+            string += "  - duration: %.2f seconds\n" % (detail[PURITY_TOTAL])
+            string += "  - correct: %.2f seconds\n" % (detail[PURITY_CORRECT])
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
 
 COVERAGE_NAME = 'coverage'
 
 class DiarizationCoverage(DiarizationPurity):
-    """Coverage"""
-    def __init__(self):
-        super(DiarizationCoverage, self).__init__()
+    """Coverage
+    
+    Compute coverage of hypothesis clusters with respect to reference classes
+    (i.e. purity of reference classes with respect to hypothesis clusters)
+    
+    Parameters
+    ----------
+    per_cluster : bool, optional
+        By default (per_cluster = False), classes are duration-weighted.
+        When per_cluster is True, each class is given the same weight.
+    
+    """
+    def __init__(self, per_cluster=False):
+        super(DiarizationCoverage, self).__init__(per_cluster=per_cluster)
         self.name = COVERAGE_NAME
     
     def _get_details(self, reference, hypothesis, **kwargs):
         return super(DiarizationCoverage, self)._get_details(hypothesis, \
                                                             reference)
+    
+    def _pretty(self, detail):
+        string = ""
+        if self.per_cluster:
+            string += "  - classes: %d\n" % (detail[PURITY_TOTAL])
+            string += "  - correct: %.2f\n" % (detail[PURITY_CORRECT])
+        else:
+            string += "  - duration: %.2f seconds\n" % (detail[PURITY_TOTAL])
+            string += "  - correct: %.2f seconds\n" % (detail[PURITY_CORRECT])
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
 
 HOMOGENEITY_NAME = 'homogeneity'
 HOMOGENEITY_ENTROPY = 'entropy'
@@ -155,12 +201,12 @@ class DiarizationHomogeneity(BaseMetric):
     
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
-            
+        
         matrix = Cooccurrence(reference, hypothesis)
         duration = np.sum(matrix.M)
         rduration = np.sum(matrix.M, axis=1)
         hduration = np.sum(matrix.M, axis=0)
-            
+        
         # Reference entropy and reference/hypothesis cross-entropy
         cross_entropy = 0.
         entropy = 0.
