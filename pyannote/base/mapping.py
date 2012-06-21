@@ -415,6 +415,8 @@ class Mapping(object):
         
         string = "(\n"
         for left, right in self:
+            left = [str(i) for i in left]
+            right = [str(i) for i in right]
             string += '   %s <--> %s\n' % (' '.join(sorted(left)), \
                                            ' '.join(sorted(right)))
         string += ")"
