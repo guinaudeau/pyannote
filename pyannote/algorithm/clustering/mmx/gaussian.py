@@ -115,36 +115,6 @@ class BICMMx(GaussianMMx):
                                      penalty_coef=self.mmx_penalty_coef)
         return (-dissimilarity)
 
-
-import numpy as np
-class BICSigmoidMMx(BICMMx):
-    
-    def mmx_setup(self, sigmoid=1e3, **kwargs):
-        super(BICSigmoidMMx, self).mmx_setup(**kwargs)
-        self.mmx_sigmoid = sigmoid
-    
-    def mmx_compare(self, label, other_label):
-        similarity = super(BICSigmoidMMx,
-                           self).mmx_compare(label, other_label)
-        return 1. / (1. + np.exp(-similarity/self.mmx_sigmoid))
-        
-    def mmx_symmetric(self):
-        return False
-
-
-class GaussianLikelihoodMMx(GaussianMMx):
-    """"""
-    
-    def mmx_symmetric(self):
-        return False
-    
-    def mmx_compare(self, label, other_label):
-        other_data = self.feature(self.annotation.label_timeline(other_label))
-        model = self.models[label]
-        logprob = model.score(other_data)
-        return np.mean(np.exp(logprob))
-
-
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
