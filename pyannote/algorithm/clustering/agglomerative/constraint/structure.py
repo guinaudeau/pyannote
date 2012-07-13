@@ -20,7 +20,7 @@
 
 
 from pyannote.base.matrix import LabelMatrix
-from pyannote.algorithm.clustering.cmx.base import BaseConstraintMixin
+from pyannote.algorithm.clustering.agglomerative.constraint.base import BaseConstraintMixin
 
 class ContiguousCMx(BaseConstraintMixin):
     """

@@ -19,14 +19,14 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.algorithm.clustering.base import MatrixIMx, AgglomerativeClustering
-from pyannote.algorithm.clustering.mmx import BICMMx
-from pyannote.algorithm.clustering.cmx import ContiguousCMx
-from pyannote.algorithm.clustering.smx import NegativeSMx, MaximumModularitySMx
+from pyannote.algorithm.clustering.agglomerative.base import MatrixIMx, AgglomerativeClustering
+from pyannote.algorithm.clustering.model import BICMMx
+from pyannote.algorithm.clustering.agglomerative.constraint import ContiguousCMx
+from pyannote.algorithm.clustering.agglomerative.stop import NegativeSMx, MaximumModularitySMx
 
 class BICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, NegativeSMx):
     """
-    BIC clustering 
+    BIC clustering
     
     Parameters
     ----------

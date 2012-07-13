@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.algorithm.clustering.mmx.base import BaseModelMixin
+from pyannote.algorithm.clustering.model.base import BaseModelMixin
 from pyannote.algorithm.util.gaussian import Gaussian
 
 class GaussianMMx(BaseModelMixin):

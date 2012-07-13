@@ -107,9 +107,9 @@ class MatrixIMx(BaseInternalMixin):
 
 
 import networkx as nx
-from pyannote.algorithm.clustering.mmx.base import BaseModelMixin
-from pyannote.algorithm.clustering.cmx.base import BaseConstraintMixin
-from pyannote.algorithm.clustering.smx.base import BaseStoppingCriterionMixin
+from pyannote.algorithm.clustering.model.base import BaseModelMixin
+from pyannote.algorithm.clustering.agglomerative.constraint.base import BaseConstraintMixin
+from pyannote.algorithm.clustering.agglomerative.stop.base import BaseStoppingCriterionMixin
 
 class AgglomerativeClustering(object):
     """

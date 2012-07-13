@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.algorithm.clustering.mmx.base import BaseModelMixin
+from pyannote.algorithm.clustering.model.base import BaseModelMixin
 from Levenshtein import jaro
 import numpy as np
 
