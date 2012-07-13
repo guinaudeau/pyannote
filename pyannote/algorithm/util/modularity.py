@@ -85,9 +85,3 @@ class Modularity(object):
         # modularity
         return np.sum(D.M * self.Q.M)
     
-    # def graph_cut(self):
-    #     w, V = np.linalg.eig(self.Q.M)
-    #     v = V[:, np.argmax(w)]
-    #     return {node: 0 if v[n] < 0 else 1 
-    #             for n, node in enumerate(self.Q.iter_ilabels())}
-    
