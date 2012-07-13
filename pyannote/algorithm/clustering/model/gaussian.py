@@ -31,7 +31,6 @@ class GaussianMMx(BaseModelMixin):
         Default is 'full' covariance matrix.
     """
     
-    
     def mmx_setup(self, covariance_type='full', **kwargs):
         """Model mixin setup
         
@@ -42,13 +41,18 @@ class GaussianMMx(BaseModelMixin):
         """
         self.mmx_covariance_type = covariance_type
     
-    def mmx_fit(self, label):
+    def mmx_fit(self, label, annotation=None, feature=None):
         """Fit one gaussian to label features
         
         Parameters
         ----------
         label : hashable object
             A label existing in processed `annotation`
+        annotation : :class:`Annotation`, optional
+            If not provided, use self.annotation instead
+        feature : :class:`Feature`, optional
+            If not provided, use self.feature instead
+            
         
         Returns
         -------
@@ -56,20 +60,36 @@ class GaussianMMx(BaseModelMixin):
             A Gaussian fitted to label features
         
         """
+        if annotation is None:
+            annotation = self.annotation
+        if feature is None:
+            feature = self.feature
+        
         # extract features for this label
-        data = self.feature(self.annotation.label_timeline(label))
+        data = feature(annotation.label_timeline(label))
         # fit gaussian and return it
         return Gaussian(covariance_type=self.mmx_covariance_type).fit(data)
     
-    def mmx_merge(self, labels):
+    def mmx_merge(self, labels, models=None):
         """Merge Gaussians
         
         Merge multiple labels into one.
         
+        Parameters
+        ----------
+        labels : 
+        models : 
+            If not provided, use self.models
+        
         """
-        new_model = self.models[labels[0]]
+        if models is None:
+            models = self.models
+        
+        # start with first model
+        new_model = models[labels[0]]
+        # merge all the others the one after the others
         for label in labels[1:]:
-            new_model = new_model.merge(self.models[label])
+            new_model = new_model.merge(models[label])
         return new_model
 
 
@@ -101,16 +121,24 @@ class BICMMx(GaussianMMx):
     def mmx_symmetric(self):
         return True
     
-    def mmx_compare(self, label, other_label):
+    def mmx_compare(self, label, other_label, models=None):
         """Compute dBIC
+        
+        Parameters
+        ----------
+        models : 
+            If not provided, use self.models
         
         See also
         --------
         :meth:`pyannote.algorithm.util.gaussian.Gaussian.bic`
         
         """
-        model = self.models[label]
-        other_model = self.models[other_label]
+        if models is None:
+            models = self.models
+        
+        model = models[label]
+        other_model = models[other_label]
         dissimilarity, _ = model.bic(other_model,
                                      penalty_coef=self.mmx_penalty_coef)
         return (-dissimilarity)
