@@ -152,7 +152,7 @@ class IntegerLinearProgramming(object):
                 for k in range(N):
                     t[i,j,k] = m.addConstr((1-x[i,j])+(1-x[j,k]) >= (1-x[i,k]))
         
-        return m
+        return x, m
         
     def __call__(self, annotation, feature, alpha=None):
         
@@ -162,7 +162,7 @@ class IntegerLinearProgramming(object):
         P = self.posterior.transform(X.reshape((-1, 1))).reshape((N, N))
         
         # optimization
-        m = self._get_ipl(P, alpha=alpha)
+        x, m = self._get_ipl(P, alpha=alpha)
         m.optimize()
         
         # read results as a graph
