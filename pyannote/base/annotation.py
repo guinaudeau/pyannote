@@ -322,7 +322,7 @@ class Annotation(object):
             segment = self.__timeline.extent()
         
         # compute intersection duration for each label
-        durations = {lbl: (self.__label_timeline[lbl] & segment).duration()\
+        durations = {lbl: (self.__label_timeline[lbl] & segment).duration()
                      for lbl in self.labels()}
         
         # find the most frequent label
