@@ -128,8 +128,8 @@ class IntegerLinearProgramming(object):
         # objective
         # maximize intra-cluster probability 
         # minimize inter-cluster probability
-        h1 = np.log(P)
-        h0 = np.log(1 - P)
+        h1 = np.maximum(-1e10, np.log(P))
+        h0 = np.maximum(-1e10, np.log(1 - P))
         obj = gurobipy.quicksum(h1[i,j]*x[i,j] + alpha*h0[i, j]*(1-x[i,j])
                                 for i in range(N) for j in range(N))
         m.setObjective(obj, gurobipy.GRB.MAXIMIZE)
