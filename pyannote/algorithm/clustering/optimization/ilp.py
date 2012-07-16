@@ -1,5 +1,5 @@
 
-import gurobipy
+import gurobipy as grb
 import numpy as np
 import networkx as nx
 import pyfusion.normalization.bayes
@@ -114,14 +114,14 @@ class IntegerLinearProgramming(object):
             alpha = 1./N
         
         # gurobi model
-        m = gurobipy.Model("ipl")
+        m = grb.Model("ipl")
         
         # model variables
         # xij = 1 <==> i & j in the same cluster
         x = {}
         for i in range(N):
             for j in range(N):
-                x[i, j] = m.addVar(vtype=gurobipy.GRB.BINARY,
+                x[i, j] = m.addVar(vtype=grb.GRB.BINARY,
                                    name="x_%02d_%02d" % (i,j))
         m.update()
         
@@ -130,9 +130,9 @@ class IntegerLinearProgramming(object):
         # minimize inter-cluster probability
         h1 = np.maximum(-1e10, np.log(P))
         h0 = np.maximum(-1e10, np.log(1 - P))
-        obj = gurobipy.quicksum(h1[i,j]*x[i,j] + alpha*h0[i, j]*(1-x[i,j])
+        obj = grb.quicksum(alpha*h1[i,j]*x[i,j] + (1-alpha)*h0[i, j]*(1-x[i,j])
                                 for i in range(N) for j in range(N))
-        m.setObjective(obj, gurobipy.GRB.MAXIMIZE)
+        m.setObjective(obj, grb.GRB.MAXIMIZE)
         
         # each label in its own cluster
         o = {}
