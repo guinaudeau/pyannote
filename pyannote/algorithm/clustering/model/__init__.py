@@ -18,7 +18,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This module defines model mixins (MMx)."""
+"""This module defines model mixins (MMx).
+
+Model mixins defines the necessary methods to obtain similarity between labels.
+
+"""
 
 __all__ = ['BICMMx', 'LevenshteinMMx', 'SameStringMMx']
 
