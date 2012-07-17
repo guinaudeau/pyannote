@@ -1,5 +1,5 @@
 
-import gurobipy as grb
+import pulp
 import numpy as np
 import networkx as nx
 import pyfusion.normalization.bayes
@@ -51,7 +51,6 @@ class IntegerLinearProgramming(object):
         
         return y
     
-    
     def _get_X(self, annotation, feature):
         """
         
@@ -95,64 +94,61 @@ class IntegerLinearProgramming(object):
         self.posterior = pyfusion.normalization.bayes.Posterior(pos_label=1,
                                                                 neg_label=0)
         self.posterior.fit(X, y=y)
-        
     
-    def _get_ipl(self, P, alpha=None):
+    def _get_ilp(self, P, alpha=None):
         """
         
         Parameters
         ----------
         P : array-like (num_tracks, num_tracks)
             P[i, j] is the probability for i & j to be in the same cluster
+            (0 <= P[i, j] <= 1 for all i & j)
         alpha : float, optional
             Defaults to 1./num_tracks
-        
+            alpha = 1. means one cluster per track (higher purity)
+            alpha = 0. means one big cluster (higher coverage)
         """
         N, N = P.shape
         
         if alpha is None:
             alpha = 1./N
         
-        # gurobi model
-        m = grb.Model("ipl")
+        # PuLP problem
+        problem = pulp.LpProblem("ipl", pulp.LpMaximize)
         
         # model variables
         # xij = 1 <==> i & j in the same cluster
         x = {}
         for i in range(N):
-            for j in range(N):
-                x[i, j] = m.addVar(vtype=grb.GRB.BINARY,
-                                   name="x_%02d_%02d" % (i,j))
-        m.update()
-        
+            for j in range(i+1, N):
+                x[i, j] = pulp.LpVariable("x_%02d_%02d" % (i,j),
+                                          lowBound = 0, upBound = 1,
+                                          cat = pulp.LpInteger)
         # objective
         # maximize intra-cluster probability 
         # minimize inter-cluster probability
         h1 = np.maximum(-1e10, np.log(P))
         h0 = np.maximum(-1e10, np.log(1 - P))
-        obj = grb.quicksum(alpha*h1[i,j]*x[i,j] + (1-alpha)*h0[i, j]*(1-x[i,j])
-                                for i in range(N) for j in range(N))
-        m.setObjective(obj, grb.GRB.MAXIMIZE)
+        problem += pulp.lpSum([alpha * h1[i,j] * x[i,j] + h0[i, j] * (1-x[i,j])
+                               for i in range(N) for j in range(i+1, N)])
         
-        # each label in its own cluster
-        o = {}
-        for i in range(N):
-            o[i] = m.addConstr(x[i,i]==1)
-            
-        # symmetry constraint
-        s = {}
-        for i in range(N):
-            for j in range(i+1, N):
-                s[i,j] = m.addConstr(x[i,j]==x[j,i])
+        # # symmetry constraint
+        # s = {}
+        # for i in range(N):
+        #     for j in range(i+1, N):
+        #         s[i,j] = (x[i,j] == x[j,i])
+        #         problem += s[i,j]
         
         # transitivity constraints
         t = {}
         for i in range(N):
-            for j in range(N):
-                for k in range(N):
-                    t[i,j,k] = m.addConstr((1-x[i,j])+(1-x[j,k]) >= (1-x[i,k]))
+            for j in range(i+1, N):
+                for k in range(j+1, N):
+                    t[i,j,k] = (1-x[i,j])+(1-x[j,k]) >= (1-x[i,k])
+                    problem += t[i,j,k]
         
-        return x, m
+        # return x, m
+        return x, problem
         
     def __call__(self, annotation, feature, alpha=None):
         
@@ -162,8 +158,10 @@ class IntegerLinearProgramming(object):
         P = self.posterior.transform(X.reshape((-1, 1))).reshape((N, N))
         
         # optimization
-        x, m = self._get_ipl(P, alpha=alpha)
-        m.optimize()
+        x, problem = self._get_ilp(P, alpha=alpha)
+        # status = problem.solve(pulp.GLPK())
+        # status = problem.solve(pulp.COIN())
+        status = problem.solve(pulp.GUROBI())
         
         # read results as a graph
         # one node per label, edges between same-cluster labels
@@ -171,9 +169,9 @@ class IntegerLinearProgramming(object):
         for i, _ in enumerate(annotation.iterlabels()):
             g.add_node(i)
             for j, _ in enumerate(annotation.iterlabels()):
-                if j > i:
-                    break
-                if x[i, j].x:
+                if j <= i:
+                    continue
+                if pulp.value(x[i, j]):
                     g.add_edge(i, j)
         
         # find clusters (connected components in graph)
