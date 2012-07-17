@@ -120,7 +120,7 @@ class IntegerLinearProgramming(object):
         # xij = 1 <==> i & j in the same cluster
         x = {}
         for i in range(N):
-            for j in range(i+1, N):
+            for j in range(N):
                 x[i, j] = pulp.LpVariable("x_%02d_%02d" % (i,j),
                                           lowBound = 0, upBound = 1,
                                           cat = pulp.LpInteger)
@@ -132,18 +132,18 @@ class IntegerLinearProgramming(object):
         problem += pulp.lpSum([alpha * h1[i,j] * x[i,j] + h0[i, j] * (1-x[i,j])
                                for i in range(N) for j in range(i+1, N)])
         
-        # # symmetry constraint
-        # s = {}
-        # for i in range(N):
-        #     for j in range(i+1, N):
-        #         s[i,j] = (x[i,j] == x[j,i])
-        #         problem += s[i,j]
+        # symmetry constraint
+        s = {}
+        for i in range(N):
+            for j in range(N):
+                s[i,j] = (x[i,j] == x[j,i])
+                problem += s[i,j]
         
         # transitivity constraints
         t = {}
         for i in range(N):
-            for j in range(i+1, N):
-                for k in range(j+1, N):
+            for j in range(N):
+                for k in range(N):
                     t[i,j,k] = (1-x[i,j])+(1-x[j,k]) >= (1-x[i,k])
                     problem += t[i,j,k]
         
