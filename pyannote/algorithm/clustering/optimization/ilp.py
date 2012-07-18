@@ -161,7 +161,7 @@ class IntegerLinearProgramming(object):
         x, problem = self._get_ilp(P, alpha=alpha)
         # status = problem.solve(pulp.GLPK())
         # status = problem.solve(pulp.COIN())
-        status = problem.solve(pulp.GUROBI())
+        status = problem.solve(pulp.GUROBI(msg=0))
         
         # read results as a graph
         # one node per label, edges between same-cluster labels
