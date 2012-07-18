@@ -1,13 +1,19 @@
 
 import pulp
+try:
+    import gurobipy as grb
+except Exception, e:
+    pass
+
 import numpy as np
 import networkx as nx
 import pyfusion.normalization.bayes
 
 class IntegerLinearProgramming(object):
     
-    def __init__(self, **kwargs):
+    def __init__(self, gurobi=True, **kwargs):
         super(IntegerLinearProgramming, self).__init__()
+        self.gurobi = gurobi
         self.mmx_setup(**kwargs)
     
     def _get_y(self, annotation):
@@ -113,31 +119,52 @@ class IntegerLinearProgramming(object):
         if alpha is None:
             alpha = 1./N
         
-        # PuLP problem
-        problem = pulp.LpProblem("ipl", pulp.LpMaximize)
+        if self.gurobi:
+            # Gurobi model
+            model = grb.Model("ipl")
+        else:
+            # PuLP problem
+            problem = pulp.LpProblem("ipl", pulp.LpMaximize)
         
         # model variables
         # xij = 1 <==> i & j in the same cluster
         x = {}
         for i in range(N):
             for j in range(N):
-                x[i, j] = pulp.LpVariable("x_%02d_%02d" % (i,j),
-                                          lowBound = 0, upBound = 1,
-                                          cat = pulp.LpInteger)
+                name = "x_%d_%d" % (i,j)
+                if self.gurobi:
+                    x[i, j] = model.addVar(vtype=grb.GRB.BINARY, name=name)
+                else:
+                    x[i, j] = pulp.LpVariable(name, lowBound=0, upBound=1,
+                                              cat=pulp.LpInteger)
+        
+        if self.gurobi:
+            model.update()
+        
         # objective
         # maximize intra-cluster probability 
         # minimize inter-cluster probability
         h1 = np.maximum(-1e10, np.log(P))
         h0 = np.maximum(-1e10, np.log(1 - P))
-        problem += pulp.lpSum([alpha * h1[i,j] * x[i,j] + h0[i, j] * (1-x[i,j])
-                               for i in range(N) for j in range(i+1, N)])
+        
+        if self.gurobi:
+           objecive = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
+                                   for i in range(N) for j in range(i+1, N)])
+           model.setObjective(objecive, grb.GRB.MAXIMIZE)
+        else:
+            problem += pulp.lpSum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
+                                   for i in range(N) for j in range(i+1, N)])
         
         # symmetry constraint
         s = {}
         for i in range(N):
             for j in range(N):
                 s[i,j] = (x[i,j] == x[j,i])
-                problem += s[i,j]
+                if self.gurobi:
+                    name = "s_%d_%d" % (i,j)
+                    model.addConstr(s[i,j], name)
+                else:
+                    problem += s[i,j]
         
         # transitivity constraints
         t = {}
@@ -145,10 +172,17 @@ class IntegerLinearProgramming(object):
             for j in range(N):
                 for k in range(N):
                     t[i,j,k] = (1-x[i,j])+(1-x[j,k]) >= (1-x[i,k])
-                    problem += t[i,j,k]
+                    if self.gurobi:
+                        name = "t_%d_%d_%d" % (i, j, k)
+                        model.addConstr(t[i,j,k], name)
+                    else:
+                        problem += t[i,j,k]
         
         # return x, m
-        return x, problem
+        if self.gurobi:
+            return x, model
+        else:
+            return x, problem
         
     def __call__(self, annotation, feature, alpha=None):
         
@@ -158,10 +192,17 @@ class IntegerLinearProgramming(object):
         P = self.posterior.transform(X.reshape((-1, 1))).reshape((N, N))
         
         # optimization
-        x, problem = self._get_ilp(P, alpha=alpha)
+        if self.gurobi:
+            x, model = self._get_ilp(P, alpha=alpha)
+        else:
+            x, problem = self._get_ilp(P, alpha=alpha)
         # status = problem.solve(pulp.GLPK())
         # status = problem.solve(pulp.COIN())
-        status = problem.solve(pulp.GUROBI(msg=0))
+        if self.gurobi:
+            model.setParam('OutputFlag', False)
+            model.optimize()
+        else:
+            status = problem.solve(pulp.GUROBI(msg=0))
         
         # read results as a graph
         # one node per label, edges between same-cluster labels
@@ -171,7 +212,11 @@ class IntegerLinearProgramming(object):
             for j, _ in enumerate(annotation.iterlabels()):
                 if j <= i:
                     continue
-                if pulp.value(x[i, j]):
+                if self.gurobi:
+                    value = x[i,j].x
+                else:
+                    value = pulp.value(x[i,j])
+                if value:
                     g.add_edge(i, j)
         
         # find clusters (connected components in graph)
