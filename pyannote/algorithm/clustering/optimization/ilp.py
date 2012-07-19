@@ -131,9 +131,9 @@ class IntegerLinearProgramming(object):
         h1 = np.maximum(-1e10, np.log(P))
         h0 = np.maximum(-1e10, np.log(1 - P))
         
-       objecive = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
+        objective = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
                                for i in range(N) for j in range(i+1, N)])
-       model.setObjective(objecive, grb.GRB.MAXIMIZE)
+        model.setObjective(objective, grb.GRB.MAXIMIZE)
         
         # symmetry constraint
         s = {}
