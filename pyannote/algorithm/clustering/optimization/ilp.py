@@ -140,7 +140,42 @@ def io_log_prob(P, alpha):
     clusters = nx.connected_components(g)
     
     return clusters
+
+def q_prob(P):
     
+    N, N = P.shape
+    
+    # build generic clustering problem
+    # with symmetry & transitivity constraints
+    model, x = generic_clustering_problem(N, "q_prob")
+    
+    # objective
+    objective = modularity_objective(P, x)
+    model.setObjective(objective, grb.GRB.MAXIMIZE)
+    
+    # quietly optimize
+    # model.setParam('OutputFlag', False)
+    model.optimize()
+    
+    # read results as a graph
+    # one node per label, edges between same-cluster labels
+    g = nx.Graph()
+    for i in range(N):
+        g.add_node(i)
+        for j in range(N):
+            if j <= i:
+                continue
+            value = x[i,j].x
+            if value:
+                g.add_edge(i, j)
+    
+    # find clusters (connected components in graph)
+    clusters = nx.connected_components(g)
+    
+    return clusters
+
+
+
 class IntegerLinearProgramming(object):
     
     def __init__(self, **kwargs):
@@ -240,7 +275,8 @@ class IntegerLinearProgramming(object):
         P = self.posterior.transform(X.reshape((-1, 1))).reshape((N, N))
         
         # optimization
-        clusters = io_log_prob(P, alpha)
+        clusters = q_prob(P)
+        # clusters = io_log_prob(P, alpha)
         
         translation = {}
         for c, cluster in enumerate(clusters):
