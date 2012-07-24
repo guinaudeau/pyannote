@@ -82,6 +82,32 @@ def io_prob_objective(P, alpha, x):
     return objective
 
 
+def modularity_objective(P, x):
+    """
+    
+    Parameters
+    ----------
+    
+    
+    """
+    N, N = P.shape
+    
+    # total weights in graph
+    m = np.sum(P)
+    
+    # node degree (total weight of {in|out}going edges)
+    kin = np.sum(P, axis=0)[:, np.newaxis]
+    kout = np.sum(P, axis=1)[:, np.newaxis]
+    
+    # modularity matrix
+    Q = (P - kout*kin.T/m) / m
+    
+    # objective
+    objective = grb.quicksum([Q[i, j] * x[i, j] 
+                              for i in range(N) for j in range(N)])
+    
+    return objective
+
 def io_log_prob(P, alpha):
     
     N, N = P.shape
