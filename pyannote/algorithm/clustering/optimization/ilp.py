@@ -3,7 +3,6 @@ import numpy as np
 import networkx as nx
 import pyfusion.normalization.bayes
 
-
 def io_log_prob(P, alpha):
     N, N = P.shape
     
@@ -27,6 +26,7 @@ def io_log_prob(P, alpha):
     model.setObjective(objective, grb.GRB.MAXIMIZE)
     
     # symmetry constraint
+    # i-j ==> j-i
     s = {}
     for i in range(N):
         for j in range(N):
@@ -35,6 +35,7 @@ def io_log_prob(P, alpha):
             model.addConstr(s[i,j], name)
     
     # transitivity constraints
+    # i-j and j-k ==> i-k
     t = {}
     for i in range(N):
         for j in range(N):
@@ -43,7 +44,26 @@ def io_log_prob(P, alpha):
                 name = "t_%d_%d_%d" % (i, j, k)
                 model.addConstr(t[i,j,k], name)
     
-    return x, model
+    # quietly optimize
+    model.setParam('OutputFlag', False)
+    model.optimize()
+    
+    # read results as a graph
+    # one node per label, edges between same-cluster labels
+    g = nx.Graph()
+    for i, _ in enumerate(annotation.iterlabels()):
+        g.add_node(i)
+        for j, _ in enumerate(annotation.iterlabels()):
+            if j <= i:
+                continue
+            value = x[i,j].x
+            if value:
+                g.add_edge(i, j)
+    
+    # find clusters (connected components in graph)
+    clusters = nx.connected_components(g)
+    
+    return clusters
     
 class IntegerLinearProgramming(object):
     
@@ -144,24 +164,8 @@ class IntegerLinearProgramming(object):
         P = self.posterior.transform(X.reshape((-1, 1))).reshape((N, N))
         
         # optimization
-        x, model = io_log_prob(P, alpha)
-        model.setParam('OutputFlag', False)
-        model.optimize()
+        clusters = io_log_prob(P, alpha)
         
-        # read results as a graph
-        # one node per label, edges between same-cluster labels
-        g = nx.Graph()
-        for i, _ in enumerate(annotation.iterlabels()):
-            g.add_node(i)
-            for j, _ in enumerate(annotation.iterlabels()):
-                if j <= i:
-                    continue
-                value = x[i,j].x
-                if value:
-                    g.add_edge(i, j)
-        
-        # find clusters (connected components in graph)
-        clusters = nx.connected_components(g)
         translation = {}
         for c, cluster in enumerate(clusters):
             for i in cluster:
