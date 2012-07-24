@@ -3,29 +3,41 @@ import numpy as np
 import networkx as nx
 import pyfusion.normalization.bayes
 
-def io_log_prob(P, alpha):
-    N, N = P.shape
+
+
+def generic_clustering_problem(N, problem_name):
+    """
     
-    # Gurobi model
-    model = grb.Model("io_log_prob")
+    Parameters
+    ----------
+    N : int
+        Number of clustered items
+    problem_name : str
+        Problem identifier
     
+    Returns
+    -------
+    model : gurobipy.Model
+        Gurobi model with no objective yet.
+    x : dict
+        Gurobi variables
+    """
+    
+    # create empty model
+    model = grb.Model(problem_name)
+    
+    # add (to-be-optimized) variables
+    # xij = 1 means i-j (i & j in the same cluster)
     x = {}
     for i in range(N):
         for j in range(N):
             name = "x_%d_%d" % (i,j)
             x[i, j] = model.addVar(vtype=grb.GRB.BINARY, name=name)
     
+    # update model with new (to-be-optimized) variables
     model.update()
     
-    # objective
-    h1 = np.maximum(-1e10, np.log(P))
-    h0 = np.maximum(-1e10, np.log(1 - P))
-    
-    objective = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
-                           for i in range(N) for j in range(i+1, N)])
-    model.setObjective(objective, grb.GRB.MAXIMIZE)
-    
-    # symmetry constraint
+    # add symmetry constraint
     # i-j ==> j-i
     s = {}
     for i in range(N):
@@ -34,7 +46,7 @@ def io_log_prob(P, alpha):
             name = "s_%d_%d" % (i,j)
             model.addConstr(s[i,j], name)
     
-    # transitivity constraints
+    # add transitivity constraints
     # i-j and j-k ==> i-k
     t = {}
     for i in range(N):
@@ -44,16 +56,34 @@ def io_log_prob(P, alpha):
                 name = "t_%d_%d_%d" % (i, j, k)
                 model.addConstr(t[i,j,k], name)
     
+    # return the model & its variables
+    return model, x
+
+def io_log_prob(P, alpha):
+    
+    N, N = P.shape
+    
+    # build generic clustering problem
+    # with symmetry & transitivity constraints
+    model, x = generic_clustering_problem(N, "io_log_prob")
+    
+    # objective
+    h1 = np.maximum(-1e10, np.log(P))
+    h0 = np.maximum(-1e10, np.log(1 - P))
+    objective = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
+                           for i in range(N) for j in range(i+1, N)])
+    model.setObjective(objective, grb.GRB.MAXIMIZE)
+    
     # quietly optimize
-    model.setParam('OutputFlag', False)
+    # model.setParam('OutputFlag', False)
     model.optimize()
     
     # read results as a graph
     # one node per label, edges between same-cluster labels
     g = nx.Graph()
-    for i, _ in enumerate(annotation.iterlabels()):
+    for i in range(N):
         g.add_node(i)
-        for j, _ in enumerate(annotation.iterlabels()):
+        for j in range(N):
             if j <= i:
                 continue
             value = x[i,j].x
