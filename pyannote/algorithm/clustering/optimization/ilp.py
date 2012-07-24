@@ -59,6 +59,29 @@ def generic_clustering_problem(N, problem_name):
     # return the model & its variables
     return model, x
 
+def io_log_prob_objective(P, alpha, x):
+    
+    N, N = P.shape
+    
+    # objective
+    h1 = np.maximum(-1e10, np.log(P))
+    h0 = np.maximum(-1e10, np.log(1 - P))
+    objective = grb.quicksum([alpha     * h1[i,j] * x[i,j] +
+                              (1-alpha) * h0[i,j] * (1-x[i,j])
+                             for i in range(N) for j in range(i+1, N)])
+    return objective
+
+def io_prob_objective(P, alpha, x):
+    
+    N, N = P.shape
+    
+    # objective
+    objective = grb.quicksum([alpha     * P[i,j]     * x[i,j] +
+                              (1-alpha) * (1-P[i,j]) * (1-x[i,j])
+                              for i in range(N) for j in range(i+1, N)])
+    return objective
+
+
 def io_log_prob(P, alpha):
     
     N, N = P.shape
@@ -68,10 +91,7 @@ def io_log_prob(P, alpha):
     model, x = generic_clustering_problem(N, "io_log_prob")
     
     # objective
-    h1 = np.maximum(-1e10, np.log(P))
-    h0 = np.maximum(-1e10, np.log(1 - P))
-    objective = grb.quicksum([alpha*h1[i,j]*x[i,j]+h0[i,j]*(1-x[i,j])
-                           for i in range(N) for j in range(i+1, N)])
+    objective = io_log_prob_objective(P, alpha, x)
     model.setObjective(objective, grb.GRB.MAXIMIZE)
     
     # quietly optimize
