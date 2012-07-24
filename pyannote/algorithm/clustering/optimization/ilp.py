@@ -65,6 +65,7 @@ def generic_clustering_problem(N, problem_name):
     
     # add transitivity constraints
     # i-j and j-k ==> i-k
+    # (also implies i-j and j|k ==> i|k)
     t = {}
     for i in range(N):
         for j in range(N):
@@ -141,7 +142,25 @@ def io_log_prob(P, alpha):
     # model.setParam('OutputFlag', False)
     model.optimize()
     
-    return clusters_from_x(N, x)
+    # return clusters_from_x(N, x)
+    
+    # read results as a graph
+    # one node per label, edges between same-cluster labels
+    g = nx.Graph()
+    for i in range(N):
+        g.add_node(i)
+        for j in range(N):
+            if j <= i:
+                continue
+            value = x[i,j].x
+            if value:
+                g.add_edge(i, j)
+    
+    # find clusters (connected components in graph)
+    clusters = nx.connected_components(g)
+    
+    return clusters
+    
 
 def io_log_prob(P, alpha):
     
