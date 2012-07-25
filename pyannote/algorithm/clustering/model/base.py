@@ -99,6 +99,97 @@ class BaseModelMixin(object):
                                   'mmx_merge()' % name)
 
 
+import pyfusion.normalization.bayes
+import numpy as np
+class PosteriorMixin(object):
+    
+    def _get_X(self, annotation, feature):
+        
+        # one model per label
+        models = {label : self.mmx_fit(label, annotation=annotation,
+                                              feature=feature)
+                  for label in annotation.labels()}
+        
+        # total number of tracks
+        N = len([_ for _ in annotation.iterlabels()])
+        
+        # similarity between tracks
+        X = np.empty((N, N), dtype=np.float32)
+        for i, (_, _, Li) in enumerate(annotation.iterlabels()):
+            for j, (_, _, Lj) in enumerate(annotation.iterlabels()):
+                if self.mmx_symmetric() and j > i:
+                    break
+                X[i, j] = self.mmx_compare(Li, Lj, models=models)
+                if self.mmx_symmetric():
+                    X[j, i] = X[i, j]
+        
+        return X
+    
+    def _get_y(self, annotation):
+        
+        # total number of tracks
+        N = len([_ for _ in annotation.iterlabels()])
+        
+        # intialize clustering status as -1 (unknown)
+        y = -np.ones((N,N), dtype=np.int8)
+        
+        for i, (Si, _, Li) in enumerate(annotation.iterlabels()):
+            
+            # if more than one track -- don't know which is which
+            if len(annotation[Si, :]) > 1:
+                y[i, :] = -1
+                y[:, i] = -1
+            
+            for j, (Sj, _, Lj) in enumerate(annotation.iterlabels()):
+                if j > i:
+                    break
+                if len(annotation[Sj, :]) > 1:
+                    y[:, j] = -1
+                    y[j, :] = -1
+                    continue
+                y[i, j] = (Li == Lj)
+                y[j, i] = y[i, j]
+        
+        return y
+        
+    def fit_posterior(self, annotations, features, **kwargs):
+        """
+        Train posterior
+        
+        Parameters
+        ----------
+        annotations : list of :class:`Annotation`
+        features : list of :class:`Feature`
+        
+        """
+        
+        self.posterior = pyfusion.normalization.bayes.Posterior(pos_label=1,
+                                                                neg_label=0,
+                                                                parallel=False)
+                                                                
+        X = np.concatenate([self._get_X(annotation, features[a]).reshape((-1,1))
+                            for a, annotation in enumerate(annotations)])
+        y = np.concatenate([self._get_y(annotation).reshape((-1, 1)) 
+                            for a, annotation in enumerate(annotations)])
+        self.posterior.fit(X, y=y)
+    
+    def transform_posterior(self, S):
+        """
+        
+        Parameters
+        ----------
+        S : 
+            Similarity matrix
+        
+        Returns
+        -------
+        P : 
+            Probability matrix
+        
+        """
+        
+        return self.posterior.transform(S.reshape((-1, 1))).reshape(S.shape)
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
