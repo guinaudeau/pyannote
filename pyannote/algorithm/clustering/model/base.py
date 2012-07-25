@@ -18,6 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 class BaseModelMixin(object):
     """
     Clustering model mixin
@@ -79,6 +81,50 @@ class BaseModelMixin(object):
         raise NotImplementedError('%s sub-class must implement method'
                                   'mmx_compare()' % name)
     
+    def mmx_similarity_matrix(self, labels, **kwargs):
+        """
+        Compute label similarity matrix
+        
+        Parameters
+        ----------
+        labels : list of labels
+        
+        Returns
+        -------
+        X : array (num_labels, num_labels)
+            Label similarity matrix
+        
+        """
+        
+        # number of labels
+        N = len(labels)
+        
+        # one model per label
+        models = {label: self.mmx_fit(label, **kwargs) for label in labels}
+        
+        # label similarity matrix
+        X = np.empty((N, N))
+        
+        # loop on all pairs of labels
+        for i, label in enumerate(labels):
+            for j, other_label in enumerate(labels):
+                
+                # if similarity is symmetric, no need to compute Xji
+                if self.mmx_symmetric() and j > i:
+                    break
+                
+                # compute Xij
+                X[i, j] = self.mmx_compare(label, other_label, 
+                                           models=models, **kwargs)
+                
+                # if similarity is symmetric, propagate Xij to Xji
+                if self.mmx_symmetric():
+                    X[j, i] = X[i, j]
+        
+        # return label similarity matrix
+        return X
+    
+    
     def mmx_merge(self, labels, **kwargs):
         """
         Merge models
@@ -103,7 +149,16 @@ import pyfusion.normalization.bayes
 import numpy as np
 class PosteriorMixin(object):
     
+    # def _get_X(self, input_annotation, feature):
+    #     
+    #     # similarity between labels
+    #     X = self.mmx_similarity_matrix(input_annotation.labels(),
+    #                                    annotation=input_annotation,
+    #                                    feature=feature)
+    
     def _get_X(self, annotation, feature):
+        
+        
         
         # one model per label
         models = {label : self.mmx_fit(label, annotation=annotation,

@@ -41,7 +41,7 @@ class GaussianMMx(BaseModelMixin):
         """
         self.mmx_covariance_type = covariance_type
     
-    def mmx_fit(self, label, annotation=None, feature=None):
+    def mmx_fit(self, label, annotation=None, feature=None, **kwargs):
         """Fit one gaussian to label features
         
         Parameters
@@ -70,7 +70,7 @@ class GaussianMMx(BaseModelMixin):
         # fit gaussian and return it
         return Gaussian(covariance_type=self.mmx_covariance_type).fit(data)
     
-    def mmx_merge(self, labels, models=None):
+    def mmx_merge(self, labels, models=None, **kwargs):
         """Merge Gaussians
         
         Merge multiple labels into one.
@@ -121,7 +121,7 @@ class BICMMx(GaussianMMx):
     def mmx_symmetric(self):
         return True
     
-    def mmx_compare(self, label, other_label, models=None):
+    def mmx_compare(self, label, other_label, models=None, **kwargs):
         """Compute dBIC
         
         Parameters
