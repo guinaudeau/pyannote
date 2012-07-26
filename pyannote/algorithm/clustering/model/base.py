@@ -155,6 +155,7 @@ class PosteriorMixin(object):
         X = self.mmx_similarity_matrix(input_annotation.labels(),
                                        annotation=input_annotation,
                                        feature=feature)
+        return X
     
     # def _get_X(self, annotation, feature):
     #     
