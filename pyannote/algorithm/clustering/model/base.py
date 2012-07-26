@@ -148,6 +148,7 @@ class BaseModelMixin(object):
 import pyfusion.normalization.bayes
 import numpy as np
 from pyannote.algorithm.mapping import ConservativeDirectMapper
+import networkx as nx
 class PosteriorMixin(object):
     
     def _get_X(self, input_annotation, feature):
