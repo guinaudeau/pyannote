@@ -54,6 +54,24 @@ def get_show_name(uri):
     show = tokens[1]
     return channel + '_' + show
 
+def is_unknown(identifier):
+    """
+    
+    Parameters
+    ----------
+    identifier : str
+        Person identifier
+        
+    Returns
+    -------
+    unknown : bool
+        True if `identifier` is unknow ('Inconnu_XXX' or 'speakerXXX')
+    
+    """
+    return identifier[:8] == 'Inconnu_' or identifier[:7] == 'speaker'
+
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
