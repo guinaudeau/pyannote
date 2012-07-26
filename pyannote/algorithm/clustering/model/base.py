@@ -217,7 +217,7 @@ class PosteriorMixin(object):
             # we could find a "conservative" mapping
             # We can't tell anything about "being in the same cluster"
             # for those labels with no match.
-            if not olabel:
+            if not olabel or not ilabels:
                 continue
             # Create one node per label for which 
             # a "conservative" mapping is found
