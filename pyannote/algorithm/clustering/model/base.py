@@ -217,11 +217,12 @@ class PosteriorMixin(object):
             # we could find a "conservative" mapping
             # We can't tell anything about "being in the same cluster"
             # for those labels with no match.
-            if olabel is None:
+            if not olabel:
                 continue
             # Create one node per label for which 
             # a "conservative" mapping is found
             # Add an edge between labels with the same mapping
+            ilabels = list(ilabels)
             label = ilabels[0]
             for other_label in ilabels:
                 g.add_edge(label2i[ilabels[0]], label2i[label])
