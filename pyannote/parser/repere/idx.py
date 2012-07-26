@@ -20,6 +20,7 @@
 
 import numpy as np
 from pyannote.base.segment import Segment
+import sys
 
 class IDXParser(object):
     
@@ -54,8 +55,16 @@ class IDXParser(object):
                   for idx in range(m+1, M)
                   if idx in self.__time and (idx-1) in self.__time]
         self.__delta = float(np.median(deltas))
-        for idx in range(m, M):
+        
+        # if idx is missing, fill in the gaps based on previous frame
+        for idx in range(m+1, M):
             if idx not in self.__time:
+                self.__time[idx] = self.__time[idx-1] + self.__delta
+        
+        for idx in range(m+1, M):
+            if abs(self.__time[idx] - self.__time[idx-1]) > 100 * self.__delta:
+                sys.stderr.write("Fixing aberrant timestamp for frame %d (%g --> %g)\n" % (idx, self.__time[idx], self.__time[idx-1] + self.__delta))
+                sys.stderr.flush()
                 self.__time[idx] = self.__time[idx-1] + self.__delta
         
         return self
