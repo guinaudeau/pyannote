@@ -52,6 +52,7 @@ class ILPClustering(PosteriorMixin):
         # create and set objective
         objective, direction = obj_IOlogP(x, P, self.alpha)
         model.setObjective(objective, direction)
+        model.setParam('OutputFlag', False)
         
         # optimize
         clusters = optimize(N, model, x)
