@@ -48,8 +48,22 @@ class XGTFParser(BaseAnnotationParser):
     def _parse_time(self, vpr):
         return self.__idx(int(vpr.getchildren()[0].get('value')))
     
+    def _parse_cartouche(self, vpr):
+        children = vpr.getchildren()
+        if children:
+            return vpr.getchildren()[0].get('value')
+        else:
+            return False
+    
     def _parse_written(self, vpr, alone=False):
+        """
         
+        Parameters
+        ----------
+        alone : bool
+            If True, only keep written names that are alone on their text line
+            If False (default), keep them all
+        """
         string = vpr.getchildren()[0].get('value')
         if not string:
             return []
@@ -99,9 +113,11 @@ class XGTFParser(BaseAnnotationParser):
             
             if element.get('name') in ['PERSONNE', 'TEXTE']:
                 
-                written_alone = set([])
                 written = set([])
+                written_alone = set([])
+                written_intro = set([])
                 head = set([])
+                cartouche = False
                 
                 for vpr in element.iterchildren():
                     
@@ -115,17 +131,29 @@ class XGTFParser(BaseAnnotationParser):
                         written = self._parse_written(vpr, alone=False)
                     elif attr_name == 'NOM':
                         head = self._parse_head(vpr)
+                    elif attr_name == 'CARTOUCHE':
+                        cartouche = self._parse_cartouche(vpr)
                 
+                if cartouche:
+                    written_intro = set(written)
+                    
                 element_segment = Segment(start=element_start, end=element_end)
                 
-                for modality, new_lbls in {'written (alone)' : written_alone,
-                                           'written' : written, 
-                                           'head' : head}.iteritems():
-                    for lbl in new_lbls:
-                        lbls = self(video, modality).get_labels(element_segment)
-                        if lbl not in lbls:
-                            self._add(element_segment, None, lbl, 
-                                      video, modality)
+                try:
+                    for modality, new_lbls in {'written (alone)': written_alone,
+                                               'written (intro)': written_intro,
+                                               'written': written, 
+                                               'head': head}.iteritems():
+                        for lbl in new_lbls:
+                            lbls = self(video, 
+                                        modality).get_labels(element_segment)
+                            if lbl not in lbls:
+                                self._add(element_segment, None, lbl, 
+                                          video, modality)
+                except Exception, e:
+                    print "Error @ %s %f %f" % (video, element_start,
+                                                element_end)
+                    raise e
         
         return self
 
