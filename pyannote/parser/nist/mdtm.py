@@ -50,15 +50,19 @@ class MDTMParser(BaseTextualAnnotationParser):
     
     def _append(self, annotation, f, video, modality):
         
-        if annotation.multitrack:
-            format = '%s 1 %%g %%g %s NA %%s %%s\n' % (video, modality)
-            for segment, track, label in annotation.iterlabels():
-                f.write(format % (segment.start, segment.duration, 
-                                  track, label))
-        else:
-            format = '%s 1 %%g %%g %s NA NA %%s\n' % (video, modality)
-            for segment, label in annotation.iterlabels():
-                f.write(format % (segment.start, segment.duration, label))
+        try:
+            if annotation.multitrack:
+                format = '%s 1 %%g %%g %s NA %%s %%s\n' % (video, modality)
+                for segment, track, label in annotation.iterlabels():
+                    f.write(format % (segment.start, segment.duration, 
+                                      track, label))
+            else:
+                format = '%s 1 %%g %%g %s NA NA %%s\n' % (video, modality)
+                for segment, label in annotation.iterlabels():
+                    f.write(format % (segment.start, segment.duration, label))
+        except Exception, e:
+            print "Error @ %s%s %s %s" % (video, segment, track, label)
+            raise e
         
 if __name__ == "__main__":
     import doctest
