@@ -911,7 +911,7 @@ class Timeline(object):
             else:
                 # Add new segment to the timeline coverage
                 coverage += new_segment
-                # Initialize new coerage segment as next segment
+                # Initialize new coverage segment as next segment
                 # (right after the gap)
                 new_segment = segment
         
