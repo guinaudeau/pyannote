@@ -25,7 +25,9 @@ setup(
                       'munkres >=1.0.5', 
                       'scikit-learn >=0.11',
                       'networkx >=1.6',
-                      'lxml >=2.3.4'],
+                      'lxml >=2.3.4',
+                      'prettytable >=0.6',
+                      'python-Levenshtein >=0.10.2'],
     classifiers=[ 
        "Development Status :: 4 - Beta", 
        "Intended Audience :: Science/Research", 
