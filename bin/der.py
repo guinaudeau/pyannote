@@ -62,6 +62,9 @@ argparser.add_argument('--completeness', action='store_true',
 argparser.add_argument('--no-overlap', action='store_true',
                        help='remove overlapping speech regions from evaluation')
 
+argparser.add_argument('--verbose', action='store_true',
+                       help='print diarization error details')
+
 # Actual argument parsing
 args = argparser.parse_args()
 
@@ -162,8 +165,14 @@ for uri in args.groundtruth.videos:
                                        mode='intersection')
         
         # compute DER
-        D = der[h](ref, hyp)
+        details = der[h](ref, hyp, detailed=True)
+        D = details[der[h].name]
         row.append(D)
+        
+        if args.verbose:
+            sys.stdout.write('%s\n' % uri)
+            sys.stdout.write('%s\n' % der[h]._pretty(details))
+            sys.stdout.flush()
         
         # compute purity
         if args.purity:
