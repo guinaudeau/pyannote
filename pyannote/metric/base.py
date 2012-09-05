@@ -82,9 +82,9 @@ class BaseMetric(object):
             
         Returns
         -------
-        value (if `detailed` is True) : float
+        value (if `detailed` is False) : float
             Metric value
-        components (if `detailed` is False) : dict
+        components (if `detailed` is True) : dict
             `components` updated with metric value
         """
         if accumulate:
@@ -115,9 +115,9 @@ class BaseMetric(object):
             
         Returns
         -------
-        value : float (if `detailed` is True)
+        value : float (if `detailed` is False)
             Metric value
-        components : dict (if `detailed` is False)
+        components : dict (if `detailed` is True)
             `components` updated with metric value
         
         """
