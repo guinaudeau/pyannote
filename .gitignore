@@ -4,3 +4,4 @@ dist/
 MANIFEST
 _debug_.py
 wip/
+*.DS_Store
