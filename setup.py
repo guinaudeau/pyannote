@@ -23,7 +23,7 @@ setup(
     install_requires=['numpy >=1.6.1', 
                       'scipy >=0.10.1',
                       'munkres >=1.0.5', 
-                      'scikit-learn >=0.11',
+                      'scikit-learn >=0.12',
                       'networkx >=1.6',
                       'lxml >=2.3.4',
                       'prettytable >=0.6',

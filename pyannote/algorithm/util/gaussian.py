@@ -92,9 +92,9 @@ class Gaussian(mixture.GMM):
             return self._covar
         
         # otherwise, we need to compute and store it before returning it
-        if self._covariance_type == 'full':
+        if self.covariance_type == 'full':
             self._covar = self.covars_[0]
-        elif self._covariance_type == 'diag':
+        elif self.covariance_type == 'diag':
             self._covar = np.diag(self.covars_[0])
         return self._covar
         
@@ -144,7 +144,7 @@ class Gaussian(mixture.GMM):
     
     def merge(self, other):
         
-        g = Gaussian(covariance_type=self._covariance_type)
+        g = Gaussian(covariance_type=self.covariance_type)
         
         # set number of samples
         n_samples = self.n_samples
@@ -168,9 +168,9 @@ class Gaussian(mixture.GMM):
                     - np.dot(new_means.T, new_means)
         
         d = new_covar.shape[0]
-        if g._covariance_type == 'full':
+        if g.covariance_type == 'full':
             g.covars_ = np.reshape(new_covar, (1, d, d))
-        elif g._covariance_type == 'diag':
+        elif g.covariance_type == 'diag':
             g.covars_ = np.reshape(np.diag(new_covar), (1, d))
         
         return g
