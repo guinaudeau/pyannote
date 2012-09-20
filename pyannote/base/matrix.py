@@ -456,8 +456,8 @@ class LabelMatrix(object):
         
         ilabels, jlabels = self.labels
         
-        len_i = max([len(label) for label in ilabels])
-        len_j = max(4, max([len(label) for label in jlabels]))
+        len_i = max([len(str(label)) for label in ilabels])
+        len_j = max(4, max([len(str(label)) for label in jlabels]))
         
         fmt_label_i = "%%%ds" % len_i 
         fmt_label_j = "%%%ds" % len_j
@@ -465,11 +465,11 @@ class LabelMatrix(object):
         
         string = fmt_label_i % " "
         string += " "
-        string += " ".join([fmt_label_j % j for j in jlabels])
+        string += " ".join([fmt_label_j % str(j) for j in jlabels])
         
         for i in ilabels:
             string += "\n"
-            string += fmt_label_i % i
+            string += fmt_label_i % str(i)
             string += " "
             string += " ".join([fmt_value % self[i, j] for j in jlabels])
         
