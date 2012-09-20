@@ -113,3 +113,45 @@ def optimize(N, model, x):
     
     return clusters
 
+
+def graph2gurobi(g):
+    
+    # create empty model
+    model = grb.Model('my Gurobi model')
+    
+    # model variables
+    x = {}
+    
+    for node, other_node, data in g.edges_iter(data=True):
+        
+        probability = data['probability']
+        
+        # one variable per pair of nodes
+        x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
+        x[other_node, node] = model.addVar(vtype=grb.GRB.BINARY)
+        
+        # symmetry constraints
+        model.addConstr(x[node, other_node] == x[other_node, node])
+        
+        # 0/1 probability constraints
+        if probability == 1:
+            # these 2 nodes must be in the same cluster
+            model.addConstr(x[node, other_node] == 1)
+        elif probability == 0:
+            # these 2 nodes must be in 2 different clusters
+            model.addConstr(x[node, other_node] == 0)
+    
+    # transitivity constraints
+    for n1 in g:
+        for n2 in g:
+            for n3 in g:
+                model.addConstr((1-x[n1, n2])+(1-x[n2, n3]) >= (1-x[n1, n3]))
+    
+    # update model
+    model.update()
+    
+    # return the model & its variables
+    return model, x
+    
+    
+    
