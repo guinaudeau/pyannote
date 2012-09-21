@@ -121,34 +121,45 @@ def graph2gurobi(g):
     
     # model variables
     x = {}
+
+    nodes = g.nodes()
+    N = len(nodes)
     
+    # one variable per pair of nodes
+    for n, node in enumerate(nodes):
+        for other_node in nodes[n+1:]:
+            x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
+            x[other_node, node] = model.addVar(vtype=grb.GRB.BINARY)
+
+    model.update()
+
+    # symmetry constraints
+    for n, node in enumerate(nodes):
+        for other_node in nodes[n+1:]:
+            model.addConstr(x[node, other_node] == x[other_node, node])
+
+    # 0/1 probability constraints
     for node, other_node, data in g.edges_iter(data=True):
-        
+        if node == other_node:
+            continue
+
         probability = data['probability']
         
-        # one variable per pair of nodes
-        x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
-        x[other_node, node] = model.addVar(vtype=grb.GRB.BINARY)
-        
-        # symmetry constraints
-        model.addConstr(x[node, other_node] == x[other_node, node])
-        
-        # 0/1 probability constraints
         if probability == 1:
             # these 2 nodes must be in the same cluster
             model.addConstr(x[node, other_node] == 1)
+
         elif probability == 0:
             # these 2 nodes must be in 2 different clusters
             model.addConstr(x[node, other_node] == 0)
     
     # transitivity constraints
-    for n1 in g:
-        for n2 in g:
-            for n3 in g:
+    for i1, n1 in enumerate(nodes):
+        for i2 in range(i1+1, N):
+            n2 = nodes[i2]
+            for i3 in range(i2+1, N):
+                n3 = nodes[i3]
                 model.addConstr((1-x[n1, n2])+(1-x[n2, n3]) >= (1-x[n1, n3]))
-    
-    # update model
-    model.update()
     
     # return the model & its variables
     return model, x
