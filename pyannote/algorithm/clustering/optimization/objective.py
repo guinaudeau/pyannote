@@ -172,6 +172,20 @@ def obj_IOP(x, P, alpha):
 #     return objective, grb.GRB.MAXIMIZE
 
 
+def obj_bigcluster(x, g):
+    
+    nodes = g.nodes()
+    objective = grb.quicksum([x[node, other_node] 
+                              for node in nodes for other_node in nodes])
+    return objective, grb.GRB.MAXIMIZE
+
+def obj_smallcluster(x, g):
+
+    nodes = g.nodes()
+    objective = grb.quicksum([x[node, other_node] 
+                              for node in nodes for other_node in nodes])
+    return objective, grb.GRB.MINIMIZE
+
 def obj_Q(x, g):
     """
     Maximize modularity
