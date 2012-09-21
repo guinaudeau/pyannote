@@ -443,8 +443,6 @@ class CoOccurrenceGraphGenerator(object):
             nA = len(a.get_labels(segment))
             nB = len(b.get_labels(segment))
             
-            print nA, nB
-            
             if self.P[nA, nB] <= 0.:
                 continue
                 
