@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import pyannote
+import sys
 from argparse import ArgumentParser
 
 argparser = ArgumentParser(description='A tool for evaluation of (speaker) diarization')
