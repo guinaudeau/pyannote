@@ -101,7 +101,7 @@ def obj_IOlogP(x, P, alpha):
     return objective, grb.GRB.MAXIMIZE
 
 
-def obj_IOP(x, P, alpha):
+def obj_IOP(x, g, alpha):
     """
     Get following objective:
     Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)
@@ -111,10 +111,8 @@ def obj_IOP(x, P, alpha):
     ----------
     x : dict
         Gurobi clustering variable x[i,j]
-    P : array-like (N, N)
-        pij in above formula.
-        It is the probability that i and j are in the same cluster
-        Assume that P is a symmetric matrix with values in range [0, 1].
+    g : nx.Graph
+    
     alpha : float
         Value of α in above formula
     
@@ -127,11 +125,17 @@ def obj_IOP(x, P, alpha):
     
     """
     
-    N,N = P.shape
+    nodes = g.nodes()
+    N = len(nodes)
     
-    objective = grb.quicksum([alpha*P[i,j]*x[i,j]+
-                              (1-alpha)*(1-P[i,j])*(1-x[i,j])
-                              for i in range(N) for j in range(i+1, N)])
+    P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight='probability'))
+    
+    objective = grb.quicksum([alpha * P[n,m]*x[node,other_node] +
+                              (1-alpha) * (1-P[n,m])*(1-x[node,other_node]) 
+                                  for n, node in enumerate(nodes) 
+                                  for m, other_node in enumerate(nodes)
+                                  if m > n and P[n,m] > 0])
+    
     return objective, grb.GRB.MAXIMIZE
 
 
@@ -157,7 +161,7 @@ def obj_smallcluster(x, g):
 
 def obj_Q(x, g, power=1):
     """
-    This objective tries to maximize graph modularity 
+    This objective tries to maximize graph modularity.
     
     Parameters
     ----------
