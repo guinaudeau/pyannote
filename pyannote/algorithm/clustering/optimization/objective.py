@@ -134,68 +134,38 @@ def obj_IOP(x, P, alpha):
                               for i in range(N) for j in range(i+1, N)])
     return objective, grb.GRB.MAXIMIZE
 
-# def obj_Q(x, P):
-#     """
-#     Maximize modularity
-#     
-#     Parameters
-#     ----------
-#     x : dict
-#         Gurobi clustering variable x[i,j]
-#     P : array-like (N, N)
-#         pij is the probability that i and j are in the same cluster
-#     
-#     Returns
-#     -------
-#     objective :
-#         Gurobi objective
-#     direction : {grb.GRB.MAXIMIZE, grb.GRB.MINIMIZE}
-#          Optimization direction (maximize or minimize objective)
-#     
-#     """
-#     
-#     N,N = P.shape
-#     
-#     # total weights in graph
-#     m = np.sum(P)
-#     
-#     # node degree (total weight of {in|out}going edges)
-#     kin = np.sum(P, axis=0)[:, np.newaxis]
-#     kout = np.sum(P, axis=1)[:, np.newaxis]
-#         
-#     # modularity matrix
-#     Q = (P - kout*kin.T/m) / m
-#     
-#     objective = grb.quicksum([Q[i,j] * x[i,j] 
-#                               for i in range(N) for j in range(N)])
-#     
-#     return objective, grb.GRB.MAXIMIZE
-
 
 def obj_bigcluster(x, g):
-    
+    """
+    This objective will tend to cluster everything togethe
+    as long as it does not break "do-not-merge (p=0)" constraints
+    """
     nodes = g.nodes()
     objective = grb.quicksum([x[node, other_node] 
                               for node in nodes for other_node in nodes])
     return objective, grb.GRB.MAXIMIZE
 
 def obj_smallcluster(x, g):
-
+    """
+    This objective will tend to create as many as cluster as possible
+    as long as it does not break "force merge (p=1)" constraints
+    """
     nodes = g.nodes()
     objective = grb.quicksum([x[node, other_node] 
                               for node in nodes for other_node in nodes])
     return objective, grb.GRB.MINIMIZE
 
-def obj_Q(x, g):
+def obj_Q(x, g, power=1):
     """
-    Maximize modularity
+    This objective tries to maximize graph modularity 
     
     Parameters
     ----------
     x : dict
         Gurobi clustering variable x[i,j]
     g : nx.Graph
-        
+    
+    power : int, optional
     
     Returns
     -------
@@ -210,6 +180,7 @@ def obj_Q(x, g):
     N = len(nodes)
     
     P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight='probability'))
+    P = P**power
     
     # total weights in graph
     m = np.sum(P)
