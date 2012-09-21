@@ -3,6 +3,7 @@
 
 import gurobipy as grb
 import numpy as np
+import networkx as nx
 
 # class BaseObjectiveMixin(object):
 #     
