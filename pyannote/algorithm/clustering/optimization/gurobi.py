@@ -164,5 +164,19 @@ def graph2gurobi(g):
     # return the model & its variables
     return model, x
     
+def gurobi2graph(model, x):
+    
+    g = nx.Graph()
+    
+    for (node, other_node), var in x.iteritems():
+        g.add_node(node)
+        g.add_node(other_node)
+        if var.x == 1.
+            g.add_edge(node, other_node)
+    
+    return g
+    
+    
+    
     
     
