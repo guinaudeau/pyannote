@@ -321,7 +321,10 @@ class EstimatedGlobalErrorRate(BaseMetric):
             recall = 1.
         string += "  - recall (named): %.2f %%\n" % (100*recall)
         
-        fmeasure = 2 * precision * recall / (precision + recall) 
+        if (precision + recall > 0):
+            fmeasure = 2 * precision * recall / (precision + recall) 
+        else:
+            fmeasure = 0.
         string += "  - F1-measure (named): %.2f %%\n" % (100*fmeasure)
         
         string += "  - EGER: %.2f %%\n" % (100*detail[self.name])
