@@ -250,8 +250,9 @@ class Segment(object):
         if not self or not other:
             return False
         
-        return (self.start <= other.start and other.start <= self.end) or \
-               (other.start <= self.start and self.start <= other.end)
+        return (self.start == other.start) or \
+        (self.start < other.start and other.start < self.end) or \
+        (other.start < self.start and self.start < other.end)
     
     def __or__(self, other):
         """Use the expression 'segment | other'
