@@ -537,3 +537,106 @@ def draw_repere_graph(g):
                            vmin=None, vmax=None, ax=None, 
                            linewidths=None, label=None)
 
+import pyannote
+from matplotlib import pylab
+from matplotlib import pyplot
+def draw_repere_graph(g, layout='spring'):
+    
+    nodes = g.nodes()
+    modalities = set([node.modality for node in nodes])
+    
+    extent = pyannote.Segment()
+    for node in nodes:
+        extent |= node.segment
+    
+    
+    if layout == 'spring':
+        pos = nx.spring_layout(g, weight='probability')
+    
+    if layout == 'timeline':
+        
+        y = {'speaker': 0.8,
+             'written': 0.6,
+             'head': 0.4,
+             'spoken': 0.2}
+        
+        pos = {}
+        for node in nodes:
+            x = (node.segment.middle - extent.start) / extent.duration
+            pos[node] = (x, y[node.modality])
+                     
+    # edges are black
+    any_edges = {(e,f): 1.*g[e][f]['probability'] 
+                 for (e,f) in g.edges() 
+                 if g[e][f]['probability'] not in [0, 1]}
+    
+    # p=0 probability edges are red
+    diff_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 0]
+    
+    # p=1 probability edges are green
+    same_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 1]
+    
+    for edge, probability in any_edges.iteritems():
+        nx.draw_networkx_edges(g, pos, edgelist=[edge], width=2, edge_color='k',
+                               style='solid', alpha=probability**10,
+                               edge_cmap=None, edge_vmin=None, edge_vmax=None,
+                               ax=None, arrows=True, label=None)
+    
+    nx.draw_networkx_edges(g, pos, edgelist=diff_edges, width=1,
+                           edge_color='r', style='solid', alpha=0.5,
+                           edge_cmap=None, edge_vmin=None, edge_vmax=None,
+                           ax=None, arrows=True, label=None)
+    
+    nx.draw_networkx_edges(g, pos, edgelist=same_edges, width=1,
+                           edge_color='g', style='solid', alpha=1,
+                           edge_cmap=None, edge_vmin=None, edge_vmax=None,
+                           ax=None, arrows=True, label=None)
+    
+    # one color per modality
+    colors = {'speaker': 'purple',
+              'written': 'orange',
+              'head': 'blue',
+              'spoken': 'yellow'}
+    
+    # draw long segments first (so that they're in the background)
+    sorted_nodes = sorted(nodes, 
+                          key=lambda node: node.segment.duration,
+                          reverse=True)
+    
+    for node in sorted_nodes:
+        x, y = pos[node]
+        r = .5 * node.segment.duration / extent.duration
+        color = colors[node.modality]
+        circ = pylab.Circle((x,y), radius=r, facecolor=color, edgecolor='black')
+        ax=pylab.gca()
+        ax.add_patch(circ)
+    
+
+def graph2annotation(g):
+    """
+    Convert sparsely-connected graph to annotations
+    
+    Returns
+    -------
+    annotations : dict
+        Dictionary of dictionaries of annotations
+        {uri: {modality: annotation}}
+    
+    """
+    annotation = {}
+    for c, cc in enumerate(nx.connected_components()):
+        for n, node in cc:
+            uri = node.uri
+            modality = node.modality
+            if uri not in annotation:
+                annotation[uri] = {}
+            if modality not in annotation[uri]:
+                annotation[uri][modality] = pyannote.Annotation(video=uri,
+                                                   modality=modality)
+            annotation[uri][modality][node.segment, node.track] = c
+    
+    for uri in annotation:
+        for modality in annotation[uri]:
+            annotation[uri][modality] = annotation[uri][modality].smooth()
+    
+    return annotation
