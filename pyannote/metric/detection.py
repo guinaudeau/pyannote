@@ -54,7 +54,7 @@ class DetectionErrorRate(BaseMetric):
         for segment in common_timeline:
         
             # segment duration
-            duration = abs(segment)
+            duration = segment.duration
         
             # set of IDs in reference segment
             r = R.ids(segment)
