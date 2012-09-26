@@ -689,7 +689,41 @@ class Timeline(object):
         # exists in timeline, False otherwise
         elif isinstance(included, Timeline):
             return all([segment in self for segment in included])
-
+    
+    
+    def intersects(self, intersected):
+        """Check whether timeline intersected other segment or timeline           
+        Parameters
+        ----------
+        intersected : Segment or Timeline
+            Other segment or timeline
+        
+        Returns
+        -------
+        intersects : bool
+            True if timeline intersected `intersected`, False otherwise
+        """
+        
+        if not isinstance(intersected, (Segment, Timeline)):
+            raise TypeError("unsupported type '%s'. Must be"
+                            "Segment or Timeline." % type(intersected).__name__)
+        
+        # when checking for timeline intersection
+        # this is done segment by segment
+        if isinstance(intersected, Timeline):
+            coverage = intersected.coverage()
+            for segment in coverage:
+                if self.intersects(segment):
+                    return True
+            return False
+        # returns True as soon as we found an intersecting segment
+        # False otherwise...
+        elif isinstance(intersected, Segment):
+            for segment in self:
+                if segment.intersects(intersected):
+                    return True
+            return False
+        
     def covers(self, covered, mode='strict'):
         """Coverage check
         
