@@ -262,3 +262,9 @@ for h, (path, _) in enumerate(args.hypothesis):
     table.add_row(row)
 
 print table
+
+for h, (path, _) in enumerate(args.hypothesis):
+    print path[length:]
+    print eger[h]
+    print
+
