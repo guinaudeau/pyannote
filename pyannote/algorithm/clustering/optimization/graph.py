@@ -624,7 +624,7 @@ def graph2annotation(g):
     
     """
     annotation = {}
-    for c, cc in enumerate(nx.connected_components()):
+    for c, cc in enumerate(nx.connected_components(g)):
         for n, node in cc:
             uri = node.uri
             modality = node.modality
