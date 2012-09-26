@@ -234,6 +234,25 @@ class Segment(object):
         end   = min(self.end,   other.end)
         return Segment(start=start, end=end)
     
+    def intersects(self, other):
+        """Check whether two segments intersect each other
+        
+        Parameters
+        ----------
+        other : Segment
+            Other segment
+        
+        Returns
+        -------
+        intersects : bool
+            True if segments intersect, False otherwise
+        """
+        if not self or not other:
+            return False
+        
+        return (self.start <= other.start and other.start <= self.end) or \
+               (other.start <= self.start and self.start <= other.end)
+    
     def __or__(self, other):
         """Use the expression 'segment | other'
         
