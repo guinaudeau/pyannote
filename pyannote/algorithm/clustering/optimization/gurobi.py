@@ -115,6 +115,24 @@ import pyfusion.normalization.bayes
 
 
 def graph2gurobi(g):
+    """
+    Create Gurobi clustering model from graph
+    
+    Parameters
+    ----------
+    g : nx.Graph
+        One node per track. Edge attribute 'probability' between nodes.
+        
+    Returns
+    -------
+    model : gurobipy.grb.Model
+        Gurobi clustering model
+    x : dict
+        Dictionary of gurobi.grb.Var
+        x[node, other_node] is a boolean variable indicating whether
+        node and other_node are in the same cluster
+    
+    """
     
     # create empty model
     model = grb.Model('my Gurobi model')
@@ -160,7 +178,25 @@ def graph2gurobi(g):
     return model, x
     
 def gurobi2graph(model, x):
+    """
+    Generate graph from optimized Gurobi model
     
+    Parameters
+    ----------
+    model : gurobipy.grp.Model
+        Optimized Gurobi model
+    x : dict
+        Dictionary of Gurobi variables
+        x[node, other_node] value equals 1 if node and other_node are in the
+        same cluster
+        
+    Returns
+    -------
+    g : nx.Graph
+        Sparsely connected graph with edges between nodes that are in the
+        same cluster
+    
+    """
     g = nx.Graph()
     
     for (node, other_node), var in x.iteritems():
