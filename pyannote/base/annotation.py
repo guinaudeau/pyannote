@@ -987,7 +987,7 @@ class Annotation(object):
                 return self.copy(segment_func=segment_func)
             elif mode == 'loose':
                 # keep segment if it intersects timeline coverage
-                segment_func = lambda s : s if (coverage & s) else False
+                segment_func = lambda s : s if coverage.intersects(s) else False
                 return self.copy(segment_func=segment_func)
             elif mode == 'intersection':
                 # keep segment if it intersects timeline coverage
