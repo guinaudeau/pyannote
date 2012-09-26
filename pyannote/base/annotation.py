@@ -40,7 +40,7 @@ class Unknown(object):
         cls.nextID += 1
         return cls.nextID
     
-    def __init__(self, format='Unknown%03d'):
+    def __init__(self, format='Unknown%05d'):
         super(Unknown, self).__init__()
         self.ID = Unknown.next()
         self.format = format
