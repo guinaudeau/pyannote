@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+
+# This file is part of PyAnnote.
+# 
+#     PyAnnote is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     PyAnnote is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
+
+from pyannote.base.segment import Segment
+from pyannote.base.annotation import Unknown
+from pyannote.parser.base import BaseAnnotationParser
+import cvhcistandards
+
+class FACETRACKSParser(BaseAnnotationParser):
+    
+    def __init__(self, load_ids=False):
+        """
+        KIT .facetracks file parser
+        
+        Parameters
+        ----------
+        load_ids : bool
+            When True, parser will try to load track ids from corresponding
+            facetracks.ids file.
+        
+        """
+        multitrack = True
+        super(FACETRACKSParser, self).__init__(multitrack)
+        self.load_ids = load_ids
+    
+    def read(self, path, video=None):
+        
+        modality = 'head'
+        
+        tracks, _, _ = cvhcistandards.read_tracks(path, 
+                                                  load_ids=self.load_ids)
+        for track, data in tracks.iteritems():
+            
+            segment = Segment(data['state'][0][1], data['state'][-1][1])
+            if not segment:
+                continue
+            
+            label = data['label']
+            if label is None:
+                label = Unknown()
+            
+            self._add(segment, int(track), label, video, modality)
+        
+        return self
+    
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
