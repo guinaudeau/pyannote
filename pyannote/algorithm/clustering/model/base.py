@@ -145,172 +145,209 @@ class BaseModelMixin(object):
                                   'mmx_merge()' % name)
 
 
-import pyfusion.normalization.bayes
-import numpy as np
-from pyannote.algorithm.mapping import ConservativeDirectMapper
 import networkx as nx
-class PosteriorMixin(object):
+from pyannote.base.matrix import LabelMatrix
+
+class BaseLabelSimilarityMatrixGenerator(object):
+    """Helper class for label similarity matrix generation
     
-    def _get_X(self, input_annotation, feature):
+    Just add a model mixin to it...
+    
+    """
+    
+    def getMx(self, baseMx):
         
-        # similarity between labels
-        X = self.mmx_similarity_matrix(input_annotation.labels(),
-                                       annotation=input_annotation,
-                                       feature=feature)
-        return X
+        # get all mixins subclass of baseMx
+        # but the class itself and the baseMx itself
+        cls = self.__class__
+        MX =  [Mx for Mx in cls.mro() 
+                  if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
+        
+        # build the class inheritance directed graph {subclass --> class}
+        G = nx.DiGraph()
+        for m, Mx in enumerate(MX):
+            G.add_node(Mx)
+            for otherMx in MX[m+1:]:
+                if issubclass(Mx, otherMx):
+                    G.add_edge(Mx, otherMx)
+                elif issubclass(otherMx, Mx):
+                    G.add_edge(otherMx, Mx)
+        
+        # only keep the deeper subclasses in each component
+        MX = []
+        for components in nx.connected_components(G.to_undirected()):
+            g = G.subgraph(components)
+            MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
+        
+        return MX
     
-    # def _get_X(self, annotation, feature):
-    #     
-    #     
-    #     
-    #     # one model per label
-    #     models = {label : self.mmx_fit(label, annotation=annotation,
-    #                                           feature=feature)
-    #               for label in annotation.labels()}
-    #     
-    #     # total number of tracks
-    #     N = len([_ for _ in annotation.iterlabels()])
-    #     
-    #     # similarity between tracks
-    #     X = np.empty((N, N), dtype=np.float32)
-    #     for i, (_, _, Li) in enumerate(annotation.iterlabels()):
-    #         for j, (_, _, Lj) in enumerate(annotation.iterlabels()):
-    #             if self.mmx_symmetric() and j > i:
-    #                 break
-    #             X[i, j] = self.mmx_compare(Li, Lj, models=models)
-    #             if self.mmx_symmetric():
-    #                 X[j, i] = X[i, j]
-    #     
-    #     return X
+    def __init__(self, **kwargs):
+        super(BaseLabelSimilarityMatrixGenerator, self).__init__()
+        
+        # setup model
+        MMx = self.getMx(BaseModelMixin)
+        if len(MMx) == 0:
+            raise ValueError('Missing model mixin (MMx).')
+        elif len(MMx) > 1:
+            raise ValueError('Too many model mixins (MMx): %s' % MMx)
+        self.mmx_setup(**kwargs)
     
-    
-    def _get_y(self, input_annotation, output_annotation):
+    def __call__(self, hypothesis, feature):
         """
+        Compute label similarity matrix
         
         Parameters
         ----------
-        input_annotation : :class:`Annotation`
-            Input of clustering algorithm
-        output_annotation : :class:`Annotation`
-            Groundtruth annotation
-        """
+        hypothesis : Annotation
         
-        # Maps input label I to output label O
-        # if and only if O is the only one cooccurring with I
-        mapper = ConservativeDirectMapper()
-        mapping = mapper(input_annotation, output_annotation)
-        
-        labels = input_annotation.labels()
-        N = len(labels)
-        label2i = {label:i for i, label in enumerate(labels)}
-        
-        # Initialize y with -1
-        # ... meaning that 
-        y = -np.ones((N, N), dtype=np.int8)
-        
-        # This graph will help us determine which labels should be 
-        # in the same cluster, which labels should be in 2 different
-        # clusters, and which label we don't know nothing about
-        g = nx.Graph()
-        for ilabels, olabel in mapping:
-            # The graph only contains labels for which
-            # we could find a "conservative" mapping
-            # We can't tell anything about "being in the same cluster"
-            # for those labels with no match.
-            if not olabel or not ilabels:
-                continue
-            # Create one node per label for which 
-            # a "conservative" mapping is found
-            # Add an edge between labels with the same mapping
-            ilabels = list(ilabels)
-            label = ilabels[0]
-            for other_label in ilabels:
-                g.add_edge(label2i[ilabels[0]], label2i[label])
-        
-        # find connected components
-        clusters = nx.connected_components(g)
-        
-        # Labels in the same cluster should be marked as such
-        # Labels in two different clusters should be marked as such
-        for c, cluster in enumerate(clusters):
-            for oc, other_cluster in enumerate(clusters):
-                status = 1 * (c == oc)
-                for i in cluster:
-                    for j in cluster:
-                        y[i, j] = status
-        
-        # All the other pairs of labels for which we are not sure of anything
-        # will remain with a value y = -1 
-        
-        # Note that we should be able to get more 0s in this matrix.
-        
-        return y
-    
-    # def _get_y(self, annotation):
-    #     
-    #     # total number of tracks
-    #     N = len([_ for _ in annotation.iterlabels()])
-    #     
-    #     # intialize clustering status as -1 (unknown)
-    #     y = -np.ones((N,N), dtype=np.int8)
-    #     
-    #     for i, (Si, _, Li) in enumerate(annotation.iterlabels()):
-    #         
-    #         # if more than one track -- don't know which is which
-    #         if len(annotation[Si, :]) > 1:
-    #             y[i, :] = -1
-    #             y[:, i] = -1
-    #         
-    #         for j, (Sj, _, Lj) in enumerate(annotation.iterlabels()):
-    #             if j > i:
-    #                 break
-    #             if len(annotation[Sj, :]) > 1:
-    #                 y[:, j] = -1
-    #                 y[j, :] = -1
-    #                 continue
-    #             y[i, j] = (Li == Lj)
-    #             y[j, i] = y[i, j]
-    #     
-    #     return y
-        
-    def fit_posterior(self, inputs, outputs, features, **kwargs):
-        """
-        Train posterior
-        
-        Parameters
-        ----------
-        inputs : list of :class:`Annotation`
-        outputs : list of :class:`Annotation`
-        features : list of :class:`Feature`
-        
-        """
-        
-        self.posterior = pyfusion.normalization.bayes.Posterior(pos_label=1,
-                                                                neg_label=0,
-                                                                parallel=False)
-        
-        X = np.concatenate([self._get_X(iAnn, features[a]).reshape((-1,1))
-                            for a, iAnn in enumerate(inputs)])
-        y = np.concatenate([self._get_y(iAnn, outputs[a]).reshape((-1, 1)) 
-                            for a, iAnn in enumerate(inputs)])
-        self.posterior.fit(X, y=y)
-    
-    def transform_posterior(self, S):
-        """
-        
-        Parameters
-        ----------
-        S : 
-            Similarity matrix
+        feature : Feature
         
         Returns
         -------
-        P : 
-            Probability matrix
+        matrix : LabelMatrix
+            Label similarity matrix, indexed with hypothesis labels.
         
         """
+        labels = hypothesis.labels()
+        M = self.mmx_similarity_matrix(labels, annotation=hypothesis,
+                                       feature=feature)
+        return LabelMatrix(ilabels=labels, jlabels=labels, Mij=M)
         
-        return self.posterior.transform(S.reshape((-1, 1))).reshape(S.shape)
+
+
+# import pyfusion.normalization.bayes
+# import numpy as np
+# from pyannote.algorithm.mapping import ConservativeDirectMapper
+# import networkx as nx
+# class PosteriorMixin(object):
+#     
+#     def _get_X(self, annotation, feature):
+#         """
+#         Get label similarity matrix
+#         
+#         Parameters
+#         ----------
+#         annotation : :class:`Annotation`
+#             Annotation for a given resource
+#             (e.g. an intermediate segmentation with one label per segment)
+#         feature : :class:`Feature`
+#             Features extracted from the resource described by `annotation`
+#         
+#         Returns
+#         -------
+#         matrix : (N, N) array-like
+#             Similarity matrix between `annotation` labels.
+#             (follows order provided by `annotation.labels()`)
+#         
+#         """
+#         
+#         # similarity between labels
+#         X = self.mmx_similarity_matrix(annotation.labels(),
+#                                        annotation=annotation,
+#                                        feature=feature)
+#         return X
+#     
+#     def _get_y(self, input_annotation, output_annotation):
+#         """
+#         
+#         Parameters
+#         ----------
+#         input_annotation : :class:`Annotation`
+#             Input of clustering algorithm
+#         output_annotation : :class:`Annotation`
+#             Groundtruth annotation
+#         """
+#         
+#         # Maps input label I to output label O
+#         # if and only if O is the only one cooccurring with I
+#         mapper = ConservativeDirectMapper()
+#         mapping = mapper(input_annotation, output_annotation)
+#         
+#         labels = input_annotation.labels()
+#         N = len(labels)
+#         label2i = {label:i for i, label in enumerate(labels)}
+#         
+#         # Initialize y with -1
+#         # ... meaning that 
+#         y = -np.ones((N, N), dtype=np.int8)
+#         
+#         # This graph will help us determine which labels should be 
+#         # in the same cluster, which labels should be in 2 different
+#         # clusters, and which label we don't know nothing about
+#         g = nx.Graph()
+#         for ilabels, olabel in mapping:
+#             # The graph only contains labels for which
+#             # we could find a "conservative" mapping
+#             # We can't tell anything about "being in the same cluster"
+#             # for those labels with no match.
+#             if not olabel or not ilabels:
+#                 continue
+#             # Create one node per label for which 
+#             # a "conservative" mapping is found
+#             # Add an edge between labels with the same mapping
+#             ilabels = list(ilabels)
+#             label = ilabels[0]
+#             for other_label in ilabels:
+#                 g.add_edge(label2i[ilabels[0]], label2i[label])
+#         
+#         # find connected components
+#         clusters = nx.connected_components(g)
+#         
+#         # Labels in the same cluster should be marked as such
+#         # Labels in two different clusters should be marked as such
+#         for c, cluster in enumerate(clusters):
+#             for oc, other_cluster in enumerate(clusters):
+#                 status = 1 * (c == oc)
+#                 for i in cluster:
+#                     for j in cluster:
+#                         y[i, j] = status
+#         
+#         # All the other pairs of labels for which we are not sure of anything
+#         # will remain with a value y = -1 
+#         
+#         # Note that we should be able to get more 0s in this matrix.
+#         
+#         return y
+#     
+#     
+#     def fit_posterior(self, inputs, outputs, features, **kwargs):
+#         """
+#         Train posterior
+#         
+#         Parameters
+#         ----------
+#         inputs : list of :class:`Annotation`
+#         outputs : list of :class:`Annotation`
+#         features : list of :class:`Feature`
+#         
+#         """
+#         
+#         self.posterior = pyfusion.normalization.bayes.Posterior(pos_label=1,
+#                                                                 neg_label=0,
+#                                                                 parallel=False)
+#         
+#         X = np.concatenate([self._get_X(iAnn, features[a]).reshape((-1,1))
+#                             for a, iAnn in enumerate(inputs)])
+#         y = np.concatenate([self._get_y(iAnn, outputs[a]).reshape((-1, 1)) 
+#                             for a, iAnn in enumerate(inputs)])
+#         self.posterior.fit(X, y=y)
+#     
+#     def transform_posterior(self, S):
+#         """
+#         
+#         Parameters
+#         ----------
+#         S : 
+#             Similarity matrix
+#         
+#         Returns
+#         -------
+#         P : 
+#             Probability matrix
+#         
+#         """
+#         
+#         return self.posterior.transform(S.reshape((-1, 1))).reshape(S.shape)
     
 if __name__ == "__main__":
     import doctest
