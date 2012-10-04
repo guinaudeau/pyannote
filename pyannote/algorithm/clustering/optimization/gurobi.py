@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import gurobipy as grb
+import sys
 import numpy as np
 import networkx as nx
-import pyfusion.normalization.bayes
+import gurobipy as grb
+from progressbar import ProgressBar, Percentage, Bar, ETA
+
+# import pyfusion.normalization.bayes
 
 # def new_clustering_model(N, problem_name=None):
 #     """
@@ -133,6 +136,9 @@ def graph2gurobi(g):
         node and other_node are in the same cluster
     
     """
+    pb = ProgressBar(widgets=[None, ' ', Percentage(), ' ', Bar(),' ', ETA()], 
+                     term_width=80, poll=1, 
+                     left_justify=True, fd=sys.stderr)
     
     # create empty model
     model = grb.Model('my Gurobi model')
@@ -144,19 +150,35 @@ def graph2gurobi(g):
     N = len(nodes)
     
     # one variable per pair of nodes
-    for node in nodes:
+    pb.widgets[0] = 'Variables'
+    pb.maxval = N
+    pb.start()
+    for n, node in enumerate(nodes):
+        pb.update(n+1)
         for other_node in nodes:
             x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
+    pb.finish()
     
     model.update()
-
+    
     # symmetry constraints
-    for node in nodes:
+    pb.widgets[0] = 'Symmetry constraints'
+    pb.maxval = N
+    pb.start()
+    for n, node in enumerate(nodes):
+        pb.update(n+1)
         for other_node in nodes:
             model.addConstr(x[node, other_node] == x[other_node, node])
+    pb.finish()
     
     # trivial (0/1) probability constraints
-    for node, other_node, data in g.edges_iter(data=True):
+    pb.widgets[0] = 'Hard constraints'
+    edges = [(e, f, d) for (e, f, d) in g.edges(data=True) 
+                       if d['probability'] in [0, 1]]
+    pb.maxval = len(edges)
+    pb.start()
+    for n, (node, other_node, data) in enumerate(edges):
+        pb.update(n+1)
         
         probability = data['probability']
         
@@ -167,12 +189,20 @@ def graph2gurobi(g):
         elif probability == 0:
             # these 2 nodes must be in 2 different clusters
             model.addConstr(x[node, other_node] == 0)
+            
+    pb.finish()
     
     # transitivity constraints
-    for n1 in nodes:
+    pb.widgets[0] = 'Transitivity constraints'
+    pb.maxval = N
+    pb.start()
+    for n, n1 in enumerate(nodes):
+        
         for n2 in nodes:
             for n3 in nodes:
                 model.addConstr((1-x[n1, n2]) + (1-x[n2, n3]) >= (1-x[n1, n3]))
+    
+    pb.finish()
     
     # return the model & its variables
     return model, x
