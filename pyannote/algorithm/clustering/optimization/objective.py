@@ -101,7 +101,7 @@ def obj_IOlogP(x, P, alpha):
     return objective, grb.GRB.MAXIMIZE
 
 
-def obj_IOP(x, g, alpha):
+def obj_IOP(x, g, alpha=0.5, weighted=False):
     """
     Get following objective:
     Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)
@@ -113,9 +113,10 @@ def obj_IOP(x, g, alpha):
         Gurobi clustering variable x[i,j]
     g : nx.Graph
     
-    alpha : float
+    alpha : float, optional
         Value of α in above formula
-    
+    weighted : bool
+        When True, objective function is weighted by track duration
     Returns
     -------
     objective :
@@ -130,8 +131,18 @@ def obj_IOP(x, g, alpha):
     
     P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight='probability'))
     
-    objective = grb.quicksum([alpha * P[n,m]*x[node,other_node] +
-                              (1-alpha) * (1-P[n,m])*(1-x[node,other_node]) 
+    W = np.ones(P.shape, dtype=float)
+    
+    if weighted:
+        for n, node in enumerate(nodes):
+            duration = node.segment.duration
+            for m, other_node in enumerate(nodes):
+                if m <= n:
+                    continue
+                W[n, m] = duration + other_node.segment.duration
+    
+    objective = grb.quicksum([W[n,m] * (alpha * P[n,m]*x[node,other_node] +
+                             (1-alpha)*(1-P[n,m])*(1-x[node,other_node])) 
                                   for n, node in enumerate(nodes) 
                                   for m, other_node in enumerate(nodes)
                                   if m > n and P[n,m] > 0])
