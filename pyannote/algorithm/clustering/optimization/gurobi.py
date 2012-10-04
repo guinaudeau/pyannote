@@ -197,7 +197,7 @@ def graph2gurobi(g):
     pb.maxval = N
     pb.start()
     for n, n1 in enumerate(nodes):
-        
+        pb.update(n+1)
         for n2 in nodes:
             for n3 in nodes:
                 model.addConstr((1-x[n1, n2]) + (1-x[n2, n3]) >= (1-x[n1, n3]))
