@@ -160,14 +160,17 @@ def get_label_groundtruth(reference, hypothesis):
 
 
 
-class ProbabilityMaker(object):
+class LogisticProbabilityMaker(object):
     """
     Score to probability converter
     
     """
     def __init__(self, popt=None):
-        super(ProbabilityMaker, self).__init__()
+        super(LogisticProbabilityMaker, self).__init__()
         self.popt = popt
+    
+    def __call__(self, x):
+        return self.logistic(x, *(self.popt))
     
     def logistic(self, x, B, Q, M, v):
         y = 1. / (1. + Q *  np.exp(-B*(x-M)))**(1./v)
@@ -182,7 +185,7 @@ class ProbabilityMaker(object):
         ----------
         X : 
         
-        y : 
+        y : 1-d numpy array (filled with 0s, 1s and -1s)
         
         prior : float, optional
             Ratio of prior probability P_neg/P_pos. Defaults to #neg/#pos
@@ -267,7 +270,7 @@ class ProbabilityMaker(object):
         if plot:
             B, Q, M, v = self.popt
             print 'popt: B = %g | Q = %g | M = %g | v = %g' % (B, Q, M, v)
-            plt.plot(bins, self.logistic(bins, *(self.popt)), 'b', label='popt')
+            plt.plot(bins, self(bins), 'b', label='popt')
             plt.xlim(*xlim)
             plt.ylim(0, 1)
             loc = 'upper right' if mean_p < mean_n else 'upper left'
