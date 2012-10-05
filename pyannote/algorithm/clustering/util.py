@@ -158,6 +158,27 @@ def get_label_groundtruth(reference, hypothesis):
 
 
 
+class Binarizer(object):
+    def __init__(self, threshold=1., comparison="=="):
+        super(Binarizer, self).__init__()
+        self.threshold = threshold
+        self.comparison = comparison
+    
+    def __call__(self, x):
+        
+        if self.comparison == "==":
+            return 1. * (x == self.threshold)
+        elif self.comparison == "!=":
+            return 1. * (x != self.threshold)
+        elif self.comparison == "<":
+            return 1. * (x < self.threshold)
+        elif self.comparison == "<=":
+            return 1. * (x <= self.threshold)
+        elif self.comparison == ">":
+            return 1. * (x > self.threshold)
+        elif self.comparison == ">=":
+            return 1. * (x >= self.threshold)
+        
 
 
 class LogisticProbabilityMaker(object):
