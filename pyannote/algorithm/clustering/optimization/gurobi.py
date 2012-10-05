@@ -194,10 +194,11 @@ def graph2gurobi(g):
     
     # transitivity constraints
     pb.widgets[0] = 'Transitivity constraints'
-    pb.maxval = N
+    pb.maxval = int(N**3/6. - N**2/2. + N/3.)
     pb.start()
     for i1 in range(N):
-        pb.update(i1+1)
+        n = int(N**2*i1/2.- N*i1/2.-N*(i1**2/2.+i1/2.)+i1**3/6.+i1**2/2.+i1/3.)
+        pb.update(n)
         n1 = nodes[i1]
         for i2 in range(i1+1, N):
             n2 = nodes[i2]
