@@ -1,3 +1,5 @@
 softWrap = true
 showWrapColumn = true
 wrapColumn = 80
+fontSize = 16
+
