@@ -151,54 +151,86 @@ def graph2gurobi(g):
     
     # one variable per pair of nodes
     pb.widgets[0] = 'Variables'
-    pb.maxval = N
+    
+    # Σi|1..N ( Σj|i+1..N 1 )
+    pb.maxval = int(N*(N-1)/2.)
     pb.start()
-    for n, node in enumerate(nodes):
-        pb.update(n+1)
-        for other_node in nodes:
-            x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
+    for i1 in range(N):
+        # Σi|1..i1 ( Σj|i+1..N 1 )
+        n = int(N*i1 - i1**2/2. - i1/2.)
+        pb.update(n)
+        n1 = nodes[i1]
+        for i2 in range(i1+1, N):
+            n2 = nodes[i2]
+            x[n1, n2] = model.addVar(vtype=grb.GRB.BINARY)
+    
+    # for n, node in enumerate(nodes):
+    #     pb.update(n+1)
+    #     for other_node in nodes:
+    #         x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
     pb.finish()
     
     model.update()
     
-    # symmetry constraints
-    pb.widgets[0] = 'Symmetry constraints'
-    pb.maxval = N
-    pb.start()
-    for n, node in enumerate(nodes):
-        pb.update(n+1)
-        for other_node in nodes:
-            model.addConstr(x[node, other_node] == x[other_node, node])
-    pb.finish()
+    # # symmetry constraints
+    # pb.widgets[0] = 'Symmetry constraints'
+    # pb.maxval = N
+    # pb.start()
+    # for n, node in enumerate(nodes):
+    #     pb.update(n+1)
+    #     for other_node in nodes:
+    #         model.addConstr(x[node, other_node] == x[other_node, node])
+    # pb.finish()
     
     # trivial (0/1) probability constraints
     pb.widgets[0] = 'Hard constraints'
-    edges = [(e, f, d) for (e, f, d) in g.edges(data=True) 
-                       if d['probability'] in [0, 1]]
-    pb.maxval = len(edges)
+    # edges = [(e, f, d) for (e, f, d) in g.edges(data=True) 
+    #                    if d['probability'] in [0, 1]]
+    
+    # Σi|1..N ( Σj|i+1..N 1 )
+    pb.maxval = int(N*(N-1)/2.)
     pb.start()
-    for n, (node, other_node, data) in enumerate(edges):
-        pb.update(n+1)
-        
-        probability = data['probability']
-        
-        if probability == 1:
-            # these 2 nodes must be in the same cluster
-            model.addConstr(x[node, other_node] == 1)
-        
-        elif probability == 0:
-            # these 2 nodes must be in 2 different clusters
-            model.addConstr(x[node, other_node] == 0)
+    for i1 in range(N):
+        # Σi|1..i1 ( Σj|i+1..N 1 )
+        n = int(N*i1 - i1**2/2. - i1/2.)
+        pb.update(n)
+        n1 = nodes[i1]
+        for i2 in range(i1+1, N):
+            n2 = nodes[i2]
+            if not g.has_edge(n1, n2):
+                continue
+            probability = g[n1][n2]['probability']
+            if probability == 1:
+                # these 2 nodes must be in the same cluster
+                model.addConstr(x[n1, n2] == 1)
+            elif probability == 0:
+                # these 2 nodes must be in 2 different clusters
+                model.addConstr(x[n1, n2] == 0)
+    
+    # for n, (node, other_node, data) in enumerate(edges):
+    #     pb.update(n+1)
+    #     
+    #     probability = data['probability']
+    #     
+    #     if probability == 1:
+    #         model.addConstr(x[node, other_node] == 1)
+    #     
+    #     elif probability == 0:
+    #         model.addConstr(x[node, other_node] == 0)
     
     pb.finish()
     
     # transitivity constraints
     pb.widgets[0] = 'Transitivity constraints'
+    
+    # Σi|1..N ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
     pb.maxval = int(N**3/6. - N**2/2. + N/3.)
     pb.start()
     for i1 in range(N):
+        # Σi|1..i1 ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
         n = int(N**2*i1/2.- N*i1/2.-N*(i1**2/2.+i1/2.)+i1**3/6.+i1**2/2.+i1/3.)
         pb.update(n)
+        
         n1 = nodes[i1]
         for i2 in range(i1+1, N):
             n2 = nodes[i2]
@@ -234,12 +266,10 @@ def gurobi2graph(model, x):
     
     """
     g = nx.Graph()
-    
-    for (node, other_node), var in x.iteritems():
-        g.add_node(node)
-        g.add_node(other_node)
+    for (n1, n2), var in x.iteritems():
+        g.add_node(n1)
+        g.add_node(n2)
         if var.x == 1.:
-            g.add_edge(node, other_node)
-    
+            g.add_edge(n1, n2)
     return g
 
