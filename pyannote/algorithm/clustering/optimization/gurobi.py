@@ -189,18 +189,23 @@ def graph2gurobi(g):
         elif probability == 0:
             # these 2 nodes must be in 2 different clusters
             model.addConstr(x[node, other_node] == 0)
-            
+    
     pb.finish()
     
     # transitivity constraints
     pb.widgets[0] = 'Transitivity constraints'
     pb.maxval = N
     pb.start()
-    for n, n1 in enumerate(nodes):
-        pb.update(n+1)
-        for n2 in nodes:
-            for n3 in nodes:
-                model.addConstr((1-x[n1, n2]) + (1-x[n2, n3]) >= (1-x[n1, n3]))
+    for i1 in range(N):
+        pb.update(i1+1)
+        n1 = nodes[i1]
+        for i2 in range(i1+1, N):
+            n2 = nodes[i2]
+            for i3 in range(i2+1, N):
+                n3 = nodes[i3]
+                model.addConstr(x[n2, n3] + x[n1, n3] - x[n1, n2] <= 1)
+                model.addConstr(x[n1, n2] + x[n1, n3] - x[n2, n3] <= 1)
+                model.addConstr(x[n1, n2] + x[n2, n3] - x[n1, n3] <= 1)
     
     pb.finish()
     
