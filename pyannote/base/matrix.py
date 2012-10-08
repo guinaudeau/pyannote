@@ -430,6 +430,20 @@ class LabelMatrix(object):
         C = self.copy()
         return C.__iadd__(other)
     
+    def max(self):
+        """Get matrix maximum value"""
+        if not self:
+            return np.nan
+        
+        return np.max(self.M)
+    
+    def min(self):
+        """Get matrix minimum value"""
+        if not self:
+            return np.nan
+        
+        return np.min(self.M)
+    
     def argmax(self, axis=None):
         
         # if matrix is empty, return empty dictionary
