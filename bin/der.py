@@ -26,13 +26,15 @@ argparser = ArgumentParser(description='A tool for evaluation of (speaker) diari
 argparser.add_argument('--version', action='version', 
                        version=('PyAnnote %s' % pyannote.__version__))
 
-from pyannote.parser import AnnotationParser, TimelineParser
+from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 def groundtruth_parser(path):
     return AnnotationParser().read(path)
 def hypothesis_parser(path):
     return (path, AnnotationParser().read(path))
 def uem_parser(path):
     return TimelineParser().read(path)
+def uris_parser(path):
+    return LSTParser().read(path)
 
 # First positional argument is groundtruth file
 # It is loaded at argument-parsing time by an instance of AnnotationParser
@@ -43,6 +45,11 @@ argparser.add_argument('groundtruth', type=groundtruth_parser,
 # They are loaded at argument-parsing time by an instance of AnnotationParser
 argparser.add_argument('hypothesis', nargs='+', type=hypothesis_parser,
                         help='path to automatic diarization')
+
+
+argparser.add_argument('--uris', type=uris_parser,
+                       help='list of URI to evaluate')
+
 
 # UEM file is loaded at argument-parsing time by an instance of TimelineParser
 argparser.add_argument('--uem', type=uem_parser, 
@@ -107,8 +114,14 @@ table = PrettyTable(header)
 table.float_format = '1.3'
 table.align[''] = 'l'
 
+# only evaluate selection of uris
+if args.uris:
+    uris = args.uris
+else:
+    uris = args.groundtruth.videos
+
 # process each URI, one after the other
-for uri in args.groundtruth.videos:
+for uri in uris:
     
     # read reference for current URI
     ref = args.groundtruth(uri)
