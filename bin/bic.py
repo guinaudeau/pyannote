@@ -26,6 +26,7 @@ from pyannote.parser import PLPParser, MDTMParser
 from pyannote.algorithm.clustering.agglomerative.bic import BICClustering
 from pyannote.algorithm.clustering.agglomerative.bic import BICRecombiner
 
+place_holders = ["%s", "[URI]"] 
 
 argparser = ArgumentParser(description='A tool for BIC clustering')
 argparser.add_argument('--version', action='version', 
@@ -43,8 +44,9 @@ def uem_parser(path):
 argparser.add_argument('input', type=input_parser, metavar='INPUT',
                        help='path to input segmentation file')
 
+help_msg = "path to PLP feature file. the following URI placeholders are supported: %s." % " or ".join(place_holders[1:])
 argparser.add_argument('plp', metavar='PLP', type=str, 
-                       help='path to PLP feature file')
+                       help=help_msg)
 
 # Next positional argument is output segmentation file
 # It is 'w'-opened at argument-parsing time
@@ -109,7 +111,9 @@ for u, uri in enumerate(args.input.videos):
         annotation = annotation(uem, mode='intersection')
     
     # PLP features
-    path = args.plp % uri
+    path = args.plp
+    for ph in place_holders:
+        path = path.replace(ph, uri)
     feature = PLPParser().read(path)
     
     # actual BIC clustering
