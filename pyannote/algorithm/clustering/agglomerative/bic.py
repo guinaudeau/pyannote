@@ -60,10 +60,10 @@ class BICRecombiner(BICClustering, ContiguousCMx):
     covariance_type : {'full', 'diag'}, optional
         Full or diagonal covariance matrix. Default is 'diag'.
     penalty_coef : float, optional
-        Coefficient for model size penalty. Default is 3.5.
+        Coefficient for model size penalty. Default is 1.
     tolerance : float, optional
         Temporal tolerance for notion of 'contiguous' segments, in seconds.
-        Default is 500ms.
+        Default is 1 second.
         
     Examples
     --------
@@ -74,7 +74,7 @@ class BICRecombiner(BICClustering, ContiguousCMx):
         >>> new_annotation = clustering(annotation, feature)
     
     """
-    def __init__(self, covariance_type='diag', penalty_coef=3.5, tolerance=0.5, 
+    def __init__(self, covariance_type='diag', penalty_coef=1., tolerance=1., 
                        **kwargs):
         super(BICRecombiner, self).__init__(covariance_type=covariance_type, 
                                             penalty_coef=penalty_coef,
