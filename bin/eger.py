@@ -76,7 +76,7 @@ table = PrettyTable(header)
 table.float_format = '1.3'
 table.align[''] = 'l'
 
-# 
+# only evaluate selection of uris
 if args.uris:
     uris = args.uris
 else:
