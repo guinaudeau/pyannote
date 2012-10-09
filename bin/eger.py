@@ -56,17 +56,6 @@ argparser.add_argument('hypothesis', nargs='+', type=hypothesis_parser,
 argparser.add_argument('--uris', type=uris_parser,
                        help='list of URI to evaluate')
 
-# argparser.add_argument('--coverage', action='store_true',
-#                        help='compute diarization coverage')
-# argparser.add_argument('--homogeneity', action='store_true',
-#                        help='compute diarization homogeneity')
-# argparser.add_argument('--completeness', action='store_true',
-#                        help='compute diarization completeness')
-
-# When provided, removes overlapping speech regions from evaluation
-# argparser.add_argument('--no-overlap', action='store_true',
-#                        help='remove overlapping speech regions from evaluation')
-
 argparser.add_argument('--verbose', action='store_true',
                        help='print error details')
 
@@ -80,30 +69,6 @@ header = ['', 'EGER']
 import pyannote.metric.repere
 eger = [pyannote.metric.repere.EstimatedGlobalErrorRate() 
         for _ in args.hypothesis]
-
-# # initialize purity metric & update table header
-# if args.purity:
-#     header.append('Purity')
-#     purity = [pyannote.metric.diarization.DiarizationPurity() 
-#               for _ in args.hypothesis]
-
-# # initialize coverage metric & update table header
-# if args.coverage:
-#     header.append('Coverage')
-#     coverage = [pyannote.metric.diarization.DiarizationCoverage() 
-#                 for _ in args.hypothesis]
-
-# # initialize homogeneity metric & update table header
-# if args.homogeneity:
-#     header.append('Homogeneity')
-#     homogeneity = [pyannote.metric.diarization.DiarizationHomogeneity() 
-#                    for _ in args.hypothesis]
-
-# # initialize completeness metric & update table header
-# if args.completeness:
-#     header.append('Completeness')
-#     completeness = [pyannote.metric.diarization.DiarizationCompleteness() 
-#                     for _ in args.hypothesis]
 
 # initialize results table
 from prettytable import PrettyTable
@@ -126,29 +91,6 @@ for uri in uris:
     # read annotated frame for current URI
     annotated = args.annotated(uri)
     
-    # # get overlapping speech regions if requested
-    # if args.no_overlap:
-    #     # make sure timeline is a segmentation
-    #     # tag each resulting segment by all intersecting labels
-    #     tmp_ref = ref >> (ref._timeline.segmentation())
-    #     # overlapping speech regions
-    #     # (ie. timeline made of segments with two tracks or more)
-    #     overlap = pyannote.Timeline([segment for segment in tmp_ref 
-    #                                          if len(tmp_ref[segment, :]) > 1])
-    
-    # # focus on UEM if provided
-    # if uem is not None:
-    #     # update UEM if overlapping speech regions are removed from evaluation
-    #     # remove overlapping speech regions from UEM if requested
-    #     if args.no_overlap:
-    #         uem = overlap.gaps(focus=uem)
-    #     ref = ref(uem, mode='intersection')
-    # else:
-    #     # remove overlapping speech regions if requested
-    #     if args.no_overlap:
-    #         ref = ref(overlap.gaps(focus=ref.coverage()), 
-    #                                mode='intersection')
-    
     # process each hypothesis file, one after the other
     for h, (path, hypothesis) in enumerate(args.hypothesis):
         
@@ -161,17 +103,6 @@ for uri in uris:
         # read hypothesis for current URI
         hyp = hypothesis(uri)
         
-        # # focus on UEM if provided
-        # if uem is not None:
-        #     # UEM was already updated to take overlapping speech regions
-        #     # into account -- so no need to worry about that here.
-        #     hyp = hyp(uem, mode='intersection')
-        # else:
-        #     # remove overlapping speech regions if requested
-        #     if args.no_overlap:
-        #         hyp = hyp(overlap.gaps(focus=hyp.coverage()), 
-        #                                mode='intersection')
-        
         # compute EGER
         details = eger[h](ref, hyp, annotated=annotated, detailed=True)
         D = details[eger[h].name]
@@ -181,26 +112,6 @@ for uri in uris:
             sys.stdout.write('%s\n' % uri)
             sys.stdout.write('%s\n' % eger[h]._pretty(details))
             sys.stdout.flush()
-        
-        # # compute purity
-        # if args.purity:
-        #     P = purity[h](ref, hyp)
-        #     row.append(P)
-        
-        # # compute coverage
-        # if args.coverage:
-        #     C = coverage[h](ref, hyp)
-        #     row.append(C)
-            
-        # # compute homogeneity
-        # if args.homogeneity:
-        #     H = homogeneity[h](ref, hyp)
-        #     row.append(H)
-            
-        # # compute completeness
-        # if args.completeness:
-        #     K = completeness[h](ref, hyp)
-        #     row.append(K)
         
         # update results table
         table.add_row(row)
@@ -223,15 +134,6 @@ length = len(prefix)
 for h, (path, _) in enumerate(args.hypothesis):
     
     row = [path[length:], abs(eger[h])]
-    # if args.purity:
-    #     row.append(abs(purity[h]))
-    # if args.coverage:
-    #     row.append(abs(coverage[h]))
-    # if args.homogeneity:
-    #     row.append(abs(homogeneity[h]))
-    # if args.completeness:
-    #     row.append(abs(completeness[h]))
-    
     table.add_row(row)
 
 print table
@@ -245,19 +147,6 @@ for h, (path, _) in enumerate(args.hypothesis):
     row = [path[length:]]
     m, (l, u) = eger[h].confidence_interval(alpha=0.9)
     row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
-    
-    # if args.purity:
-    #     m, (l, u) = purity[h].confidence_interval(alpha=0.9)
-    #     row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
-    # if args.coverage:
-    #     m, (l, u) = coverage[h].confidence_interval(alpha=0.9)
-    #     row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
-    # if args.homogeneity:
-    #     m, (l, u) = homogeneity[h].confidence_interval(alpha=0.9)
-    #     row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
-    # if args.completeness:
-    #     m, (l, u) = completeness[h].confidence_interval(alpha=0.9)
-    #     row.append('%1.2f < %1.2f < %1.2f' % (l, m, u))
     
     table.add_row(row)
 
