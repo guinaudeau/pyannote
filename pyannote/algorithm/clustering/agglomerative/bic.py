@@ -21,8 +21,8 @@
 
 from pyannote.algorithm.clustering.agglomerative.base import MatrixIMx, AgglomerativeClustering
 from pyannote.algorithm.clustering.model import BICMMx
+from pyannote.algorithm.clustering.agglomerative.stop import NegativeSMx
 from pyannote.algorithm.clustering.agglomerative.constraint import ContiguousCMx
-from pyannote.algorithm.clustering.agglomerative.stop import NegativeSMx, MaximumModularitySMx
 
 class BICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, NegativeSMx):
     """
@@ -45,17 +45,10 @@ class BICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, NegativeSMx):
         
     """
     
-    def __init__(self, covariance_type='full', penalty_coef=3.5):
+    def __init__(self, covariance_type='full', penalty_coef=3.5, **kwargs):
         super(BICClustering, self).__init__(covariance_type=covariance_type,
-                                            penalty_coef=penalty_coef)
-
-
-class QBICClustering(AgglomerativeClustering, MatrixIMx, BICMMx, MaximumModularitySMx):
-    
-    def __init__(self, covariance_type='full', penalty_coef=3.5):
-        super(QBICClustering, self).__init__(covariance_type=covariance_type,
-                                             penalty_coef=penalty_coef,
-                                             edge_threshold=0.0)
+                                            penalty_coef=penalty_coef,
+                                            **kwargs)
 
 
 class BICRecombiner(BICClustering, ContiguousCMx):
