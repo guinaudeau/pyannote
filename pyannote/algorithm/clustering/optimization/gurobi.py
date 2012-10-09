@@ -143,7 +143,6 @@ def graph2gurobi(g):
                 # there are two Nones
                 elif value2count[None] == 2:
                     
-                    # 
                     ij = value2list[None][0]
                     ninj = _ij2nn(ij, i2n)
                     jk = value2list[None][1]
@@ -158,7 +157,6 @@ def graph2gurobi(g):
                         # set the two Nones different from each other
                         model.addConstr(x[ninj] + x[njnk] <= 1)
                 
-                # there are three Nones
                 else:
                     model.addConstr(x[n2, n3] + x[n1, n3] - x[n1, n2] <= 1)
                     model.addConstr(x[n1, n2] + x[n1, n3] - x[n2, n3] <= 1)
