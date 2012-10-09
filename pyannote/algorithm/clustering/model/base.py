@@ -148,7 +148,7 @@ class BaseModelMixin(object):
 import networkx as nx
 from pyannote.base.matrix import LabelMatrix
 
-class BaseLabelSimilarityMatrixGenerator(object):
+class SimilarityMatrix(object):
     """Helper class for label similarity matrix generation
     
     Just add a model mixin to it...
@@ -182,7 +182,7 @@ class BaseLabelSimilarityMatrixGenerator(object):
         return MX
     
     def __init__(self, **kwargs):
-        super(BaseLabelSimilarityMatrixGenerator, self).__init__()
+        super(SimilarityMatrix, self).__init__()
         
         # setup model
         MMx = self.getMx(BaseModelMixin)
