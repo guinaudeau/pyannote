@@ -21,7 +21,7 @@
 import sys
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser, TimelineParser
+from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.parser import PLPParser, MDTMParser
 from pyannote.algorithm.clustering.agglomerative.bic import BICClustering
 from pyannote.algorithm.clustering.agglomerative.bic import BICRecombiner
@@ -38,6 +38,9 @@ def output_parser(path):
     return open(path, 'w')
 def uem_parser(path):
     return TimelineParser().read(path)
+def uris_parser(path):
+    return LSTParser().read(path)
+
 
 # First positional argument is input segmentation file
 # It is loaded at argument-parsing time by an instance of AnnotationParser
@@ -52,6 +55,9 @@ argparser.add_argument('plp', metavar='PLP', type=str,
 # It is 'w'-opened at argument-parsing time
 argparser.add_argument('output', type=output_parser, metavar='OUTPUT',
                         help='path to output of BIC clustering')
+
+argparser.add_argument('--uris', type=uris_parser,
+                       help='list of URI to process')
 
 # UEM file is loaded at argument-parsing time by an instance of TimelineParser
 argparser.add_argument('--uem', type=uem_parser, 
@@ -98,11 +104,18 @@ else:
                         covariance_type=covariance_type,
                         tolerance=tolerance)
 
+
+# only process selection of uris
+if args.uris:
+    uris = args.uris
+else:
+    uris = args.input.videos
+
 # process each URI, one after the other
-for u, uri in enumerate(args.input.videos):
+for u, uri in enumerate(uris):
     
     if args.verbose:
-        sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.input.videos), uri))
+        sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
     
     # input annotation
