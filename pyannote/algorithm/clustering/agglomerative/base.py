@@ -93,11 +93,10 @@ class MatrixIMx(BaseInternalMixin):
         # (and make sure those are not the same label)
         while True:
             label1, label2 = self.imx_matrix.argmax().popitem()
-            if label1 != label2:
+            s = self.imx_matrix[label1, label2]
+            if label1 != label2 or s == -np.inf:
                 break
             self.imx_do_not_merge([label1, label2])
-        
-        s = self.imx_matrix[label1, label2]
         
         # if they are completely dissimilar, do not merge
         if s == -np.inf:
@@ -143,8 +142,10 @@ class AgglomerativeClustering(object):
         
         return MX
     
-    def __init__(self, **kwargs):
+    def __init__(self, debug=False, **kwargs):
         super(AgglomerativeClustering, self).__init__()
+        
+        self._debug = debug
         
         # setup constraint mixins (CMx)
         self.CMx = self.getMx(BaseConstraintMixin)
@@ -291,6 +292,9 @@ class AgglomerativeClustering(object):
                 
                 # find labels that should be merged
                 merged_labels, status = self.next()
+                if self._debug:
+                    msg = "DEBUG > Next merging candidates are %s.\n"
+                    sys.stderr.write(msg % " & ".join(merged_labels))
                 
                 # are there any? if not, stop looking.
                 if not merged_labels:
@@ -302,18 +306,30 @@ class AgglomerativeClustering(object):
                 
                 # if they are not,
                 # make sure we do not try to merge them again
+                if self._debug:
+                    msg = "DEBUG > Constraints prevented merging of %s.\n"
+                    sys.stderr.write(msg % " & ".join(merged_labels))
+                
                 self.do_not_merge(merged_labels)
             
             # nothing left to merge or reached stopping criterion?
             if not merged_labels:
-                print 'found nothing to merge.'
+                if self._debug:
+                    msg = "DEBUG > Nothing left to merge.\n"
+                    sys.stderr.write(msg)
                 break
+            
             if stopping_criterion and self.stop(status):
-                print 'reached stopping criterion'
+                if self._debug:
+                    msg = "DEBUG > Reached stopping criterion.\n"
+                    sys.stderr.write(msg)
                 break
             
             # merge models
             new_label, old_labels = self.merge_models(merged_labels)
+            if self._debug:
+                msg = "DEBUG > Merging %s into %s.\n"
+                sys.stderr.write(msg % (" & ".join(merged_labels), new_label))
             
             # update internal annotation
             translation = {old_label : new_label for old_label in old_labels}
