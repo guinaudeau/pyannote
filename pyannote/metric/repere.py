@@ -130,7 +130,7 @@ class EstimatedGlobalErrorRate(BaseMetric):
     >>> annotated = xgtf.annotated()
     >>> hypothesis = my_super_algorithm()
     >>> eger = EstimatedGlobalErrorRate()
-    >>> error_rate = eger(reference, hypothesis, annotated)    
+    >>> error_rate = eger(reference, hypothesis, annotated=annotated)
     
     """    
     def __init__(self, confusion=1., anonymous=False):
@@ -183,6 +183,9 @@ class EstimatedGlobalErrorRate(BaseMetric):
     """Overall F1-measure."""
 
     def _get_details(self, reference, hypothesis, annotated=None):
+        
+        if annotated is None:
+            raise ValueError("'annotated' argument is mandatory.")
         
         detail = self._init_details()
         
