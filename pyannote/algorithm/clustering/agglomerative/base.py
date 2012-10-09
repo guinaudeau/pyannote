@@ -18,6 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+import numpy as np
+from pyannote.base.matrix import LabelMatrix
 
 class BaseInternalMixin(object):
     
@@ -35,9 +38,6 @@ class BaseInternalMixin(object):
     
     def imx_next(self):
         raise NotImplementedError('')
-
-import numpy as np
-from pyannote.base.matrix import LabelMatrix
 
 class MatrixIMx(BaseInternalMixin):
     
