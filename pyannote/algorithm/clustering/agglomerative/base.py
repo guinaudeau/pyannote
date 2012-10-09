@@ -353,7 +353,7 @@ class AgglomerativeClustering(object):
         return self.iterate()
     
     def finish(self, annotation):
-        return self.smx_final(annotation)
+        return self.smx_final(annotation).smooth()
     
     def __call__(self, annotation, feature, **kwargs):
         
