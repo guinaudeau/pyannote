@@ -137,7 +137,7 @@ import scipy
 import scipy.stats
 import scipy.optimize
 
-class SimilarityGraphGenerator(object):
+class SimilarityGraph(object):
     
     def getMx(self, baseMx):
         
@@ -174,7 +174,7 @@ class SimilarityGraphGenerator(object):
             Similarity-to-probability function
         
         """
-        super(SimilarityGraphGenerator, self).__init__()
+        super(SimilarityGraph, self).__init__()
         
         # setup model
         MMx = self.getMx(BaseModelMixin)
