@@ -28,7 +28,7 @@ import scipy.optimize
 from matplotlib import pyplot as plt
 
 
-def get_label_groundtruth(reference, hypothesis):
+def label_clustering_groundtruth(reference, hypothesis):
     """
     Get label clustering grountruth matrix
     
