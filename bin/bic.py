@@ -81,6 +81,7 @@ if not hasattr(args, 'linear'):
     if args.verbose:
         msg = "BIC clustering [%s covariance, %g penalty coefficient]\n"
         sys.stdout.write(msg % (covariance_type, penalty_coef))
+        sys.stdout.flush()
     
     bic = BICClustering(penalty_coef=penalty_coef,
                         covariance_type=covariance_type)
@@ -91,6 +92,7 @@ else:
         msg = "Linear BIC clustering [%s covariance, %g penalty coefficient, " \
               "%gs tolerance]\n"
         sys.stdout.write(msg % (covariance_type, penalty_coef, tolerance))
+        sys.stdout.flush()
     
     bic = BICRecombiner(penalty_coef=penalty_coef,
                         covariance_type=covariance_type,
@@ -101,6 +103,7 @@ for u, uri in enumerate(args.input.videos):
     
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.input.videos), uri))
+        sys.stdout.flush()
     
     # input annotation
     annotation = args.input(uri)
