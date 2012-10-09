@@ -154,7 +154,9 @@ class Annotation(object):
     
     def __get_modality(self): 
         return self.__modality
-    modality = property(fget=__get_modality)
+    def __set_modality(self, modality):
+        self.__modality = modality
+    modality = property(fget=__get_modality, fset=__set_modality)
     """Name (or any identifier) of annotated modality
     
     Examples
