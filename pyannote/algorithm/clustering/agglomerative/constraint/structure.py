@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pyannote.base.matrix import LabelMatrix
+from pyannote.base.matrix import LabelMatrix, Cooccurrence
 from pyannote.algorithm.clustering.agglomerative.constraint.base import BaseConstraintMixin
 
 class ContiguousCMx(BaseConstraintMixin):
@@ -36,30 +36,23 @@ class ContiguousCMx(BaseConstraintMixin):
         Two labels are mergeable if they are contiguous
         """
         
-        self.cmx_contiguous = LabelMatrix(dtype=bool, default=False)
-        labels = self.annotation.labels()
-        for l, label in enumerate(labels):
-            
-            # extended coverage
-            cov = self.annotation.label_coverage(label)
-            xcov = cov.copy(segment_func=self.cmx_xsegment)
-            
-            for other_label in labels[l+1:]:
-                
-                # other extended coverage
-                other_cov = self.annotation.label_coverage(other_label)
-                other_xcov = other_cov.copy(segment_func=self.cmx_xsegment)
-                
-                # are labels contiguous?
-                if xcov & other_xcov:
-                    self.cmx_contiguous[label, other_label] = True
-                    self.cmx_contiguous[other_label, label] = True
-                # False is the default value.
-                # else:
-                #     self.cmx_contiguous[label, other_label] = False
-                #     self.cmx_contiguous[other_label, label] = False
+        # create new annotation where each segment
+        # is slightly extended on both ends
+        self.cmx_xann = self.annotation.copy(segment_func=self.cmx_xsegment)
+        
+        # compute labels cooccurrence matrix
+        # cooccurring labels can be merged (they're contiguous)-- others cannot
+        M = Cooccurrence(self.cmx_xann, self.cmx_xann)
+        ilabels, jlabels = M.labels
+        self.cmx_contiguous = LabelMatrix(ilabels=ilabels, jlabels=jlabels, 
+                                          Mij = M.M > 0, dtype=bool,
+                                          default=False)
     
     def cmx_update(self, new_label, merged_labels):
+        
+        # update labels in extended annotation 
+        translation = {old_label : new_label for old_label in merged_labels}
+        self.cmx_xann = self.cmx_xann % translation
         
         # remove rows and columns for old labels
         for label in merged_labels:
@@ -68,26 +61,16 @@ class ContiguousCMx(BaseConstraintMixin):
             del self.cmx_contiguous[label, :]
             del self.cmx_contiguous[:, label]
         
-        # extended coverage
-        cov = self.annotation.label_coverage(new_label)
-        xcov = cov.copy(segment_func=self.cmx_xsegment)
+        # compute cooccurrence matrix with new_label
+        M = Cooccurrence(self.cmx_xann(new_label), self.cmx_xann)
         
-        # update row and column for new label
+        # update contiguous_matrix accordingly        
         labels = self.annotation.labels()
-        
         for label in labels:
-            
             if label == new_label:
                 continue
-                
-            # other extended coverage
-            other_cov = self.annotation.label_coverage(label)
-            other_xcov = other_cov.copy(segment_func=self.cmx_xsegment)
-                
-            # are labels contiguous?
-            contiguous = bool(xcov & other_xcov)
-            self.cmx_contiguous[new_label, label] = contiguous
-            self.cmx_contiguous[label, new_label] = contiguous
+            self.cmx_contiguous[new_label, label] = M[new_label, label] > 0.
+            self.cmx_contiguous[label, new_label] = M[new_label, label] > 0.
     
     def cmx_meet(self, labels):
         for l, label in enumerate(labels):
