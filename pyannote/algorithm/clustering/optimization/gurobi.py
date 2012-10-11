@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import networkx as nx
 import gurobipy as grb
-from progressbar import ProgressBar, Percentage, Bar, ETA
+# from progressbar import ProgressBar, Percentage, Bar, ETA
 
 def _n01(g, n1, n2):
     if g.has_edge(n1, n2):
@@ -36,9 +36,9 @@ def graph2gurobi(g):
         node and other_node are in the same cluster
     
     """
-    pb = ProgressBar(widgets=[None, ' ', Percentage(), ' ', Bar(),' ', ETA()], 
-                     term_width=80, poll=1, 
-                     left_justify=True, fd=sys.stderr)
+    # pb = ProgressBar(widgets=[None, ' ', Percentage(), ' ', Bar(),' ', ETA()], 
+    #                  term_width=80, poll=1, 
+    #                  left_justify=True, fd=sys.stderr)
     
     # create empty model
     model = grb.Model('my Gurobi model')
@@ -50,38 +50,38 @@ def graph2gurobi(g):
     N = len(nodes)
     
     # one variable per pair of nodes
-    pb.widgets[0] = 'Variables'
+    # pb.widgets[0] = 'Variables'
     
     # Σi|1..N ( Σj|i+1..N 1 )
-    pb.maxval = int(N*(N-1)/2.)
-    pb.start()
+    # pb.maxval = int(N*(N-1)/2.)
+    # pb.start()
     for i1 in range(N):
         # Σi|1..i1 ( Σj|i+1..N 1 )
-        n = int(N*i1 - i1**2/2. - i1/2.)
-        pb.update(n)
+        # n = int(N*i1 - i1**2/2. - i1/2.)
+        # pb.update(n)
         n1 = nodes[i1]
         for i2 in range(i1+1, N):
             n2 = nodes[i2]
             x[n1, n2] = model.addVar(vtype=grb.GRB.BINARY)
     
-    pb.finish()
+    # pb.finish()
     
     model.update()
     
     # transitivity constraints
-    pb.widgets[0] = 'Constraints'
+    # pb.widgets[0] = 'Constraints'
     
     # Σi|1..N ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
-    pb.maxval = int(N**3/6. - N**2/2. + N/3.)
-    pb.start()
+    # pb.maxval = int(N**3/6. - N**2/2. + N/3.)
+    # pb.start()
     
     p = {}
     i2n = {}
     for i1 in range(N):
         
         # Σi|1..i1 ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
-        n = int(N**2*i1/2.- N*i1/2.-N*(i1**2/2.+i1/2.)+i1**3/6.+i1**2/2.+i1/3.)
-        pb.update(n)
+        # n = int(N**2*i1/2.- N*i1/2.-N*(i1**2/2.+i1/2.)+i1**3/6.+i1**2/2.+i1/3.)
+        # pb.update(n)
         
         n1 = nodes[i1]
         i2n[1] = n1
@@ -163,7 +163,7 @@ def graph2gurobi(g):
                     model.addConstr(x[n1, n2] + x[n2, n3] - x[n1, n3] <= 1)
                 
     
-    pb.finish()
+    # pb.finish()
     
     # return the model & its variables
     return model, x
