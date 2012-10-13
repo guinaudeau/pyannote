@@ -27,7 +27,7 @@
 # 5. store X and Y
 
 import sys
-import scipy.io
+import pickle
 import numpy as np
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
@@ -107,8 +107,8 @@ if args.bic:
         pass
     label_similarity_matrix = Dummy(penalty_coef=penalty_coef, 
                                     covariance_type=covariance_type)
-    data['BIC'] = {'covariance_type': covariance_type,
-                   'penalty_coef': penalty_coef}
+    data['covariance_type'] = covariance_type
+    data['penalty_coef'] = penalty_coef
 
 X = np.empty((0,1))
 Y = np.empty((0,1))
@@ -155,8 +155,9 @@ for u, uri in enumerate(uris):
     X = np.append(X, x.M)
 
 # save to output file
-
 data['X'] = X
 data['Y'] = Y
-
-scipy.io.savemat(args.save, data, do_compression=True)
+data['uris'] = uris
+f = open(args.save, 'w')
+pickle.dump(data, f)
+f.close()
