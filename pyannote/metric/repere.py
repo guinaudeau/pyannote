@@ -132,7 +132,12 @@ class EstimatedGlobalErrorRate(BaseMetric):
     >>> eger = EstimatedGlobalErrorRate()
     >>> error_rate = eger(reference, hypothesis, annotated=annotated)
     
-    """    
+    """
+    
+    @classmethod
+    def metric_name(cls):
+        return EGER_NAME
+    
     def __init__(self, confusion=1., anonymous=False):
 
         values = set([ \

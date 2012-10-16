@@ -26,7 +26,11 @@ DER_MISS = 'miss'
 DER_NAME = 'detection error rate'
 
 class DetectionErrorRate(BaseMetric):
-
+    
+    @classmethod
+    def metric_name(cls):
+        return DER_NAME
+    
     def __init__(self):
         
         values = set([ \

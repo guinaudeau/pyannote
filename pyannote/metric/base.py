@@ -37,6 +37,11 @@ class BaseMetric(object):
         (eg. ['correct', 'false alarm', 'miss', 'confusion'])
         
     """
+    
+    @classmethod
+    def metric_name(cls):
+        raise NotImplementedError("Missing class method 'metric_name'.")
+    
     def __init__(self, name, components):
         super(BaseMetric, self).__init__()
         self.__name = name
@@ -250,6 +255,11 @@ class Precision(BaseMetric):
         
     Inheriting classes must implement _get_details().
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return PRECISION_NAME
+    
     def __init__(self):
         values = set([PRECISION_RETRIEVED, \
                       PRECISION_RELEVANT_RETRIEVED])
@@ -282,6 +292,10 @@ class Recall(BaseMetric):
         
     Inheriting classes must implement _get_details().
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return RECALL_NAME
     
     def __init__(self):
         values = set([RECALL_RELEVANT, \

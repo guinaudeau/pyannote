@@ -101,6 +101,11 @@ class IdentificationErrorRate(BaseMetric):
     
     
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return IER_NAME
+    
     def __init__(self, matcher=None):
 
         values = set([ \

@@ -73,6 +73,11 @@ class DiarizationErrorRate(IdentificationErrorRate):
     :class:`pyannote.metric.identification.IdentificationErrorRate`: identification error rate
     
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return DER_NAME
+    
     def __init__(self):
         super(DiarizationErrorRate, self).__init__()
         self.name = DER_NAME
@@ -112,6 +117,11 @@ class DiarizationPurity(BaseMetric):
         When per_cluster = True, each cluster is given the same weight.
     
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return PURITY_NAME
+    
     def __init__(self, detection_error=True, per_cluster=False):
         values = set([ \
             PURITY_TOTAL, \
@@ -186,6 +196,11 @@ class DiarizationCoverage(DiarizationPurity):
         When per_cluster = True, each class is given the same weight.
     
     """
+    
+    @classmethod
+    def metric_name(cls):
+        return COVERAGE_NAME
+    
     def __init__(self, detection_error=True, per_cluster=False):
         super(DiarizationCoverage, self).__init__( \
                                             detection_error=detection_error,
@@ -213,6 +228,11 @@ HOMOGENEITY_CROSS_ENTROPY = 'cross-entropy'
 
 class DiarizationHomogeneity(BaseMetric):
     """Homogeneity"""
+    
+    @classmethod
+    def metric_name(cls):
+        return HOMOGENEITY_NAME
+    
     def __init__(self):
         values = set([ \
             HOMOGENEITY_ENTROPY, \
@@ -271,6 +291,11 @@ COMPLETENESS_NAME = 'completeness'
 
 class DiarizationCompleteness(DiarizationHomogeneity):
     """Completeness"""
+    
+    @classmethod
+    def metric_name(cls):
+        return COMPLETENESS_NAME
+    
     def __init__(self):
         super(DiarizationCompleteness, self).__init__()
         self.name = COMPLETENESS_NAME
