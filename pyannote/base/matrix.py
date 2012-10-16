@@ -511,7 +511,77 @@ class LabelMatrix(object):
                 continue
             G.add_edge(i, j, {weight: d})
         return G
+    
+    def to_latex(self):
         
+        I, J = self.labels
+        
+        # tabular environment
+        source = '\\begin{tabular}{l|%s}\n' % ('c'*len(J))
+        
+        # header
+        for j in J:
+            source += '& %s ' % j
+        source += '\\\\\n'
+        source += '\\hline\n'
+        
+        # table content
+        for i in I:
+            source += '%s ' % i
+            for j in J:
+                source += '& %s ' % self[i, j]
+            source += '\\\\\n'
+        
+        # tabular environment
+        source += '\\end{tabular}\n'
+        
+        return source
+
+    def _factorize(self, labels):
+        import os.path
+        tmp = [str(label) for label in labels]
+        pmt = [label[::-1] for label in tmp]
+        prefix = os.path.commonprefix(tmp)
+        pre = len(prefix)
+        suffix = os.path.commonprefix(pmt)[::-1]
+        suf = len(suffix)
+        if suf == 0:
+            return prefix, [label[pre:] for label in tmp], suffix
+        else:
+            return prefix, [label[pre:-suf] for label in tmp], suffix
+    
+    def to_table(self, title='', fmt='1.3', factorize='RC'):
+        import prettytable
+        
+        I, J = self.labels
+        
+        if len(I) > 1 and 'R' in factorize:
+            pI, fI, sI = self._factorize(I)
+        else:
+            fI = [str(i) for i in I]
+        
+        header = [title]
+        if len(J) > 1 and 'C' in factorize:
+            pJ, fJ, sJ = self._factorize(J)
+            header.extend(fJ)
+        else:
+            header.extend([str(j) for j in J])
+        
+        table = prettytable.PrettyTable(header)
+        table.align[''] = 'l'
+        table.float_format = fmt
+        
+        for ni, i in enumerate(I):
+            row = [fI[ni]]
+            for j in J:
+                row.append(self[i, j])
+            table.add_row(row)
+        
+        return table
+
+
+
+
 class Cooccurrence(LabelMatrix):
     """
     Cooccurrence matrix between two annotations
