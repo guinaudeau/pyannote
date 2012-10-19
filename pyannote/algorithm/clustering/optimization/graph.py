@@ -54,7 +54,7 @@ class TrackNode(object):
     def __repr__(self):
         return "<TrackNode %s>" % self
 
-class AnnotationGraphGenerator(object):
+class AnnotationGraph(object):
     """
     Parameters
     ----------
@@ -71,7 +71,7 @@ class AnnotationGraphGenerator(object):
     
     """
     def __init__(self, same=False, diff=False, cooccurring=False):
-        super(AnnotationGraphGenerator, self).__init__()
+        super(AnnotationGraph, self).__init__()
         self.same = same
         self.diff = diff
         self.cooccurring = cooccurring
@@ -195,141 +195,6 @@ class SimilarityGraph(object):
                                           annotation=iannotation,
                                           feature=feature)
     
-    # def _groundtruth_matrix(self, iannotation, oannotation):
-    #     
-    #     # groundtruth matrix
-    #     ilabels = iannotation.labels()
-    #     G = LabelMatrix(ilabels, ilabels, dtype=int, default=-1)
-    #     
-    #     # cooccurrence matrix
-    #     C = Cooccurrence(iannotation, oannotation)
-    #     
-    #     # coocurrence graph
-    #     # (add an edge if cooccurrence duration is higher than zero)
-    #     g = nx.Graph()
-    #     for I, O, d in C:
-    #         i = ('i', I)
-    #         o = ('o', O)
-    #         g.add_node(i)
-    #         if d > 0:
-    #             g.add_edge(i, o)
-    #     
-    #     # remove i-orphans
-    #     # (i-label that have no cooccurring o-label)
-    #     orphans = [node for node, degree in g.degree_iter() if degree == 0]
-    #     g.remove_nodes_from(orphans)
-    #     
-    #     # get negative pairs from connected components
-    #     cc = nx.connected_components(g)
-    #     for c, component in enumerate(cc):
-    #         for other_component in cc[c+1:]:
-    #             for status, i in component:
-    #                 if status != 'i':
-    #                     continue
-    #                 for other_status, other_i in other_component:
-    #                     if other_status != 'i':
-    #                         continue
-    #                     G[i, other_i] = 0
-    #                     G[other_i, i] = 0
-    #     
-    #     # remove ambiguous i-labels
-    #     # (i-labels that have more than one cooccurring o-label)
-    #     ambiguous = [node for node, degree in g.degree_iter() if degree > 1
-    #                                                          and node[0] == 'i']
-    #     g.remove_nodes_from(ambiguous)
-    #     
-    #     # get positive pairs from connected components
-    #     cc = nx.connected_components(g)
-    #     for component in cc:
-    #         for n, (status, i) in enumerate(component):
-    #             if status != 'i':
-    #                 continue
-    #             for other_status, other_i in component[n+1:]:
-    #                 if other_status != 'i':
-    #                     continue
-    #                 G[i, other_i] = 1
-    #                 G[other_i, i] = 1
-    #     
-    #     # get negative pairs from connected components
-    #     cc = nx.connected_components(g)
-    #     for c, component in enumerate(cc):
-    #         for other_component in cc[c+1:]:
-    #             for status, i in component:
-    #                 if status != 'i':
-    #                     continue
-    #                 for other_status, other_i in other_component:
-    #                     if other_status != 'i':
-    #                         continue
-    #                     G[i, other_i] = 0
-    #                     G[other_i, i] = 0
-    #     
-    #     return G.M
-    
-    # def fit(self, annotations):
-    #     """
-    #     
-    #     Parameters
-    #     ----------
-    #     annotations : (iannotation, feature, oannotation) iterator
-    #         `iannotation` is the input annotation
-    #         `oannotation` is the expected output annotation
-    #         `feature` contains feature extracted from the corresponding resource
-    #     
-    #     """
-    #     
-    #     S = np.empty((0,1))
-    #     G = np.empty((0,1))
-    #     for iannotation, feature, oannotation in annotations:
-    #         # get label similarity matrix
-    #         s = self._similarity_matrix(iannotation, feature)
-    #         S = np.append(S, s)
-    #         # get label groundtruth matrix
-    #         g = self._groundtruth_matrix(iannotation, oannotation)
-    #         G = np.append(G, g)
-    #     
-    #     # positive/negative scores
-    #     self.P = S[np.where(G==1)]
-    #     self.N = S[np.where(G==0)]
-    #     
-    #     P = self.P
-    #     N = self.N
-    #     
-    #     m = np.mean(P)
-    #     s = np.std(P)
-    #     n = scipy.stats.norm(m, s)
-    #     num_bins = 50
-    #     bins = n.ppf(np.arange(0, 1+1./num_bins, 1./num_bins))
-    #     
-    #     Py, _ = scipy.histogram(P, bins, density=True)
-    #     Ny, _ = scipy.histogram(N, bins, density=True)
-    #     
-    #     X = .5*(bins[:-1]+bins[1:])
-    #     prior = 1. * len(N) / len(P)
-    #     Y = 1. / (1 + prior * Ny / Py)
-    #     
-    #     focus = np.isfinite(X) & np.isfinite(Y) & (X > m-.5*s) & (X < m+.5*s)
-    #     x = X[focus]
-    #     y = Y[focus]
-    #     
-    #     popt, _ = scipy.optimize.curve_fit(self.logistic, x, y, 
-    #                                        p0=(1., 1., m, 1.))
-    #     
-    #     # t = np.arange(m-3*s, m+3*s, 100)
-    #     # plt.plot(X, Y, 'b.', label='data')
-    #     # plt.plot(t, logistic(t, *popt), 'r', label='fit')
-    #     # plt.legend()
-    #     
-    #     self.popt = popt
-    #     
-    #     return self
-    
-    # def logistic(self, x, B, Q, M, v):
-    #     y = 1. / (1. + Q * np.exp(-B*(x-M)))**(1./v)
-    #     return y
-    
-    # def matrix2probability(self, M):
-    #     return self.logistic(M, *(self.popt))
-    
     def __call__(self, iannotation, feature, init=None):
         
         if init is None:
@@ -359,7 +224,7 @@ class SimilarityGraph(object):
         
         return g
         
-class CoOccurrenceGraphGenerator(object):
+class CooccurrenceGraph(object):
     """Generate cross-modal probability graph
     
     Parameters
@@ -368,7 +233,7 @@ class CoOccurrenceGraphGenerator(object):
     
     """
     def __init__(self, duration=1.):
-        super(CoOccurrenceGraphGenerator, self).__init__()
+        super(CooccurrenceGraph, self).__init__()
         self.duration = duration
     
     def _subtracks(self, A, B):
@@ -600,7 +465,7 @@ def draw_repere_graph(g, layout='spring'):
                                ax=None, arrows=True, label=None)
     
     nx.draw_networkx_edges(g, pos, edgelist=diff_edges, width=1,
-                           edge_color='r', style='solid', alpha=0.5,
+                           edge_color='r', style='solid', alpha=0.1,
                            edge_cmap=None, edge_vmin=None, edge_vmax=None,
                            ax=None, arrows=True, label=None)
     
