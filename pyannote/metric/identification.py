@@ -106,16 +106,14 @@ class IdentificationErrorRate(BaseMetric):
     def metric_name(cls):
         return IER_NAME
     
+    @classmethod
+    def metric_components(cls):
+        return [IER_CONFUSION, IER_FALSE_ALARM, IER_MISS, \
+                IER_TOTAL, IER_CORRECT]
+    
     def __init__(self, matcher=None):
-
-        values = set([ \
-            IER_CONFUSION, \
-            IER_FALSE_ALARM, \
-            IER_MISS, \
-            IER_TOTAL, \
-            IER_CORRECT])
-
-        super(IdentificationErrorRate, self).__init__(IER_NAME, values)
+        
+        super(IdentificationErrorRate, self).__init__()
         
         if matcher:
             self.matcher = matcher

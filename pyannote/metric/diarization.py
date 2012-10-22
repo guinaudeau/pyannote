@@ -80,7 +80,6 @@ class DiarizationErrorRate(IdentificationErrorRate):
     
     def __init__(self):
         super(DiarizationErrorRate, self).__init__()
-        self.name = DER_NAME
         self.__hungarian = HungarianMapper()
     
     def optimal_mapping(self, reference, hypothesis):
@@ -108,10 +107,10 @@ class DiarizationPurity(BaseMetric):
     Parameters
     ----------
     detection_error: bool, optional
-        By default (detection_error = True), detection errors (false alarm
+        When detection_error = True, detection errors (false alarm
         and/or miss detection) may artificially decrease purity.
-        When detection_error = False, purity is only computed on the segments
-        where both reference and hypothesis detected something.
+        Using detection_error = False (default), purity is only computed 
+        on the segments where both reference and hypothesis detected something.
     per_cluster : bool, optional
         By default (per_cluster = False), clusters are duration-weighted.
         When per_cluster = True, each cluster is given the same weight.
@@ -122,11 +121,12 @@ class DiarizationPurity(BaseMetric):
     def metric_name(cls):
         return PURITY_NAME
     
-    def __init__(self, detection_error=True, per_cluster=False):
-        values = set([ \
-            PURITY_TOTAL, \
-            PURITY_CORRECT])
-        super(DiarizationPurity, self).__init__(PURITY_NAME, values)
+    @classmethod
+    def metric_components(cls):
+        return [ PURITY_TOTAL, PURITY_CORRECT ]
+    
+    def __init__(self, detection_error=False, per_cluster=False):
+        super(DiarizationPurity, self).__init__()
         self.per_cluster = per_cluster
         self.detection_error = detection_error
     
@@ -149,7 +149,7 @@ class DiarizationPurity(BaseMetric):
             # number of clusters (as float)
             detail[PURITY_TOTAL] = float(matrix.shape[1])
         else:
-            if np.prod(matrix.M.shape):
+            if np.prod(matrix.shape):
                 detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
             else:
                 detail[PURITY_CORRECT] = 0.
@@ -187,10 +187,10 @@ class DiarizationCoverage(DiarizationPurity):
     Parameters
     ----------
     detection_error: bool, optional
-        By default (detection_error = True), detection errors (false alarm
+        When detection_error = True, detection errors (false alarm
         and/or miss detection) may artificially decrease coverage.
-        When detection_error = False, purity is only computed on the segments
-        where both reference and hypothesis detected something.
+        Using detection_error = False (default), purity is only computed
+        on the segments where both reference and hypothesis detected something.
     per_cluster : bool, optional
         By default (per_cluster = False), classes are duration-weighted.
         When per_cluster = True, each class is given the same weight.
@@ -201,11 +201,10 @@ class DiarizationCoverage(DiarizationPurity):
     def metric_name(cls):
         return COVERAGE_NAME
     
-    def __init__(self, detection_error=True, per_cluster=False):
+    def __init__(self, detection_error=False, per_cluster=False):
         super(DiarizationCoverage, self).__init__( \
                                             detection_error=detection_error,
                                             per_cluster=per_cluster)
-        self.name = COVERAGE_NAME
     
     def _get_details(self, reference, hypothesis, **kwargs):
         return super(DiarizationCoverage, self)._get_details(hypothesis, \
@@ -233,11 +232,9 @@ class DiarizationHomogeneity(BaseMetric):
     def metric_name(cls):
         return HOMOGENEITY_NAME
     
-    def __init__(self):
-        values = set([ \
-            HOMOGENEITY_ENTROPY, \
-            HOMOGENEITY_CROSS_ENTROPY])
-        super(DiarizationHomogeneity, self).__init__(HOMOGENEITY_NAME, values)
+    @classmethod
+    def metric_components(cls):
+        return [ HOMOGENEITY_ENTROPY, HOMOGENEITY_CROSS_ENTROPY ]
     
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
@@ -296,13 +293,9 @@ class DiarizationCompleteness(DiarizationHomogeneity):
     def metric_name(cls):
         return COMPLETENESS_NAME
     
-    def __init__(self):
-        super(DiarizationCompleteness, self).__init__()
-        self.name = COMPLETENESS_NAME
-    
     def _get_details(self, reference, hypothesis, **kwargs):
         return super(DiarizationCompleteness, self)._get_details(hypothesis, \
-                                                            reference)
+                                                                 reference)
 
 if __name__ == "__main__":
     import doctest

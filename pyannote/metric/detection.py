@@ -31,15 +31,10 @@ class DetectionErrorRate(BaseMetric):
     def metric_name(cls):
         return DER_NAME
     
-    def __init__(self):
-        
-        values = set([ \
-            DER_FALSE_ALARM, \
-            DER_MISS, \
-            DER_TOTAL])
-        
-        super(DetectionErrorRate, self).__init__(DER_NAME, values)
-        
+    @classmethod
+    def metric_components(cls):
+        return [ DER_FALSE_ALARM, DER_MISS, DER_TOTAL]
+    
     def _get_details(self, reference, hypothesis, **kwargs):
         
         detail = self._init_details()
@@ -61,12 +56,12 @@ class DetectionErrorRate(BaseMetric):
             duration = segment.duration
         
             # set of IDs in reference segment
-            r = R.ids(segment)
+            r = R.get_labels(segment)
             Nr = len(r)
             detail[DER_TOTAL] += duration * Nr
         
             # set of IDs in hypothesis segment
-            h = H.ids(segment)
+            h = H.get_labels(segment)
             Nh = len(h)
         
             # number of misses

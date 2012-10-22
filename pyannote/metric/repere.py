@@ -138,25 +138,20 @@ class EstimatedGlobalErrorRate(BaseMetric):
     def metric_name(cls):
         return EGER_NAME
     
+    @classmethod
+    def metric_components(cls):
+        return [EGER_CONFUSION_NAME_NAME, EGER_CONFUSION_NAME_ANON, \
+                EGER_CONFUSION_ANON_NAME, \
+                EGER_FALSE_ALARM_NAME, EGER_FALSE_ALARM_ANON, 
+                EGER_MISS_NAME, EGER_MISS_ANON, \
+                EGER_REF_NAME, EGER_REF_ANON, EGER_TOTAL, \
+                EGER_HYP_NAME, EGER_HYP_ANON, \
+                EGER_CORRECT_NAME, EGER_CORRECT_ANON]
+    
+    
     def __init__(self, confusion=1., anonymous=False):
-
-        values = set([ \
-            EGER_CONFUSION_NAME_NAME, \
-            EGER_CONFUSION_NAME_ANON, \
-            EGER_CONFUSION_ANON_NAME, \
-            EGER_FALSE_ALARM_NAME, \
-            EGER_FALSE_ALARM_ANON, \
-            EGER_MISS_NAME, \
-            EGER_MISS_ANON, \
-            EGER_REF_NAME, \
-            EGER_REF_ANON, \
-            EGER_TOTAL, \
-            EGER_HYP_NAME, \
-            EGER_HYP_ANON, \
-            EGER_CORRECT_NAME, \
-            EGER_CORRECT_ANON])
         
-        super(EstimatedGlobalErrorRate, self).__init__(EGER_NAME, values)
+        super(EstimatedGlobalErrorRate, self).__init__()
         self.matcher = REPEREIDMatcher()
         self.confusion = confusion
         self.anonymous = anonymous
@@ -339,103 +334,6 @@ class EstimatedGlobalErrorRate(BaseMetric):
         
         return string
 
-# # --------------------------------------------------------------------------- #
-# 
-# def main(argv=None):
-# 
-#     import getopt
-#     import os
-#     import pyannote.parser
-#     
-#     if argv is None:
-#         argv = sys.argv
-#     try:
-#         try:
-#             opts, args = getopt.getopt(argv[1:], \
-#                             "hR:H:F:O:", \
-#                             ["help", "reference=", "hypothesis=", "oracle=", \
-#                              "frames=", "speaker", "head"])
-#         except getopt.error, msg:
-#             raise Usage(msg)
-#         
-#         path2reference = None
-#         path2hypothesis = None
-#         path2oracle = None
-#         path2frames = None
-#         speaker = False
-#         head = False
-#         for option, value in opts:
-#             if option in ("-h", "--help"):
-#                 raise Usage(help_message)
-#             if option in ("-R", "--reference"):
-#                 path2reference = value
-#             if option in ("-H", "--hypothesis"):
-#                 path2hypothesis = value
-#             if option in ("-O", "--oracle"):
-#                 path2oracle = value
-#             if option in ("-F", "--frames"):
-#                 path2frames = value
-#             if option in ("--speaker"):
-#                 speaker = True
-#             if option in ("--head"):
-#                 head = True
-#        
-#     except Usage, err:
-#         print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-#         print >> sys.stderr, "\t for help use --help"
-#         return 2
-# 
-#     reference = pyannote.parser.repere.REPEREParser(path2reference, \
-#                                                     confidence=False, \
-#                                                     multitrack=True)
-#     if path2oracle is None:
-#         hypothesis = pyannote.parser.repere.REPEREParser(path2hypothesis, \
-#                                                          confidence=False, \
-#                                                          multitrack=True)
-#     else:
-#         f = open(path2oracle, 'r')
-#         recognizable = [line.strip() for line in f.readlines()]
-#         f.close()
-# 
-#     frames = pyannote.parser.nist.UEMParser(path2frames)
-#     
-#     modalities = []
-#     if speaker: 
-#         modalities.append('speaker')
-#     if head:
-#         modalities.append('head')
-#     
-#     error = {modality: EstimatedGlobalErrorRate() for modality in modalities}    
-#     for video in reference.videos():
-#         print '* %s' % video
-#         A = frames.timeline(video) 
-#         for modality in modalities:
-#             R = reference.annotation(video, modality)
-#             if path2oracle is None:
-#                 H = hypothesis.annotation(video, modality)
-#             else:
-#                 oracle_translation = {}
-#                 for identifier in R.IDs:
-#                     if identifier not in recognizable:
-#                         oracle_translation[identifier] = Unknown()
-#                 H = R % oracle_translation
-#                 
-#             value = error[modality](R, H, annotated=A)
-#             print '  - EGER (%s) = %.3f' % (modality, value)
-#         print ""
-#     
-#     for modality in modalities:
-#         print "=== %s ===" % modality
-#         print error[modality]
-#     
-# # --------------------------------------------------------------------------- #
-#     
-# if  __name__ == '__main__':
-#     import sys
-#     sys.exit(main())
-# 
-# # --------------------------------------------------------------------------- #
-#     
 
 if __name__ == "__main__":
     import doctest

@@ -42,19 +42,23 @@ class BaseMetric(object):
     def metric_name(cls):
         raise NotImplementedError("Missing class method 'metric_name'.")
     
-    def __init__(self, name, components):
+    @classmethod
+    def metric_components(cls):
+        raise NotImplementedError("Missing class method 'metric_components'")
+        
+    def __init__(self):
         super(BaseMetric, self).__init__()
-        self.__name = name
-        self.__values = set(components)
+        self.__name = self.__class__.metric_name()
+        self.__values = set(self.__class__.metric_components())
         self.reset()
     
     def __get_name(self): 
-        return self.__name
-    def __set_name(self, name):
-        self.__name = name
+        return self.__class__.metric_name()
+    # def __set_name(self, name):
+    #     self.__name = name
     name = property(fget=__get_name, \
-                     fset=__set_name, \
-                     fdel=None, \
+                     # fset=__set_name, \
+                     # fdel=None, \
                      doc="Metric name.")
     
     def __accumulate(self, components):
@@ -260,10 +264,12 @@ class Precision(BaseMetric):
     def metric_name(cls):
         return PRECISION_NAME
     
-    def __init__(self):
-        values = set([PRECISION_RETRIEVED, \
-                      PRECISION_RELEVANT_RETRIEVED])
-        super(Precision, self).__init__(PRECISION_NAME, values)
+    @classmethod
+    def metric_components(cls):
+        return [PRECISION_RETRIEVED, PRECISION_RELEVANT_RETRIEVED]
+    
+    # def __init__(self):
+    #     super(Precision, self).__init__()
     
     def _get_rate(self, components):
         """Compute precision from `components`"""
@@ -297,10 +303,12 @@ class Recall(BaseMetric):
     def metric_name(cls):
         return RECALL_NAME
     
-    def __init__(self):
-        values = set([RECALL_RELEVANT, \
-                      RECALL_RELEVANT_RETRIEVED])
-        super(Recall, self).__init__(RECALL_NAME, values)
+    @classmethod
+    def metric_components(cls):
+        return [RECALL_RELEVANT, RECALL_RELEVANT_RETRIEVED]
+    
+    # def __init__(self):
+    #     super(Recall, self).__init__()
     
     def _get_rate(self, components):
         """Compute recall from `components`"""
