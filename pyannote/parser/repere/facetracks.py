@@ -53,8 +53,10 @@ class FACETRACKSParser(BaseAnnotationParser):
                 continue
             
             label = data['label']
-            if label is None:
+            if sef.load_ids and label is None:
                 label = Unknown()
+            else:
+                label = int(track)
             
             self._add(segment, int(track), label, video, modality)
         
