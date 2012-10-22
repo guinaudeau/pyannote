@@ -54,80 +54,70 @@ class TrackNode(object):
     def __repr__(self):
         return "<TrackNode %s>" % self
 
-class AnnotationGraph(object):
+class PreComputedSimilarityGraph(object):
     """
     Parameters
     ----------
-    same : boolean, optional
-        If True, tracks with same label are connected 
-        with a p=1 probability edge.
-    
-    diff : boolean, optional
-        If True, tracks with different labels are connected
-        with a p=0 probability edge.
-    
     cooccurring : boolean, optional
         If True, cooccurring tracks are connected with a p=0 probability edge.
+    func : function
+        Similarity-to-probability function
     
     """
-    def __init__(self, same=False, diff=False, cooccurring=False):
-        super(AnnotationGraph, self).__init__()
-        self.same = same
-        self.diff = diff
+    def __init__(self, func=None, cooccurring=False):
+        super(PreComputedSimilarityGraph, self).__init__()
         self.cooccurring = cooccurring
+        if func is None:
+            self.func = lambda x: x
+        else:
+            self.func = func
     
-    def generate(self, annotation, init=None):
+    def __call__(self, annotation, matrix, init=None):
         
         if init is None:
             g = nx.Graph()
         else:
             g = init
         
+        M = matrix.copy()
+        M.M = self.func(M.M)
+        
         # Annotation uri & modality are shared by all tracks 
         uri = annotation.video
         modality = annotation.modality
-        # List of labels
-        labels = annotation.labels()
-    
-        # {label: list of tracks with this label} dictionary 
-        same_label = {label: [] for label in labels}
         
-        for segment, track, label in annotation.iterlabels():
-            # Add one node per track to the graph
-            node = TrackNode(uri, modality, segment, track)
-            g.add_node(node, label=label)
-            # Keep track of list of tracks per label
-            same_label[label].append(node)
-    
-        # Add 'same label' edges if requested
-        # (it is basically an edge with attribute 'probability=1')
-        if self.same:
-            for label in labels:
-                for n, node in enumerate(same_label[label]):
-                    for other_node in same_label[label][n+1:]:
-                        g.add_edge(node, other_node, probability=1)
-    
-        # Add 'diff label' edges if requested
-        # (it is basically an edge with attribute 'probability=0')
-        if self.diff:
-            for l, label in enumerate(labels):
-                for node in same_label[label]:
-                    for other_label in labels[l+1:]:
-                        for other_node in same_label[other_label]:
-                            g.add_edge(node, other_node, probability=0)
-        
-        # Add 'cooccurring track' edges if requested
-        if self.cooccurring:
-            for S, T, L in annotation.iterlabels():
-                N = TrackNode(uri, modality, S, T)
-                ann = annotation(S, mode='loose')
-                for s, t, l in ann.iterlabels():
-                    if s != S or t != T:
-                        n = TrackNode(uri, modality, s, t) 
-                        g.add_edge(N, n, probability=0)
+        # Double loop on tracks
+        for S, T, L in annotation.iterlabels():
+            
+            # Add track to the graph
+            node = TrackNode(uri, modality, S, T)
+            g.add_node(node, label=L)
+            
+            # Add edges to all other tracks
+            for s, t, l in annotation.iterlabels():
+                
+                # No self loop
+                if s == S and t == T:
+                    continue
+                
+                other_node = TrackNode(uri, modality, s, t)
+                
+                # Special case for co-occurring tracks
+                # (eg. two cooccurring faces cannot be from the same person)
+                if self.cooccurring and s.intersects(S):
+                    probability = 0.
+                else:
+                    # it might also happen that similarity between labels
+                    # is not available. then only, set probability to None
+                    try:
+                        probability = M[l, L]
+                    except Exception, e:
+                        probability = None
+                
+                if probability is not None:
+                    g.add_edge(node, other_node, probability=probability)
         
         return g
-
 
 import networkx as nx
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
@@ -188,7 +178,6 @@ class SimilarityGraph(object):
             self.func = lambda x: x
         else:
             self.func = func
-        
     
     def _similarity_matrix(self, iannotation, feature):
         return self.mmx_similarity_matrix(iannotation.labels(),
