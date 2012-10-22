@@ -53,7 +53,7 @@ class FACETRACKSParser(BaseAnnotationParser):
                 continue
             
             label = data['label']
-            if sef.load_ids and label is None:
+            if self.load_ids and label is None:
                 label = Unknown()
             else:
                 label = int(track)
