@@ -568,7 +568,9 @@ class LabelMatrix(object):
             header.extend([str(j) for j in J])
         
         table = prettytable.PrettyTable(header)
-        table.align[''] = 'l'
+        table.align[header[0]] = 'l'
+        for h in header[1:]:
+            table.align[h] = 'r'
         table.float_format = fmt
         
         for ni, i in enumerate(I):
