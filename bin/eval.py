@@ -28,6 +28,8 @@ from pyannote.metric.diarization import DiarizationErrorRate, \
                                         DiarizationCoverage, \
                                         DiarizationCompleteness, \
                                         DiarizationHomogeneity
+from pyannote.metric.detection import DetectionErrorRate
+
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
 
@@ -71,6 +73,8 @@ argparser.add_argument('--no-overlap', action='store_true',
 argparser.add_argument('--dump', metavar='PATH', type=str, default=SUPPRESS,
                        help='(pickle-)dump results matrices to PATH')
 
+argparser.add_argument('--components', action='store_true',
+                       help='detail error rate components')
 
 # Various switches to compute purity, coverage, homogeneity or completeness
 # (diarization error rate is always computed)
@@ -87,6 +91,9 @@ dgroup.add_argument('--homogeneity', action='store_true',
 dgroup.add_argument('--completeness', action='store_true',
                        help='compute diarization completeness')
 
+Dgroup = argparser.add_argument_group('Detection metrics')
+Dgroup.add_argument('--detection', action='store_true',
+                       help='compute detection error rate')
 
 # igroup = argparser.add_argument_group('Speaker identification metrics')
 # igroup.add_argument('--identification', action='store_true',
@@ -109,14 +116,33 @@ if args.homogeneity:
     requested.append(DiarizationHomogeneity)
 if args.completeness:
     requested.append(DiarizationCompleteness)
+if args.detection:
+    requested.append(DetectionErrorRate)
+
+if args.components:
+    if len(requested) > 1:
+        sys.exit("ERROR: Option '--components' is not supported with multiple "
+                 "metrics (you asked for: %s and %s)." % (", ".join([r.metric_name() for r in requested[:-1]]), requested[-1].metric_name()))
+    if len(args.hypothesis) > 1:
+        sys.exit("ERROR: Option '--components' is not supported with multiple "
+                 "hypothesis (you asked for %d)." % len(args.hypothesis))
+
 
 # Initialize metrics & result matrix
 metrics = {}
 M = {}
+
 for m in requested:
     name = m.metric_name()
     metrics[name] = {h: m() for h, (_, _) in enumerate(args.hypothesis)}
     M[name] = LabelMatrix(default=np.inf)
+
+if args.components:
+    C = {}
+    for m in requested:
+        name = m.metric_name()
+        C[name] = {c: LabelMatrix(default=np.inf) 
+                   for c in m.metric_components()}
 
 # only evaluate selection of uris
 if args.uris:
@@ -185,6 +211,9 @@ for u, uri in enumerate(uris):
         for name, metric in metrics.iteritems():
             details = metric[h](ref, hyp, detailed=True)
             M[name][uri, path] = details[metric[h].name]
+            if args.components:
+                for component in C[name]:
+                    C[name][component][uri, path] = details[component]
         
         pb.update(u*len(args.hypothesis)+h+1)
 
@@ -198,7 +227,13 @@ for name, metric in metrics.iteritems():
     for h, (path, _) in enumerate(args.hypothesis):
         M[name][AVERAGED, path] = np.mean(M[name][set(uris), path].M)
         M[name][COMBINED, path] = abs(metric[h])
-
+        if args.components:
+            for component in C[name]:
+                C[name][component][AVERAGED, path] = \
+                                np.mean(C[name][component][set(uris), path].M)
+                C[name][component][COMBINED, path] = \
+                                np.sum(C[name][component][set(uris), path].M)
+            
 # if there are more than one hypothesis
 # print one table per metric, with one column per hypothesis
 if len(args.hypothesis) > 1:
@@ -214,6 +249,12 @@ else:
             V[uri, name] = M[name][uri, path]
         V[AVERAGED, name] = M[name][AVERAGED, path]
         V[COMBINED, name] = M[name][COMBINED, path]
+        if args.components:
+            for cname in C[name]:
+                for uri in uris:
+                    V[uri, '(%s)' % cname] = C[name][cname][uri, path]
+                V[AVERAGED, '(%s)' % cname] = C[name][cname][AVERAGED, path]
+                V[COMBINED, '(%s)' % cname] = C[name][cname][COMBINED, path]
     print V.to_table(fmt='1.3', factorize='')
 
 if hasattr(args, 'dump'):
