@@ -30,10 +30,9 @@ from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import TimelineParser, LSTParser
 from pyannote.parser import MDTMParser
 from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
-from pyannote.algorithm.clustering.optimization.graph import PreComputedSimilarityGraph, graph2annotation
-from pyannote.algorithm.clustering.optimization.gurobi import gurobi2graph, graph2gurobi
-from pyannote.algorithm.clustering.optimization.objective import obj_IOP
-from gurobipy import GRB
+from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
+from pyannote.algorithm.clustering.model import AverageLinkMMx
+from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 
 from pyannote.parser.repere.facetracks import FACETRACKSParser
 from pyannote.parser.repere.metric import METRICParser
@@ -97,14 +96,16 @@ args = argparser.parse_args()
 
 postX, postY  = args.posterior
 pm = LogisticProbabilityMaker()
-
 if hasattr(args, 'prior'):
     pm.fit(postX, postY, prior=args.prior)
 else:
     pm.fit(postX, postY, prior=None)
 
-preComputedSimilarityGraph = PreComputedSimilarityGraph(cooccurring=True,
-                                                        func=pm)
+
+class PreCompSimilarityGraph(LabelSimilarityGraph, AverageLinkMMx):
+    def __init__(self, precomputed=None):
+        super(PreCompSimilarityGraph, self).__init__(precomputed=precomputed,
+                                                     func=pm)
 
 ft_parser = FACETRACKSParser(load_ids=False)
 mat_parser = METRICParser(aggregation='average')
@@ -117,26 +118,22 @@ for u, uri in enumerate(args.uris):
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
         sys.stdout.flush()
     
+    # load distance matrix
+    path = replace_placeholders(args.metric, uri)
+    D = mat_parser.read(path)
+    labels, _ = D.labels
+    
     # load face tracks
     path = replace_placeholders(args.tracks, uri)
     T = ft_parser.read(path, video=uri)(uri)
     T = T(args.uem(uri), mode='intersection')
     
-    # load distance matrix
-    path = replace_placeholders(args.metric, uri)
-    D = mat_parser.read(path)
-    
-    g = preComputedSimilarityGraph(T, D)
-    
-    model, x = graph2gurobi(g)
-    model.setParam(GRB.Param.OutputFlag, False)
-    model.setParam(GRB.Param.TimeLimit, 20*60)
-    model.setParam(GRB.Param.MIPFocus, 1)
-    objective, direction = obj_IOP(x, g, alpha=args.alpha)
-    model.setObjective(objective, direction)
+    preComputedSimilarityGraph = PreCompSimilarityGraph(precomputed=D)
+    g = preComputedSimilarityGraph(T(labels), None)
+    model = GurobiModel(g, timeLimit=20*60, threads=None, quiet=False)
+    model.setObjective(alpha=args.alpha)
     model.optimize()
-    g = gurobi2graph(model, x)
-    output = graph2annotation(g)[uri]['head']
+    output = model.reconstruct(T)
     
     # save to file
     MDTMParser().write(output, f=args.output)
