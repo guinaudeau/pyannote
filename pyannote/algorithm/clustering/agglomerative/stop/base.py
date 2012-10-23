@@ -45,7 +45,7 @@ class FuncSMx(BaseStoppingCriterionMixin):
         return self.smx_func(status)
 
 class LessThanSMx(FuncSMx):
-    def smx_setup(self, threshold, **kwargs):
+    def smx_setup(self, threshold=0.5, **kwargs):
         func = lambda x: x < threshold
         super(LessThanSMx, self).smx_setup(func=func)
 
