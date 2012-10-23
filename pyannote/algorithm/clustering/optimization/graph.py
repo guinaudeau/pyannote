@@ -24,10 +24,13 @@ Graphical representations
 
 """
 
-from pyannote.base.segment import SlidingWindow
-from pyannote import Timeline
-from pyannote import LabelMatrix
+# from pyannote.base.segment import SlidingWindow
 import networkx as nx
+from pyannote import Timeline
+from pyannote.base.matrix import LabelMatrix, Cooccurrence
+from pyannote.algorithm.clustering.model.base import BaseModelMixin
+import numpy as np
+
 
 class IdentityNode(object):
     """Graphical representation of an identity"""
@@ -160,13 +163,6 @@ class TrackNode(object):
 #         
 #         return g
 
-import networkx as nx
-from pyannote.algorithm.clustering.model.base import BaseModelMixin
-from pyannote.base.matrix import LabelMatrix, Cooccurrence
-import numpy as np
-import scipy
-import scipy.stats
-import scipy.optimize
 
 
 # TrackLabelGraph contains LabelNode(s) and TrackNode(s) from the same modality
@@ -236,16 +232,18 @@ class LabelSimilarityGraph(object):
         
         return MX
     
-    def __init__(self, func=None, **kwargs):
+    def __init__(self, func=None, cooccurring=True, **kwargs):
         """
         
         Parameters
         ----------
         func : function
             Similarity-to-probability function
-        
+        cooccurring : boolean
+            If True, cooccurring labels edges are set to 0 probability
         """
         super(LabelSimilarityGraph, self).__init__()
+        self.cooccurring = cooccurring
         
         # setup model
         MMx = self.getMx(BaseModelMixin)
@@ -277,6 +275,10 @@ class LabelSimilarityGraph(object):
         uri = annotation.video
         modality = annotation.modality
         
+        # Label cooccurrence matrix
+        if self.cooccurring:
+            K = Cooccurrence(annotation, annotation)
+        
         # Complete undirected graph with one LabelNode per label 
         for l, label in enumerate(labels):
             node = LabelNode(uri, modality, label)
@@ -285,7 +287,13 @@ class LabelSimilarityGraph(object):
                 other_label = labels[L]
                 other_node = LabelNode(uri, modality, other_label)
                 # Label-to-label edge is weighted by probability
-                G.add_edge(node, other_node, probability=P[l, L])
+                # or set to 0. if labels are cooccurring (the same person
+                # cannot appear twice at the same time...)
+                if self.cooccurring and K[label, other_label] > 0.:
+                    p = 0.
+                else:
+                    p = P[l, L]
+                G.add_edge(node, other_node, probability=p)
         
         return G
 
