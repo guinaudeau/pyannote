@@ -30,12 +30,9 @@ from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.parser import PLPParser, MDTMParser
 from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
-from pyannote.algorithm.clustering.model.base import SimilarityMatrix
 from pyannote.algorithm.clustering.model.gaussian import BICMMx
-from pyannote.algorithm.clustering.optimization.graph import SimilarityGraph, graph2annotation
-from pyannote.algorithm.clustering.optimization.gurobi import gurobi2graph, graph2gurobi
-from pyannote.algorithm.clustering.optimization.objective import obj_IOP
-from gurobipy import GRB
+from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
+from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 
 place_holders = ["%s", "[URI]"] 
 
@@ -101,7 +98,8 @@ if hasattr(args, 'prior'):
 else:
     pm_bic.fit(postX, postY, prior=None)
 
-class BICSimilarityGraph(SimilarityGraph, BICMMx):
+
+class BICSimilarityGraph(LabelSimilarityGraph, BICMMx):
     def __init__(self):
         super(BICSimilarityGraph, self).__init__(
                             covariance_type=covariance_type,
@@ -109,6 +107,7 @@ class BICSimilarityGraph(SimilarityGraph, BICMMx):
                             func=pm_bic)
 
 bicSimilarityGraph = BICSimilarityGraph()
+
 
 # only process selection of uris
 if args.uris:
@@ -139,15 +138,10 @@ for u, uri in enumerate(uris):
     feature = PLPParser().read(path)
     
     g = bicSimilarityGraph(annotation, feature)
-    model, x = graph2gurobi(g)
-    model.setParam(GRB.Param.OutputFlag, False)
-    model.setParam(GRB.Param.TimeLimit, 20*60)
-    model.setParam(GRB.Param.MIPFocus, 1)
-    objective, direction = obj_IOP(x, g, alpha=args.alpha)
-    model.setObjective(objective, direction)
+    model = GurobiModel(g, timeLimit=20*60, threads=None, quiet=True)
+    model.setObjective(alpha=args.alpha)
     model.optimize()
-    g = gurobi2graph(model, x)
-    output = graph2annotation(g)[uri]['speaker']
+    output = model.reconstruct(annotation)
     
     # save to file
     MDTMParser().write(output, f=args.output)
