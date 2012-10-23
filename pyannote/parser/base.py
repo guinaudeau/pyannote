@@ -140,7 +140,7 @@ class BaseTextualTimelineParser(BaseTimelineParser):
             f.close()
 
 
-from pyannote.base.annotation import Annotation
+from pyannote.base.annotation import Annotation, Unknown
 
 class BaseAnnotationParser(object):
     def __init__(self, multitrack):
@@ -206,13 +206,17 @@ class BaseAnnotationParser(object):
                                  if m == modality}
         
         if len(match) == 0:
-            # empty annotation
-            return Annotation(video=video, modality=modality)
+            A = Annotation(video=video, modality=modality)
         elif len(match) == 1:
-            return match.values()[0]
+            A = match.values()[0]
         else:
-            raise ValueError('')
-
+            raise ValueError('Found more than one matching annotation: %s' % match.keys())
+        
+        # make sure UnknownXXXX labels are changed into Unknown objects
+        labels = A.labels()
+        translation = {l: Unknown() for l in A.labels() if l[:7] == 'Unknown'}
+        
+        return A % translation
 
 class BaseTextualAnnotationParser(BaseAnnotationParser):
     def __init__(self, multitrack):
