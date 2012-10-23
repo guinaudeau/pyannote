@@ -294,7 +294,7 @@ class AgglomerativeClustering(object):
                 merged_labels, status = self.next()
                 if self._debug:
                     msg = "DEBUG > Next merging candidates are %s.\n"
-                    sys.stderr.write(msg % " & ".join(merged_labels))
+                    sys.stderr.write(msg % " & ".join([str(l) for l in merged_labels]))
                 
                 # are there any? if not, stop looking.
                 if not merged_labels:
@@ -308,7 +308,7 @@ class AgglomerativeClustering(object):
                 # make sure we do not try to merge them again
                 if self._debug:
                     msg = "DEBUG > Constraints prevented merging of %s.\n"
-                    sys.stderr.write(msg % " & ".join(merged_labels))
+                    sys.stderr.write(msg % " & ".join([str(l) for l in merged_labels]))
                 
                 self.do_not_merge(merged_labels)
             
@@ -329,7 +329,7 @@ class AgglomerativeClustering(object):
             new_label, old_labels = self.merge_models(merged_labels)
             if self._debug:
                 msg = "DEBUG > Merging %s into %s.\n"
-                sys.stderr.write(msg % (" & ".join(merged_labels), new_label))
+                sys.stderr.write(msg % (" & ".join([str(l) for l in merged_labels]), str(new_label)))
             
             # update internal annotation
             translation = {old_label : new_label for old_label in old_labels}
