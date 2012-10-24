@@ -198,9 +198,14 @@ class LabelCoreferenceGraph(object):
 # and probability edges between cooccurring LabelNodes(s)
 class LabelCooccurrenceGraph(object):
     
-    def __init__(self, P=None):
+    def __init__(self, P=None, modalityA=None, modalityB=None):
         super(LabelCooccurrenceGraph, self).__init__()
-        self.P = P
+        if P is not None:
+            self.P = P
+        if modalityA is not None:
+            self.modalityA = modalityA
+        if modalityB is not None:
+            self.modalityB = modalityB
         
     def fit(self, rAiArBiB_iterator):
         """
@@ -287,6 +292,8 @@ class LabelCooccurrenceGraph(object):
                         ok[N, n] += mapA[rAB] * mapB[rAB]
         
         self.P = {(N,n): ok[N,n] / total[N,n] for (N,n) in ok}
+        self.modalityA = modalityA
+        self.modalityB = modalityB
         
         return self
     
@@ -299,11 +306,13 @@ class LabelCooccurrenceGraph(object):
         if other_annotation.video != uri:
             raise ValueError('URI mismatch.')
         
-        # make sure annotations are for 2 different modalities
-        modality = annotation.modality
-        other_modality = other_annotation.modality
-        if modality == other_modality:
-            raise ValueError('Both annotations share the same modality.')
+        # make sure modalities are correct
+        if modality != self.modalityA:
+            raise ValueError('Modality mismatch (%s vs. %s)' \
+                             % (modality, self.modalityA))
+        if other_modality != self.modalityB:
+            raise ValueError('Modality mismatch (%s vs. %s)' \
+                             % (other_modality, self.modalityB))
         
         # auto-cooccurrence matrix in both annotations
         cooccurrence = Cooccurrence(annotation, annotation)
