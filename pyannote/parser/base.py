@@ -254,7 +254,7 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
                 v = video
             
             # found modality ?
-            if m is None:
+            if m is None or m == 'None':
                 m = modality
             
             # add label
