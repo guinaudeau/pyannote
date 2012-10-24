@@ -24,13 +24,11 @@ Graphical representations
 
 """
 
-# from pyannote.base.segment import SlidingWindow
+import numpy as np
 import networkx as nx
 from pyannote import Timeline
-from pyannote.base.matrix import LabelMatrix, Cooccurrence
+from pyannote.base.matrix import LabelMatrix, Cooccurrence, CoTFIDF
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
-import numpy as np
-
 
 class IdentityNode(object):
     """Graphical representation of an identity"""
@@ -191,17 +189,178 @@ class TrackLabelGraph(object):
             G.add_edge(trackNode, labelNodes[label], probability=1.)
         
         return G
-        
+
+class LabelCoreferenceGraph(object):
+    def __init__(self):
+        super(LabelCoreferenceGraph, self).__init__()
+
 # LabelCooccurrenceGraph contains LabelNode(s) from 2 different modalities
 # and probability edges between cooccurring LabelNodes(s)
 class LabelCooccurrenceGraph(object):
-    pass
-
+    
+    def __init__(self, P=None):
+        super(LabelCooccurrenceGraph, self).__init__()
+        self.P = P
+        
+    def fit(self, rAiArBiB_iterator):
+        """
+        
+        Parameters
+        ----------
+        rAiArBiB_iterator :(reference_A, input_A, reference_B, input_B) iterator
+        
+        """
+        
+        ok = {}
+        total = {}
+        
+        modalityA = None
+        modalityB = None
+        
+        for RefA, InpA, RefB, InpB in rAiArBiB_iterator:
+        
+            # make sure annotation are for the same resource
+            uri = RefA.video
+            if InpA.video != uri or RefB.video != uri or InpB.video != uri:
+                raise ValueError('URI mismatch.')
+            
+            modA = RefA.modality
+            if modalityA is None:
+                modalityA = modA
+            
+            modB = RefB.modality
+            if modalityB is None:
+                modalityB = modB
+                
+            # make sure all refs are for the same modality
+            if modalityA != modA:
+                raise ValueError('Modality mismatch (%s vs. %s)' \
+                               % (modalityA, modA))
+            if modalityB != modB:
+                raise ValueError('Modality mismatch (%s vs. %s)' \
+                               % (modalityB, modB))
+            
+            # make sure Ref/Inp are for the same modality
+            if InpA.modality != modA:
+                raise ValueError('Modality mismatch (%s vs. %s)' \
+                                 % (InpA.modality, modA)) 
+            if InpB.modality != modB:
+                raise ValueError('Modality mismatch (%s vs. %s)' \
+                                 % (InpB.modality, modB)) 
+            
+            # make sure annotations are for 2 different modalities
+            if modA == modB:
+                raise ValueError('Both annotations share the same modality.')
+            
+            # auto-cooccurrence matrix in both annotations
+            autoCoA = Cooccurrence(InpA, InpA)
+            autoCoB = Cooccurrence(InpB, InpB)
+            coA = CoTFIDF(RefA, InpA, idf=False).T
+            coB = CoTFIDF(RefB, InpB, idf=False).T
+            
+            for iA in InpA.labels():
+                
+                # number of auto-cooccurring labels
+                N = np.sum(autoCoA[iA, :].M > 0)
+                
+                # find reference labels with positive cooccurrence
+                mapA = {rA: coA[iA, rA] for rA in coA.labels[1] 
+                                        if coA[iA, rA] > 0}
+                
+                # focus on cooccurring other labels
+                for iB in InpB(InpA.label_coverage(iA),
+                              mode='intersection').labels():
+                    
+                    # number of auto-cooccurring labels
+                    n = np.sum(autoCoB[iB, :].M > 0)
+                    
+                    # find reference labels with positive cooccurrence
+                    mapB = {rB: coB[iB, rB] for rB in coB.labels[1] 
+                                            if coB[iB, rB] > 0}
+                    
+                    if (N, n) not in ok:
+                        ok[N, n] = 0.
+                        total[N, n] = 0.
+                    
+                    total[N, n] += 1.
+                    for rAB in set(mapA) & set(mapB):
+                        ok[N, n] += mapA[rAB] * mapB[rAB]
+        
+        self.P = {(N,n): ok[N,n] / total[N,n] for (N,n) in ok}
+        
+        return self
+    
+    def __call__(self, annotation, other_annotation):
+        
+        G = nx.Graph()
+        
+        # make sure annotation are for the same resource
+        uri = annotation.video
+        if other_annotation.video != uri:
+            raise ValueError('URI mismatch.')
+        
+        # make sure annotations are for 2 different modalities
+        modality = annotation.modality
+        other_modality = other_annotation.modality
+        if modality == other_modality:
+            raise ValueError('Both annotations share the same modality.')
+        
+        # auto-cooccurrence matrix in both annotations
+        cooccurrence = Cooccurrence(annotation, annotation)
+        other_cooccurrence = Cooccurrence(other_annotation, other_annotation)
+        
+        for L in annotation.labels():
+            
+            # number of auto-cooccurring labels
+            N = np.sum(cooccurrence[L, :].M > 0)
+            
+            node = LabelNode(uri, modality, L)
+            
+            # focus on cooccurring other labels
+            for l in other_annotation(annotation.label_coverage(L),
+                                      mode='intersection').labels():
+                
+                # number of auto-cooccurring labels
+                n = np.sum(other_cooccurrence[l, :].M > 0)
+                
+                if (N, n) not in self.P:
+                    continue
+                
+                other_node = LabelNode(uri, other_modality, l)
+                G.add_edge(node, other_node, probability=self.P[N, n])
+        
+        return G
+        
 # LabelIdentityGraph contains LabelNode(s) and IdentityNode(s)
-# and probability edges between LabelNode(s) and TrackNode(s)
+# and probability edges between LabelNode(s) and IdentityNode(s)
 class LabelIdentityGraph(object):
-    pass
-
+    def __init__(self):
+        super(LabelIdentityGraph, self).__init__()
+    
+    def __call__(self, annotation):
+        
+        # label nodes are sharing the same uri/modality
+        uri = annotation.video
+        modality = annotation.modality
+        
+        G = nx.Graph()
+        
+        identityNodes = []
+        
+        # link each label with its identity node
+        for label in annotation.labels():
+            labelNode = LabelNode(uri, modality, label)
+            identityNode = IdentityNode(label)
+            identityNodes.append(identityNode)
+            G.add_edge(labelNode, identityNode, probability=1.)
+        
+        # identity nodes cannot be merged
+        for n, node in enumerate(identityNodes):
+            for other_node in identityNodes[n+1:]:
+                G.add_edge(node, other_node, probability=0.)
+        
+        return G
+        
 # LabelSimilarityGraph contains LabelNode(s) from the same modality
 # and probability edges between LabelNode(s) 
 class LabelSimilarityGraph(object):
@@ -296,94 +455,6 @@ class LabelSimilarityGraph(object):
                 G.add_edge(node, other_node, probability=p)
         
         return G
-
-
-# class SimilarityGraph(object):
-#     
-#     def getMx(self, baseMx):
-#         
-#         # get all mixins subclass of baseMx
-#         # but the class itself and the baseMx itself
-#         cls = self.__class__
-#         MX =  [Mx for Mx in cls.mro() 
-#                   if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
-#         
-#         # build the class inheritance directed graph {subclass --> class}
-#         G = nx.DiGraph()
-#         for m, Mx in enumerate(MX):
-#             G.add_node(Mx)
-#             for otherMx in MX[m+1:]:
-#                 if issubclass(Mx, otherMx):
-#                     G.add_edge(Mx, otherMx)
-#                 elif issubclass(otherMx, Mx):
-#                     G.add_edge(otherMx, Mx)
-#         
-#         # only keep the deeper subclasses in each component
-#         MX = []
-#         for components in nx.connected_components(G.to_undirected()):
-#             g = G.subgraph(components)
-#             MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
-#         
-#         return MX
-#     
-#     def __init__(self, func=None, **kwargs):
-#         """
-#         
-#         Parameters
-#         ----------
-#         func : function
-#             Similarity-to-probability function
-#         
-#         """
-#         super(SimilarityGraph, self).__init__()
-#         
-#         # setup model
-#         MMx = self.getMx(BaseModelMixin)
-#         if len(MMx) == 0:
-#             raise ValueError('Missing model mixin (MMx).')
-#         elif len(MMx) > 1:
-#             raise ValueError('Too many model mixins (MMx): %s' % MMx)
-#         self.mmx_setup(**kwargs)
-#         
-#         if func is None:
-#             self.func = lambda x: x
-#         else:
-#             self.func = func
-#     
-#     def _similarity_matrix(self, iannotation, feature):
-#         return self.mmx_similarity_matrix(iannotation.labels(),
-#                                           annotation=iannotation,
-#                                           feature=feature)
-#     
-#     def __call__(self, iannotation, feature, init=None):
-#         
-#         if init is None:
-#             g = nx.Graph()
-#         else:
-#             g = init
-#         
-#         uri = iannotation.video
-#         modality = iannotation.modality
-#         
-#         labels = iannotation.labels()
-#         l2i = {label: l for l, label in enumerate(labels)}
-#         
-#         M = self._similarity_matrix(iannotation, feature)
-#         M = self.func(M)
-#         
-#         for S, T, L in iannotation.iterlabels():
-#             node = TrackNode(uri, modality, S, T)
-#             g.add_node(node, label=L)
-#             for s, t, l in iannotation.iterlabels():
-#                 other_node = TrackNode(uri, modality, s, t)
-#                 if l == L:
-#                     probability = 1
-#                 else:
-#                     probability = M[l2i[L], l2i[l]]
-#                 g.add_edge(node, other_node, probability=probability)
-#         
-#         return g
-
 
 # class CooccurrenceGraph(object):
 #     """Generate cross-modal probability graph
