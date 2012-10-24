@@ -19,13 +19,6 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Training mode
-# 1. load reference segmentation
-# 2. load clustering input segmentation
-# 3. generate label clustering groundtruth matrix Y
-# 4. generate label similarity matrix X
-# 5. store X and Y
-
 import sys
 import pickle
 import numpy as np
@@ -117,6 +110,8 @@ def do_speaker(args):
 
 def do_face(args):
     
+    # load_ids = True makes unassociated tracks labeled as Unknown()
+    # associated tracks are labeled with the person identity
     ft_parser = FACETRACKSParser(load_ids=True)
     mat_parser = METRICParser(aggregation='average')
     
@@ -235,7 +230,6 @@ parser_speaker.add_argument('--penalty', metavar='LAMBDA', type=float, default=3
 # Diagonal covariance matrix
 parser_speaker.add_argument('--diagonal', action='store_true', 
                        help='use diagonal covariance matrix (default: full)')
-
 
 # == Face clustering ==
 
