@@ -197,8 +197,17 @@ class LabelCoreferenceGraph(object):
 # LabelCooccurrenceGraph contains LabelNode(s) from 2 different modalities
 # and probability edges between cooccurring LabelNodes(s)
 class LabelCooccurrenceGraph(object):
+    """
+        
+    Parameters
+    ----------
+    minduration : float
+        Minimum duration (in seconds) for two labels to be cooccurring
+    """
     
-    def __init__(self, P=None, modalityA=None, modalityB=None):
+    def __init__(self, P=None, 
+                       modalityA=None, modalityB=None, 
+                       minduration=-np.inf):
         super(LabelCooccurrenceGraph, self).__init__()
         if P is not None:
             self.P = P
@@ -206,6 +215,7 @@ class LabelCooccurrenceGraph(object):
             self.modalityA = modalityA
         if modalityB is not None:
             self.modalityB = modalityB
+        self.minduration = minduration
         
     def fit(self, rAiArBiB_iterator):
         """
@@ -260,9 +270,12 @@ class LabelCooccurrenceGraph(object):
             # auto-cooccurrence matrix in both annotations
             autoCoA = Cooccurrence(InpA, InpA)
             autoCoB = Cooccurrence(InpB, InpB)
+            
             coA = CoTFIDF(RefA, InpA, idf=False).T
             coB = CoTFIDF(RefB, InpB, idf=False).T
             
+            coAB = Cooccurrence(InpA, InpB)
+                        
             for iA in InpA.labels():
                 
                 # number of auto-cooccurring labels
@@ -273,8 +286,9 @@ class LabelCooccurrenceGraph(object):
                                         if coA[iA, rA] > 0}
                 
                 # focus on cooccurring other labels
-                for iB in InpB(InpA.label_coverage(iA),
-                              mode='intersection').labels():
+                iBs = [iB for iB in coAB.labels[1] 
+                          if coAB[iA, iB] >= self.minduration]
+                for iB in iBs:
                     
                     # number of auto-cooccurring labels
                     n = np.sum(autoCoB[iB, :].M > 0)
@@ -297,49 +311,46 @@ class LabelCooccurrenceGraph(object):
         
         return self
     
-    def __call__(self, annotation, other_annotation):
+    def __call__(self, InpA, InpB):
         
         G = nx.Graph()
         
         # make sure annotation are for the same resource
-        uri = annotation.video
-        if other_annotation.video != uri:
+        uri = InpA.video
+        if InpB.video != uri:
             raise ValueError('URI mismatch.')
         
         # make sure modalities are correct
-        modality = annotation.modality
-        if modality != self.modalityA:
+        if InpA.modality != self.modalityA:
             raise ValueError('Modality mismatch (%s vs. %s)' \
-                             % (modality, self.modalityA))
-        
-        other_modality = other_annotation.modality
-        if other_modality != self.modalityB:
+                             % (InpA.modality, self.modalityA))
+        if InpB.modality != self.modalityB:
             raise ValueError('Modality mismatch (%s vs. %s)' \
-                             % (other_modality, self.modalityB))
+                             % (InpB.modality, self.modalityB))
         
-        # auto-cooccurrence matrix in both annotations
-        cooccurrence = Cooccurrence(annotation, annotation)
-        other_cooccurrence = Cooccurrence(other_annotation, other_annotation)
+        autoCoA = Cooccurrence(InpA, InpA)
+        autoCoB = Cooccurrence(InpB, InpB)
+        coAB = Cooccurrence(InpA, InpB)
         
-        for L in annotation.labels():
+        for iA in InpA.labels():
             
             # number of auto-cooccurring labels
-            N = np.sum(cooccurrence[L, :].M > 0)
-            
-            node = LabelNode(uri, modality, L)
+            N = np.sum(autoCoA[iA, :].M > 0)
+            nodeA = LabelNode(uri, self.modalityA, iA)
             
             # focus on cooccurring other labels
-            for l in other_annotation(annotation.label_coverage(L),
-                                      mode='intersection').labels():
+            iBs = [iB for iB in coAB.labels[1] 
+                      if coAB[iA, iB] >= self.minduration]
+            for iB in iBs:
                 
                 # number of auto-cooccurring labels
-                n = np.sum(other_cooccurrence[l, :].M > 0)
+                n = np.sum(autoCoB[iB, :].M > 0)
                 
                 if (N, n) not in self.P:
                     continue
                 
-                other_node = LabelNode(uri, other_modality, l)
-                G.add_edge(node, other_node, probability=self.P[N, n])
+                nodeB = LabelNode(uri, self.modalityB, iB)
+                G.add_edge(nodeA, nodeB, probability=self.P[N, n])
         
         return G
         
