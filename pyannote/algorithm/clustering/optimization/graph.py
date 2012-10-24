@@ -307,9 +307,12 @@ class LabelCooccurrenceGraph(object):
             raise ValueError('URI mismatch.')
         
         # make sure modalities are correct
+        modality = annotation.modality
         if modality != self.modalityA:
             raise ValueError('Modality mismatch (%s vs. %s)' \
                              % (modality, self.modalityA))
+        
+        other_modality = other_annotation.modalityB
         if other_modality != self.modalityB:
             raise ValueError('Modality mismatch (%s vs. %s)' \
                              % (other_modality, self.modalityB))
