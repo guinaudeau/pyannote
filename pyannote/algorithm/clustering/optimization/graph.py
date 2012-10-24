@@ -312,7 +312,7 @@ class LabelCooccurrenceGraph(object):
             raise ValueError('Modality mismatch (%s vs. %s)' \
                              % (modality, self.modalityA))
         
-        other_modality = other_annotation.modalityB
+        other_modality = other_annotation.modality
         if other_modality != self.modalityB:
             raise ValueError('Modality mismatch (%s vs. %s)' \
                              % (other_modality, self.modalityB))
