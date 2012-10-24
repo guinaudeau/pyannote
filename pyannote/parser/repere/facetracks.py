@@ -43,18 +43,18 @@ class FACETRACKSParser(BaseAnnotationParser):
     def read(self, path, video=None):
         
         modality = 'head'
+        tracks, _, _ = cvhcistandards.read_tracks(path, load_ids=self.load_ids)
         
-        tracks, _, _ = cvhcistandards.read_tracks(path, 
-                                                  load_ids=self.load_ids)
         for track, data in tracks.iteritems():
             
             segment = Segment(data['state'][0][1], data['state'][-1][1])
             if not segment:
                 continue
             
-            label = data['label']
-            if self.load_ids and label is None:
-                label = Unknown()
+            if self.load_ids:
+                label = data['label']
+                if label is None:
+                    label = Unknown()
             else:
                 label = int(track)
             
