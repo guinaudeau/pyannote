@@ -26,7 +26,7 @@ import pyannote
 from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.parser import PLPParser
-from pyannote.algorithm.clustering.util import label_clustering_groundtruth
+from pyannote.algorithm.clustering.util import label_clustering_groundtruth, LogisticProbabilityMaker
 from pyannote.algorithm.clustering.model.base import SimilarityMatrix
 from pyannote.algorithm.clustering.model.gaussian import BICMMx
 
@@ -58,6 +58,7 @@ def do_speaker(args):
                                     covariance_type=covariance_type)
         data['covariance_type'] = covariance_type
         data['penalty_coef'] = penalty_coef
+        data['MMx'] = BICMMx
 
     X = np.empty((0,1))
     Y = np.empty((0,1))
@@ -99,11 +100,16 @@ def do_speaker(args):
             x = bicSimilarityMatrix(annotation, feature)
     
         X = np.append(X, x.M)
-
+    
     # save to output file
     data['X'] = X
     data['Y'] = Y
     data['uris'] = uris
+    
+    lpm = LogisticProbabilityMaker()
+    lpm.fit(X, Y, prior=1.)
+    data['func'] = lpm
+    
     f = open(args.save, 'w')
     pickle.dump(data, f)
     f.close()
