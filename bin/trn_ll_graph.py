@@ -184,7 +184,7 @@ argparser.add_argument('--verbose', action='store_true',
                        help='print progress information')
 
 
-subparsers = argparser.add_subparsers(help='sub-command help')
+subparsers = argparser.add_subparsers(help='sub-commands')
 
 parser_speaker = subparsers.add_parser('speaker', help='Speaker diarization')
 parser_speaker.set_defaults(func=do_speaker)
