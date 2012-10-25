@@ -55,7 +55,8 @@ argparser.add_argument('--modalityB', type=str, default=SUPPRESS,
                        help='force source/target modality B')
 
 argparser.add_argument('dump', type=output_parser, metavar='dump_to',
-                        help='path where to save training results')
+                        help='path where to save parameters of trained '
+                             'cross-modal cooccurrence graph')
 
 argparser.add_argument('--uris', type=uris_parser, metavar='file.lst',
                        default=SUPPRESS, 
