@@ -203,7 +203,7 @@ class GurobiModel(object):
         # model.setParam(grb.GRB.Param.MIPGap, 1e-2)
         
         # default objective
-        model.setObjective()
+        self.setObjective()
         
         model.setParam('OutputFlag', not self.quiet)
         
