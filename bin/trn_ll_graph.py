@@ -34,12 +34,7 @@ from pyannote.parser.repere.facetracks import FACETRACKSParser
 from pyannote.parser.repere.metric import METRICParser
 from pyannote.base.annotation import Unknown
 
-def replace_placeholders(path, uri):
-    new_path = str(path)
-    for ph in uri_place_holders:
-        new_path = new_path.replace(ph, uri)
-    return new_path
-
+import clicommon
 
 def do_speaker(args):
     
@@ -95,7 +90,7 @@ def do_speaker(args):
         if args.bic:
         
             # PLP features
-            path = replace_placeholders(args.plp, uri)
+            path = clicommon.replaceURIs(args.plp, uri)
             feature = PLPParser().read(path)
             x = bicSimilarityMatrix(annotation, feature)
     
@@ -132,14 +127,14 @@ def do_face(args):
             sys.stdout.flush()
         
         # load face tracks
-        path = replace_placeholders(args.tracks, uri)
+        path = clicommon.replaceURIs(args.tracks, uri)
         T = ft_parser.read(path, video=uri)(uri)
         T = T(args.uem(uri), mode='loose')
         labels = [label for label in T.labels() 
                         if not isinstance(label, Unknown)]
         
         # load distance matrix
-        path = replace_placeholders(args.metric, uri)
+        path = clicommon.replaceURIs(args.metric, uri)
         D = mat_parser.read(path)
         
         # list of labels with at least one associated track
@@ -172,11 +167,7 @@ def do_face(args):
     f.close()
 
 
-uri_place_holders = ["%s", "[URI]"]
-
-argparser = ArgumentParser(description='A tool for estimating the clustering posterior probability')
-argparser.add_argument('--version', action='version', 
-                       version=('PyAnnote %s' % pyannote.__version__))
+argparser = ArgumentParser(description='A tool for training label similarity graphs')
 
 def input_parser(path):
     return AnnotationParser().read(path)
@@ -185,52 +176,44 @@ def uem_parser(path):
 def uris_parser(path):
     return LSTParser().read(path)
 
-# Verbosity switch
-argparser.add_argument('--verbose', action='store_true',
-                       help='print progress information')
+subparsers = argparser.add_subparsers(help='commands')
 
-
-subparsers = argparser.add_subparsers(help='sub-commands')
-
-parser_speaker = subparsers.add_parser('speaker', help='Speaker diarization')
+parser_speaker = subparsers.add_parser('speaker', parents=[clicommon.parser], 
+                                       help='speaker diarization')
 parser_speaker.set_defaults(func=do_speaker)
 
-parser_face = subparsers.add_parser('face', help='Face clustering')
+parser_face = subparsers.add_parser('face', parents=[clicommon.parser],
+                                    help='face clustering')
 parser_face.set_defaults(func=do_face)
 
-# First positional argument is reference segmentation file
-# -- loaded at argument-parsing time by an instance of AnnotationParser
-parser_speaker.add_argument('reference', type=input_parser,
-                       help='path to reference segmentation file')
 
 # Second positional argument is input segmentation file
 # -- loaded at argument-parsing time by an instance of AnnotationParser
-parser_speaker.add_argument('input', type=input_parser,
+parser_speaker.add_argument('input', metavar='source', type=input_parser,
                        help='path to input segmentation file')
 
-# Next positional argument is where to save parameters
-parser_speaker.add_argument('save', type=str, metavar='output',
-                        help='path to output file')
+# First positional argument is reference segmentation file
+# -- loaded at argument-parsing time by an instance of AnnotationParser
+parser_speaker.add_argument('reference', metavar='target', type=input_parser,
+                       help='path to reference segmentation file')
+
 
 # PLP features
-help_msg = "path to PLP feature file. the following URI placeholders are supported: %s." % " or ".join(uri_place_holders[1:])
-parser_speaker.add_argument('plp', type=str, help=help_msg)
+msg = "path to PLP feature files. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+parser_speaker.add_argument('plp', type=str, metavar='file.plp', help=msg)
 
+# Next positional argument is where to save parameters
+parser_speaker.add_argument('save', type=str, metavar='output.pkl',
+                        help='path to output file')
 
-# UEM file is loaded at argument-parsing time by an instance of TimelineParser
-parser_speaker.add_argument('--uem', type=uem_parser, 
-                       help='path to Unpartitioned Evaluation Map (UEM) file')
-
-# Training set -- loaded at argument-parsing time by an instance of LSTParser
-parser_speaker.add_argument('--uris', type=uris_parser, 
-                       help='path to list used for training')
 
 # BIC similarity
 parser_speaker.add_argument('--bic', action='store_true',
                        help='use BIC as similarity metric')
 
 # BIC penalty coefficient
-parser_speaker.add_argument('--penalty', metavar='LAMBDA', type=float, default=3.5,
+parser_speaker.add_argument('--penalty', metavar='λ', type=float, default=3.5,
                        help='BIC penalty coefficient (default: 3.5)')
 
 # Diagonal covariance matrix
@@ -248,11 +231,14 @@ parser_face.add_argument('uem', type=uem_parser,
                        help='path to Unpartitioned Evaluation Map (UEM) file')
 
 # .mat files
-help_msg = "path to .mat file. the following URI placeholders are supported: %s." % " or ".join(uri_place_holders[1:])
-parser_face.add_argument('metric', type=str, help=help_msg)
+msg = "path to .mat files. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+parser_face.add_argument('metric', type=str, metavar='file.mat', help=msg)
 
-help_msg = "path to .facetracks file. the following URI placeholders are supported: %s." % " or ".join(uri_place_holders[1:])
-parser_face.add_argument('tracks', type=str, help=help_msg)
+msg = "path to .facetracks files. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+parser_face.add_argument('tracks', type=str, 
+                         metavar='file.facetracks', help=msg)
 
 # Next positional argument is where to save parameters
 parser_face.add_argument('save', type=str, metavar='output',
