@@ -56,10 +56,6 @@ argparser.add_argument('--alpha', type=float, metavar='α',
                        help='set α in objective function. '
                             'smaller α means bigger clusters.')
 
-argparser.add_argument('--verbose-gurobi', action='store_true', 
-                       help='let Gurobi be verbose.')
-
-
 def speaker_parser(path):
     
     f = open(path, 'r')
@@ -239,7 +235,7 @@ for u, uri in enumerate(uris):
     else:
         timeLimit = None
     model = GurobiModel(G, timeLimit=timeLimit, threads=None, 
-                           quiet=not args.verbose_gurobi)
+                           quiet=len(args.verbose) < 2)
     
     # set objective
     model.setObjective(alpha=args.alpha)
