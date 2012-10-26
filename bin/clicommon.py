@@ -7,8 +7,11 @@ parser = ArgumentParser(add_help=False)
 parser.add_argument('--version', action='version', 
                        version=('PyAnnote %s' % pyannote.__version__))
 
-parser.add_argument('--verbose', action='store_true',
-                    help='print progress information')
+# parser.add_argument('--verbose', action='store_true',
+#                     help='print progress information')
+
+parser.add_argument('--verbose', action='append_const', dest='verbose',
+                    const=1, default=[], help='print progress information')
 
 def uris_parser(path):
     return LSTParser().read(path)
