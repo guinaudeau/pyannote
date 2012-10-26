@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import os
+import socket
+os.putenv('GRB_LICENSE_FILE', 
+          "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
+                                  socket.gethostname()))
+import gurobipy as grb
+
 import sys
 import numpy as np
 import networkx as nx
-import gurobipy as grb
 from graph import LabelNode, IdentityNode
 from pyannote.base.annotation import Unknown
-
 
 # from progressbar import ProgressBar, Percentage, Bar, ETA
 
@@ -225,8 +230,6 @@ class GurobiModel(object):
                                       if m > n and P[n,m] > 0])
         
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
-        
-    
     
     def optimize(self):
         self.model.optimize()
@@ -245,17 +248,17 @@ class GurobiModel(object):
         new_annotation : dictionary of Annotation
     
         """
-    
+        
         g = nx.Graph()
         for (n1, n2), var in self.x.iteritems():
             g.add_node(n1)
             g.add_node(n2)
             if var.x == 1.:
                 g.add_edge(n1, n2)
-    
+        
         uri = annotation.video
         modality = annotation.modality
-    
+        
         translation = {}
         for cc in nx.connected_components(g):
         
