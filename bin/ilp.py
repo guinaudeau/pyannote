@@ -28,7 +28,7 @@ from pyannote.base.matrix import LabelMatrix
 from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph, LabelCooccurrenceGraph, LabelIdentityGraph
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 
-import clicommon
+from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='A tool for multimodal ILP clustering')
 

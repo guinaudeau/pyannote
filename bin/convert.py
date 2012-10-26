@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import clicommon
+from pyannote import clicommon
 from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser
 

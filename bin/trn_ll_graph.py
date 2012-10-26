@@ -34,7 +34,7 @@ from pyannote.parser.repere.facetracks import FACETRACKSParser
 from pyannote.parser.repere.metric import METRICParser
 from pyannote.base.annotation import Unknown
 
-import clicommon
+from pyannote import clicommon
 
 def do_speaker(args):
     
@@ -196,7 +196,6 @@ parser_speaker.add_argument('input', metavar='source', type=input_parser,
 # -- loaded at argument-parsing time by an instance of AnnotationParser
 parser_speaker.add_argument('reference', metavar='target', type=input_parser,
                        help='path to reference segmentation file')
-
 
 # PLP features
 msg = "path to PLP feature files. " \
