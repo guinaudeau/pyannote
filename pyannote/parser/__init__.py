@@ -29,12 +29,17 @@ class AnnotationParser(object):
             '.mdtm':   MDTMParser,
             '.seg':    SEGParser,
             '.repere': REPEREParser,
+            '.hyp':    REPEREParser,
             '.trs':    TRSParser, 
             '.xgtf':   XGTFParser, 
         }
     
-    def __guess(self, extension):
-        return AnnotationParser.supported.get(extension, None)
+    
+    @classmethod
+    def guess(cls, path):
+        import os
+        _, extension = os.path.splitext(path)
+        return AnnotationParser.supported.get(extension, None), extension
     
     def __init__(self):
         super(AnnotationParser, self).__init__()
@@ -49,9 +54,7 @@ class AnnotationParser(object):
     modalities = property(fget=__get_modalities)
     
     def read(self, path, video=None, modality=None, **kwargs):
-        import os
-        _, extension = os.path.splitext(path)
-        GuessParser = self.__guess(extension)
+        GuessParser, extension = self.__class__.guess(path)
         if GuessParser is None:
             raise NotImplementedError(
             "unsupported file format '%s'. supported: %s." % 
