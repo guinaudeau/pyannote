@@ -26,7 +26,7 @@ parser.add_argument('--uem', type=uem_parser, metavar='file.uem',
                        help='part of resources to process')
 
 URIS = ["%s", "[URI]"]
-def replaceURIS(path, uri):
+def replaceURI(path, uri):
     new_path = str(path)
     for ph in URIS:
         new_path = new_path.replace(ph, uri)

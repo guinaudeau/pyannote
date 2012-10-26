@@ -90,7 +90,7 @@ def do_speaker(args):
         if args.bic:
         
             # PLP features
-            path = clicommon.replaceURIs(args.plp, uri)
+            path = clicommon.replaceURI(args.plp, uri)
             feature = PLPParser().read(path)
             x = bicSimilarityMatrix(annotation, feature)
     
@@ -127,14 +127,14 @@ def do_face(args):
             sys.stdout.flush()
         
         # load face tracks
-        path = clicommon.replaceURIs(args.tracks, uri)
+        path = clicommon.replaceURI(args.tracks, uri)
         T = ft_parser.read(path, video=uri)(uri)
         T = T(args.uem(uri), mode='loose')
         labels = [label for label in T.labels() 
                         if not isinstance(label, Unknown)]
         
         # load distance matrix
-        path = clicommon.replaceURIs(args.metric, uri)
+        path = clicommon.replaceURI(args.metric, uri)
         D = mat_parser.read(path)
         
         # list of labels with at least one associated track

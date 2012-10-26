@@ -169,7 +169,7 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
         
         # load PLP features
-        path = clicommon.replaceURIS(args.plp, uri)
+        path = clicommon.replaceURI(args.plp, uri)
         plp = PLPParser().read(path)
         
         # get source
