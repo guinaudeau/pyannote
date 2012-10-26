@@ -43,8 +43,8 @@ def out_parser(path):
     except IOError as e:
        return open(path, 'w')
     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
-argparser.add_argument('output', type=out_parser,
-                       help='path to where to store output')
+argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
+                       help='path to where to store output in MDTM format')
 
 argparser.add_argument('--time-limit', type=int, metavar='n_min', 
                        default=SUPPRESS,
