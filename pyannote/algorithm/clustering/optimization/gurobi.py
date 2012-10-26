@@ -72,6 +72,8 @@ class GurobiModel(object):
     
         # create empty model & dictionary to store its variables
         model = grb.Model('My model')
+        model.setParam('OutputFlag', False)
+        
         x = {}
     
         nodes = G.nodes()
@@ -197,9 +199,13 @@ class GurobiModel(object):
             model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
         if self.threads is not None:
             model.setParam(grb.GRB.Param.Threads, self.threads)
-        model.setParam('OutputFlag', not self.quiet)
         model.setParam(grb.GRB.Param.MIPFocus, 1)
         # model.setParam(grb.GRB.Param.MIPGap, 1e-2)
+        
+        # default objective
+        model.setObjective()
+        
+        model.setParam('OutputFlag', not self.quiet)
         
         
         # return the model & its variables
@@ -266,10 +272,10 @@ class GurobiModel(object):
                                if isinstance(node, LabelNode) 
                               and node.uri == uri 
                               and node.modality == modality]
-        
+            
             identityNodes = [node for node in cc 
                                   if isinstance(node, IdentityNode)]
-        
+            
             if len(identityNodes) > 1:
                 raise ValueError('Looks like there are more than one identity '
                                  'in this cluster: %s' % [node.identifier 
@@ -278,114 +284,8 @@ class GurobiModel(object):
                 identifier = identityNodes[0].identifier
             else:
                 identifier = Unknown()
-        
+            
             for node in labelNodes:
                 translation[node.label] = identifier
-    
+        
         return annotation % translation
-        
-        
-        
-# def graph2gurobi(g, name='My Gurobi model'):
-#     """
-#     Create Gurobi clustering model from graph
-#     
-#     Parameters
-#     ----------
-#     g : nx.Graph
-#         One node per track. Edge attribute 'probability' between nodes.
-#         
-#     Returns
-#     -------
-#     model : gurobipy.grb.Model
-#         Gurobi clustering model
-#     x : dict
-#         Dictionary of gurobi.grb.Var
-#         x[node, other_node] is a boolean variable indicating whether
-#         node and other_node are in the same cluster
-#     
-#     """
-#     
-    
-# def gurobi2graph(model, x):
-#     """
-#     Generate graph back from optimized Gurobi model
-#     
-#     Parameters
-#     ----------
-#     model : gurobipy.grp.Model
-#         Optimized Gurobi model
-#     x : dict
-#         Dictionary of Gurobi variables
-#         x[node, other_node] value equals 1 if node and other_node are in the
-#         same cluster
-#         
-#     Returns
-#     -------
-#     g : nx.Graph
-#         Sparsely connected graph with edges between nodes that are in the
-#         same cluster
-#     
-#     """
-#     g = nx.Graph()
-#     for (n1, n2), var in x.iteritems():
-#         g.add_node(n1)
-#         g.add_node(n2)
-#         if var.x == 1.:
-#             g.add_edge(n1, n2)
-#     return g
-
-
-# def variable2annotation(x, annotation):
-#     """
-#     Generate new annotation optimized Gurobi model
-#     
-#     Parameters
-#     ----------
-#     x : dict
-#         Dictionary of Gurobi variables
-#         x[node, other_node] value equals 1 if node and other_node are in the
-#         same cluster
-#     annotation : Annotation
-#         Original annotation
-#     
-#     Returns
-#     -------
-#     new_annotation : dictionary of Annotation
-#     
-#     """
-#     
-#     g = nx.Graph()
-#     for (n1, n2), var in x.iteritems():
-#         g.add_node(n1)
-#         g.add_node(n2)
-#         if var.x == 1.:
-#             g.add_edge(n1, n2)
-#     
-#     uri = annotation.video
-#     modality = annotation.modality
-#     
-#     translation = {}
-#     for cc in nx.connected_components(g):
-#         
-#         labelNodes = [node for node in cc 
-#                            if isinstance(node, LabelNode) 
-#                           and node.uri == uri 
-#                           and node.modality == modality]
-#         
-#         identityNodes = [node for node in cc 
-#                               if isinstance(node, IdentityNode)]
-#         
-#         if len(identityNodes) > 1:
-#             raise ValueError('Looks like there are more than one identity '
-#                              'in this cluster: %s' % [node.identifier 
-#                                                     for node in identityNodes])
-#         elif len(identityNodes) == 1:
-#             identifier = identityNodes[0].identifier
-#         else:
-#             identifier = Unknown()
-#         
-#         for node in labelNodes:
-#             translation[node.label] = identifier
-#     
-#     return annotation % translation
