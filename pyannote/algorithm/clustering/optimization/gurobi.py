@@ -284,4 +284,5 @@ class GurobiModel(object):
             for node in labelNodes:
                 translation[node.label] = identifier
         
-        return annotation % translation
+        return (annotation % translation).smooth()
+        
