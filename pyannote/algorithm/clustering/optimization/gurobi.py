@@ -202,11 +202,7 @@ class GurobiModel(object):
         model.setParam(grb.GRB.Param.MIPFocus, 1)
         # model.setParam(grb.GRB.Param.MIPGap, 1e-2)
         
-        # default objective
-        self.setObjective()
-        
         model.setParam('OutputFlag', not self.quiet)
-        
         
         # return the model & its variables
         return model, x
