@@ -235,7 +235,7 @@ for u, uri in enumerate(uris):
     
     
     if hasattr(args, "dump_graph"):
-        path = replaceURI(args.dump_graph, uri)
+        path = clicommon.replaceURI(args.dump_graph, uri)
         f = open(path, 'w')
         pickle.dump(G, f)
         f.close()
