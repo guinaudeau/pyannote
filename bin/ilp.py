@@ -23,7 +23,7 @@ import pickle
 import pyannote
 import networkx as nx
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser, PLPParser
+from pyannote.parser import AnnotationParser, TimelineParser, LSTParser, PLPParser, MDTMParser
 from pyannote.base.matrix import LabelMatrix
 from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph, LabelCooccurrenceGraph, LabelIdentityGraph
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
@@ -70,13 +70,12 @@ def speaker_parser(path):
     class SSGraph(LabelSimilarityGraph, mmx):
         def __init__(self):
             super(SSGraph, self).__init__(**data)
+    
     ssGraph = SSGraph()
     
     return ssGraph
 
 sparser = argparser.add_argument_group("[speaker] modality")
-# sparser.add_argument('--speaker', action='store_true', default=SUPPRESS,
-#                      help="incorporate the [speaker] modality")
 sparser.add_argument('--speaker', type=speaker_parser, 
                      metavar='params.pkl', default=SUPPRESS, 
                      help='path to trained parameters for speaker/speaker '
