@@ -56,6 +56,11 @@ argparser.add_argument('--alpha', type=float, metavar='α',
                        help='set α in objective function. '
                             'smaller α means bigger clusters.')
 
+msg = "(pickle)-dump graph to file. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+argparser.add_argument('--dump-graph', type=str, metavar='graph.pkl', 
+                       help=msg, default=SUPPRESS)
+
 def speaker_parser(path):
     
     f = open(path, 'r')
@@ -228,6 +233,12 @@ for u, uri in enumerate(uris):
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
     
+    
+    if hasattr(args, "dump_graph"):
+        path = replaceURI(args.dump_graph, uri)
+        f = open(path, 'w')
+        pickle.dump(G, f)
+        f.close()
     
     # create ILP model
     if hasattr(args, "time_limit"):
