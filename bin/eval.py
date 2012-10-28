@@ -29,96 +29,77 @@ from pyannote.metric.diarization import DiarizationErrorRate, \
                                         DiarizationCompleteness, \
                                         DiarizationHomogeneity
 from pyannote.metric.detection import DetectionErrorRate
+from pyannote.metric.identification import IdentificationErrorRate
 
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
 
-argparser = ArgumentParser(description='A tool for evaluation of annotations')
-argparser.add_argument('--version', action='version', 
-                       version=('PyAnnote %s' % pyannote.__version__))
+from pyannote import clicommon
+argparser = ArgumentParser(parents=[clicommon.parser],
+                           description='A tool for evaluation')
 
-
-def groundtruth_parser(path):
+def ref_parser(path):
     return AnnotationParser().read(path)
+argparser.add_argument('groundtruth', metavar='reference', 
+                       type=ref_parser, help='path to reference')
 
-def hypothesis_parser(path):
+def hyp_parser(path):
     return (path, AnnotationParser().read(path))
-
-def uem_parser(path):
-    return TimelineParser().read(path)
-
-def uris_parser(path):
-    return LSTParser().read(path)
-
-# First positional argument is groundtruth file
-# It is loaded at argument-parsing time by an instance of AnnotationParser
-argparser.add_argument('groundtruth', type=groundtruth_parser,
-                       help='path to groundtruth')
-
-# Next positional arguments (at least one) are hypothesis files
-# They are loaded at argument-parsing time by an instance of AnnotationParser
-argparser.add_argument('hypothesis', nargs='+', type=hypothesis_parser,
-                        help='path to hypothesis')
-
-argparser.add_argument('--uris', type=uris_parser,
-                       help='list of URI to evaluate')
-
-# UEM file is loaded at argument-parsing time by an instance of TimelineParser
-argparser.add_argument('--uem', type=uem_parser, 
-                       help='path to Unpartitioned Evaluation Map (UEM)')
+argparser.add_argument('hypothesis', metavar='hypothesis', nargs='+',
+                       type=hyp_parser, help='path to hypothesis')
 
 argparser.add_argument('--no-overlap', action='store_true',
                        help='remove overlapping speech regions from evaluation')
 
-argparser.add_argument('--dump', metavar='PATH', type=str, default=SUPPRESS,
-                       help='(pickle-)dump results matrices to PATH')
+argparser.add_argument('--dump', metavar='file.pkl', type=str, default=SUPPRESS,
+                       help='path to (pickle-)dump results matrices to')
 
 argparser.add_argument('--components', action='store_true',
                        help='detail error rate components')
 
-# Various switches to compute purity, coverage, homogeneity or completeness
-# (diarization error rate is always computed)
+argparser.add_argument('--modality', 
+                       type=str, default=SUPPRESS, metavar="name", 
+                       help='indicate which modality to evaluate. '
+                            '(mandatory in case reference contains '
+                            'multiple modalities)')
 
-dgroup = argparser.add_argument_group('Speaker diarization metrics')
-dgroup.add_argument('--diarization', action='store_true',
-                       help='compute diarization error rate')
-dgroup.add_argument('--purity', action='store_true',
-                       help='compute diarization purity')
-dgroup.add_argument('--coverage', action='store_true',
-                       help='compute diarization coverage')
-dgroup.add_argument('--homogeneity', action='store_true',
-                       help='compute diarization homogeneity')
-dgroup.add_argument('--completeness', action='store_true',
-                       help='compute diarization completeness')
+group = argparser.add_argument_group('Diarization & clustering')
 
-Dgroup = argparser.add_argument_group('Detection metrics')
-Dgroup.add_argument('--detection', action='store_true',
-                       help='compute detection error rate')
+group.add_argument('--diarization', action='append_const', dest='requested',
+                                    const=DiarizationErrorRate, default=[],
+                                    help='compute diarization error rate')
+group.add_argument('--purity', action='append_const', dest='requested',
+                                    const=DiarizationPurity, default=[],
+                                    help='compute diarization purity')
+group.add_argument('--coverage', action='append_const', dest='requested',
+                                    const=DiarizationCoverage, default=[],
+                                    help='compute diarization coverage')
+group.add_argument('--homogeneity', action='append_const', dest='requested',
+                                    const=DiarizationHomogeneity, default=[],
+                                    help='compute clustering homogeneity')
+group.add_argument('--completeness', action='append_const', dest='requested',
+                                    const=DiarizationCompleteness, default=[],
+                                    help='compute clustering completeness')
 
-# igroup = argparser.add_argument_group('Speaker identification metrics')
-# igroup.add_argument('--identification', action='store_true',
-#                        help='compute identification error rate')
-# igroup.add_argument('--repere', action='store_true',
-#                        help='compute REPERE estimated global error rate')
+group = argparser.add_argument_group('Detection')
+group.add_argument('--detection', action='append_const', dest='requested',
+                                    const=DetectionErrorRate, default=[],
+                                    help='compute detection error rate')
+
+group = argparser.add_argument_group('Identification')
+group.add_argument('--identification', action='append_const', dest='requested',
+                                    const=IdentificationErrorRate, default=[],
+                                    help='compute identification error rate')
+
+# group.add_argument('--unknown', choices=('ignore', 'single', 'multiple'),
+#                    help='Un-identified tracks handling.\n'
+#                         ' - ignore: \n'
+#                         ' - single: \n'
+#                         ' - multiple:')
 
 # Actual argument parsing
 args = argparser.parse_args()
-
-# List of requested metrics
-requested = []
-if args.diarization:
-    requested.append(DiarizationErrorRate)
-if args.purity:
-    requested.append(DiarizationPurity)
-if args.coverage:
-    requested.append(DiarizationCoverage)
-if args.homogeneity:
-    requested.append(DiarizationHomogeneity)
-if args.completeness:
-    requested.append(DiarizationCompleteness)
-if args.detection:
-    requested.append(DetectionErrorRate)
-
+requested = args.requested
 if args.components:
     if len(requested) > 1:
         sys.exit("ERROR: Option '--components' is not supported with multiple "
@@ -126,7 +107,6 @@ if args.components:
     if len(args.hypothesis) > 1:
         sys.exit("ERROR: Option '--components' is not supported with multiple "
                  "hypothesis (you asked for %d)." % len(args.hypothesis))
-
 
 # Initialize metrics & result matrix
 metrics = {}
@@ -154,11 +134,19 @@ pb = ProgressBar(widgets=[Bar(),' ', ETA()], term_width=80)
 pb.maxval = len(uris)*len(args.hypothesis)
 pb.start()
 
+if hasattr(args, 'modality'):
+    modality = args.modality
+else:
+    if len(args.groundtruth.modalities) > 1:
+        sys.exit("ERROR: reference contains more than one modality. "
+                 "use option --modality.")
+    modality = None
+
 # process each URI, one after the other
 for u, uri in enumerate(uris):
     
     # read reference for current URI
-    ref = args.groundtruth(uri)
+    ref = args.groundtruth(video=uri, modality=modality)
     
     # read UEM if provided
     if args.uem is None:
@@ -192,9 +180,8 @@ for u, uri in enumerate(uris):
     # process each hypothesis file, one after the other
     for h, (path, hypothesis) in enumerate(args.hypothesis):
         
-        
         # read hypothesis for current URI
-        hyp = hypothesis(uri)
+        hyp = hypothesis(video=uri, modality=ref.modality)
         
         # focus on UEM if provided
         if uem is not None:
@@ -238,7 +225,9 @@ for name, metric in metrics.iteritems():
 # print one table per metric, with one column per hypothesis
 if len(args.hypothesis) > 1:
     for name, metric in metrics.iteritems():
-        print M[name].to_table(title=name, fmt='1.3', factorize='C')
+        print M[name].to_table(title=name, fmt='1.3', 
+                               factorize='C', max_width=10)
+
 # if there is only one hypothesis
 # print one single table, with one column per metric
 else:
