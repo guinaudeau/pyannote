@@ -550,7 +550,15 @@ class LabelMatrix(object):
         else:
             return prefix, [label[pre:-suf] for label in tmp], suffix
     
-    def to_table(self, title='', fmt='1.3', factorize='RC'):
+    def to_table(self, title='', fmt='1.3', factorize='RC', max_width=np.inf):
+        """
+        
+        Parameters
+        ----------
+        title : str
+            Table title as shown 
+        
+        """
         import prettytable
         
         I, J = self.labels
@@ -562,10 +570,18 @@ class LabelMatrix(object):
         
         header = [title]
         if len(J) > 1 and 'C' in factorize:
+            # pJ: prefix shared by all column titles
+            # sJ: suffix shared by all column titles
+            # fJ: column titles with prefix & suffix removed
             pJ, fJ, sJ = self._factorize(J)
-            header.extend(fJ)
         else:
-            header.extend([str(j) for j in J])
+            # no title-factorization was requested
+            # column titles are original (full-length) titles
+            fJ = [str(j) for j in J]
+        
+        # no column title should be longer than `max_width`
+        header.extend([j if len(j) < max_width else j[:max_width] 
+                       for n, j in enumerate(fJ)])
         
         table = prettytable.PrettyTable(header)
         table.align[header[0]] = 'l'
