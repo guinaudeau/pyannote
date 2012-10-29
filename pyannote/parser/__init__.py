@@ -22,6 +22,40 @@ from nist import *
 from repere import *
 from other import *
 from feature import *
+from cvhci import *
+
+class LabelMatrixParser(object):
+    
+    specific = {
+        '.mat': METRICMATParser,
+    }
+    
+    @classmethod
+    def guess(cls, path):
+        import os
+        _, extension = os.path.splitext(path)
+        return LabelMatrixParser.specific.get(extension, None), extension
+    
+    def __init__(self):
+        super(LabelMatrixParser, self).__init__()
+        self.__parser = None
+    
+    def read(self, path, **kwargs):
+        
+        GuessParser, extension = self.__class__.guess(path)
+        
+        if GuessParser is None:
+            import pickle
+            f = open(path, 'r')
+            matrix = pickle.load(f)
+            f.close()
+        else:
+            if self.__parser is None or not isinstance(self.__parser,
+                                                       GuessParser):
+                self.__parser = GuessParser(**kwargs)
+            matrix = self.__parser.read(path, **kwargs)
+        return matrix
+    
 
 class AnnotationParser(object):
     
@@ -32,8 +66,8 @@ class AnnotationParser(object):
             '.hyp':    REPEREParser,
             '.trs':    TRSParser, 
             '.xgtf':   XGTFParser, 
+            '.facetracks': FACETRACKSParser,
         }
-    
     
     @classmethod
     def guess(cls, path):
@@ -41,9 +75,10 @@ class AnnotationParser(object):
         _, extension = os.path.splitext(path)
         return AnnotationParser.supported.get(extension, None), extension
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(AnnotationParser, self).__init__()
         self.__parser = None
+        self.__kwargs = kwargs
     
     def __get_videos(self):
         return self.__parser.videos
@@ -60,7 +95,7 @@ class AnnotationParser(object):
             "unsupported file format '%s'. supported: %s." % 
             (extension, AnnotationParser.supported.keys()))
         if self.__parser is None or not isinstance(self.__parser, GuessParser):
-            self.__parser = GuessParser()
+            self.__parser = GuessParser(**self.__kwargs)
         self.__parser.read(path, video=video, modality=modality, **kwargs)
         return self
     
