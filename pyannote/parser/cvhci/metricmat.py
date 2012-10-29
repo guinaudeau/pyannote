@@ -23,7 +23,7 @@ from pyannote.base.matrix import LabelMatrix
 
 class METRICMATParser(object):
     
-    def __init__(self, aggregation='average'):
+    def __init__(self, aggregation='average', **kwargs):
         super(METRICMATParser, self).__init__()
         if aggregation == 'average':
             self.aggregation = 0
@@ -32,7 +32,7 @@ class METRICMATParser(object):
         else:
             raise ValueError("aggregation must be 'average' or 'minimum'")
     
-    def read(self, path):
+    def read(self, path, **kwargs):
         """
         
         Parameters
