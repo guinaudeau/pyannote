@@ -105,9 +105,8 @@ def do_speaker(args):
     lpm.fit(X, Y, prior=1.)
     data['func'] = lpm
     
-    f = open(args.save, 'w')
-    pickle.dump(data, f)
-    f.close()
+    pickle.dump(data, args.save)
+    args.save.close()
 
 def do_face(args):
     
@@ -162,26 +161,26 @@ def do_face(args):
     data['X'] = np.array(X)
     data['Y'] = np.array(y)
     data['uris'] = args.uris
-    f = open(args.save, 'w')
-    pickle.dump(data, f)
-    f.close()
+    pickle.dump(data, args.save)
+    args.save.close()
 
 
 argparser = ArgumentParser(description='A tool for training label similarity graphs')
 
 def input_parser(path):
     return AnnotationParser().read(path)
-def uem_parser(path):
-    return TimelineParser().read(path)
-def uris_parser(path):
-    return LSTParser().read(path)
+
+def output_parser(path):
+    try:
+       with open(path) as f: pass
+    except IOError as e:
+       return open(path, 'w')
+    raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 
 subparsers = argparser.add_subparsers(help='commands')
-
 parser_speaker = subparsers.add_parser('speaker', parents=[clicommon.parser], 
                                        help='speaker diarization')
 parser_speaker.set_defaults(func=do_speaker)
-
 parser_face = subparsers.add_parser('face', parents=[clicommon.parser],
                                     help='face clustering')
 parser_face.set_defaults(func=do_face)
@@ -203,9 +202,8 @@ msg = "path to PLP feature files. " \
 parser_speaker.add_argument('plp', type=str, metavar='file.plp', help=msg)
 
 # Next positional argument is where to save parameters
-parser_speaker.add_argument('save', type=str, metavar='output.pkl',
+parser_speaker.add_argument('save', type=output_parser, metavar='output.pkl',
                         help='path to output file')
-
 
 # BIC similarity
 parser_speaker.add_argument('--bic', action='store_true',
@@ -221,14 +219,6 @@ parser_speaker.add_argument('--diagonal', action='store_true',
 
 # == Face clustering ==
 
-# Training set -- loaded at argument-parsing time by an instance of LSTParser
-parser_face.add_argument('uris', type=uris_parser, 
-                       help='path to list used for training')
-
-# UEM file is loaded at argument-parsing time by an instance of TimelineParser
-parser_face.add_argument('uem', type=uem_parser, 
-                       help='path to Unpartitioned Evaluation Map (UEM) file')
-
 # .mat files
 msg = "path to .mat files. " \
       "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
@@ -240,7 +230,7 @@ parser_face.add_argument('tracks', type=str,
                          metavar='file.facetracks', help=msg)
 
 # Next positional argument is where to save parameters
-parser_face.add_argument('save', type=str, metavar='output',
+parser_face.add_argument('save', type=output_parser, metavar='output',
                         help='path to output file')
 
 # Actual argument parsing
