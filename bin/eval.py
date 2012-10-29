@@ -123,7 +123,7 @@ if args.components:
                    for c in m.metric_components()}
 
 # only evaluate selection of uris
-if args.uris:
+if hasattr(args, 'uris'):
     uris = args.uris
 else:
     uris = args.groundtruth.videos
@@ -143,15 +143,14 @@ else:
 # process each URI, one after the other
 for u, uri in enumerate(uris):
     
-    
     # read reference for current URI
     ref = args.groundtruth(video=uri, modality=modality)
     
     # read UEM if provided
-    if args.uem is None:
-        uem = None
-    else:
+    if hasattr(args, 'uem'):
         uem = args.uem(uri)
+    else:
+        uem = None
     
     # get overlapping speech regions if requested
     if args.no_overlap:
