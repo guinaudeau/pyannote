@@ -215,7 +215,8 @@ class BaseAnnotationParser(object):
         # make sure UnknownXXXX labels are changed into Unknown objects
         labels = A.labels()
         translation = {l: Unknown() for l in A.labels() 
-                                    if isinstance(l, str) and l[:7]=='Unknown'}
+                                    if isinstance(l, str) and 
+                                    (l[:7]=='Unknown' or l[:7]=='Inconnu')}
         
         return A % translation
 
