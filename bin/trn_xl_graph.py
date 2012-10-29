@@ -22,57 +22,52 @@ import sys
 import pickle
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
+from pyannote.parser import AnnotationParser
 from pyannote.algorithm.clustering.optimization.graph import LabelCooccurrenceGraph
 
-place_holders = ["%s", "[URI]"] 
-
-argparser = ArgumentParser(description='A tool for cross-modality cooccurrence graph training')
-argparser.add_argument('--version', action='version', 
-                       version=('PyAnnote %s' % pyannote.__version__))
+from pyannote import clicommon
+argparser = ArgumentParser(parents=[clicommon.parser],
+                           description='A tool for cross-modality cooccurrence '
+                                       'graph training')
 
 def input_parser(path):
     return AnnotationParser().read(path)
+    
 def output_parser(path):
-    return open(path, 'w')
-def uem_parser(path):
-    return TimelineParser().read(path)
-def uris_parser(path):
-    return LSTParser().read(path)
+    try:
+       with open(path) as f: pass
+    except IOError as e:
+       return open(path, 'w')
+    raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 
 argparser.add_argument('srcA', type=input_parser,
                        help='path to source annotation for modality A')
 argparser.add_argument('tgtA', type=input_parser,
                        help='path to target annotation for modality A')
 argparser.add_argument('--modalityA', type=str, default=SUPPRESS,
-                       help='force source/target modality A')
+                       metavar='name',
+                       help='rename source/target modality A')
 
 argparser.add_argument('srcB', type=input_parser,
                        help='path to source annotation for modality B')
 argparser.add_argument('tgtB', type=input_parser,
                        help='path to target annotation for modality B')
 argparser.add_argument('--modalityB', type=str, default=SUPPRESS,
-                       help='force source/target modality B')
+                       metavar='name',
+                       help='rename source/target modality B')
 
 argparser.add_argument('dump', type=output_parser, metavar='dump_to',
                         help='path where to save parameters of trained '
                              'cross-modal cooccurrence graph')
 
-argparser.add_argument('--uris', type=uris_parser, metavar='file.lst',
-                       default=SUPPRESS, 
-                       help='list of resources to use for training')
-
-argparser.add_argument('--uem', type=uem_parser, metavar='file.uem', 
-                       default=SUPPRESS,
-                       help='part of resources to use for training')
-
 argparser.add_argument('--duration', metavar='seconds', type=float, default=0.,
-                       help='Minimum cooccurrence duration for two labels to be considered cooccurring (default is zero second)')
+                       help='Minimum cooccurrence duration for two labels to '
+                            'be considered cooccurring (default is 0 second)')
 
-argparser.add_argument('--verbose', action='store_true',
-                       help='print progress information')
-
-args = argparser.parse_args()
+try:
+    args = argparser.parse_args()
+except Exception, e:
+    sys.exit(e)
 
 # if requested, use provided resources
 if hasattr(args, 'uris'):
