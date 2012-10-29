@@ -21,10 +21,10 @@
 import scipy.io
 from pyannote.base.matrix import LabelMatrix
 
-class METRICParser(object):
+class METRICMATParser(object):
     
     def __init__(self, aggregation='average'):
-        super(METRICParser, self).__init__()
+        super(METRICMATParser, self).__init__()
         if aggregation == 'average':
             self.aggregation = 0
         elif aggregation == 'minimum':
