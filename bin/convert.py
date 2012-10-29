@@ -19,10 +19,10 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-from pyannote import clicommon
 from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser
 
+from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser], 
                            description='A tool for annotation file conversion')
 
@@ -78,8 +78,7 @@ if args.modality_old:
                         for o, old in enumerate(args.modality_old)}
 elif len(args.modality_new) == 1:
     convert_modality = {old:args.modality_new[0] for old in src_modalities}
-    
-    
+
 writer, f = args.tgt
 
 for u, uri in enumerate(uris):
