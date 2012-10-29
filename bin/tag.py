@@ -33,18 +33,12 @@ from pyannote.parser import LSTParser, MDTMParser
 from pyannote.base.matrix import Cooccurrence
 from pyannote.algorithm.tagging import HungarianTagger, ArgMaxTagger
 
-argparser = ArgumentParser(description='A tool for tagging of annotations')
-argparser.add_argument('--version', action='version', 
-                       version=('PyAnnote %s' % pyannote.__version__))
+from pyannote import clicommon
+argparser = ArgumentParser(parents=[clicommon.parser],
+                           description='A tool for tagging of annotations')
 
 def annotation_parser(path):
     return AnnotationParser().read(path)
-
-def uem_parser(path):
-    return TimelineParser().read(path)
-
-def uris_parser(path):
-    return LSTParser().read(path)
 
 def output_parser(path):
     return open(path, 'w')
@@ -57,12 +51,6 @@ argparser.add_argument('names', type=annotation_parser,
 
 argparser.add_argument('output', type=output_parser,
                         help='path to output')
-
-argparser.add_argument('--uris', type=uris_parser, default=SUPPRESS,
-                       help='list of resources to process')
-
-argparser.add_argument('--uem', type=uem_parser, default=SUPPRESS,
-                       help='only process provided time ranges')
 
 mgroup = argparser.add_mutually_exclusive_group()
 
