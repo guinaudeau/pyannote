@@ -40,7 +40,7 @@ class FACETRACKSParser(BaseAnnotationParser):
         super(FACETRACKSParser, self).__init__(multitrack)
         self.load_ids = load_ids
     
-    def read(self, path, video=None):
+    def read(self, path, video=None, **kwargs):
         
         modality = 'head'
         tracks, _, _ = cvhcistandards.read_tracks(path, load_ids=self.load_ids)
