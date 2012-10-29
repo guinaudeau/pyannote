@@ -33,6 +33,7 @@ from pyannote.metric.identification import IdentificationErrorRate
 
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
+from pyannote.base.annotation import Unknown
 
 from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
@@ -91,11 +92,8 @@ group.add_argument('--identification', action='append_const', dest='requested',
                                     const=IdentificationErrorRate, default=[],
                                     help='compute identification error rate')
 
-# group.add_argument('--unknown', choices=('ignore', 'single', 'multiple'),
-#                    help='Un-identified tracks handling.\n'
-#                         ' - ignore: \n'
-#                         ' - single: \n'
-#                         ' - multiple:')
+group.add_argument('--unknown', choices=('remove',), default=SUPPRESS,
+                   help='Unknown tracks handling.')
 
 # Actual argument parsing
 args = argparser.parse_args()
@@ -145,6 +143,7 @@ else:
 # process each URI, one after the other
 for u, uri in enumerate(uris):
     
+    
     # read reference for current URI
     ref = args.groundtruth(video=uri, modality=modality)
     
@@ -177,6 +176,13 @@ for u, uri in enumerate(uris):
             ref = ref(overlap.gaps(focus=ref.coverage()), 
                                    mode='intersection')
     
+    
+    # remove unknown if requested
+    if hasattr(args, 'unknown') and args.unknown == 'remove':
+        unknows = [label for label in ref.labels() 
+                         if isinstance(label, Unknown)]
+        ref = ref(unknows, invert=True)
+        
     # process each hypothesis file, one after the other
     for h, (path, hypothesis) in enumerate(args.hypothesis):
         
@@ -193,6 +199,12 @@ for u, uri in enumerate(uris):
             if args.no_overlap:
                 hyp = hyp(overlap.gaps(focus=hyp.coverage()), 
                                        mode='intersection')
+        
+        # remove unknown if requested
+        if hasattr(args, 'unknown') and args.unknown == 'remove':
+            unknows = [label for label in hyp.labels() 
+                             if isinstance(label, Unknown)]
+            hyp = hyp(unknows, invert=True)
         
         # compute 
         for name, metric in metrics.iteritems():
