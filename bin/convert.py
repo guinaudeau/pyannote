@@ -65,6 +65,17 @@ group.add_argument('-mo', type=str, metavar='new',
                         'when used on its own, any old modality name '
                         'is convert to new.')
 
+group = argparser.add_argument_group('Structure')
+
+group.add_argument('--compress', action='store_true',
+                       help='compress annotation by making one track of '
+                            'contiguous tracks with similar label. note '
+                            'that track names will be lost.')
+
+group.add_argument('--anonymize', action='store_true',
+                       help='anonymize annotation by changing every label '
+                            'to UnknownXXXXX. ')
+
 try:
    args = argparser.parse_args()
 except IOError as e:
@@ -95,8 +106,15 @@ elif len(args.modality_new) == 1:
 
 writer, f = args.tgt
 
+def structural_transforms(A):
+    if args.compress:
+        A = A.smooth()
+    if args.anonymize:
+        A = A.anonymize()
+    return A
+
 for u, uri in enumerate(uris):
-    
+
     # Verbosity
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
@@ -106,14 +124,14 @@ for u, uri in enumerate(uris):
         src = args.src(uri)
         if src.modality in convert_modality:
             src.modality = convert_modality[src.modality]
-        writer.write(src, f=f)
+        writer.write(structural_transforms(src), f=f)
     else:
         # Modality name conversion
         for modality in src_modalities:
             src = args.src(video=uri, modality=modality)
             if modality in convert_modality:
                 src.modality = convert_modality[modality]
-            writer.write(src, f=f)
+            writer.write(structural_transforms(src), f=f)
 
 f.close()
     
