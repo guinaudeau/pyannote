@@ -26,10 +26,21 @@ from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser], 
                            description='A tool for annotation file conversion')
 
+
+srcContainsURI = False
+
 def src_parser(path):
-    return AnnotationParser().read(path)
-argparser.add_argument('src', type=src_parser, metavar='source',
-                       help='path to source annotation')
+    if clicommon.containsURI(path):
+        global srcContainsURI
+        srcContainsURI = True
+        return lambda u: AnnotationParser()\
+                         .read(clicommon.replaceURI(path, u), video=u)(u)
+    else:
+        return AnnotationParser().read(path)
+
+msg = 'path to source annotation. ' \
+      'URI placeholders are supported: %s.' % ' or '.join(clicommon.URIS[1:])
+argparser.add_argument('src', type=src_parser, metavar='source', help=msg)
 
 def out_parser(path):
     try:
@@ -42,7 +53,7 @@ def out_parser(path):
 argparser.add_argument('tgt', type=out_parser, metavar='target',
                        help='path to target annotation')
 
-group = argparser.add_argument_group('modality name conversion')
+group = argparser.add_argument_group('Modality conversion')
 group.add_argument('-mi', type=str, metavar='old', 
                    action='append', dest='modality_old', default=[],
                    help='input modality name')
@@ -60,8 +71,11 @@ except IOError as e:
    sys.stderr.write('%s' % e)
    sys.exit(-1)
 
-src_modalities = args.src.modalities
-uris = args.src.videos
+if not srcContainsURI:
+    src_modalities = args.src.modalities
+
+if not srcContainsURI:
+    uris = args.src.videos
 
 # if list of resources is provided, use it.
 if hasattr(args, 'uris'):
@@ -88,12 +102,18 @@ for u, uri in enumerate(uris):
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
     
-    # Modality name conversion
-    for modality in src_modalities:
-        src = args.src(video=uri, modality=modality)
-        if modality in convert_modality:
-            src.modality = convert_modality[modality]
+    if srcContainsURI:
+        src = args.src(uri)
+        if src.modality in convert_modality:
+            src.modality = convert_modality[src.modality]
         writer.write(src, f=f)
+    else:
+        # Modality name conversion
+        for modality in src_modalities:
+            src = args.src(video=uri, modality=modality)
+            if modality in convert_modality:
+                src.modality = convert_modality[modality]
+            writer.write(src, f=f)
 
 f.close()
     
