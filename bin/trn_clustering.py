@@ -23,47 +23,47 @@ import sys
 import pickle
 import numpy as np
 import pyannote
-from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
-from pyannote.parser import PLPParser
-from pyannote.algorithm.clustering.util import label_clustering_groundtruth, LogisticProbabilityMaker
-from pyannote.algorithm.clustering.model.base import SimilarityMatrix
-from pyannote.algorithm.clustering.model.gaussian import BICMMx
+from pyannote.parser import AnnotationParser
+from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
 
-from pyannote.parser.repere.facetracks import FACETRACKSParser
-from pyannote.parser.repere.metric import METRICParser
-from pyannote.base.annotation import Unknown
-
-from pyannote import clicommon
-
-def do_speaker(args):
+def speaker_diarization(args):
     
-    data = {}
+    from pyannote.parser import PLPParser
+    from pyannote.algorithm.clustering.model.base import SimilarityMatrix
+    from pyannote.algorithm.clustering.model import BICMMx
+    from pyannote.algorithm.clustering.agglomerative.stop import NegativeSMx
+    from pyannote.algorithm.clustering.util import label_clustering_groundtruth
     
-    # In case of BIC similarity, make sure we got all needed parameters
-    if args.bic:
-        covariance_type = 'diag' if args.diagonal else 'full'
-        penalty_coef = args.penalty
-        if not hasattr(args, 'plp'):
-            sys.stderr.write('Needed --plp argument for BIC similarity')
-            sys.exit()
-        class Dummy(SimilarityMatrix, BICMMx):
-            pass
-        bicSimilarityMatrix = Dummy(penalty_coef=penalty_coef, 
-                                    covariance_type=covariance_type)
-        data['covariance_type'] = covariance_type
-        data['penalty_coef'] = penalty_coef
-        data['MMx'] = BICMMx
-
+    params = {}
+    
+    if args.similarity == 'bic':
+        params['__mmx__'] = BICMMx
+        params['__smx__'] = NegativeSMx
+        params['penalty_coef'] = args.penalty_coef
+        params['covariance_type'] = args.covariance_type
+    elif args.similarity == 'clr':
+        sys.exit('ERROR: CLR similarity not yet supported.\n')
+        # params['__mmx__'] = CLRMMx
+    elif args.similarity == 'ivector':
+        sys.exit('ERROR: iVector similarity not yet supported.\n')
+        # params['__mmx__'] = IVectorMMx
+        
+    class Matrix(SimilarityMatrix, params['__mmx__']):
+        def __init__(self, **kwargs):
+                super(Matrix, self).__init__(**params)
+    
+    matrix = Matrix()
+    
     X = np.empty((0,1))
     Y = np.empty((0,1))
-
-    # Use a URI subset
-    if args.uris is not None:
+    
+    # if requested, use provided resources
+    if hasattr(args, 'uris'):
         uris = args.uris
+    # otherwise, use all resources in input file
     else:
         uris = args.reference.videos
-
+    
     for u, uri in enumerate(uris):
     
         # Verbosity
@@ -77,98 +77,121 @@ def do_speaker(args):
         annotation = args.input(uri)
     
         # focus on UEM
-        if args.uem is not None:
+        if hasattr(args, 'uem'):
             uem = args.uem(uri)
             reference = reference(uem, mode='intersection')
             annotation = annotation(uem, mode='intersection')
-    
+        
         # get groundtruth
         y = label_clustering_groundtruth(reference, annotation)
         Y = np.append(Y, y.M)
-    
-        # get similarity 
-        if args.bic:
         
-            # PLP features
-            path = clicommon.replaceURI(args.plp, uri)
-            feature = PLPParser().read(path)
-            x = bicSimilarityMatrix(annotation, feature)
+        # load PLP features
+        path = clicommon.replaceURI(args.plp, uri)
+        feature = PLPParser().read(path)
+        
+        M = matrix(annotation, feature)
+        
+        X = np.append(X, M.M)
     
-        X = np.append(X, x.M)
-    
+    params['__X__'] = X
+    params['__Y__'] = Y
+    params['__uris__'] = uris
+    params['__s2p__'] = LogisticProbabilityMaker().fit(params['__X__'],
+                                                       params['__Y__'],
+                                                       prior=1.)
     # save to output file
-    data['X'] = X
-    data['Y'] = Y
-    data['uris'] = uris
-    
-    lpm = LogisticProbabilityMaker()
-    lpm.fit(X, Y, prior=1.)
-    data['func'] = lpm
-    
-    pickle.dump(data, args.save)
-    args.save.close()
+    pickle.dump(params, args.output)
+    args.output.close()
 
-def do_face(args):
+def face_clustering(args):
     
-    # load_ids = True makes unassociated tracks labeled as Unknown()
-    # associated tracks are labeled with the person identity
-    ft_parser = FACETRACKSParser(load_ids=True)
-    mat_parser = METRICParser(aggregation='average')
+    from pyannote.parser import LabelMatrixParser
+    from pyannote.base.annotation import Unknown
+    
+    params = {}
     
     X = []
     y = []
     
     for u, uri in enumerate(args.uris):
         
-        # Verbosity
         if args.verbose:
             sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
             sys.stdout.flush()
         
-        # load face tracks
-        path = clicommon.replaceURI(args.tracks, uri)
-        T = ft_parser.read(path, video=uri)(uri)
-        T = T(args.uem(uri), mode='loose')
-        labels = [label for label in T.labels() 
-                        if not isinstance(label, Unknown)]
+        # load pre-computed distance matrix
+        path = clicommon.replaceURI(args.precomputed, uri)
+        M = LabelMatrixParser().read(path)
         
-        # load distance matrix
-        path = clicommon.replaceURI(args.metric, uri)
-        D = mat_parser.read(path)
+        # load input annotation
+        annotation = args.input(uri)
+        if hasattr(args, 'uem'):
+            uem = args.uem(uri)
+            annotation = annotation(uem, mode='intersection')
         
-        # list of labels with at least one associated track
+        # focus on associated tracks
+        labels = [l for l in annotation.labels() 
+                        if not isinstance(l, Unknown)]
+        annotation = annotation(labels)
+        
         for l, label in enumerate(labels):
-            t = T(label)
-            other_t = T(label, invert=True)
+            t = annotation(label)
+            other_t = annotation(label, invert=True)
             for _, track, _ in t.iterlabels():
                 for _, other_track, _ in t.iterlabels():
                     if track == other_track:
                         continue
                     try:
-                        X.append(D[track, other_track])
+                        X.append(M[track, other_track])
                         y.append(1)
-                    except:
+                    except Exception, e:
                         pass
                 for _, other_track, _ in other_t.iterlabels():
                     try:
-                        X.append(D[track, other_track])
+                        X.append(M[track, other_track])
                         y.append(0)
-                    except:
+                    except Exception, e:
                         pass
     
+    params['__X__'] = np.array(X)
+    params['__Y__'] = np.array(y)
+    if hasattr(args, 'uris'):
+        params['__uris__'] = args.uris
+    params['__s2p__'] = LogisticProbabilityMaker().fit(params['__X__'],
+                                                       params['__Y__'],
+                                                       prior=1.)
     # save to output file
-    data = {}
-    data['X'] = np.array(X)
-    data['Y'] = np.array(y)
-    data['uris'] = args.uris
-    pickle.dump(data, args.save)
-    args.save.close()
+    pickle.dump(params, args.output)
+    args.output.close()
 
 
-argparser = ArgumentParser(description='A tool for training label similarity graphs')
+from pyannote import clicommon
+from argparse import ArgumentParser, SUPPRESS
+
+argparser = ArgumentParser(description='A tool for clustering training')
+
+subparsers = argparser.add_subparsers(help='commands')
+
+# =========================
+# == Speaker diarization ==
+# =========================
+
+sparser = subparsers.add_parser('speaker', parents=[clicommon.parser], 
+                                           help='speaker diarization')
+sparser.set_defaults(func=speaker_diarization)
 
 def input_parser(path):
     return AnnotationParser().read(path)
+sparser.add_argument('input', type=input_parser, metavar='source',
+                       help='path to input annotation')
+
+sparser.add_argument('reference', type=input_parser, metavar='target', 
+                       help='path to expected output annotation')
+
+msg = "path to PLP feature files. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+sparser.add_argument('plp', type=str, metavar='file.plp', help=msg)
 
 def output_parser(path):
     try:
@@ -176,63 +199,57 @@ def output_parser(path):
     except IOError as e:
        return open(path, 'w')
     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
+sparser.add_argument('output', type=output_parser, metavar='params.pkl',
+                     help='path to output file')
 
-subparsers = argparser.add_subparsers(help='commands')
-parser_speaker = subparsers.add_parser('speaker', parents=[clicommon.parser], 
-                                       help='speaker diarization')
-parser_speaker.set_defaults(func=do_speaker)
-parser_face = subparsers.add_parser('face', parents=[clicommon.parser],
-                                    help='face clustering')
-parser_face.set_defaults(func=do_face)
+# Speech turn similarity
+sparser.add_argument('--similarity', choices=('bic', 'clr', 'ivector'),
+                     help='choose speech turn similarity measure '
+                     '(default: bic)',
+                     default='bic')
 
+# -- BIC --
+sparser.add_argument('--penalty', dest='penalty_coef', type=float, 
+                     default=3.5, metavar='λ', 
+                     help='BIC penalty coefficient (default: 3.5). '
+                          'smaller λ means purer clusters.')
+sparser.add_argument('--diagonal', dest='covariance_type', 
+                     action='store_const', const='diag', default='full',
+                     help='use diagonal covariance matrix (default: full)')
 
-# Second positional argument is input segmentation file
-# -- loaded at argument-parsing time by an instance of AnnotationParser
-parser_speaker.add_argument('input', metavar='source', type=input_parser,
-                       help='path to input segmentation file')
-
-# First positional argument is reference segmentation file
-# -- loaded at argument-parsing time by an instance of AnnotationParser
-parser_speaker.add_argument('reference', metavar='target', type=input_parser,
-                       help='path to reference segmentation file')
-
-# PLP features
-msg = "path to PLP feature files. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-parser_speaker.add_argument('plp', type=str, metavar='file.plp', help=msg)
-
-# Next positional argument is where to save parameters
-parser_speaker.add_argument('save', type=output_parser, metavar='output.pkl',
-                        help='path to output file')
-
-# BIC similarity
-parser_speaker.add_argument('--bic', action='store_true',
-                       help='use BIC as similarity metric')
-
-# BIC penalty coefficient
-parser_speaker.add_argument('--penalty', metavar='λ', type=float, default=3.5,
-                       help='BIC penalty coefficient (default: 3.5)')
-
-# Diagonal covariance matrix
-parser_speaker.add_argument('--diagonal', action='store_true', 
-                       help='use diagonal covariance matrix (default: full)')
-
+# =====================
 # == Face clustering ==
+# =====================
 
-# .mat files
-msg = "path to .mat files. " \
+fparser = subparsers.add_parser('face', parents=[clicommon.parser],
+                                        help='face clustering')
+fparser.set_defaults(func=face_clustering)
+
+def input_fparser(path):
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser(load_ids=True)\
+                         .read(clicommon.replaceURI(path, u), video=u)(u)
+        # load_ids = True makes unassociated tracks labeled as Unknown()
+        # associated tracks are labeled with the person identity
+    else:
+        return AnnotationParser().read(path)
+
+msg = "path to input associated tracks. " \
       "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-parser_face.add_argument('metric', type=str, metavar='file.mat', help=msg)
+fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
 
-msg = "path to .facetracks files. " \
+msg = "path to precomputed similarity matrix. " \
       "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-parser_face.add_argument('tracks', type=str, 
-                         metavar='file.facetracks', help=msg)
+fparser.add_argument('precomputed', type=str, metavar='matrix',
+                     help=msg)
 
-# Next positional argument is where to save parameters
-parser_face.add_argument('save', type=output_parser, metavar='output',
-                        help='path to output file')
+fparser.add_argument('output', type=output_parser, metavar='params.pkl',
+                     help='path to output file')
 
 # Actual argument parsing
-args = argparser.parse_args()
+try:
+    args = argparser.parse_args()
+except Exception, e:
+    sys.exit(e)
+
 args.func(args)
