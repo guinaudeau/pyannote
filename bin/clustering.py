@@ -23,7 +23,8 @@ import pickle
 import pyannote
 from pyannote.parser import AnnotationParser, MDTMParser
 from pyannote.algorithm.clustering.agglomerative.base import AgglomerativeClustering, MatrixIMx
-from pyannote.algorithm.clustering.agglomerative.constraint import ContiguousCMx
+from pyannote.algorithm.clustering.model import AverageLinkMMx, CompleteLinkMMx, SingleLinkMMx
+from pyannote.algorithm.clustering.agglomerative.constraint import ContiguousCMx, CooccurringCMx
 
 def speaker_diarization(args):
     
@@ -31,9 +32,13 @@ def speaker_diarization(args):
     from pyannote.algorithm.clustering.model import BICMMx
     from pyannote.algorithm.clustering.agglomerative.stop import NegativeSMx
     
+    params = {}
+    
     if args.similarity == 'bic':
-        mmx = BICMMx
-        smx = NegativeSMx
+        params['__mmx__'] = BICMMx
+        params['__smx__'] = NegativeSMx
+        params['penalty_coef'] = args.penalty_coef
+        params['covariance_type'] = args.covariance_type
     elif args.similarity == 'clr':
         sys.exit('ERROR: CLR similarity not yet supported.\n')
     elif args.similarity == 'ivector':
@@ -42,22 +47,18 @@ def speaker_diarization(args):
     debug = len(args.verbose) > 1
     
     if hasattr(args, 'tolerance'):
-        class Clustering(AgglomerativeClustering, MatrixIMx, \
-                         ContiguousCMx, mmx, smx):
+        params['tolerance'] = args.tolerance
+        class Clustering(AgglomerativeClustering, MatrixIMx,
+                         ContiguousCMx, CooccurringCMx,
+                         params['__mmx__'], params['__smx__']):
             def __init__(self, **kwargs):
-                super(Clustering, self).__init__(penalty_coef=args.penalty_coef,
-                                           covariance_type=args.covariance_type,
-                                           tolerance=args.tolerance,
-                                           debug=debug,
-                                           **kwargs)
+                super(Clustering, self).__init__(debug=debug, **params)
     else:
-        class Clustering(AgglomerativeClustering, MatrixIMx, \
-                         mmx, smx):
+        class Clustering(AgglomerativeClustering, MatrixIMx,
+                         CooccurringCMx,
+                         params['__mmx__'], params['__smx__']):
             def __init__(self, **kwargs):
-                super(Clustering, self).__init__(penalty_coef=args.penalty_coef,
-                                           covariance_type=args.covariance_type,
-                                           debug=debug,
-                                           **kwargs)
+                super(Clustering, self).__init__(debug=debug, **params)
     
     clustering = Clustering()
     
@@ -94,10 +95,104 @@ def speaker_diarization(args):
     args.output.close()
     
 def face_clustering(args):
-    pass
+    
+    from pyannote.parser import LabelMatrixParser
+    from pyannote.algorithm.clustering.agglomerative.stop import LessThanSMx
+    
+    params = {}
+    params['__smx__'] = LessThanSMx
+    params['threshold'] = args.smaller
+    
+    debug = len(args.verbose) > 1
+    
+    if hasattr(args, 'tolerance'):
+        if args.cooccurring:
+            class Clustering(AgglomerativeClustering, MatrixIMx, ContiguousCMx, 
+                             args.linkage, params['__smx__']):
+                def __init__(self, **kwargs):
+                    super(Clustering, self).__init__(tolerance=args.tolerance,
+                                                threshold=params['threshold'],
+                                                     debug=debug, **kwargs)
+        else:
+            class Clustering(AgglomerativeClustering, MatrixIMx, ContiguousCMx, 
+                             CooccurringCMx, args.linkage, params['__smx__']):
+                def __init__(self, **kwargs):
+                    super(Clustering, self).__init__(tolerance=args.tolerance,
+                                                threshold=params['threshold'],
+                                                     debug=debug, **kwargs)
+    else:
+        if args.cooccurring:
+            class Clustering(AgglomerativeClustering, MatrixIMx,
+                             args.linkage, params['__smx__']):
+                def __init__(self, **kwargs):
+                    super(Clustering, self).__init__(
+                                            threshold=params['threshold'],
+                                            debug=debug, **kwargs)
+        else:
+            class Clustering(AgglomerativeClustering, MatrixIMx,
+                             CooccurringCMx, args.linkage, params['__smx__']):
+                def __init__(self, **kwargs):
+                    super(Clustering, self).__init__(
+                                            threshold=params['threshold'],
+                                            debug=debug, **kwargs)
+    
+    clustering = Clustering()
+    
+    # if requested, use provided resources
+    if hasattr(args, 'uris'):
+        uris = args.uris
+    # otherwise, use all resources in input file
+    else:
+        uris = args.input.videos
+    
+    for u, uri in enumerate(uris):
+        
+        if args.verbose:
+            sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+            sys.stdout.flush()
+        
+        # load input annotation
+        annotation = args.input(uri)
+        if hasattr(args, 'uem'):
+            uem = args.uem(uri)
+            annotation = annotation(uem, mode='intersection')
+        
+        # load pre-computed distance matrix
+        path = clicommon.replaceURI(args.precomputed, uri)
+        matrix = LabelMatrixParser().read(path)
+        
+        # convert distance/similarity matrix to probability
+        matrix.M = args.s2p(matrix.M)
+        
+        # matrix might be incomplete
+        # clustering can only be done when similarity matrix is available
+        labels, _ = matrix.labels
+        available = annotation(labels)
+        # perform actual clustering
+        output = clustering(available, matrix)
+        
+        # save final similarity matrix
+        if hasattr(args, 'dump'):
+            with args.dump(uri) as f:
+                matrix = clustering.imx_matrix
+                pickle.dump(matrix, f)
+        
+        # add remaining annotations back to the original output
+        unavailable = annotation(labels, invert=True)
+        for s, t, l in unavailable.iterlabels():
+            output[s, t] = l
+        
+        # save to file
+        MDTMParser().write(output, f=args.output)
+        
+    
+    # close output file
+    args.output.close()
+
 
 from pyannote import clicommon
 from argparse import ArgumentParser, SUPPRESS
+
 argparser = ArgumentParser(description='A tool for agglomerative clustering.')
 
 subparsers = argparser.add_subparsers(help='commands')
@@ -154,7 +249,8 @@ fparser.set_defaults(func=face_clustering)
 
 def input_fparser(path):
     if clicommon.containsURI(path):
-        return lambda u: AnnotationParser().read(clicommon.replaceURI(path, u))
+        return lambda u: AnnotationParser(load_ids=False)\
+                         .read(clicommon.replaceURI(path, u), video=u)(u)
     else:
         return AnnotationParser().read(path)
 
@@ -162,39 +258,75 @@ msg = "path to input annotation. " \
       "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
 fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
 
+msg = "path to precomputed similarity matrix. " \
+      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+fparser.add_argument('precomputed', type=str, metavar='matrix',
+                     help=msg)
+
 fparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                      help='path to where to store output in MDTM format')
 
-fparser.add_argument('--linkage', choices=('average', 'complete', 'single'),
-                     help='choose between average-, complete- or single-link '
-                          'agglomerative clustering (default: average)',
-                     default='average')
+group = fparser.add_argument_group('Agglomerative clustering')
+linkage = group.add_mutually_exclusive_group()
+linkage.add_argument('--average-link', action='store_const', dest='linkage',
+                     const=AverageLinkMMx, default=AverageLinkMMx,
+                     help='average-link agglomerative clustering '
+                          '(default)')
+linkage.add_argument('--complete-link', action='store_const', dest='linkage',
+                     const=CompleteLinkMMx, default=AverageLinkMMx,
+                     help='complete-link agglomerative clustering')
+linkage.add_argument('--single-link', action='store_const', dest='linkage',
+                     const=SingleLinkMMx, default=AverageLinkMMx,
+                     help='single-link agglomerative clustering')
 
-# fparser.add_argument('--similarity', choices=('precomputed',),
-#                      help='choose face track similarity measure '
-#                      '(default: precomputed)', default='precomputed')
+group = fparser.add_argument_group('Stopping criterion')
 
-def in_matrix_fparser():
-    pass
-msg = "path to precomputed similarity matrix. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-fparser.add_argument('--matrix', type=in_matrix_fparser, metavar='precomputed',
-                      help=msg)
+def params_fparser(path):
+    with open(path, 'r') as f:
+        params = pickle.load(f)
+    return params['__s2p__']
+group.add_argument('--to-probability', dest='s2p', type=params_fparser,
+                     metavar='params.pkl', default=(lambda M: M), 
+                     help='turn similarity into probability using '
+                          'parameters trained previously')
+group.add_argument('--smaller', type=float, metavar='THETA', default=0.5, 
+                   help='stop merging when similarity (or probability) '
+                        'is smaller than THETA (default: 0.5).')
 
-def out_matrix_fparser():
-    pass
-msg = "path where to save new similarity matrix. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-fparser.add_argument('--save-matrix', type=out_matrix_fparser, help=msg)
-
-fparser.add_argument('--convert', type=str, metavar='params.pkl',
-                     help='path to similarity-to-probability converter.')
+def output_fparser(path):
+    
+    if clicommon.containsURI(path):
+        
+        def f(uri):
+            new_path = clicommon.replaceURI(path, uri)
+            try:
+               with open(new_path) as f: pass
+            except IOError as e:
+               return open(new_path, 'w')
+            raise IOError('ERROR: output file %s already exists. '
+                          'Delete it first.\n' % new_path)
+        
+        return f
+        
+    else:
+        raise IOError('ERROR: missing URI placeholders')
+    
+msg = "(pickle-)dump updated similarity matrix. " \
+      "the following URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+fparser.add_argument('--dump', type=output_fparser, default=SUPPRESS,
+                     metavar='matrix.pkl', help=msg)
 
 # -- Linear clustering --
-fparser.add_argument('--linear', 
-        type=float, metavar='𝛿', default=SUPPRESS, dest='tolerance',
-        help='only allow clustering of two face tracks far apart by less than 𝛿 seconds')
 
+group = fparser.add_argument_group('Constraints')
+group.add_argument('--linear', 
+        type=float, metavar='DELTA', default=SUPPRESS, dest='tolerance',
+        help='only allow mergin of two face tracks far apart '
+             'by less than DELTA seconds')
+group.add_argument('--cooccurring', action='store_true',
+                   help='allow merging of two cooccurring face tracks '
+                        '(default behavior is to prevent merging of two '
+                        'faces appearing simultaneously.)')
 
 try:
     args = argparser.parse_args()
