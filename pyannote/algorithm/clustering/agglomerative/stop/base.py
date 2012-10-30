@@ -49,6 +49,12 @@ class LessThanSMx(FuncSMx):
         func = lambda x: x < threshold
         super(LessThanSMx, self).smx_setup(func=func)
 
+class MoreThanSMx(FuncSMx):
+    def smx_setup(self, threshold=0.5, **kwargs):
+        func = lambda x: x > threshold
+        super(MoreThanSMx, self).smx_setup(func=func)
+
+
 class NegativeSMx(LessThanSMx):
     def smx_setup(self, **kwargs):
         super(NegativeSMx, self).smx_setup(threshold=0.)
