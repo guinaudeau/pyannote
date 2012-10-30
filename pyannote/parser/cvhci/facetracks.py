@@ -56,9 +56,9 @@ class FACETRACKSParser(BaseAnnotationParser):
                 if label is None:
                     label = Unknown()
             else:
-                label = int(track)
+                label = track
             
-            self._add(segment, int(track), label, video, modality)
+            self._add(segment, track, label, video, modality)
         
         return self
     

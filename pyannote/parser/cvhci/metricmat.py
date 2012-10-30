@@ -49,7 +49,7 @@ class METRICMATParser(object):
         mat = scipy.io.loadmat(path)
         
         # list of tracks
-        tracks = [int(idx) for idx in mat['tracker_idx'][0,:]]
+        tracks = [str(idx) for idx in mat['tracker_idx'][0,:]]
         
         # top-right triangle of distance matrix
         D = mat['track_distances'][:, :, self.aggregation]
