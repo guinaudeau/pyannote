@@ -147,9 +147,6 @@ class BaseModelMixin(object):
 
 class PrecomputedMMx(BaseModelMixin):
     
-    def mmx_setup(self, precomputed=None, **kwargs):
-        self.mmx_precomputed = precomputed
-    
     def mmx_fit(self, label, **kwargs):
         return tuple([label])
     
@@ -173,7 +170,7 @@ class AverageLinkMMx(PrecomputedMMx):
         
         model = models[label]
         other_model = models[other_label]
-        return np.mean(self.mmx_precomputed[set(model), set(other_model)].M)
+        return np.mean(self.feature[set(model), set(other_model)].M)
 
 class SingleLinkMMx(PrecomputedMMx):
     
@@ -184,7 +181,7 @@ class SingleLinkMMx(PrecomputedMMx):
         
         model = models[label]
         other_model = models[other_label]
-        return np.max(self.mmx_precomputed[set(model), set(other_model)].M)
+        return np.max(self.feature[set(model), set(other_model)].M)
 
 class CompleteLinkMMx(PrecomputedMMx):
     
@@ -195,9 +192,7 @@ class CompleteLinkMMx(PrecomputedMMx):
         
         model = models[label]
         other_model = models[other_label]
-        return np.min(self.mmx_precomputed[set(model), set(other_model)].M)
-
-
+        return np.min(self.feature[set(model), set(other_model)].M)
 
 import networkx as nx
 from pyannote.base.matrix import LabelMatrix
