@@ -22,6 +22,59 @@
 from pyannote.base.matrix import LabelMatrix, Cooccurrence
 from pyannote.algorithm.clustering.agglomerative.constraint.base import BaseConstraintMixin
 
+
+class CooccurringCMx(object):
+    """
+    Two cooccurring labels cannot be merged
+    """
+    def cmx_setup(self, **kwargs):
+        pass
+    
+    def cmx_init(self):
+        """
+        Two cooccurring labels cannot be 
+        """
+        
+        # create new annotation where each segment
+        # is slightly extended on both ends
+        self.cmx_xann = self.annotation.copy(segment_func=self.cmx_xsegment)
+        
+        # compute labels cooccurrence matrix
+        M = Cooccurrence(self.annotation, self.annotation)
+        ilabels, jlabels = M.labels
+        self.cmx_cooccurring = LabelMatrix(ilabels=ilabels, jlabels=jlabels, 
+                                           Mij = (M.M > 0.), dtype=bool,
+                                           default=False)
+    
+    def cmx_update(self, new_label, merged_labels):
+        
+        # remove rows and columns for old labels
+        for label in merged_labels:
+            if label == new_label:
+                continue
+            del self.cmx_cooccurring[label, :]
+            del self.cmx_cooccurring[:, label]
+        
+        # compute cooccurrence matrix with new_label
+        M = Cooccurrence(self.annotation(new_label), self.annotation)
+        
+        # update cooccurring matrix accordingly
+        labels = self.annotation.labels()
+        for label in labels:
+            if label == new_label:
+                continue
+            self.cmx_cooccurring[new_label, label] = M[new_label, label] > 0.
+            self.cmx_cooccurring[label, new_label] = M[new_label, label] > 0.
+    
+    def cmx_meet(self, labels):
+        for l, label in enumerate(labels):
+            for other_label in labels[l+1:]:
+                if self.cmx_cooccurring[label, other_label]:
+                    return False
+        return True
+
+
+
 class ContiguousCMx(BaseConstraintMixin):
     """
     Two labels are mergeable if they are contiguous

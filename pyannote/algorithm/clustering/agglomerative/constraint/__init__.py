@@ -21,10 +21,10 @@
 """This module defines constraint mixins (CMx) for agglomerative clustering.
 """
 
-__all__ = ['ContiguousCMx', 'IncreaseModularityCMx']
+__all__ = ['ContiguousCMx', 'CooccurringCMx', 'IncreaseModularityCMx']
 
 from graph import IncreaseModularityCMx
-from structure import ContiguousCMx
+from structure import ContiguousCMx, CooccurringCMx
 
 if __name__ == "__main__":
     import doctest
