@@ -160,6 +160,9 @@ class PrecomputedMMx(BaseModelMixin):
             other_model = self.models[label]
             new_model.extend(other_model)
         return tuple(new_model)
+    
+    def mmx_compare(self, label, other_label, **kwargs):
+        return self.feature[label, other_label]
 
 class AverageLinkMMx(PrecomputedMMx):
     
