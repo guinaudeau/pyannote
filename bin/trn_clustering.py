@@ -38,7 +38,6 @@ def speaker_diarization(args):
     
     if args.similarity == 'bic':
         params['__mmx__'] = BICMMx
-        params['__smx__'] = NegativeSMx
         params['penalty_coef'] = args.penalty_coef
         params['covariance_type'] = args.covariance_type
     elif args.similarity == 'clr':
@@ -108,8 +107,10 @@ def face_clustering(args):
     
     from pyannote.parser import LabelMatrixParser
     from pyannote.base.annotation import Unknown
+    from pyannote.algorithm.clustering.model import PreComputedMMx
     
     params = {}
+    params['__mmx__'] = PreComputedMMx
     
     X = []
     y = []
@@ -232,7 +233,7 @@ def input_fparser(path):
         # load_ids = True makes unassociated tracks labeled as Unknown()
         # associated tracks are labeled with the person identity
     else:
-        return AnnotationParser().read(path)
+        raise IOError('Only .facetracks input files are supported for now.')
 
 msg = "path to input associated tracks. " \
       "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
