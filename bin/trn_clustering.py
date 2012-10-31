@@ -107,10 +107,10 @@ def face_clustering(args):
     
     from pyannote.parser import LabelMatrixParser
     from pyannote.base.annotation import Unknown
-    from pyannote.algorithm.clustering.model import PreComputedMMx
+    from pyannote.algorithm.clustering.model import PrecomputedMMx
     
     params = {}
-    params['__mmx__'] = PreComputedMMx
+    params['__mmx__'] = PrecomputedMMx
     
     X = []
     y = []

@@ -24,12 +24,12 @@ Model mixins defines the necessary methods to obtain similarity between labels.
 
 """
 
-__all__ = ['BICMMx', 'LevenshteinMMx', 'SameStringMMx', 'PreComputedMMx',
+__all__ = ['BICMMx', 'LevenshteinMMx', 'SameStringMMx', 'PrecomputedMMx',
            'AverageLinkMMx', 'CompleteLinkMMx', 'SingleLinkMMx']
 
 from gaussian import BICMMx
 from string import LevenshteinMMx, SameStringMMx
-from base import PreComputedMMx, AverageLinkMMx, CompleteLinkMMx, SingleLinkMMx
+from base import PrecomputedMMx, AverageLinkMMx, CompleteLinkMMx, SingleLinkMMx
 
 if __name__ == "__main__":
     import doctest
