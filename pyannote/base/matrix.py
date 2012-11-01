@@ -146,7 +146,8 @@ class LabelMatrix(object):
         return self.__M
     def __set_M(self, M):
         if M.shape != self.shape:
-            raise ValueError('shape mismatch.')
+            raise ValueError('shape mismatch: %s vs. %s' % (M.shape, 
+                                                            self.shape))
         if M.dtype != self.__dtype:
             raise ValueError('data type mismatch.')
         self.__M = M
