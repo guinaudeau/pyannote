@@ -22,34 +22,33 @@ parser.add_argument('--uem', type=uem_parser, metavar='file.uem',
                        default=SUPPRESS,
                        help='part of resources to process')
 
-URIS = ["%s", "[URI]"]
-"""List of allowed URI place-holders"""
+def msgURI():
+    return " [URI] placeholder is replaced at processing time."
 
 def replaceURI(path, uri):
     """
-    Replace URI place-holder
+    Replace [URI] placeholder
     
     Parameters
     ----------
     path : str
-        Path with URI place-holder
+        Path with [URI] placeholder
     uri : str
         URI
     
     Returns
     -------
     new_path : str
-        `path` with URI place-holder replaced by `uri`
+        `path` with [URI] placeholder replaced by `uri`
     
     """
     new_path = str(path)
-    for ph in URIS:
-        new_path = new_path.replace(ph, uri)
+    new_path = new_path.replace('[URI]', uri)
     return new_path
 
 def containsURI(path):
     """
-    Check if path contains URI place-holder
+    Check if path contains [URI] placeholder
     
     Parameters
     ----------
@@ -59,8 +58,8 @@ def containsURI(path):
     Returns
     -------
     contains : bool
-        True if `path` contains one (or more) URI place-holders
+        True if `path` contains one (or more) [URI] placeholders
         False otherwise
     
     """
-    return any([path.find(ph) > -1 for ph in URIS])
+    return path.find('[URI]') > -1
