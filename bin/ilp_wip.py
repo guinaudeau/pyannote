@@ -55,8 +55,8 @@ def mm_parser(path):
         return AnnotationParser().read(path)
 
 from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
-def mm_param_parser(param_pkl):
-    """Speaker diarization & face clustering graph
+def ss_param_parser(param_pkl):
+    """Speaker diarization
     
     Parameters
     ----------
@@ -76,11 +76,11 @@ def mm_param_parser(param_pkl):
     mmx = params.pop('__mmx__')
     func = params.pop('__s2p__')
     
-    class MMGraph(LabelSimilarityGraph, mmx):
+    class SSGraph(LabelSimilarityGraph, mmx):
         def __init__(self):
-            super(MMGraph, self).__init__(func=func, **params)
+            super(SSGraph, self).__init__(func=func, **params)
     
-    graph_generator = MMGraph()
+    graph_generator = SSGraph()
     
     return graph_generator
 
@@ -110,6 +110,44 @@ def si_parser(path):
 
 def si_param_parser(path):
     raise NotImplementedError('--si-param option is not supported yet.')
+
+from pyannote.algorithm.clustering.model import PrecomputedMMx
+def hh_param_parser(param_pkl):
+    """Face clustering
+    
+    Parameters
+    ----------
+    param_pkl : str or None
+        Path to 'param.pkl' parameter file.
+        
+    Returns
+    -------
+    graph_generator : LabelSimilarityGraph
+        callable (e.g. graph_generator(annotation, feature)) object 
+        that returns a label similarity graph
+    """
+    
+    if param_pkl is None:
+        class HHGraph(LabelSimilarityGraph, PrecomputedMMx):
+            def __init__(self):
+                super(HHGraph, self).__init__()
+        
+        graph_generator = HHGraph()
+    else:
+        with open(param_pkl, 'r') as f:
+            params = pickle.load(f)
+    
+        mmx = params.pop('__mmx__')
+        func = params.pop('__s2p__')
+    
+        class HHGraph(LabelSimilarityGraph, mmx):
+            def __init__(self):
+                super(HHGraph, self).__init__(func=func, **params)
+    
+        graph_generator = HHGraph()
+    
+    return graph_generator
+
 
 from pyannote.parser import LabelMatrixParser
 def hh_precomputed_parser(path):
@@ -232,6 +270,9 @@ def dump_graph_parser(graph_pkl):
 ogroup = argparser.add_argument_group('Optimization')
 ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                        help='set α value to ALPHA in objective function.')
+ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
+                    help='set probability of mono-modal edges to zero '
+                         'in case it is already lower than P.')
 ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
 
@@ -244,7 +285,7 @@ sgroup.add_argument('--ss', type=mm_parser, metavar='source.mdtm',
                     default=SUPPRESS, help=msg)
                     
 sgroup.add_argument('--ss-param', metavar='param.pkl', 
-                    type=mm_param_parser, dest='ssgraph', 
+                    type=ss_param_parser, dest='ssgraph', 
                     help='path to trained parameters for speaker diarization')
 
 msg = "path to PLP feature files." + clicommon.msgURI()
@@ -267,8 +308,8 @@ msg = "path to source for head clustering. " + clicommon.msgURI()
 hgroup.add_argument('--hh', type=mm_parser, metavar='source.mdtm', 
                     default=SUPPRESS, help=msg)
 
-hgroup.add_argument('--hh-param', type=mm_param_parser, metavar='param.pkl',
-                    dest='hhgraph',
+hgroup.add_argument('--hh-param', type=hh_param_parser, metavar='param.pkl',
+                    dest='hhgraph', default=hh_param_parser(None),
                     help='path to trained parameters for head clustering')
 
 msg = "path to precomputed similarity matrices." + clicommon.msgURI()
@@ -357,7 +398,7 @@ except IOError as e:
 if hasattr(args, 'uris'):
     uris = args.uris
 
-from pyannote.algorithm.clustering.optimization.graph import IdentityNode
+from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
 
 for u, uri in enumerate(uris):
     
@@ -532,6 +573,25 @@ for u, uri in enumerate(uris):
         for other_node in inodes[n+1:]:
             G.add_edge(node, other_node, probability=0.)
     
+    # pruning
+    for e,f,data in G.edges(data=True):
+        
+        # label/label pruning
+        if isinstance(e, LabelNode) and isinstance(f, LabelNode):
+            # mono-modal label/label pruning
+            if e.modality == f.modality:
+                if data['probability'] < args.prune_mm:
+                    # keep track of pruning info
+                    # only for debugging purpose
+                    if hasattr(args, 'dump'):
+                        G[e][f]['pruned'] = True
+                    G[e][f]['probability'] = 0.
+            # cross-modal label/label pruning
+            else:
+                pass
+    
     # dump global graph
     if hasattr(args, 'dump'):
         args.dump(G, uri)
+    
+    
