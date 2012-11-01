@@ -265,6 +265,15 @@ def dump_graph_parser(graph_pkl):
     
     return dump
 
+def out_parser(path):
+    try:
+       with open(path) as f: pass
+    except IOError as e:
+       return open(path, 'w')
+    raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
+argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
+                       help='path to where to store output in MDTM format')
+
 # == ILP ==
 
 ogroup = argparser.add_argument_group('Optimization')
@@ -399,6 +408,7 @@ if hasattr(args, 'uris'):
     uris = args.uris
 
 from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
+from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 
 for u, uri in enumerate(uris):
     
@@ -594,4 +604,19 @@ for u, uri in enumerate(uris):
     if hasattr(args, 'dump'):
         args.dump(G, uri)
     
+    # actual optimization
+    if hasattr(args, 'stop_after'):
+        stopAfter = args.stop_after * 60
+    else:
+        stopAfter = None
+    
+    model = GurobiModel(G, timeLimit=stopAfter, quiet=len(args.verbose) < 2)
+    model.setObjective(alpha=args.alpha)
+    model.optimize()
+    
+    if hasattr(args, 'ss'):
+        output = model.reconstruct(ss_src)
+        MDTMParser().write(output, f=args.output)
+
+args.output.close()
     
