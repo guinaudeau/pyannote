@@ -409,6 +409,7 @@ if hasattr(args, 'uris'):
 
 from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
+from pyannote.parser import MDTMParser
 
 for u, uri in enumerate(uris):
     
@@ -615,12 +616,12 @@ for u, uri in enumerate(uris):
     model.optimize()
     
     if hasattr(args, 'ss'):
-        output = model.reconstruct(ss_src)
-        MDTMParser().write(output, f=args.output)
+        ss_output = model.reconstruct(ss_src)
+        MDTMParser().write(ss_output, f=args.output)
     
     if hasattr(args, 'hh'):
-        output = model.reconstruct(hh_src)
-        MDTMParser().write(output, f=args.output)
+        hh_output = model.reconstruct(hh_src)
+        MDTMParser().write(hh_output, f=args.output)
     
     
 args.output.close()
