@@ -221,7 +221,7 @@ class LabelCooccurrenceGraph(object):
                 
                 # focus on cooccurring other labels
                 iBs = [iB for iB in coAB.labels[1] 
-                          if coAB[iA, iB] >= self.minduration]
+                          if coAB[iA, iB] > self.minduration]
                 for iB in iBs:
                     
                     # number of auto-cooccurring labels
