@@ -685,11 +685,15 @@ class CoTFIDF(Cooccurrence):
         super(CoTFIDF, self).__init__(words, documents)
         Nw, Nd = self.shape
         
+        if Nd == 0:
+            return
+        
         # total duration of all words cooccurring with each document
         # np.sum(self.M, axis=0)[j] = 0 ==> self.M[i, j] = 0 for all i 
         # so we can safely use np.maximum(1e-3, ...) to avoid DivideByZero
-        tf = self.M / np.tile(np.maximum(SEGMENT_PRECISION, \
-                                         np.sum(self.M, axis=0)), (Nw, 1))
+        tf = self.M / np.tile(np.maximum(SEGMENT_PRECISION,
+                                         np.sum(self.M, axis=0)), 
+                              (Nw, 1))
         
         # use IDF only if requested (default is True ==> use IDF)
         if idf:
