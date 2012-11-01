@@ -617,6 +617,11 @@ for u, uri in enumerate(uris):
     if hasattr(args, 'ss'):
         output = model.reconstruct(ss_src)
         MDTMParser().write(output, f=args.output)
-
+    
+    if hasattr(args, 'hh'):
+        output = model.reconstruct(hh_src)
+        MDTMParser().write(output, f=args.output)
+    
+    
 args.output.close()
     
