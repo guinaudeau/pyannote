@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+from pyannote.base.matrix import LabelMatrix
 
 class BaseModelMixin(object):
     """
@@ -91,7 +92,7 @@ class BaseModelMixin(object):
         
         Returns
         -------
-        X : array (num_labels, num_labels)
+        matrix : LabelMatrix
             Label similarity matrix
         
         """
@@ -122,7 +123,7 @@ class BaseModelMixin(object):
                     X[j, i] = X[i, j]
         
         # return label similarity matrix
-        return X
+        return LabelMatrix(ilabels=labels, jlabels=labels, Mij=X)
     
     
     def mmx_merge(self, labels, **kwargs):
@@ -203,7 +204,7 @@ from pyannote.base.matrix import LabelMatrix
 class SimilarityMatrix(object):
     """Helper class for label similarity matrix generation
     
-    Just add a model mixin to it...
+    Just add a model mixin to it and you're good to go
     
     """
     
@@ -260,10 +261,9 @@ class SimilarityMatrix(object):
             Label similarity matrix, indexed with hypothesis labels.
         
         """
-        labels = hypothesis.labels()
-        M = self.mmx_similarity_matrix(labels, annotation=hypothesis,
-                                       feature=feature)
-        return LabelMatrix(ilabels=labels, jlabels=labels, Mij=M)
+        return self.mmx_similarity_matrix(hypothesis.labels(), 
+                                          annotation=hypothesis,
+                                          feature=feature)
 
 
 if __name__ == "__main__":

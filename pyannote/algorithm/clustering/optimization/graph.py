@@ -442,15 +442,14 @@ class LabelSimilarityGraph(object):
     
     def __call__(self, annotation, feature):
         
-        # list of labels in annotation & their number
+        # list of labels in annotation
         labels = annotation.labels()  
-        N = len(labels)
         
-        # NxN label similarity matrix
-        S = self.mmx_similarity_matrix(labels, annotation=annotation,
+        # Label similarity matrix
+        P = self.mmx_similarity_matrix(labels, annotation=annotation,
                                                feature=feature)
         # Label probability matrix
-        P = self.func(S)
+        P.M = self.func(P.M)
         
         # Initialize empty graph
         G = nx.Graph()
@@ -465,18 +464,21 @@ class LabelSimilarityGraph(object):
         for l, label in enumerate(labels):
             node = LabelNode(uri, modality, label)
             G.add_node(node)
-            for L in range(l+1, N):
-                other_label = labels[L]
+            for other_label in labels[l+1:]:
                 other_node = LabelNode(uri, modality, other_label)
                 # Label-to-label edge is weighted by probability
                 # or set to 0. if labels are cooccurring (the same person
                 # cannot appear twice at the same time...)
                 if self.cooccurring and K[label, other_label] > 0.:
-                    p = 0.
+                    G.add_edge(node, other_node, probability=0.)
                 else:
-                    p = P[l, L]
-                G.add_edge(node, other_node, probability=p)
-        
+                    try:
+                        # it might happen that l/L similarity is not available
+                        G.add_edge(node, other_node, 
+                                   probability=P[label, other_label])
+                    except Exception, e:
+                        # do not add any edge if that happens
+                        pass
         return G
 
 # class CooccurrenceGraph(object):
@@ -619,111 +621,122 @@ class LabelSimilarityGraph(object):
 #         return g
 
 
-import pyannote
-from matplotlib import pylab
-from matplotlib import pyplot
+# import pyannote
+# from matplotlib import pylab
 
-def draw_repere_graph(g, layout='spring'):
+def draw_repere_graph(g):
     
-    nodes = g.nodes()
-    modalities = set([node.modality for node in nodes])
+    from matplotlib import pylab
+    pylab.ion()
+    fig = pylab.figure()
+    ax = pylab.gca()
     
-    extent = pyannote.Segment()
-    for node in nodes:
-        extent |= node.segment
+    labelNodes = [n for n in g if n.__class__.__name__ == 'LabelNode']
+    print labelNodes
     
-    if layout == 'spring':
-        G = g.copy()
-        for e, f, d in G.edges(data=True):
-            if d['probability'] == 1.:
-                G[e][f]['probability'] = 1e4
-            # if d['probability'] == 0.:
-            #     G[e][f]['probability'] = -1e2                
-        pos = nx.spring_layout(G, weight='probability')
-    elif layout == 'timeline':
-        
-        y = {'speaker': 0.8,
-             'written': 0.6,
-             'head': 0.4,
-             'spoken': 0.2}
-        
-        pos = {}
-        for node in nodes:
-            x = (node.segment.middle - extent.start) / extent.duration
-            pos[node] = (x, y[node.modality])
-                     
-    # edges are black
-    any_edges = {(e,f): 1.*g[e][f]['probability'] 
-                 for (e,f) in g.edges() 
-                 if g[e][f]['probability'] not in [0, 1]}
+    identityNodes = [n for n in g if n.__class__.__name__ == 'IdentityNode']
+    print identityNodes
+    nIdentityNodes = len(identityNodes)
     
-    # p=0 probability edges are red
-    diff_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 0]
+    trackNodes = [n for n in g if n.__class__.__name__ == 'TrackNode']
+    pos = {}
     
-    # p=1 probability edges are green
-    same_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 1]
+    # IdentityNode
+    # Yellow rectangles with strong black border aligned on the left
     
-    for edge, probability in any_edges.iteritems():
-        nx.draw_networkx_edges(g, pos, edgelist=[edge], width=2, edge_color='k',
-                               style='solid', alpha=probability**10,
-                               edge_cmap=None, edge_vmin=None, edge_vmax=None,
-                               ax=None, arrows=True, label=None)
+    for n, node in enumerate(identityNodes):
+        width = 0.4
+        height = 0.05
+        x = -0.5
+        y = .5 + (n-.5*nIdentityNodes)*2*height + 0.5*height
+        pos[node] = (x, y)
     
-    nx.draw_networkx_edges(g, pos, edgelist=diff_edges, width=1,
-                           edge_color='r', style='solid', alpha=0.1,
-                           edge_cmap=None, edge_vmin=None, edge_vmax=None,
-                           ax=None, arrows=True, label=None)
-    
-    nx.draw_networkx_edges(g, pos, edgelist=same_edges, width=1,
-                           edge_color='g', style='solid', alpha=1,
-                           edge_cmap=None, edge_vmin=None, edge_vmax=None,
-                           ax=None, arrows=True, label=None)
-    
-    # one color per modality
-    colors = {'speaker': 'purple',
-              'written': 'orange',
-              'head': 'blue',
-              'spoken': 'yellow'}
-    
-    # draw long segments first (so that they're in the background)
-    sorted_nodes = sorted(nodes, 
-                          key=lambda node: node.segment.duration,
-                          reverse=False)
-    
-    for node in sorted_nodes:
+    for node in identityNodes:
+        print node, pos[node]
         x, y = pos[node]
-        r = .5 * node.segment.duration / extent.duration
-        color = colors[node.modality]
-        circ = pylab.Circle((x,y), radius=r, facecolor=color, edgecolor='black')
-        ax=pylab.gca()
-        ax.add_patch(circ)
-    
+        rectangle = pylab.Rectangle(pos[node], width, height, 
+                            facecolor='yellow', edgecolor='black')
+        ax.add_patch(rectangle)
+        text = pylab.text(x, y, node.identifier)
+        
+    pylab.axis('equal')
+    pylab.xlim(-1, 1)
+    pylab.ylim(0, 1)
 
-# def graph2annotation(g):
-#     """
-#     Convert sparsely-connected graph to annotations
+    
+# def draw_repere_graph(g, layout='spring'):
 #     
-#     Returns
-#     -------
-#     annotations : dict
-#         Dictionary of dictionaries of annotations
-#         {uri: {modality: annotation}}
+#     nodes = g.nodes()
+#     modalities = set([node.modality for node in nodes 
+#                                     if isinstance(node, LabelNode)])
 #     
-#     """
-#     annotation = {}
-#     for c, cc in enumerate(nx.connected_components(g)):
-#         for n, node in enumerate(cc):
-#             uri = node.uri
-#             modality = node.modality
-#             if uri not in annotation:
-#                 annotation[uri] = {}
-#             if modality not in annotation[uri]:
-#                 annotation[uri][modality] = pyannote.Annotation(video=uri,
-#                                                    modality=modality)
-#             annotation[uri][modality][node.segment, node.track] = c
+#     extent = pyannote.Segment()
+#     for node in nodes:
+#         extent |= node.segment
 #     
-#     for uri in annotation:
-#         for modality in annotation[uri]:
-#             annotation[uri][modality] = annotation[uri][modality].smooth()
+#     if layout == 'spring':
+#         G = g.copy()
+#         for e, f, d in G.edges(data=True):
+#             if d['probability'] == 1.:
+#                 G[e][f]['probability'] = 1e4
+#             # if d['probability'] == 0.:
+#             #     G[e][f]['probability'] = -1e2                
+#         pos = nx.spring_layout(G, weight='probability')
+#     elif layout == 'timeline':
+#         
+#         y = {'speaker': 0.8,
+#              'written': 0.6,
+#              'head': 0.4,
+#              'spoken': 0.2}
+#         
+#         pos = {}
+#         for node in nodes:
+#             x = (node.segment.middle - extent.start) / extent.duration
+#             pos[node] = (x, y[node.modality])
+#                      
+#     # edges are black
+#     any_edges = {(e,f): 1.*g[e][f]['probability'] 
+#                  for (e,f) in g.edges() 
+#                  if g[e][f]['probability'] not in [0, 1]}
 #     
-#     return annotation
+#     # p=0 probability edges are red
+#     diff_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 0]
+#     
+#     # p=1 probability edges are green
+#     same_edges = [(e,f) for (e,f) in g.edges() if g[e][f]['probability'] == 1]
+#     
+#     for edge, probability in any_edges.iteritems():
+#         nx.draw_networkx_edges(g, pos, edgelist=[edge], width=2, edge_color='k',
+#                                style='solid', alpha=probability**10,
+#                                edge_cmap=None, edge_vmin=None, edge_vmax=None,
+#                                ax=None, arrows=True, label=None)
+#     
+#     nx.draw_networkx_edges(g, pos, edgelist=diff_edges, width=1,
+#                            edge_color='r', style='solid', alpha=0.1,
+#                            edge_cmap=None, edge_vmin=None, edge_vmax=None,
+#                            ax=None, arrows=True, label=None)
+#     
+#     nx.draw_networkx_edges(g, pos, edgelist=same_edges, width=1,
+#                            edge_color='g', style='solid', alpha=1,
+#                            edge_cmap=None, edge_vmin=None, edge_vmax=None,
+#                            ax=None, arrows=True, label=None)
+#     
+#     # one color per modality
+#     colors = {'speaker': 'purple',
+#               'written': 'orange',
+#               'head': 'blue',
+#               'spoken': 'yellow'}
+#     
+#     # draw long segments first (so that they're in the background)
+#     sorted_nodes = sorted(nodes, 
+#                           key=lambda node: node.segment.duration,
+#                           reverse=False)
+#     
+#     for node in sorted_nodes:
+#         x, y = pos[node]
+#         r = .5 * node.segment.duration / extent.duration
+#         color = colors[node.modality]
+#         circ = pylab.Circle((x,y), radius=r, facecolor=color, edgecolor='black')
+#         ax=pylab.gca()
+#         ax.add_patch(circ)
+# 
