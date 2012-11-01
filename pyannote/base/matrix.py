@@ -127,8 +127,10 @@ class LabelMatrix(object):
     """Data type"""
     
     def __get_T(self):
-        return LabelMatrix(ilabels=self.__jlabels, jlabels=self.__ilabels,
-                           Mij=self.__M.T, dtype=self.__dtype,
+        return LabelMatrix(ilabels=self.__jlabels, 
+                           jlabels=self.__ilabels,
+                           Mij=None if self.__M is None else self.__M.T, 
+                           dtype=self.__dtype,
                            default=self.__default)
     T = property(fget=__get_T)
     """Transposed matrix"""
