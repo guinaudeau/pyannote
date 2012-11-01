@@ -145,6 +145,9 @@ def face_clustering(args):
     else:
         uris = args.input.videos
     
+    # add header to output file
+    args.output.write('# PyAnnote %s\n' % pyannote.__version__)
+    
     for u, uri in enumerate(uris):
         
         if args.verbose:
@@ -215,8 +218,7 @@ def output_parser(path):
 sparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                      help='path to where to store output in MDTM format')
 
-msg = "path to PLP feature files. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to PLP feature files." + clicommon.msgURI()
 sparser.add_argument('--plp', type=str, metavar='file.plp', help=msg)
 
 # Speech turn similarity
@@ -254,12 +256,10 @@ def input_fparser(path):
     else:
         return AnnotationParser().read(path)
 
-msg = "path to input annotation. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to input annotation." + clicommon.msgURI()
 fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
 
-msg = "path to precomputed similarity matrix. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to precomputed similarity matrix." + clicommon.msgURI() 
 fparser.add_argument('precomputed', type=str, metavar='matrix',
                      help=msg)
 
@@ -311,8 +311,7 @@ def output_fparser(path):
     else:
         raise IOError('ERROR: missing URI placeholders')
     
-msg = "(pickle-)dump updated similarity matrix. " \
-      "the following URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "(pickle-)dump updated similarity matrix." + clicommon.msgURI()
 fparser.add_argument('--dump', type=output_fparser, default=SUPPRESS,
                      metavar='matrix.pkl', help=msg)
 
