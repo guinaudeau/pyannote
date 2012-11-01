@@ -162,8 +162,19 @@ class PrecomputedMMx(BaseModelMixin):
             new_model.extend(other_model)
         return tuple(new_model)
     
-    def mmx_compare(self, label, other_label, **kwargs):
-        return self.feature[label, other_label]
+    def mmx_similarity_matrix(self, labels, feature=None, **kwargs):
+        if feature is None:
+            matrix = self.feature
+        else:
+            matrix = feature
+        ilabels, jlabels = matrix.labels
+        return matrix[set(ilabels) & set(labels), set(jlabels) & set(labels)]
+    
+    def mmx_compare(self, label, other_label, feature=None, **kwargs):
+        if feature is None:
+            feature = self.feature
+        
+        return feature[label, other_label]
 
 class AverageLinkMMx(PrecomputedMMx):
     
