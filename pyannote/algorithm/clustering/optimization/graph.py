@@ -160,6 +160,10 @@ class LabelCooccurrenceGraph(object):
         
         """
         
+        # number of possible & actual matches
+        act = LabelMatrix(dtype=int)
+        pos = LabelMatrix(dtype=int)
+        
         ok = {}
         total = {}
         
@@ -209,15 +213,15 @@ class LabelCooccurrenceGraph(object):
             coB = CoTFIDF(RefB, InpB, idf=False).T
             
             coAB = Cooccurrence(InpA, InpB)
-                        
+            
             for iA in InpA.labels():
                 
                 # number of auto-cooccurring labels
                 N = np.sum(autoCoA[iA, :].M > 0)
                 
                 # find reference labels with positive cooccurrence
-                mapA = {rA: coA[iA, rA] for rA in coA.labels[1] 
-                                        if coA[iA, rA] > 0}
+                mapA = set([rA for rA in coA.labels[1] 
+                               if coA[iA, rA] > self.minduration])
                 
                 # focus on cooccurring other labels
                 iBs = [iB for iB in coAB.labels[1] 
@@ -228,18 +232,19 @@ class LabelCooccurrenceGraph(object):
                     n = np.sum(autoCoB[iB, :].M > 0)
                     
                     # find reference labels with positive cooccurrence
-                    mapB = {rB: coB[iB, rB] for rB in coB.labels[1] 
-                                            if coB[iB, rB] > 0}
+                    mapB = set([rB for rB in coB.labels[1] 
+                                   if coB[iB, rB] > self.minduration])
                     
-                    if (N, n) not in ok:
-                        ok[N, n] = 0.
-                        total[N, n] = 0.
-                    
-                    total[N, n] += 1.
-                    for rAB in set(mapA) & set(mapB):
-                        ok[N, n] += mapA[rAB] * mapB[rAB]
+                    try:
+                        act[N, n] += len(mapA & mapB)
+                        pos[N, n] += N*n
+                    except Exception, e:
+                        act[N, n] = len(mapA & mapB)
+                        pos[N, n] = N*n
         
-        self.P = {(N,n): ok[N,n] / total[N,n] for (N,n) in ok}
+        self.act = act
+        self.pos = pos
+        # self.P = {(N,n): ok[N,n] / (N*n*total[N,n]) for (N,n) in ok}
         self.modalityA = modalityA
         self.modalityB = modalityB
         
