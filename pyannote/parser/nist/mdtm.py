@@ -29,7 +29,7 @@ class MDTMParser(BaseTextualAnnotationParser):
         super(MDTMParser, self).__init__(multitrack)
     
     def _comment(self, line):
-        return False
+        return line[0] == '#'
     
     def _parse(self, line):
         
