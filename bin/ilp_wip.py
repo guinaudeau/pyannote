@@ -615,6 +615,10 @@ for u, uri in enumerate(uris):
     model.setObjective(alpha=args.alpha)
     model.optimize()
     
+    # here write to file MIP GAP after end of optimization...
+    status_num, status_msg = model.get_status()
+    args.output.write('# %s: %s\n' % (uri, status_msg))
+    
     if hasattr(args, 'ss'):
         ss_output = model.reconstruct(ss_src)
         MDTMParser().write(ss_output, f=args.output)
