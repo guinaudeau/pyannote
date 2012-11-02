@@ -113,26 +113,16 @@ class GurobiModel(object):
     
         nodes = G.nodes()
         N = len(nodes)
-    
-        # one variable per pair of nodes
-        # pb.widgets[0] = 'Variables'
-    
-        # Σi|1..N ( Σj|i+1..N 1 )
-        # pb.maxval = int(N*(N-1)/2.)
-        # pb.start()
+        
+        # one variable per node pair
         for i1 in range(N):
-            # Σi|1..i1 ( Σj|i+1..N 1 )
-            # n = int(N*i1 - i1**2/2. - i1/2.)
-            # pb.update(n)
             n1 = nodes[i1]
             for i2 in range(i1+1, N):
                 n2 = nodes[i2]
                 x[n1, n2] = model.addVar(vtype=grb.GRB.BINARY)
-    
-        # pb.finish()
-    
+        
         model.update()
-    
+        
         # transitivity constraints
         # pb.widgets[0] = 'Constraints'
     
@@ -273,13 +263,13 @@ class GurobiModel(object):
                                       if m > n and P[n,m] > 0])
         
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
-    
+        self.model.setParam(grb.GRB.Param.Method, 2)
     
     def optimize(self):
         self.model.optimize()
     
     def get_status(self):
-        status = self.model.getAttr(grb.GRB.Status)
+        status = self.model.getAttr(grb.GRB.Attr.Status)
         return status, optimization_status[status]
     
     def reconstruct(self, annotation):
