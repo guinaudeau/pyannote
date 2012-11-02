@@ -65,10 +65,12 @@ class GurobiModel(object):
     """
     
     """
-    def __init__(self, G, timeLimit=None, threads=None, quiet=True):
+    def __init__(self, G, method=-1, timeLimit=None, 
+                         threads=None, quiet=True):
         super(GurobiModel, self).__init__()
         self.graph = G
         self.timeLimit = timeLimit
+        self.method = method
         self.threads = threads
         self.quiet = quiet
         
@@ -224,9 +226,9 @@ class GurobiModel(object):
             model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
         if self.threads is not None:
             model.setParam(grb.GRB.Param.Threads, self.threads)
-        model.setParam(grb.GRB.Param.MIPFocus, 1)
+        # model.setParam(grb.GRB.Param.MIPFocus, 1)
         # model.setParam(grb.GRB.Param.MIPGap, 1e-2)
-        
+        model.setParam(grb.GRB.Param.Method, self.method)
         model.setParam('OutputFlag', not self.quiet)
         
         # return the model & its variables
@@ -263,7 +265,6 @@ class GurobiModel(object):
                                       if m > n and P[n,m] > 0])
         
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
-        self.model.setParam(grb.GRB.Param.Method, 2)
     
     def optimize(self):
         self.model.optimize()
