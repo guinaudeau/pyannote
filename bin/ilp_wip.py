@@ -282,12 +282,13 @@ def method_parser(method):
     return {'primal': 0, 'dual': 1, 'barrier': 2,
             'concurrent': 3, 'deterministic': 4}[method]
 
-ogroup.add_argument('--method', default=0, type=method_parser,
-                    choices=('primal', 'dual', 'barrier', 
-                             'concurrent', 'deterministic'), 
-                    help='set algorithm used to solve the root node of the MIP '
-                         'model: primal simplex (default), dual simplex, '
-                         'barrier, concurrent or deterministic concurrent.')
+ogroup.add_argument('--method', default='primal', type=str,
+                    choices = ('primal', 'dual', 'barrier', 'concurrent',
+                                                            'deterministic'),
+                    help="set algorithm used to solve the root node of the MIP "
+                         "model: 'primal' simplex (default), 'dual' simplex,"
+                         "'barrier', 'concurrent' or 'deterministic' "
+                         "concurrent.")
 ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
 ogroup.add_argument('--maxnodes', type=int, metavar='N',
@@ -648,7 +649,7 @@ for u, uri in enumerate(uris):
             threads = None
         
         start_time = time.time()
-        model = GurobiModel(G, method=args.method, 
+        model = GurobiModel(G, method=method_parser(args.method), 
                                threads=threads,
                                timeLimit=stopAfter, 
                                quiet=len(args.verbose) < 2)
