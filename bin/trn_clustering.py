@@ -190,8 +190,7 @@ sparser.add_argument('input', type=input_parser, metavar='source',
 sparser.add_argument('reference', type=input_parser, metavar='target', 
                        help='path to expected output annotation')
 
-msg = "path to PLP feature files. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to PLP feature files. " + clicommon.msgURI()
 sparser.add_argument('plp', type=str, metavar='file.plp', help=msg)
 
 def output_parser(path):
@@ -235,12 +234,10 @@ def input_fparser(path):
     else:
         raise IOError('Only .facetracks input files are supported for now.')
 
-msg = "path to input associated tracks. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to input associated tracks. " + clicommon.msgURI()
 fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
 
-msg = "path to precomputed similarity matrix. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
+msg = "path to precomputed similarity matrix. " + clicommon.msgURI()
 fparser.add_argument('precomputed', type=str, metavar='matrix',
                      help=msg)
 
