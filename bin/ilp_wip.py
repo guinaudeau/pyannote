@@ -277,16 +277,29 @@ argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
 # == ILP ==
 
 ogroup = argparser.add_argument_group('Optimization')
-ogroup.add_argument('--method', metavar='N', default=-1, type=int,
-                    choices=(-1, 0, 1, 2, 3, 4), 
-                    help='set root relaxation solving method.')
+
+def method_parser(method):
+    return {'primal': 0, 'dual': 1, 'barrier': 2,
+            'concurrent': 3, 'deterministic': 4}[method]
+
+ogroup.add_argument('--method', default=0, type=method_parser,
+                    choices=('primal', 'dual', 'barrier', 
+                             'concurrent', 'deterministic'), 
+                    help='set algorithm used to solve the root node of the MIP '
+                         'model: primal simplex (default), dual simplex, '
+                         'barrier, concurrent or deterministic concurrent.')
+ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
+                       help='stop optimization after N minutes')
+ogroup.add_argument('--maxnodes', type=int, metavar='N',
+                    help='do not try to perform optimization if number of '
+                         'is higher than N.')
+
 ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                        help='set α value to ALPHA in objective function.')
 ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
                     help='set probability of mono-modal edges to zero '
                          'in case it is already lower than P.')
-ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
-                       help='stop optimization after N minutes')
+
 
 # == Speaker ==
 sgroup = argparser.add_argument_group('[speaker] modality')
@@ -413,6 +426,7 @@ if hasattr(args, 'uris'):
 from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 from pyannote.parser import MDTMParser
+import time
 
 for u, uri in enumerate(uris):
     
@@ -608,29 +622,54 @@ for u, uri in enumerate(uris):
     if hasattr(args, 'dump'):
         args.dump(G, uri)
     
+    
     # actual optimization
     if hasattr(args, 'stop_after'):
         stopAfter = args.stop_after * 60
     else:
         stopAfter = None
     
-    model = GurobiModel(G, method=args.method, 
-                           timeLimit=stopAfter, 
-                           quiet=len(args.verbose) < 2)
-    model.setObjective(alpha=args.alpha)
-    model.optimize()
+    if hasattr(args, 'maxnodes') and len(G) > args.maxnodes:
+        
+        status_msg = 'Too many nodes (%d > %d).' % (len(G), args.maxnodes)
+        model_time = 0
+        optimization_time = 0
+        
+        if hasattr(args, 'ss'):
+            ss_output = ss_src
+        if hasattr(args, 'hh'):
+            hh_output = hh_src
+    else:
+        
+        start_time = time.time()
+        model = GurobiModel(G, method=args.method, 
+                               timeLimit=stopAfter, 
+                               quiet=len(args.verbose) < 2)
+        model_time = time.time() - start_time
+        
+        model.setObjective(alpha=args.alpha)
+        
+        start_time = time.time()
+        model.optimize()
+        optimization_time = time.time() - start_time
+        
+        status_num, status_msg = model.get_status()
+        
+        if hasattr(args, 'ss'):
+            ss_output = model.reconstruct(ss_src)
+        if hasattr(args, 'hh'):
+            hh_output = model.reconstruct(hh_src)
     
-    # here write to file MIP GAP after end of optimization...
-    status_num, status_msg = model.get_status()
-    args.output.write('# %s: %s\n' % (uri, status_msg))
+    args.output.write('# %s\n' % uri)
+    args.output.write('# %s\n' % status_msg)
+    args.output.write('# model took %ds to create and %ds to optimize.\n' % \
+                      (int(model_time), int(optimization_time))
     
     if hasattr(args, 'ss'):
-        ss_output = model.reconstruct(ss_src)
         MDTMParser().write(ss_output, f=args.output)
-    
     if hasattr(args, 'hh'):
-        hh_output = model.reconstruct(hh_src)
         MDTMParser().write(hh_output, f=args.output)
+        
     
     
 args.output.close()
