@@ -277,6 +277,9 @@ argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
 # == ILP ==
 
 ogroup = argparser.add_argument_group('Optimization')
+ogroup.add_argument('--method', metavar='N', default=-1,
+                    choices=(-1, 0, 1, 2, 3, 4), 
+                    help='set root relaxation solving method.')
 ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                        help='set α value to ALPHA in objective function.')
 ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
@@ -611,7 +614,9 @@ for u, uri in enumerate(uris):
     else:
         stopAfter = None
     
-    model = GurobiModel(G, timeLimit=stopAfter, quiet=len(args.verbose) < 2)
+    model = GurobiModel(G, method=args.method, 
+                           timeLimit=stopAfter, 
+                           quiet=len(args.verbose) < 2)
     model.setObjective(alpha=args.alpha)
     model.optimize()
     
