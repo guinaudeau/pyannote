@@ -663,7 +663,7 @@ for u, uri in enumerate(uris):
     args.output.write('# %s\n' % uri)
     args.output.write('# %s\n' % status_msg)
     args.output.write('# model took %ds to create and %ds to optimize.\n' % \
-                      (int(model_time), int(optimization_time))
+                      (int(model_time), int(optimization_time)))
     
     if hasattr(args, 'ss'):
         MDTMParser().write(ss_output, f=args.output)
