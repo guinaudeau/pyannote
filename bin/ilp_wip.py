@@ -293,6 +293,8 @@ ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
 ogroup.add_argument('--maxnodes', type=int, metavar='N',
                     help='do not try to perform optimization if number of '
                          'is higher than N.')
+ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
+                    help='number of threads to use.')
 
 ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                        help='set α value to ALPHA in objective function.')
@@ -622,13 +624,6 @@ for u, uri in enumerate(uris):
     if hasattr(args, 'dump'):
         args.dump(G, uri)
     
-    
-    # actual optimization
-    if hasattr(args, 'stop_after'):
-        stopAfter = args.stop_after * 60
-    else:
-        stopAfter = None
-    
     if hasattr(args, 'maxnodes') and len(G) > args.maxnodes:
         
         status_msg = 'Too many nodes (%d > %d).' % (len(G), args.maxnodes)
@@ -640,9 +635,21 @@ for u, uri in enumerate(uris):
         if hasattr(args, 'hh'):
             hh_output = hh_src
     else:
+        # actual optimization
+        
+        if hasattr(args, 'stop_after'):
+            stopAfter = args.stop_after * 60
+        else:
+            stopAfter = None
+        
+        if hasattr(args, 'threads'):
+            threads = args.threads
+        else:
+            threads = None
         
         start_time = time.time()
         model = GurobiModel(G, method=args.method, 
+                               threads=threads,
                                timeLimit=stopAfter, 
                                quiet=len(args.verbose) < 2)
         model_time = time.time() - start_time
