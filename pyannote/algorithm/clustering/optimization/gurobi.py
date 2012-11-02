@@ -14,6 +14,41 @@ import networkx as nx
 from graph import LabelNode, IdentityNode
 from pyannote.base.annotation import Unknown
 
+optimization_status = {
+    grb.GRB.LOADED: 'Model is loaded, but no solution information is '
+                    'available.',
+    grb.GRB.OPTIMAL: 'Model was solved to optimality (subject to tolerances), '
+                     'and an optimal solution is available.',
+    grb.GRB.INFEASIBLE: 'Model was proven to be infeasible.',
+    grb.GRB.INF_OR_UNBD: 'Model was proven to be either infeasible or '
+                         'unbounded.',
+    grb.GRB.UNBOUNDED: 'Model was proven to be unbounded.',
+    grb.GRB.CUTOFF: 'Optimal objective for model was proven to be worse than '
+                    'the value specified in the Cutoff parameter. No solution '
+                    'information is available.',
+    grb.GRB.ITERATION_LIMIT: 'Optimization terminated because the total number '
+                             'of simplex iterations performed exceeded the '
+                             'value specified in the IterationLimit parameter, '
+                             'or because the total number of barrier '
+                             'iterations exceeded the value specified in the '
+                             'BarIterLimit parameter.',
+    grb.GRB.NODE_LIMIT: 'Optimization terminated because the total number of '
+                        'branch-and-cut nodes explored exceeded the value '
+                        'specified in the NodeLimit parameter.',
+    grb.GRB.TIME_LIMIT: 'Optimization terminated because the time expended '
+                        'exceeded the value specified in the TimeLimit '
+                        'parameter.',
+    grb.GRB.SOLUTION_LIMIT: 'Optimization terminated because the number of '
+                            'solutions found reached the value specified in '
+                            'the SolutionLimit parameter.',
+    grb.GRB.INTERRUPTED: 'Optimization was terminated by the user.',
+    grb.GRB.NUMERIC: 'Optimization was terminated due to unrecoverable '
+                     'numerical difficulties.',
+    grb.GRB.SUBOPTIMAL: 'Unable to satisfy optimality tolerances; '
+                        'a sub-optimal solution is available.'
+}
+
+
 # from progressbar import ProgressBar, Percentage, Bar, ETA
 
 def _n01(g, n1, n2):
@@ -224,8 +259,14 @@ class GurobiModel(object):
         
         P = np.array(nx.to_numpy_matrix(self.graph, nodelist=nodes,
                                         weight='probability'))
+        # normalization coefficient so that objective function
+        # ranges between 0 and 1000
+        k = 1000. / np.sum([1. for n, node in enumerate(nodes)
+                               for m, other_node in enumerate(nodes)
+                               if m > n and P[n,m] > 0])
         
-        objective = grb.quicksum([alpha * P[n,m]*self.x[node,other_node] +
+        # objective function
+        objective = k * grb.quicksum([alpha * P[n,m]*self.x[node,other_node] +
                             (1-alpha)*(1-P[n,m])*(1-self.x[node,other_node]) 
                                       for n, node in enumerate(nodes) 
                                       for m, other_node in enumerate(nodes)
@@ -233,13 +274,18 @@ class GurobiModel(object):
         
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
     
+    
     def optimize(self):
         self.model.optimize()
+    
+    def get_status(self):
+        status = self.model.getAttr(grb.GRB.Status)
+        return status, optimization_status[status]
     
     def reconstruct(self, annotation):
         """
         Generate new annotation from optimized Gurobi model
-    
+        
         Parameters
         ----------
         annotation : Annotation
