@@ -38,8 +38,7 @@ def src_parser(path):
     else:
         return AnnotationParser().read(path)
 
-msg = 'path to source annotation. ' \
-      'URI placeholders are supported: %s.' % ' or '.join(clicommon.URIS[1:])
+msg = 'path to source annotation. ' + clicommon.msgURI()
 argparser.add_argument('src', type=src_parser, metavar='source', help=msg)
 
 def out_parser(path):
