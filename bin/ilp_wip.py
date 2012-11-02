@@ -277,7 +277,7 @@ argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
 # == ILP ==
 
 ogroup = argparser.add_argument_group('Optimization')
-ogroup.add_argument('--method', metavar='N', default=-1,
+ogroup.add_argument('--method', metavar='N', default=-1, type=int,
                     choices=(-1, 0, 1, 2, 3, 4), 
                     help='set root relaxation solving method.')
 ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
