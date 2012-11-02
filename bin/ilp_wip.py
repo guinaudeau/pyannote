@@ -286,9 +286,8 @@ ogroup.add_argument('--method', default='primal', type=str,
                     choices = ('primal', 'dual', 'barrier', 'concurrent',
                                                             'deterministic'),
                     help="set algorithm used to solve the root node of the MIP "
-                         "model: 'primal' simplex (default), 'dual' simplex,"
-                         "'barrier', 'concurrent' or 'deterministic' "
-                         "concurrent.")
+                         "model: primal simplex (default), dual simplex, "
+                         "barrier, concurrent or deterministic concurrent.")
 ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
 ogroup.add_argument('--maxnodes', type=int, metavar='N',
@@ -670,7 +669,7 @@ for u, uri in enumerate(uris):
     
     args.output.write('# %s\n' % uri)
     args.output.write('# %s\n' % status_msg)
-    args.output.write('# model took %ds to create and %ds to optimize.\n' % \
+    args.output.write('# Model took %ds to create and %ds to optimize.\n' % \
                       (int(model_time), int(optimization_time)))
     
     if hasattr(args, 'ss'):
