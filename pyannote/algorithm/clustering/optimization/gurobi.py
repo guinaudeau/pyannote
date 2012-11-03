@@ -73,7 +73,6 @@ class GurobiModel(object):
         self.method = method
         self.threads = threads
         self.quiet = quiet
-        
         self.model, self.x = self.__model(G)
         
     def __model(self, G):
@@ -221,14 +220,35 @@ class GurobiModel(object):
                 
     
         # pb.finish()
-    
-        if self.timeLimit is not None:
-            model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
-        if self.threads is not None:
-            model.setParam(grb.GRB.Param.Threads, self.threads)
-        # model.setParam(grb.GRB.Param.MIPFocus, 1)
-        # model.setParam(grb.GRB.Param.MIPGap, 1e-2)
+        
         model.setParam(grb.GRB.Param.Method, self.method)
+        
+        
+        # -- Parameters to reduce memory consumption
+        
+        if self.threads is not None:
+            # Controls the number of threads to apply to parallel MIP.
+            model.setParam(grb.GRB.Param.Threads, self.threads)
+        
+        # When the amount of memory used to store nodes (measured in GBytes)
+        # exceeds the specified parameter value, nodes are written to disk
+        model.setParam(grb.GRB.Param.NodefileStart, 0.5)
+        
+        # -- Parameters to prevent optimization from lasting forever
+        
+        # The MIP solver will terminate (with an optimal result) when the
+        # relative gap between the lower and upper objective bound is less than 
+        # MIPGap times the upper bound.
+        model.setParam(grb.GRB.Param.MIPGap, 1e-2)
+        
+        if self.timeLimit is not None:
+            # Limits the total time expended (in seconds).
+            model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
+        
+        # The MIPFocus parameter allows you to modify your high-level solution strategy, depending on your goals. By default, the Gurobi MIP solver strikes a balance between finding new feasible solutions and proving that the current solution is optimal. If you are more interested in finding feasible solutions quickly, you can select MIPFocus=1. If you believe the solver is having no trouble finding good quality solutions, and wish to focus more attention on proving optimality, select MIPFocus=2. If the best objective bound is moving very slowly (or not at all), you may want to try MIPFocus=3 to focus on the bound.
+        # model.setParam(grb.GRB.Param.MIPFocus, 1)
+        
+        # Enables or disables solver output.
         model.setParam('OutputFlag', not self.quiet)
         
         # return the model & its variables

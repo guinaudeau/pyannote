@@ -465,7 +465,12 @@ for u, uri in enumerate(uris):
         # add it the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-    
+        
+        # free some memory
+        # (not sure it is necessary)
+        del plp
+        del g
+        
     # speaker identification
     if hasattr(args, 'si'):
         pass
@@ -491,6 +496,11 @@ for u, uri in enumerate(uris):
         # add it the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del precomputed
+        del g
     
     # face recognition
     if hasattr(args, 'hi'):
@@ -514,7 +524,11 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-    
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
+        
     # spoken name detection
     if hasattr(args, 'ni'):
         pass
@@ -531,6 +545,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # speaker/written
     if hasattr(args, 'swgraph'):
@@ -544,6 +562,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # speaker/spoken
     if hasattr(args, 'sngraph'):
@@ -557,6 +579,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # head/written
     if hasattr(args, 'hwgraph'):
@@ -570,6 +596,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # head/spoken
     if hasattr(args, 'hngraph'):
@@ -583,6 +613,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # written/spoken
     if hasattr(args, 'wngraph'):
@@ -596,6 +630,10 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
     # add p=0 edge between all identity nodes
     inodes = [node for node in G if isinstance(node, IdentityNode)]
@@ -666,6 +704,11 @@ for u, uri in enumerate(uris):
             ss_output = model.reconstruct(ss_src)
         if hasattr(args, 'hh'):
             hh_output = model.reconstruct(hh_src)
+        
+        # free some memory
+        # (not sure it is necessary)
+        del G
+        del model
     
     args.output.write('# %s\n' % uri)
     args.output.write('# %s\n' % status_msg)
@@ -676,7 +719,6 @@ for u, uri in enumerate(uris):
         MDTMParser().write(ss_output, f=args.output)
     if hasattr(args, 'hh'):
         MDTMParser().write(hh_output, f=args.output)
-        
     
     
 args.output.close()
