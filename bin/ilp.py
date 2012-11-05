@@ -20,22 +20,250 @@
 
 import sys
 import pickle
-import pyannote
 import networkx as nx
-from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser, PLPParser, MDTMParser
-from pyannote.base.matrix import LabelMatrix
-from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph, LabelCooccurrenceGraph, LabelIdentityGraph
-from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 
+# from pyannote.parser import AnnotationParser, TimelineParser, LSTParser, PLPParser, MDTMParser
+# from pyannote.base.matrix import LabelMatrix
+# from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
+
+from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
+
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='A tool for multimodal ILP clustering')
 
-def src_parser(path):
+from pyannote.parser import AnnotationParser
+def mm_parser(path):
+    """Speaker diarization & face clustering source annotation
+    
+    Parameters
+    ----------
+    path : str
+        Path to source annotation (may contain [URI] placeholder)
+    
+    Returns
+    -------
+    annotation_generator : func or AnnotationParser
+        callable (e.g. annotation_generator(uri)) object 
+        that returns the annotation for a given resource.
+    
+    """
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser()\
+                         .read(clicommon.replaceURI(path, u), video=u)(u)
+    else:
+        return AnnotationParser().read(path)
+
+from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
+def ss_param_parser(param_pkl):
+    """Speaker diarization
+    
+    Parameters
+    ----------
+    param_pkl : str
+        Path to 'param.pkl' parameter file.
+        
+    Returns
+    -------
+    graph_generator : LabelSimilarityGraph
+        callable (e.g. graph_generator(annotation, feature)) object 
+        that returns a label similarity graph
+    """
+    
+    with open(param_pkl, 'r') as f:
+        params = pickle.load(f)
+    
+    mmx = params.pop('__mmx__')
+    func = params.pop('__s2p__')
+    
+    class SSGraph(LabelSimilarityGraph, mmx):
+        def __init__(self):
+            super(SSGraph, self).__init__(func=func, **params)
+    
+    graph_generator = SSGraph()
+    
+    return graph_generator
+
+from pyannote.parser import PLPParser
+def ss_plp_parser(path):
+    """PLP feature loader
+    
+    Parameters
+    ----------
+    path : str
+        Path to PLP feature file (with [URI] placeholder)
+    
+    Returns
+    -------
+    load_plp : func
+        function that takes uri as unique argument and returns PLP features
+    
+    """
+    def load_plp(uri):
+        return PLPParser().read(clicommon.replaceURI(path, uri))
+    
+    return load_plp
+
+from pyannote.algorithm.clustering.optimization.graph import LabelIdentityGraph
+def si_parser(path):
+    raise NotImplementedError('--si option is not supported yet.')
+
+def si_param_parser(path):
+    raise NotImplementedError('--si-param option is not supported yet.')
+
+from pyannote.algorithm.clustering.model import PrecomputedMMx
+def hh_param_parser(param_pkl):
+    """Face clustering
+    
+    Parameters
+    ----------
+    param_pkl : str or None
+        Path to 'param.pkl' parameter file.
+        
+    Returns
+    -------
+    graph_generator : LabelSimilarityGraph
+        callable (e.g. graph_generator(annotation, feature)) object 
+        that returns a label similarity graph
+    """
+    
+    if param_pkl is None:
+        class HHGraph(LabelSimilarityGraph, PrecomputedMMx):
+            def __init__(self):
+                super(HHGraph, self).__init__()
+        
+        graph_generator = HHGraph()
+    else:
+        with open(param_pkl, 'r') as f:
+            params = pickle.load(f)
+    
+        mmx = params.pop('__mmx__')
+        func = params.pop('__s2p__')
+    
+        class HHGraph(LabelSimilarityGraph, mmx):
+            def __init__(self):
+                super(HHGraph, self).__init__(func=func, **params)
+    
+        graph_generator = HHGraph()
+    
+    return graph_generator
+
+
+from pyannote.parser import LabelMatrixParser
+def hh_precomputed_parser(path):
+    """Precomputed similarity matrix loader
+    
+    Parameters
+    ----------
+    path : str
+        Path to precomputed matrices (with [URI] placeholder)
+    
+    Returns
+    -------
+    load_matrix : func
+        function that takes uri as unique argument and returns matrix
+    
+    """
+    
+    def load_matrix(uri):
+        return LabelMatrixParser().read(clicommon.replaceURI(path, uri))
+    
+    return load_matrix
+    
+def hi_parser(path):
+    raise NotImplementedError('--hi option is not supported yet.')
+
+def hi_param_parser(path):
+    raise NotImplementedError('--hi-param option is not supported yet.')
+
+def wi_parser(path):
+    """Written name detection source
+    
+    Parameters
+    ----------
+    path : str
+        Path to written name detection source
+    
+    Returns
+    -------
+    annotation_generator : AnnotationParser
+        callable (e.g. annotation_generator(uri)) object
+        that returns the annotation for a given resource
+    
+    """
     return AnnotationParser().read(path)
-argparser.add_argument('src', type=src_parser, nargs='+', 
-                       help='path to source annotation (one per modality)')
+
+def wi_param_parser(path):
+    if path is None:
+        graph_generator = LabelIdentityGraph()
+    else:
+        raise NotImplementedError('--wi-param option is not supported yet.')
+    return graph_generator
+    
+    
+def ni_parser(path):
+    raise NotImplementedError('--ni option is not supported yet.')
+
+def ni_param_parser(path):
+    raise NotImplementedError('--ni-param option is not supported yet.')
+
+from pyannote.algorithm.clustering.optimization.graph import LabelCooccurrenceGraph
+def x_param_parser(param_pkl):
+    """Cross-modal graph
+    
+    Parameters
+    ----------
+    param_pkl : str
+        Path to 'param.pkl' parameter file
+    
+    Returns
+    -------
+    graph_generator : LabelCooccurrenceGraph
+        callable (e.g. graph_generator(speaker, head)) object 
+        that returns a label cooccurrence graph
+    
+    """
+    with open(param_pkl, 'r') as f:
+        params = pickle.load(f)
+    
+    graph_generator = LabelCooccurrenceGraph(**params)
+    
+    def xgraph(src1, src2):
+        modA = graph_generator.modalityA
+        modB = graph_generator.modalityB
+        mod1 = src1.modality
+        mod2 = src2.modality
+        if mod1 == modA and mod2 == modB:
+            return graph_generator(src1, src2)
+        elif mod1 == modB and mod2 == modA:
+            return graph_generator(src2, src1)
+        else:
+            msg = 'Crossmodal graph modality mismatch [%s/%s] vs. [%s/%s].' \
+                  % (modA, modB, mod1, mod2)
+            raise IOError(msg)
+        
+    return xgraph
+
+def dump_graph_parser(graph_pkl):
+    """
+    
+    Parameters
+    ----------
+    graph_pkl : str
+        Path to 'graph.pkl' dumped file
+        
+    Returns
+    -------
+    dump : func
+        func(g, uri) that pickle-dump g for given uri
+    
+    """
+    def dump(g, uri):
+        path = clicommon.replaceURI(graph_pkl, uri)
+        with open(path, 'w') as f:
+            pickle.dump(g, f)
+    
+    return dump
 
 def out_parser(path):
     try:
@@ -46,111 +274,161 @@ def out_parser(path):
 argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
                        help='path to where to store output in MDTM format')
 
-argparser.add_argument('--time-limit', type=int, metavar='n_min', 
-                       default=SUPPRESS,
-                       help='force stop if ILP optimization has not converged '
-                            'to the optimal solution after n_min minutes')
+# == ILP ==
 
-argparser.add_argument('--alpha', type=float, metavar='α', 
-                       default=0.5,
-                       help='set α in objective function. '
-                            'smaller α means bigger clusters.')
+ogroup = argparser.add_argument_group('Optimization')
 
-msg = "(pickle)-dump graph to file. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-argparser.add_argument('--dump-graph', type=str, metavar='graph.pkl', 
-                       help=msg, default=SUPPRESS)
+def method_parser(method):
+    return {'primal': 0, 'dual': 1, 'barrier': 2,
+            'concurrent': 3, 'deterministic': 4}[method]
 
-def speaker_parser(path):
-    
-    f = open(path, 'r')
-    data = pickle.load(f)
-    f.close()
-    
-    mmx = data.pop('MMx')
-    class SSGraph(LabelSimilarityGraph, mmx):
-        def __init__(self):
-            super(SSGraph, self).__init__(**data)
-    
-    ssGraph = SSGraph()
-    
-    return ssGraph
+ogroup.add_argument('--method', default='primal', type=str,
+                    choices = ('primal', 'dual', 'barrier', 'concurrent',
+                                                            'deterministic'),
+                    help="set algorithm used to solve the root node of the MIP "
+                         "model: primal simplex (default), dual simplex, "
+                         "barrier, concurrent or deterministic concurrent.")
+ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
+                       help='stop optimization after N minutes')
+ogroup.add_argument('--maxnodes', type=int, metavar='N',
+                    help='do not try to perform optimization if number of '
+                         'is higher than N.')
+ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
+                    help='number of threads to use.')
 
-sparser = argparser.add_argument_group("[speaker] modality")
-sparser.add_argument('--speaker', type=speaker_parser, 
-                     metavar='params.pkl', default=SUPPRESS, 
-                     help='path to trained parameters for speaker/speaker '
-                          'similarity graph')
-
-msg = "path to PLP feature files. " \
-      "URI placeholders are supported: %s." % " or ".join(clicommon.URIS[1:])
-sparser.add_argument('--plp', type=str, metavar='file.plp', help=msg)
+ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
+                       help='set α value to ALPHA in objective function.')
+ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
+                    help='set probability of mono-modal edges to zero '
+                         'in case it is already lower than P.')
 
 
-wparser = argparser.add_argument_group("[written] modality")
-wparser.add_argument('--written', action='store_true', default=SUPPRESS,
-                     help="incorporate the [written] modality")
+# == Speaker ==
+sgroup = argparser.add_argument_group('[speaker] modality')
 
-def cross_parser(path):
-    
-    f = open(path, 'r')
-    data = pickle.load(f)
-    f.close()
-    
-    crossGraph = LabelCooccurrenceGraph(**data)
-    
-    return crossGraph
+# Speaker diarization     
+msg = "path to source for speaker diarization. " + clicommon.msgURI()
+sgroup.add_argument('--ss', type=mm_parser, metavar='source.mdtm', 
+                    default=SUPPRESS, help=msg)
+                    
+sgroup.add_argument('--ss-param', metavar='param.pkl', 
+                    type=ss_param_parser, dest='ssgraph', 
+                    help='path to trained parameters for speaker diarization')
 
-xparser = argparser.add_argument_group("Cross-modality")
-xparser.add_argument('--cross', type=cross_parser, action='append',
-                     dest='cross', default=[], metavar='params.pkl',
-                     help='path to trained parameters for cross-modal graphs')
+msg = "path to PLP feature files." + clicommon.msgURI()
+sgroup.add_argument('--ss-plp', type=ss_plp_parser, metavar='uri.plp', help=msg)
+
+# Speaker identification
+sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
+                    default=SUPPRESS,
+                    help='path to source for speaker identification')
+                    
+sgroup.add_argument('--si-param', type=si_param_parser, metavar='param.pkl',
+                          help='path to trained parameters for speaker '
+                               'identification')
+
+# == Head ==
+hgroup = argparser.add_argument_group('[head] modality')
+
+# Face clustering
+msg = "path to source for head clustering. " + clicommon.msgURI()
+hgroup.add_argument('--hh', type=mm_parser, metavar='source.mdtm', 
+                    default=SUPPRESS, help=msg)
+
+hgroup.add_argument('--hh-param', type=hh_param_parser, metavar='param.pkl',
+                    dest='hhgraph', default=hh_param_parser(None),
+                    help='path to trained parameters for head clustering')
+
+msg = "path to precomputed similarity matrices." + clicommon.msgURI()
+hgroup.add_argument('--hh-precomputed', type=hh_precomputed_parser, 
+                    metavar='matrix.pkl', help=msg)
+
+# Head recognition
+hgroup.add_argument('--hi', type=hi_parser, metavar='source.nbl',
+                    default=SUPPRESS,
+                    help='path to source for head recognition')
+
+hgroup.add_argument('--hi-param', type=hi_param_parser, metavar='param.pkl',
+                    help='path to trained parameters for head '
+                         'recognition')
+
+# == Written ==
+wgroup = argparser.add_argument_group('[written] modality')
+
+# Written name detection
+wgroup.add_argument('--wi', type=wi_parser, metavar='source.mdtm',
+                    default=SUPPRESS, 
+                    help='path to source for written name detection')
+
+wgroup.add_argument('--wi-param', metavar='param.pkl', dest='wigraph',
+                    type=wi_param_parser, default=wi_param_parser(None),
+                    help='path to trained parameters for written name '
+                         'detection')
+
+# == Spoken ==
+ngroup = argparser.add_argument_group('[spoken] modality')
+
+# Spoken name detection
+ngroup.add_argument('--ni', type=ni_parser, metavar='source.mdtm',
+                    default=SUPPRESS,
+                    help='path to source for spoken name detection')
+
+ngroup.add_argument('--ni-param', type=ni_param_parser, metavar='param.pkl',
+                    help='path to trained parameters for spoken name '
+                         'detection')
+
+# == Cross-modality ==
+xgroup = argparser.add_argument_group('cross-modality')
+
+xgroup.add_argument('--sh-param', metavar='param.pkl', type=x_param_parser,
+                    dest='shgraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[speaker/head] cross-modal clustering.')
+
+xgroup.add_argument('--sw-param', metavar='param.pkl', type=x_param_parser,
+                    dest='swgraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[speaker/written] cross-modal clustering.')
+
+xgroup.add_argument('--sn-param', metavar='param.pkl', type=x_param_parser,
+                    dest='sngraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[speaker/spoken] cross-modal clustering.')
+
+xgroup.add_argument('--hw-param', metavar='param.pkl', type=x_param_parser,
+                    dest='hwgraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[head/written] cross-modal clustering.')
+
+xgroup.add_argument('--hn-param', metavar='param.pkl', type=x_param_parser,
+                    dest='hngraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[head/spoken] cross-modal clustering.')
+
+xgroup.add_argument('--wn-param', metavar='param.pkl', type=x_param_parser,
+                    dest='wngraph', default=SUPPRESS,
+                    help='path to trained parameters for '
+                         '[written/spoken] cross-modal clustering.')
+
+dgroup = argparser.add_argument_group('Debugging')
+
+msg = "dump global graph before optimization." + clicommon.msgURI()
+dgroup.add_argument('--dump-graph', type=dump_graph_parser, dest='dump',
+                    metavar='graph.pkl', help=msg, default=SUPPRESS)
 
 try:
-   args = argparser.parse_args()
+    args = argparser.parse_args()
 except IOError as e:
-   sys.stderr.write('%s' % e)
-   sys.exit(-1)
+    sys.exit(e)
 
 
-# get list of modalities & resources from sources
-modalities = {}
-uris = set([])
-for src in args.src:
-    for m in src.modalities:
-        if m not in modalities:
-            modalities[m] = []
-        modalities[m].append(src)
-        uris.update(set(src.videos))
-
-# if list of resources is provided, use it.
 if hasattr(args, 'uris'):
     uris = args.uris
-else:
-    uris = sorted(uris)
 
-# make sure there is at most one source per modality
-for m in modalities:
-    if len(modalities[m]) > 1:
-        msg = "ERROR: found more than one source for modality [%s].\n" % m
-        sys.stderr.write(msg)
-        sys.exit(-1)
-for m in set(modalities):
-    modalities[m] = modalities[m][0]
-
-# make sure incorporated modalities are available
-for m in ['speaker', 'written', 'head', 'spoken']:
-    if hasattr(args, m) and m not in modalities:
-        msg = "ERROR: could not find any source for modality [%s].\n" % m
-
-
-# make sure modalities for cross-modal graphs are available
-for c in args.cross:
-    for m in [c.modalityA, c.modalityB]:
-        if m not in modalities:
-            msg = "ERROR: could not find any source for modality [%s].\n" % m
-            sys.stderr.write(msg)
-            sys.exit(-1)
+from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
+from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
+from pyannote.parser import MDTMParser
+import time
 
 for u, uri in enumerate(uris):
     
@@ -158,107 +436,290 @@ for u, uri in enumerate(uris):
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
     
-    # start with an empty graph
-    G = nx.Graph()
-    
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
     else:
         uem = None
     
-    # add speaker similarity graph
-    if hasattr(args, 'speaker'):
+    # start with an empty graph
+    G = nx.Graph()
+    
+    # speaker diarization
+    if hasattr(args, 'ss'):
         
         if args.verbose:
             sys.stdout.write('   - [speaker/speaker] similarity graph\n')
             sys.stdout.flush()
         
-        # load PLP features
-        path = clicommon.replaceURI(args.plp, uri)
-        plp = PLPParser().read(path)
-        
         # get source
-        src = modalities['speaker'](video=uri, modality='speaker')
+        ss_src = args.ss(uri)
         if uem is not None:
-            src = src(uem, mode='intersection')
+            ss_src = ss_src(uem, mode='intersection')
         
-        # create speaker similarity graph
-        g = args.speaker(src, plp)
+        # get PLP features
+        plp = args.ss_plp(uri)
         
-        # add it to 'big graph'
+        # build speaker similarity graph
+        g = args.ssgraph(ss_src, plp)
+        
+        # add it the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
         
-    # add written identity graph
-    if hasattr(args, 'written'):
+        # free some memory
+        # (not sure it is necessary)
+        del plp
+        del g
+        
+    # speaker identification
+    if hasattr(args, 'si'):
+        pass
+    
+    # face clustering
+    if hasattr(args, 'hh'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [head/head] similarity graph\n')
+            sys.stdout.flush()
+        
+        # get source
+        hh_src = args.hh(uri)
+        if uem is not None:
+            hh_src = hh_src(uem, mode='intersection')
+        
+        # get precomputed matrix
+        precomputed = args.hh_precomputed(uri)
+        
+        # build head similarity graph
+        g = args.hhgraph(hh_src, precomputed)
+        
+        # add it the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del precomputed
+        del g
+    
+    # face recognition
+    if hasattr(args, 'hi'):
+        pass
+    
+    # written name detection
+    if hasattr(args, 'wi'):
         
         if args.verbose:
             sys.stdout.write('   - [written] identity graph\n')
             sys.stdout.flush()
         
         # get source
-        src = modalities['written'](video=uri, modality='written')
+        wi_src = args.wi(uri)
         if uem is not None:
-            src = src(uem, mode='intersection')
+            wi_src = wi_src(uem, mode='intersection')
         
-        # create written identity graph
-        g = LabelIdentityGraph()(src)
+        # build written identity graph
+        g = args.wigraph(wi_src)
         
-        # add it to 'big graph'
+        # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
+        
+    # spoken name detection
+    if hasattr(args, 'ni'):
+        pass
     
-    # add cross-modal graphs
-    for c in args.cross:
-        
-        # get sources
-        modA = c.modalityA
-        srcA = modalities[modA](video=uri, modality=modA)
-        if uem is not None:
-            srcA = srcA(uem, mode='intersection')
-        
-        modB = c.modalityB
-        srcB = modalities[modB](video=uri, modality=modB)
-        if uem is not None:
-            srcB = srcB(uem, mode='intersection')
+    # speaker/head
+    if hasattr(args, 'shgraph'):
         
         if args.verbose:
-            sys.stdout.write('   - [%s/%s] cross-modal graph\n' % (modA, modB))
+            sys.stdout.write('   - [speaker/head] crossmodal graph\n')
             sys.stdout.flush()
         
-        # create cross-modal graph
-        g = c(srcA, srcB)
-        
-        # add it to 'big graph'
+        # build speaker/head graph
+        g = args.shgraph(ss_src, hh_src)
+        # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
+    # speaker/written
+    if hasattr(args, 'swgraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [speaker/written] crossmodal graph\n')
+            sys.stdout.flush()
+        
+        # build speaker/written graph
+        g = args.swgraph(ss_src, wi_src)
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
-    if hasattr(args, "dump_graph"):
-        path = clicommon.replaceURI(args.dump_graph, uri)
-        f = open(path, 'w')
-        pickle.dump(G, f)
-        f.close()
+    # speaker/spoken
+    if hasattr(args, 'sngraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [speaker/spoken] crossmodal graph\n')
+            sys.stdout.flush()
+        
+        # build speaker/spoken graph
+        g = args.sngraph(ss_src, ni_src)
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
     
-    # create ILP model
-    if hasattr(args, "time_limit"):
-        timeLimit = args.time_limit * 60
+    # head/written
+    if hasattr(args, 'hwgraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [head/written] crossmodal graph\n')
+            sys.stdout.flush()
+        
+        # build head/written graph
+        g = args.hwgraph(hh_src, wi_src)
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
+    
+    # head/spoken
+    if hasattr(args, 'hngraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [head/spoken] crossmodal graph\n')
+            sys.stdout.flush()
+        
+        # build head/spoken graph
+        g = args.sngraph(hh_src, ni_src)
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
+    
+    # written/spoken
+    if hasattr(args, 'wngraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [written/spoken] crossmodal graph\n')
+            sys.stdout.flush()
+        
+        # build written/spoken graph
+        g = args.wngraph(wi_src, ni_src)
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+        
+        # free some memory
+        # (not sure it is necessary)
+        del g
+    
+    # add p=0 edge between all identity nodes
+    inodes = [node for node in G if isinstance(node, IdentityNode)]
+    for n, node in enumerate(inodes):
+        for other_node in inodes[n+1:]:
+            G.add_edge(node, other_node, probability=0.)
+    
+    # pruning
+    for e,f,data in G.edges(data=True):
+        
+        # label/label pruning
+        if isinstance(e, LabelNode) and isinstance(f, LabelNode):
+            # mono-modal label/label pruning
+            if e.modality == f.modality:
+                if data['probability'] < args.prune_mm:
+                    # keep track of pruning info
+                    # only for debugging purpose
+                    if hasattr(args, 'dump'):
+                        G[e][f]['pruned'] = True
+                    G[e][f]['probability'] = 0.
+            # cross-modal label/label pruning
+            else:
+                pass
+    
+    # dump global graph
+    if hasattr(args, 'dump'):
+        args.dump(G, uri)
+    
+    if hasattr(args, 'maxnodes') and len(G) > args.maxnodes:
+        
+        status_msg = 'Too many nodes (%d > %d).' % (len(G), args.maxnodes)
+        model_time = 0
+        optimization_time = 0
+        
+        if hasattr(args, 'ss'):
+            ss_output = ss_src
+        if hasattr(args, 'hh'):
+            hh_output = hh_src
     else:
-        timeLimit = None
-    model = GurobiModel(G, timeLimit=timeLimit, threads=None, 
-                           quiet=len(args.verbose) < 2)
+        # actual optimization
+        
+        if hasattr(args, 'stop_after'):
+            stopAfter = args.stop_after * 60
+        else:
+            stopAfter = None
+        
+        if hasattr(args, 'threads'):
+            threads = args.threads
+        else:
+            threads = None
+        
+        start_time = time.time()
+        model = GurobiModel(G, method=method_parser(args.method), 
+                               threads=threads,
+                               timeLimit=stopAfter, 
+                               quiet=len(args.verbose) < 2)
+        model_time = time.time() - start_time
+        
+        model.setObjective(alpha=args.alpha)
+        
+        start_time = time.time()
+        model.optimize()
+        optimization_time = time.time() - start_time
+        
+        status_num, status_msg = model.get_status()
+        
+        if hasattr(args, 'ss'):
+            ss_output = model.reconstruct(ss_src)
+        if hasattr(args, 'hh'):
+            hh_output = model.reconstruct(hh_src)
+        
+        # free some memory
+        # (not sure it is necessary)
+        del G
+        del model
     
-    # set objective
-    model.setObjective(alpha=args.alpha)
+    args.output.write('# %s\n' % uri)
+    args.output.write('# %s\n' % status_msg)
+    args.output.write('# Model took %ds to create and %ds to optimize.\n' % \
+                      (int(model_time), int(optimization_time)))
     
-    # optimize 
-    model.optimize()
+    if hasattr(args, 'ss'):
+        MDTMParser().write(ss_output, f=args.output)
+    if hasattr(args, 'hh'):
+        MDTMParser().write(hh_output, f=args.output)
     
-    for m in modalities:
-        # reconstruct
-        src = modalities[m](video=uri, modality=m)
-        output = model.reconstruct(src)
-        # save to file
-        MDTMParser().write(output, f=args.output)
-
+    
 args.output.close()
+    
