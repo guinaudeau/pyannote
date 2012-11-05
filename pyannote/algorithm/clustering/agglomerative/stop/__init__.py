@@ -22,9 +22,8 @@
 """This module defines stopping criterion mixins (SMx) for agglomerative clustering.
 """
 
-__all__ = ['LessThanSMx', 'MoreThanSMx', 'NegativeSMx', 
-           'NumberOfClustersSMx', 
-           'MaximumModularitySMx']
+__all__ = ['LessThanSMx', 'MoreThanSMx', 'NegativeSMx', \
+           'NumberOfClustersSMx', 'MaximumModularitySMx']
 
 from base import LessThanSMx, MoreThanSMx, NegativeSMx
 from structure import NumberOfClustersSMx

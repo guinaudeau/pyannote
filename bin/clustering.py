@@ -97,11 +97,15 @@ def speaker_diarization(args):
 def face_clustering(args):
     
     from pyannote.parser import LabelMatrixParser
-    from pyannote.algorithm.clustering.agglomerative.stop import LessThanSMx
+    from pyannote.algorithm.clustering.agglomerative.stop import LessThanSMx, NumberOfClustersSMx
     
     params = {}
-    params['__smx__'] = LessThanSMx
-    params['threshold'] = args.smaller
+    if hasattr(args, 'smaller'):
+        params['__smx__'] = LessThanSMx
+        params['threshold'] = args.smaller
+    elif hasattr(args, 'nclusters'):
+        params['__smx__'] = NumberOfClustersSMx
+        params['num_clusters'] = args.nclusters
     
     debug = len(args.verbose) > 1
     
@@ -279,8 +283,6 @@ linkage.add_argument('--single-link', action='store_const', dest='linkage',
                      const=SingleLinkMMx, default=AverageLinkMMx,
                      help='single-link agglomerative clustering')
 
-group = fparser.add_argument_group('Stopping criterion')
-
 def params_fparser(path):
     with open(path, 'r') as f:
         params = pickle.load(f)
@@ -289,9 +291,15 @@ group.add_argument('--to-probability', dest='s2p', type=params_fparser,
                      metavar='params.pkl', default=(lambda M: M), 
                      help='turn similarity into probability using '
                           'parameters trained previously')
-group.add_argument('--smaller', type=float, metavar='THETA', default=0.5, 
+
+group = fparser.add_argument_group('Stopping criterion')
+
+stop = group.add_mutually_exclusive_group()
+stop.add_argument('--smaller', type=float, metavar='THETA', default=SUPPRESS, 
                    help='stop merging when similarity (or probability) '
-                        'is smaller than THETA (default: 0.5).')
+                        'is smaller than THETA.')
+stop.add_argument('--nclusters', type=int, metavar='K', default=SUPPRESS,
+                   help='stop merging when number of clusters is below K.')
 
 def output_fparser(path):
     
