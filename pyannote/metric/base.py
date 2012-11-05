@@ -268,9 +268,6 @@ class Precision(BaseMetric):
     def metric_components(cls):
         return [PRECISION_RETRIEVED, PRECISION_RELEVANT_RETRIEVED]
     
-    # def __init__(self):
-    #     super(Precision, self).__init__()
-    
     def _get_rate(self, components):
         """Compute precision from `components`"""
         numerator = components[PRECISION_RELEVANT_RETRIEVED] 
@@ -306,9 +303,6 @@ class Recall(BaseMetric):
     @classmethod
     def metric_components(cls):
         return [RECALL_RELEVANT, RECALL_RELEVANT_RETRIEVED]
-    
-    # def __init__(self):
-    #     super(Recall, self).__init__()
     
     def _get_rate(self, components):
         """Compute recall from `components`"""
