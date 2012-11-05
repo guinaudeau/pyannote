@@ -18,18 +18,19 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+from base import BaseStoppingCriterionMixin
 
-"""This module defines stopping criterion mixins (SMx) for agglomerative clustering.
-"""
-
-__all__ = ['LessThanSMx', 'MoreThanSMx', 'NegativeSMx', 
-           'NumberOfClustersSMx', 
-           'MaximumModularitySMx']
-
-from base import LessThanSMx, MoreThanSMx, NegativeSMx
-from structure import NumberOfClustersSMx
-from graph import MaximumModularitySMx
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+class NumberOfClustersSMx(BaseStoppingCriterionMixin):
+    """
+    
+    Parameters
+    ----------
+    num_clusters : int
+    
+    """
+    def smx_setup(self, num_clusters=1., **kwargs):
+        self.smx_num_clusters = num_clusters
+    
+    def smx_stop(self, status):
+        return len(self.annotation.labels()) < self.smx_num_clusters
+    
