@@ -110,9 +110,9 @@ data = {}
 data['modalityA'] = labelCooccurrenceGraph.modalityA
 data['modalityB'] = labelCooccurrenceGraph.modalityB
 data['minduration'] = labelCooccurrenceGraph.minduration
-data['act'] = labelCooccurrenceGraph.act
-data['pos'] = labelCooccurrenceGraph.pos
-# data['P'] = labelCooccurrenceGraph.P
+data['# matches'] = labelCooccurrenceGraph.num_matches
+data['# times'] = labelCooccurrenceGraph.num_times
+data['P'] = labelCooccurrenceGraph.P
 
 pickle.dump(data, args.dump)
 args.dump.close()
