@@ -298,8 +298,8 @@ class LabelCooccurrenceGraph(object):
                 for lB in labelsB:
                     nodeB = LabelNode(uri, self.modalityB, lB)
                     if G.has_edge(nodeA, nodeB):
-                        old_p = G[nodeA, nodeB]['probability'] 
-                        G[nodeA, nodeB]['probability'] = max(old_p, p)
+                        old_p = G[nodeA][nodeB]['probability'] 
+                        G[nodeA][nodeB]['probability'] = max(old_p, p)
                     else:
                         G.add_edge(nodeA, nodeB, probability=p)
         
