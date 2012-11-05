@@ -164,8 +164,8 @@ class LabelCooccurrenceGraph(object):
         
         """
         
-        num_matches = LabelMatrix(dtype=int)
-        num_times = LabelMatrix(dtype=int)
+        num_matches = LabelMatrix(dtype=int, default=0)
+        num_times = LabelMatrix(dtype=int, default=0)
         
         modalityA = None
         modalityB = None
@@ -242,7 +242,7 @@ class LabelCooccurrenceGraph(object):
         
         self.num_matches = num_matches
         self.num_times = num_times
-        self.P = LabelMatrix(dtype=float)
+        self.P = LabelMatrix(dtype=float, default=np.nan)
         for nA,nB,N in self.num_times:
             if N > self.significant:
                 n = self.num_matches[nA,nB]
@@ -290,8 +290,11 @@ class LabelCooccurrenceGraph(object):
             
             try:
                 p = self.P[nA, nB]
+                if np.isnan(p):
+                    continue
             except Exception, e:
                 continue
+            
             
             for lA in labelsA:
                 nodeA = LabelNode(uri, self.modalityA, lA)
