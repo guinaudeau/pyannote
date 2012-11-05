@@ -20,6 +20,7 @@
 
 
 class BaseStoppingCriterionMixin(object):
+    """Stopping criterion mixin"""
     
     def smx_setup(self, **kwargs):
         pass
@@ -31,12 +32,26 @@ class BaseStoppingCriterionMixin(object):
         pass
     
     def smx_stop(self, status):
+        """Is stopping criterion reached?
+        
+        Parameter
+        ---------
+        status : float
+        
+        Returns
+        -------
+        stop : bool
+            True if stopping criterion was reached
+            False otherwise
+        """
         return False
     
     def smx_final(self, annotation):
         return self.annotation.copy()
 
 class FuncSMx(BaseStoppingCriterionMixin):
+    """Stop when func(status) is True"""
+    
     def smx_setup(self, func=None, **kwargs):
         if func is None:
             func = lambda x: False
@@ -45,22 +60,28 @@ class FuncSMx(BaseStoppingCriterionMixin):
         return self.smx_func(status)
 
 class LessThanSMx(FuncSMx):
+    """Stop when status < threshold"""
+    
     def smx_setup(self, threshold=0.5, **kwargs):
         func = lambda x: x < threshold
         super(LessThanSMx, self).smx_setup(func=func)
 
 class MoreThanSMx(FuncSMx):
+    """Stop when status > threshold"""
+    
     def smx_setup(self, threshold=0.5, **kwargs):
         func = lambda x: x > threshold
         super(MoreThanSMx, self).smx_setup(func=func)
 
-
 class NegativeSMx(LessThanSMx):
+    """Stop when status < 0"""
+    
     def smx_setup(self, **kwargs):
         super(NegativeSMx, self).smx_setup(threshold=0.)
 
 import numpy as np
 class MaximumSMx(BaseStoppingCriterionMixin):
+    
     def smx_init(self):
         self.smx_iterations = []
     
