@@ -64,6 +64,9 @@ argparser.add_argument('--duration', metavar='seconds', type=float, default=0.,
                        help='Minimum cooccurrence duration for two labels to '
                             'be considered cooccurring (default is 0 second)')
 
+argparser.add_argument('--significant', metavar='N', type=int, default=50,
+                       help='Blah blah (default is 50.)')
+
 try:
     args = argparser.parse_args()
 except Exception, e:
@@ -103,7 +106,8 @@ def aAbBiterator():
         
         yield tgtA, srcA, tgtB, srcB
 
-labelCooccurrenceGraph = LabelCooccurrenceGraph(minduration=args.duration)
+labelCooccurrenceGraph = LabelCooccurrenceGraph(minduration=args.duration,
+                                                significant=args.significant)
 labelCooccurrenceGraph.fit(aAbBiterator())
 
 data = {}
