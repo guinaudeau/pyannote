@@ -223,7 +223,7 @@ class LabelCooccurrenceGraph(object):
             
             # tag as many segments as can be
             taggedInpA = argMaxDirectTagger(RefA, alignedInpA)
-            taggedInpB = argMaxDirectTagger(RefB, alignedInpA)
+            taggedInpB = argMaxDirectTagger(RefB, alignedInpB)
             
             for segment in timeline:
                 
