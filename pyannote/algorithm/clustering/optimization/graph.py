@@ -29,6 +29,7 @@ import networkx as nx
 from pyannote import Timeline
 from pyannote.base.matrix import LabelMatrix, Cooccurrence, CoTFIDF
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
+from pyannote.algorithm.tagging import ArgMaxDirectTagger
 
 class IdentityNode(object):
     """Graphical representation of an identity"""
@@ -140,7 +141,8 @@ class LabelCooccurrenceGraph(object):
     """
     
     def __init__(self, P=None, 
-                       modalityA=None, modalityB=None, 
+                       modalityA=None, modalityB=None,
+                       significant=100,
                        minduration=-np.inf):
         super(LabelCooccurrenceGraph, self).__init__()
         if P is not None:
@@ -150,6 +152,7 @@ class LabelCooccurrenceGraph(object):
         if modalityB is not None:
             self.modalityB = modalityB
         self.minduration = minduration
+        self.significant=significant
         
     def fit(self, rAiArBiB_iterator):
         """
@@ -160,15 +163,13 @@ class LabelCooccurrenceGraph(object):
         
         """
         
-        # number of possible & actual matches
-        act = LabelMatrix(dtype=int)
-        pos = LabelMatrix(dtype=int)
-        
-        ok = {}
-        total = {}
+        num_matches = LabelMatrix(dtype=int)
+        num_times = LabelMatrix(dtype=int)
         
         modalityA = None
         modalityB = None
+        
+        argMaxDirectTagger = ArgMaxDirectTagger()
         
         for RefA, InpA, RefB, InpB in rAiArBiB_iterator:
             
@@ -205,46 +206,47 @@ class LabelCooccurrenceGraph(object):
             if modA == modB:
                 raise ValueError('Both annotations share the same modality.')
             
-            # auto-cooccurrence matrix in both annotations
-            autoCoA = Cooccurrence(InpA, InpA)
-            autoCoB = Cooccurrence(InpB, InpB)
             
-            coA = CoTFIDF(RefA, InpA, idf=False).T
-            coB = CoTFIDF(RefB, InpB, idf=False).T
+            # project all annotations to a joint timeline
+            # where segments shorter that minduration are removed
+            # intersection = InpA.timeline & InpB.timeline
+            segmentation = (InpA.timeline + InpB.timeline).segmentation()
+            timeline = Timeline([s for s in segmentation
+                                   if s.duration > self.minduration
+                                   and InpA._timeline.covers(s)
+                                   and InpB._timeline.covers(s)],
+                                video=uri)
             
-            coAB = Cooccurrence(InpA, InpB)
+            alignedInpA = InpA >> timeline
+            alignedInpB = InpB >> timeline
             
-            for iA in InpA.labels():
+            # tag as many segments as can be
+            taggedInpA = argMaxDirectTagger(RefA, alignedInpA)
+            taggedInpB = argMaxDirectTagger(RefB, alignedInpA)
+            
+            for segment in timeline:
                 
-                # number of auto-cooccurring labels
-                N = np.sum(autoCoA[iA, :].M > 0)
+                nA = len(alignedInpA[segment, :])
+                nB = len(alignedInpB[segment, :])
                 
-                # find reference labels with positive cooccurrence
-                mapA = set([rA for rA in coA.labels[1] 
-                               if coA[iA, rA] > self.minduration])
+                lA = taggedInpA.get_labels(segment)
+                lB = taggedInpB.get_labels(segment)
                 
-                # focus on cooccurring other labels
-                iBs = [iB for iB in coAB.labels[1] 
-                          if coAB[iA, iB] > self.minduration]
-                for iB in iBs:
-                    
-                    # number of auto-cooccurring labels
-                    n = np.sum(autoCoB[iB, :].M > 0)
-                    
-                    # find reference labels with positive cooccurrence
-                    mapB = set([rB for rB in coB.labels[1] 
-                                   if coB[iB, rB] > self.minduration])
-                    
-                    try:
-                        act[N, n] += len(mapA & mapB)
-                        pos[N, n] += N*n
-                    except Exception, e:
-                        act[N, n] = len(mapA & mapB)
-                        pos[N, n] = N*n
+                try:
+                    num_matches[nA, nB] += len(lA & lB)
+                    num_times[nA, nB] += 1
+                except Exception, e:
+                    num_matches[nA, nB] = len(lA & lB)
+                    num_times[nA, nB] = 1
         
-        self.act = act
-        self.pos = pos
-        # self.P = {(N,n): ok[N,n] / (N*n*total[N,n]) for (N,n) in ok}
+        self.num_matches = num_matches
+        self.num_times = num_times
+        self.P = LabelMatrix(dtype=float)
+        for nA,nB,N in self.num_times:
+            if N > self.significant:
+                n = self.num_matches[nA,nB]
+                self.P[nA,nB] = 1.*n/(N*nA*nB)
+        
         self.modalityA = modalityA
         self.modalityB = modalityB
         
@@ -267,29 +269,38 @@ class LabelCooccurrenceGraph(object):
             raise ValueError('Modality mismatch (%s vs. %s)' \
                              % (InpB.modality, self.modalityB))
         
-        autoCoA = Cooccurrence(InpA, InpA)
-        autoCoB = Cooccurrence(InpB, InpB)
-        coAB = Cooccurrence(InpA, InpB)
+        segmentation = (InpA.timeline + InpB.timeline).segmentation()
+        timeline = Timeline([s for s in segmentation
+                               if s.duration > self.minduration
+                               and InpA._timeline.covers(s)
+                               and InpB._timeline.covers(s)],
+                            video=uri)
         
-        for iA in InpA.labels():
+        alignedInpA = InpA >> timeline
+        alignedInpB = InpB >> timeline
+        
+        for segment in timeline:
             
-            # number of auto-cooccurring labels
-            N = np.sum(autoCoA[iA, :].M > 0)
-            nodeA = LabelNode(uri, self.modalityA, iA)
+            labelsA = alignedInpA.get_labels(segment)
+            labelsB = alignedInpB.get_labels(segment)
             
-            # focus on cooccurring other labels
-            iBs = [iB for iB in coAB.labels[1] 
-                      if coAB[iA, iB] >= self.minduration]
-            for iB in iBs:
-                
-                # number of auto-cooccurring labels
-                n = np.sum(autoCoB[iB, :].M > 0)
-                
-                if (N, n) not in self.P:
-                    continue
-                
-                nodeB = LabelNode(uri, self.modalityB, iB)
-                G.add_edge(nodeA, nodeB, probability=self.P[N, n])
+            nA = len(labelsA)
+            nB = len(labelsB)
+            
+            try:
+                p = self.P[nA, nB]
+            except Exception, e:
+                continue
+            
+            for lA in labelsA:
+                nodeA = LabelNode(uri, self.modalityA, lA)
+                for lB in labelsB:
+                    nodeB = LabelNode(uri, self.modalityB, lB)
+                    if G.has_edge(nodeA, nodeB):
+                        old_p = G[nodeA, nodeB]['probability'] 
+                        G[nodeA, nodeB]['probability'] = max(old_p, p)
+                    else:
+                        G.add_edge(nodeA, nodeB, probability=p)
         
         return G
         
