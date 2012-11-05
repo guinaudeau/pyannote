@@ -142,8 +142,9 @@ class LabelCooccurrenceGraph(object):
     
     def __init__(self, P=None, 
                        modalityA=None, modalityB=None,
+                       minduration=-np.inf,
                        significant=100,
-                       minduration=-np.inf):
+                       **kwargs):
         super(LabelCooccurrenceGraph, self).__init__()
         if P is not None:
             self.P = P
