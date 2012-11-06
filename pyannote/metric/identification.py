@@ -74,7 +74,51 @@ class DefaultIDMatcher(IDMatcher):
     def ncorrect(self, ids1, ids2):
         # Slightly faster than inherited .ncorrect() method
         return len(ids1 & ids2)
-        
+
+
+class UnknownIDMatcher(IDMatcher):
+    """
+    Two IDs match if: 
+    * they are both anonymous, or
+    * they are both named and equal.
+    
+    """
+    
+    def __init__(self):
+        super(UnknownIDMatcher, self).__init__()
+    
+    def __call__(self, identifier1, identifier2):
+        return (self.is_anonymous(identifier1) and \
+               self.is_anonymous(identifier2)) \
+            or (identifier1 == identifier2 and \
+                self.is_named(identifier1) and \
+                self.is_named(identifier2))
+
+    def ncorrect(self, identifiers1, identifiers2):
+        # Slightly faster than inherited .ncorrect() method
+        named1 = self.named_from(identifiers1)
+        named2 = self.named_from(identifiers2)
+        anonymous1 = self.anonymous_from(identifiers1)
+        anonymous2 = self.anonymous_from(identifiers2)
+        return len(named1 & named2) + min(len(anonymous1), len(anonymous2))
+
+    # ------------------------------------------------------------ #
+    def is_anonymous(self, identifier):
+        return isinstance(identifier, Unknown) or \
+               (isinstance(identifier, str) and \
+                                            (identifier[:8] == 'Inconnu_' or \
+                                             identifier[:7] == 'speaker')) 
+    
+    def anonymous_from(self, identifiers):
+        return set([identifier for identifier in identifiers \
+                               if self.is_anonymous(identifier)])
+    # ------------------------------------------------------------ #
+    def is_named(self, identifier):
+        return not self.is_anonymous(identifier)
+    
+    def named_from(self, identifiers):
+        return set([identifier for identifier in identifiers \
+                               if self.is_named(identifier)])
 
 # --------------------------------------------------------------------------- #
 
@@ -136,19 +180,19 @@ class IdentificationErrorRate(BaseMetric):
         
         # loop on all segments
         for segment in common_timeline:
-        
+            
             # segment duration
             duration = segment.duration
-        
+            
             # set of IDs in reference segment
             r = R.get_labels(segment)
             Nr = len(r)
             detail[IER_TOTAL] += duration * Nr
-        
+            
             # set of IDs in hypothesis segment
             h = H.get_labels(segment)
             Nh = len(h)
-        
+            
             # number of correct matches
             # N_correct = len(r & h)
             N_correct = self.matcher.ncorrect(r, h)
