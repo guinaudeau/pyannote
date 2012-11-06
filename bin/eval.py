@@ -29,7 +29,8 @@ from pyannote.metric.diarization import DiarizationErrorRate, \
                                         DiarizationCompleteness, \
                                         DiarizationHomogeneity
 from pyannote.metric.detection import DetectionErrorRate
-from pyannote.metric.identification import IdentificationErrorRate
+from pyannote.metric.identification import IdentificationErrorRate, \
+                                           UnknownIDMatcher
 
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
@@ -91,9 +92,8 @@ group = argparser.add_argument_group('Identification')
 group.add_argument('--identification', action='append_const', dest='requested',
                                     const=IdentificationErrorRate, default=[],
                                     help='compute identification error rate')
-
-group.add_argument('--unknown', choices=('remove',), default=SUPPRESS,
-                   help='Unknown tracks handling.')
+group.add_argument('--unknown', choices=('match', 'remove'), default='match',
+                   help='Unknown tracks handling. ')
 
 # Actual argument parsing
 args = argparser.parse_args()
@@ -105,6 +105,13 @@ if args.components:
     if len(args.hypothesis) > 1:
         sys.exit("ERROR: Option '--components' is not supported with multiple "
                  "hypothesis (you asked for %d)." % len(args.hypothesis))
+
+
+if args.unknown =='match':
+    for metric in requested:
+        if isinstance(metric, IdentificationErrorRate):
+            metric.matcher = UnknownIDMatcher()
+
 
 # Initialize metrics & result matrix
 metrics = {}
