@@ -268,6 +268,7 @@ def dump_graph_parser(graph_pkl):
 def dump_model_parser(model_mps):
     def dump(model, uri):
         path = clicommon.replaceURI(model_mps, uri)
+        model.model.update()
         model.model.write(path)
     return dump
 
