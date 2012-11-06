@@ -25,6 +25,7 @@ from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
 from pyannote.parser import AnnotationParser, LSTParser, MDTMParser
 from pyannote.base.annotation import Unknown
+from pyannote.algorithm.tagging import ArgMaxDirectTagger
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='One oracle to rule them all')
@@ -45,10 +46,10 @@ def out_parser(path):
 argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
                        help='path to where to store output in MDTM format')
 
-# argparser.add_argument('--detection', metavar='detection.mdtm',
-#                        type=in_parser, default=SUPPRESS,
-#                        help='when provided, the oracle relies on this '
-#                             'detection. otherwise, it uses the reference.')
+argparser.add_argument('--detection', metavar='detection.mdtm',
+                       type=in_parser, default=SUPPRESS,
+                       help='when provided, the oracle relies on this '
+                            'detection. otherwise, it uses the reference.')
 
 def model_parser(path):
     models = set(LSTParser().read(path))
@@ -93,6 +94,9 @@ global_models = set([])
 for labels in args.models:
     global_models.update(labels)
 
+if hasattr(args, 'detection'):
+    argMaxDirectTagger = ArgMaxDirectTagger(known_first=True)
+
 for u, uri in enumerate(uris):
     
     if args.verbose:
@@ -115,8 +119,23 @@ for u, uri in enumerate(uris):
             local_models.update(labels)
     
     reference = args.reference(uri)
+    
     if uem is not None:
         reference = reference(uem, mode='intersection')
+    
+    if hasattr(args, 'detection'):
+        detection = args.detection(uri)
+        
+        if detection.modality != reference.modality:
+            sys.exit('ERROR: reference/detection modality mismatch ' 
+                     '(%s vs. %s)' % (reference.modality, detection.modality))
+        
+        if uem is not None:
+            detection = detection(uem, mode='intersection')
+        timeline = (reference.timeline + detection.timeline).segmentation()
+        reference = argMaxDirectTagger(reference >> timeline, 
+                                       detection >> timeline)
+        
     
     translation = {}
     for label in reference.labels():
