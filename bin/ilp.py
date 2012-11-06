@@ -265,6 +265,12 @@ def dump_graph_parser(graph_pkl):
     
     return dump
 
+def dump_model_parser(model_mps):
+    def dump(model, uri):
+        path = clicommon.replaceURI(model_mps, uri)
+        model.model.write(path)
+    return dump
+
 def out_parser(path):
     try:
        with open(path) as f: pass
@@ -413,8 +419,14 @@ xgroup.add_argument('--wn-param', metavar='param.pkl', type=x_param_parser,
 dgroup = argparser.add_argument_group('Debugging')
 
 msg = "dump global graph before optimization." + clicommon.msgURI()
-dgroup.add_argument('--dump-graph', type=dump_graph_parser, dest='dump',
+dgroup.add_argument('--dump-graph', type=dump_graph_parser,
                     metavar='graph.pkl', help=msg, default=SUPPRESS)
+
+
+msg = "dump model before optimization." + clicommon.msgURI()
+dgroup.add_argument('--dump-model', type=dump_model_parser,
+                    metavar='model.mps', help=msg, default=SUPPRESS)
+
 
 try:
     args = argparser.parse_args()
@@ -651,7 +663,7 @@ for u, uri in enumerate(uris):
                 if data['probability'] < args.prune_mm:
                     # keep track of pruning info
                     # only for debugging purpose
-                    if hasattr(args, 'dump'):
+                    if hasattr(args, 'dump_graph'):
                         G[e][f]['pruned'] = True
                     G[e][f]['probability'] = 0.
             # cross-modal label/label pruning
@@ -659,8 +671,8 @@ for u, uri in enumerate(uris):
                 pass
     
     # dump global graph
-    if hasattr(args, 'dump'):
-        args.dump(G, uri)
+    if hasattr(args, 'dump_graph'):
+        args.dump_graph(G, uri)
     
     if hasattr(args, 'maxnodes') and len(G) > args.maxnodes:
         
@@ -693,6 +705,10 @@ for u, uri in enumerate(uris):
         model_time = time.time() - start_time
         
         model.setObjective(alpha=args.alpha)
+        
+        # dump model
+        if hasattr(args, 'dump_model'):
+            args.dump_model(model, uri)
         
         start_time = time.time()
         model.optimize()
