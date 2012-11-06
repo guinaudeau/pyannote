@@ -107,38 +107,33 @@ def face_clustering(args):
         params['__smx__'] = NumberOfClustersSMx
         params['num_clusters'] = args.nclusters
     
-    debug = len(args.verbose) > 1
+    if hasattr(args, 'tolerance'):
+        params['tolerance'] = args.tolerance
+    
+    params['debug'] = len(args.verbose) > 1
     
     if hasattr(args, 'tolerance'):
         if args.cooccurring:
             class Clustering(AgglomerativeClustering, MatrixIMx, ContiguousCMx, 
                              args.linkage, params['__smx__']):
                 def __init__(self, **kwargs):
-                    super(Clustering, self).__init__(tolerance=args.tolerance,
-                                                threshold=params['threshold'],
-                                                     debug=debug, **kwargs)
+                    super(Clustering, self).__init__(**params)
         else:
             class Clustering(AgglomerativeClustering, MatrixIMx, ContiguousCMx, 
                              CooccurringCMx, args.linkage, params['__smx__']):
                 def __init__(self, **kwargs):
-                    super(Clustering, self).__init__(tolerance=args.tolerance,
-                                                threshold=params['threshold'],
-                                                     debug=debug, **kwargs)
+                    super(Clustering, self).__init__(**params)
     else:
         if args.cooccurring:
             class Clustering(AgglomerativeClustering, MatrixIMx,
                              args.linkage, params['__smx__']):
                 def __init__(self, **kwargs):
-                    super(Clustering, self).__init__(
-                                            threshold=params['threshold'],
-                                            debug=debug, **kwargs)
+                    super(Clustering, self).__init__(**params)
         else:
             class Clustering(AgglomerativeClustering, MatrixIMx,
                              CooccurringCMx, args.linkage, params['__smx__']):
                 def __init__(self, **kwargs):
-                    super(Clustering, self).__init__(
-                                            threshold=params['threshold'],
-                                            debug=debug, **kwargs)
+                    super(Clustering, self).__init__(**params)
     
     clustering = Clustering()
     
