@@ -216,7 +216,8 @@ class BaseAnnotationParser(object):
         labels = A.labels()
         translation = {l: Unknown() for l in A.labels() 
                                     if isinstance(l, str) and 
-                                    (l[:7]=='Unknown' or l[:7]=='Inconnu')}
+                                    (l[:7]=='Unknown' or l[:7]=='Inconnu'
+                                     or l[:8]=='speaker#')}
         
         return A % translation
 
