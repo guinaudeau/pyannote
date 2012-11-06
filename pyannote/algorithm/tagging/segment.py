@@ -36,7 +36,7 @@ class DirectTagger(BaseTagger):
     
     def __init__(self):
         super(DirectTagger, self).__init__(annotation=False, \
-                                                 timeline=True)
+                                           timeline=True)
     
     def _tag_timeline(self, source, timeline):
         """Timeline tagging
@@ -159,6 +159,11 @@ class ArgMaxDirectTagger(BaseTagger):
     """
     ArgMax direct segment tagger
     
+    Parameters
+    ----------
+    unknown_last : bool
+        If unknown_last is True, 
+    
     It supports both timeline and annotation tagging.
     
     **Timeline tagging.**
@@ -172,10 +177,11 @@ class ArgMaxDirectTagger(BaseTagger):
     
     """
     
-    def __init__(self):
+    def __init__(self, known_first=False):
         super(ArgMaxDirectTagger, self).__init__(annotation=True, \
                                                  timeline=True)
-    
+        self.known_first = known_first
+        
     def _tag_timeline(self, source, timeline):
         """Timeline tagging
         
@@ -228,7 +234,7 @@ class ArgMaxDirectTagger(BaseTagger):
                 for i in range(n_tracks):
                     
                     # find current best label
-                    label = t.argmax(segment)
+                    label = t.argmax(segment, known_first=self.known_first)
                     
                     # if there is no label in stock
                     # just stop tagging this segment
@@ -244,7 +250,7 @@ class ArgMaxDirectTagger(BaseTagger):
             # tag current target segment with greatest intersection duration
             else:
                 # find label with greatest intersection
-                label = t.argmax(segment)
+                label = t.argmax(segment, known_first=self.known_first)
                 # if it exists, go for it!
                 if label:
                     T[segment] = label
@@ -292,7 +298,7 @@ class ArgMaxDirectTagger(BaseTagger):
                 for track in tagged[segment, :]:
                     
                     # find current best label
-                    label = t.argmax(segment)
+                    label = t.argmax(segment, known_first=self.known_first)
                     
                     # if there is no label in stock
                     # just stop tagging this segment
@@ -310,7 +316,7 @@ class ArgMaxDirectTagger(BaseTagger):
             else:
                 
                 # find label with greatest intersection
-                label = t.argmax(segment)
+                label = t.argmax(segment, known_first=self.known_first)
                 # if it exists, go for it!
                 if label:
                     tagged[segment] = label
