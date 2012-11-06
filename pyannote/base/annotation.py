@@ -279,26 +279,24 @@ class Annotation(object):
             return set([self.__data[segment][track] \
                         for track in self.__data[segment]])
     
-    def argmax(self, segment=None):
-        """Most frequent label
+    def argmax(self, segment=None, known_first=False):
+        """Get most frequent label
         
-        If `segment` is provided, argmax will return the label with longest
-        intersection.
-        If `segment` is None, argmax will simply return the label with longest
-        overall duration.
-        
-        If no label intersects segment, returns None
         
         Parameters
         ----------
         segment : Segment, optional
             Section of annotation where to look for the most frequent label.
-            Defaults to annotation timeline extent.
+            Defaults to whole annotation extent.
+        known_first: bool, optional
+            If True, artificially reduces the duration of intersection of 
+            `Unknown` labels so that 'known' labels are returned first.
         
         Returns
         -------
         label : any existing label or None
-        
+            Label with longest intersection
+            
         Examples
         --------
             
@@ -326,6 +324,14 @@ class Annotation(object):
         # compute intersection duration for each label
         durations = {lbl: (self.__label_timeline[lbl] & segment).duration()
                      for lbl in self.labels()}
+        
+        # artifically reduce intersection duration of Unknown labels 
+        # so that 'known' labels are returned first
+        if known_first:
+            maxduration = max(durations.values())
+            for lbl in durations.keys():
+                if isinstance(lbl, Unknown):
+                    durations[lbl] = durations[lbl] - maxduration
         
         # find the most frequent label
         label = max(durations.iteritems(), key=operator.itemgetter(1))[0]
