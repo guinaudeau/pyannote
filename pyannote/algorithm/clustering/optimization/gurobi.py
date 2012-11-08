@@ -271,37 +271,67 @@ class GurobiModel(object):
         # return the model & its variables
         return model, x
     
-    def setObjective(self, alpha=0.5):
-        """
-        Set following objective:
-        Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)
-                j>i
     
+    def objective_Finkel(self, alpha=0.5, log_prob=False):
+        """
+        Maximize ∑  α.xij.pij + (1-α).(1-xij).(1-pij)
+                j>i
+        
         Parameters
         ----------
         alpha : float, optional
-            Value of α in above formula
+            Value of α in above formulas (default value is 0.5).
+        log_prob : bool, optional
+            If True, use log pij and log (1-pij) in place of pij and (1-pij)
+        
         """
         
         nodes = self.graph.nodes()
-        N = len(nodes)
-        
-        P = np.array(nx.to_numpy_matrix(self.graph, nodelist=nodes,
+        P = np.array(nx.to_numpy_matrix(self.graph,
+                                        nodelist=nodes,
                                         weight='probability'))
-        # normalization coefficient so that objective function
-        # ranges between 0 and 1000
-        k = 1000. / np.sum([1. for n, node in enumerate(nodes)
-                               for m, other_node in enumerate(nodes)
-                               if m > n and P[n,m] > 0])
         
-        # objective function
-        objective = k * grb.quicksum([alpha * P[n,m]*self.x[node,other_node] +
-                            (1-alpha)*(1-P[n,m])*(1-self.x[node,other_node]) 
-                                      for n, node in enumerate(nodes) 
-                                      for m, other_node in enumerate(nodes)
-                                      if m > n and P[n,m] > 0])
+        # normalization coefficient
+        k = 1000. / np.sum([1 for n,_ in enumerate(nodes)
+                              for m,_ in enumerate(nodes)
+                              if m > n and P[n,m] not in [0, 1]])
         
-        self.model.setObjective(objective, grb.GRB.MAXIMIZE)
+        a = alpha
+        if log_prob:
+            objective = k * grb.quicksum([a*np.log(P[n,m])*self.x[N,M] +
+                                         (1-a)*np.log(1-P[n,m])*(1-self.x[N,M])
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+        else:
+            objective = k * grb.quicksum([a*P[n,m]*self.x[N,M] +
+                                          (1-a)*(1-P[n,m])*(1-self.x[N,M])
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+        
+        return objective, grb.GRB.MAXIMIZE
+    
+    def setObjective(self, type='finkel', alpha=0.5, log_prob=False):
+        """
+        Set the objective function
+        
+        Parameters
+        ----------
+        type : {'finkel'}
+            finkel: Maximize ∑  α.xij.pij + (1-α).(1-xij).(1-pij)
+                            j>i
+        alpha : float, optional
+            Value of α in above formulas (default value is 0.5).
+        log_prob : bool, optional
+            If True, use log pij and log (1-pij) in place of pij and (1-pij)
+        """
+        
+        if type == 'finkel':
+            o, d = self.objective_Finkel(alpha=alpha,
+                                         log_prob=log_prob)
+        
+        self.model.setObjective(o, d)
     
     def optimize(self):
         self.model.optimize()
