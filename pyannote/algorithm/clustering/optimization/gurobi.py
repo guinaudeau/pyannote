@@ -266,7 +266,10 @@ class GurobiModel(object):
         # model.setParam(grb.GRB.Param.MIPFocus, 1)
         
         # Enables or disables solver output.
-        model.setParam('OutputFlag', not self.quiet)
+        model.setParam(grb.GRB.Param.OutputFlag, not self.quiet)
+        
+        # Bug in Gurobi 5.0.1 -- will be fixed in 5.0.2
+        model.setParam(grb.GRB.Param.Sifting, 0)
         
         # return the model & its variables
         return model, x
