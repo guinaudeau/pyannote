@@ -425,7 +425,10 @@ class LabelMatrix(object):
     def __iadd__(self, other):
         """Add other matrix values"""
         for ilabel, jlabel, value in other:
-            self[ilabel, jlabel] += value
+            try:
+                self[ilabel, jlabel] += value
+            except Exception, e:
+                self[ilabel, jlabel] = value
         return self
     
     def __add__(self, other):
