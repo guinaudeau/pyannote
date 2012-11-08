@@ -283,6 +283,15 @@ argparser.add_argument('output', type=out_parser, metavar='output.mdtm',
 
 # == ILP ==
 
+group = argparser.add_argument_group('Objective function')
+
+group.add_argument('--objective', choices = ('finkel', ), default='finkel',
+                   help='choose objective function.')
+group.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
+                   help='set α value to ALPHA in objective function.')
+group.add_argument('--log-prob', action='store_true', 
+                   help='use log probability instead of probability.')
+
 ogroup = argparser.add_argument_group('Optimization')
 
 def method_parser(method):
@@ -302,12 +311,10 @@ ogroup.add_argument('--maxnodes', type=int, metavar='N',
                          'is higher than N.')
 ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
                     help='number of threads to use.')
-
-ogroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
-                       help='set α value to ALPHA in objective function.')
 ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
                     help='set probability of mono-modal edges to zero '
                          'in case it is already lower than P.')
+
 
 
 # == Speaker ==
@@ -705,7 +712,9 @@ for u, uri in enumerate(uris):
                                quiet=len(args.verbose) < 2)
         model_time = time.time() - start_time
         
-        model.setObjective(alpha=args.alpha)
+        model.setObjective(type=args.objective,
+                           alpha=args.alpha,
+                           log_prob=args.log_prob)
         
         # dump model
         if hasattr(args, 'dump_model'):
