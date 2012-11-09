@@ -107,12 +107,6 @@ if args.components:
                  "hypothesis (you asked for %d)." % len(args.hypothesis))
 
 
-if args.unknown =='match':
-    for metric in requested:
-        if isinstance(metric, IdentificationErrorRate):
-            metric.matcher = UnknownIDMatcher()
-
-
 # Initialize metrics & result matrix
 metrics = {}
 M = {}
@@ -121,6 +115,16 @@ for m in requested:
     name = m.metric_name()
     metrics[name] = {h: m() for h, (_, _) in enumerate(args.hypothesis)}
     M[name] = LabelMatrix(default=np.inf)
+
+
+if args.unknown =='match':
+    for m in requested:
+        name = m.metric_name()
+        for h, (_, _) in enumerate(args.hypothesis):
+            if isinstance(metrics[name][h], IdentificationErrorRate):
+                metrics[name][h].matcher = UnknownIDMatcher()
+                metrics[name][h].error_analysis = True
+
 
 if args.components:
     C = {}
@@ -244,7 +248,7 @@ for name, metric in metrics.iteritems():
 if len(args.hypothesis) > 1:
     for name, metric in metrics.iteritems():
         print M[name].to_table(title=name, fmt='1.3', 
-                               factorize='C', max_width=10)
+                               factorize='C')
 
 # if there is only one hypothesis
 # print one single table, with one column per metric
