@@ -75,7 +75,7 @@ class DefaultIDMatcher(IDMatcher):
         # Slightly faster than inherited .ncorrect() method
         return len(ids1 & ids2)
 
-
+from pyannote.base.annotation import Unknown
 class UnknownIDMatcher(IDMatcher):
     """
     Two IDs match if: 
