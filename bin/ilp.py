@@ -306,7 +306,7 @@ ogroup.add_argument('--method', default='primal', type=str,
                          "barrier, concurrent or deterministic concurrent.")
 ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
-ogroup.add_argument('--maxnodes', type=int, metavar='N',
+ogroup.add_argument('--maxnodes', type=int, metavar='N', default=SUPPRESS,
                     help='do not try to perform optimization if number of '
                          'is higher than N.')
 ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
