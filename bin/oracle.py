@@ -54,28 +54,24 @@ argparser.add_argument('--detection', metavar='detection.mdtm',
 def model_parser(path):
     models = set(LSTParser().read(path))
     return models
-    
-argparser.add_argument('--models', metavar='models.lst',
+
+
+group = argparser.add_argument_group('Supervised oracle')
+group.add_argument('--models', metavar='models.lst',
                        type=model_parser, default=[], 
                        action='append', dest='models',
                        help='when provided, the oracle perfectly recognizes '
                             'the persons whose model is in the list.')
-
-def train_parser(path):
-    models = set([])
-    parser = AnnotationParser().read(path)
-    for uri in parser.videos:
-        models.update(parser(uri).labels())
-    return models
-
-argparser.add_argument('--training', metavar='training.mdtm',
-                       type=train_parser, default=[], 
-                       action='append', dest='models',
+group.add_argument('--training', metavar='training.mdtm',
+                       type=str, default=SUPPRESS,
                        help='when provided, the oracle perfectly recognizes '
-                            'the persons appearing at least once in the '
-                            'training set.')
+                            'any person appearing in the training set.')
+group.add_argument('--at-least', metavar='N', type=int, default=1,
+                   help='the oracle needs at least N occurrences of a person '
+                        'in the training set to be able to recognize it.')
 
-argparser.add_argument('--cross', metavar='cross.mdtm', 
+group = argparser.add_argument_group('Unsupervised oracle')
+group.add_argument('--cross', metavar='cross.mdtm', 
                        type=in_parser, default=[],
                        action='append', dest='cross',
                        help='when provided, the oracle is able to recognize '
@@ -89,8 +85,24 @@ except IOError as e:
 if hasattr(args, 'uris'):
     uris = args.uris
 
-# merge every list of models
 global_models = set([])
+
+# obtain trained models with at least N occurrences.
+if hasattr(args, 'training'):
+    parser = AnnotationParser().read(args.training)
+    noccurrences = {}
+    for uri in parser.videos:
+        annotation = parser(uri)
+        for label in annotation.labels():
+            n = len(annotation.label_timeline(label, copy=False))
+            if label not in noccurrences:
+                noccurrences[label] = 0
+            noccurrences[label] += n
+    for label in noccurrences:
+        if noccurrences[label] >= args.at_least:
+            global_models.add(label)
+
+# add other list of models
 for labels in args.models:
     global_models.update(labels)
 
@@ -135,7 +147,6 @@ for u, uri in enumerate(uris):
         timeline = (reference.timeline + detection.timeline).segmentation()
         reference = argMaxDirectTagger(reference >> timeline, 
                                        detection >> timeline)
-        
     
     translation = {}
     for label in reference.labels():
