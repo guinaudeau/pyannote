@@ -88,11 +88,15 @@ pb.finish()
 # compute min, max, average
 MINIMUM = '__ minimum __'
 MAXIMUM = '__ maximum __'
+GEOMEAN = '__ geomean __'
+ARIMEAN = '__ arimean __'
 
+import scipy.stats
 for h, (path, _) in enumerate(args.annotation):
     nlabels[MINIMUM, path] = np.min(nlabels[set(uris), path].M)
     nlabels[MAXIMUM, path] = np.max(nlabels[set(uris), path].M)
-
+    nlabels[GEOMEAN, path] = scipy.stats.gmean(nlabels[set(uris), path].M)
+    nlabels[ARIMEAN, path] = np.mean(nlabels[set(uris), path].M)
 print nlabels.to_table(title='# labels', factorize='C')
 
         
