@@ -27,6 +27,9 @@ argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Statistics on annotations')
 
 from pyannote.parser import AnnotationParser
+
+argparser.add_argument('--modality', default=SUPPRESS, type=str, 
+                       help='modality to get stats from.')
 def ann_parser(path):
     return (path, AnnotationParser().read(path))
 argparser.add_argument('annotation', metavar='annotation', nargs='+',
@@ -56,6 +59,11 @@ pb = ProgressBar(widgets=[Bar(),' ', ETA()], term_width=80)
 pb.maxval = len(uris)*len(args.annotation)
 pb.start()
 
+if hasattr(args, 'modality'):
+    modality = args.modality
+else:
+    modality = None
+
 
 for u, uri in enumerate(uris):
     
@@ -66,7 +74,7 @@ for u, uri in enumerate(uris):
     
     for h, (path, annotation) in enumerate(args.annotation):
         
-        ann = annotation(uri)
+        ann = annotation(uri, modality=modality)
         
         if uem is not None:
             ann = ann(uem, mode='intersection')
