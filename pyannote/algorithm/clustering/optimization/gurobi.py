@@ -82,12 +82,13 @@ class GurobiModel(object):
     """
     
     """
-    def __init__(self, G, method=-1, timeLimit=None, 
+    def __init__(self, G, method=-1, mipGap=1e-4, timeLimit=None, 
                          threads=None, quiet=True):
         super(GurobiModel, self).__init__()
         self.graph = G
-        self.timeLimit = timeLimit
         self.method = method
+        self.mipGap = mipGap
+        self.timeLimit = timeLimit
         self.threads = threads
         self.quiet = quiet
         self.model, self.x = self.__model(G)
@@ -256,7 +257,7 @@ class GurobiModel(object):
         # The MIP solver will terminate (with an optimal result) when the
         # relative gap between the lower and upper objective bound is less than 
         # MIPGap times the upper bound.
-        model.setParam(grb.GRB.Param.MIPGap, 1e-2)
+        model.setParam(grb.GRB.Param.MIPGap, self.mipGap)
         
         if self.timeLimit is not None:
             # Limits the total time expended (in seconds).

@@ -304,6 +304,10 @@ ogroup.add_argument('--method', default='primal', type=str,
                     help="set algorithm used to solve the root node of the MIP "
                          "model: primal simplex (default), dual simplex, "
                          "barrier, concurrent or deterministic concurrent.")
+ogroup.add_argument('--mip-gap', type=float, metavar='MIPGAP', default=1e-4,
+                    help='The MIP solver will terminate when the relative gap '
+                         'between the lower and upper objective bound is less '
+                         'than MIPGAP times the upper bound.')
 ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
 ogroup.add_argument('--maxnodes', type=int, metavar='N', default=SUPPRESS,
@@ -314,8 +318,6 @@ ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS,
 ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
                     help='set probability of mono-modal edges to zero '
                          'in case it is already lower than P.')
-
-
 
 # == Speaker ==
 sgroup = argparser.add_argument_group('[speaker] modality')
@@ -707,6 +709,7 @@ for u, uri in enumerate(uris):
         
         start_time = time.time()
         model = GurobiModel(G, method=method_parser(args.method), 
+                               mipGap=args.mip_gap,
                                threads=threads,
                                timeLimit=stopAfter, 
                                quiet=len(args.verbose) < 2)
