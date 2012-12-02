@@ -109,7 +109,7 @@ class TrackLabelGraph(object):
         
         # initialize empty graph
         G = nx.Graph()
-        uri = annotation.video
+        uri = annotation.uri
         modality = annotation.modality
         
         # one node per label
@@ -175,8 +175,8 @@ class LabelCooccurrenceGraph(object):
         for RefA, InpA, RefB, InpB in rAiArBiB_iterator:
             
             # make sure annotation are for the same resource
-            uri = RefA.video
-            if InpA.video != uri or RefB.video != uri or InpB.video != uri:
+            uri = RefA.uri
+            if InpA.uri != uri or RefB.uri != uri or InpB.uri != uri:
                 raise ValueError('URI mismatch.')
             
             modA = RefA.modality
@@ -216,7 +216,7 @@ class LabelCooccurrenceGraph(object):
                                    if s.duration > self.minduration
                                    and InpA._timeline.covers(s)
                                    and InpB._timeline.covers(s)],
-                                video=uri)
+                                uri=uri)
             
             alignedInpA = InpA >> timeline
             alignedInpB = InpB >> timeline
@@ -258,8 +258,8 @@ class LabelCooccurrenceGraph(object):
         G = nx.Graph()
         
         # make sure annotation are for the same resource
-        uri = InpA.video
-        if InpB.video != uri:
+        uri = InpA.uri
+        if InpB.uri != uri:
             raise ValueError('URI mismatch.')
         
         # make sure modalities are correct
@@ -275,7 +275,7 @@ class LabelCooccurrenceGraph(object):
                                if s.duration > self.minduration
                                and InpA._timeline.covers(s)
                                and InpB._timeline.covers(s)],
-                            video=uri)
+                            uri=uri)
         
         alignedInpA = InpA >> timeline
         alignedInpB = InpB >> timeline
@@ -317,7 +317,7 @@ class LabelIdentityGraph(object):
     def __call__(self, annotation):
         
         # label nodes are sharing the same uri/modality
-        uri = annotation.video
+        uri = annotation.uri
         modality = annotation.modality
         
         G = nx.Graph()
@@ -407,7 +407,7 @@ class LabelSimilarityGraph(object):
         
         # Initialize empty graph
         G = nx.Graph()
-        uri = annotation.video
+        uri = annotation.uri
         modality = annotation.modality
         
         # Label cooccurrence matrix

@@ -363,7 +363,7 @@ class GurobiModel(object):
             if var.x == 1.:
                 g.add_edge(n1, n2)
         
-        uri = annotation.video
+        uri = annotation.uri
         modality = annotation.modality
         
         translation = {}

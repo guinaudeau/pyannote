@@ -57,7 +57,7 @@ class PeriodicSegmenter(BaseSegmenter):
                                        step=self.period, \
                                        start=extent.start, \
                                        end=extent.end)
-        segmentation = Timeline(video=feature.video)
+        segmentation = Timeline(uri=feature.uri)
         for window in sliding_window:
             segmentation += window
         return segmentation

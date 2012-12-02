@@ -58,7 +58,7 @@ class DirectTagger(BaseTagger):
         """
         
         # initialize tagged timeline as an empty copy of source
-        T = Annotation(video=source.video, modality=source.modality,
+        T = Annotation(uri=source.uri, modality=source.modality,
                        multitrack=True)
         
         # tag each segment of target timeline, one after the other
@@ -117,40 +117,29 @@ class ConservativeDirectTagger(BaseTagger):
             
             # extract the part of source annotation
             # intersecting current target segment
-            t = source(segment, mode='loose')
+            t = source.crop(segment, mode='loose')
             
             # if there is no intersecting segment
             # just skip to the next one
             if not t:
                 continue
             
-            # if tagged annotation is multitrack, only tag segment 
+            # only tag segment 
             # when target has exactly one track and source only one
             # co-occurring label
-            if tagged.multitrack:
                 
-                # don't do anything if target has more than one track
-                tracks = set(tagged[segment, :])
-                if len(tracks) > 1:
-                    continue
+            # don't do anything if target has more than one track
+            tracks = set(tagged[segment, :])
+            if len(tracks) > 1:
+                continue
                 
-                # don't do anything if source has more than one label
-                labels = t.labels()
-                if len(labels) > 1:
-                    continue
+            # don't do anything if source has more than one label
+            labels = t.labels()
+            if len(labels) > 1:
+                continue
                 
-                tagged[segment, tracks.pop()] = labels[0]
+            tagged[segment, tracks.pop()] = labels[0]
             
-            # if tagged annotation is single-track, only tag segment
-            # when source has exactly one co-occurring label
-            else:
-                
-                # don't do anything if source has more than one label
-                labels = t.labels()
-                if len(labels) > 1:
-                    continue
-                
-                tagged[segment] = labels[0]
         
         return tagged
 

@@ -103,7 +103,7 @@ class BaseTagger(object):
         ------
         TypeError if `source` is not an ``Annotation`` or ``target`` is not 
         taggable by the tagger.
-        ValueError if `source` vidoe and `target` video are not the same.
+        ValueError if `source` and `target` resources are not the same.
         
         """
         
@@ -116,10 +116,10 @@ class BaseTagger(object):
             raise TypeError("untaggable target type: '%s'." \
                             % type(target).__name__,)
         
-        # source and target videos must match
-        if source.video != target.video:
-            raise ValueError("source/target video mismatch: '%s' and '%s'" \
-                             % (source.video, target.video))
+        # source and target resources must match
+        if source.uri != target.uri:
+            raise ValueError("source/target resource mismatch: '%s' and '%s'" \
+                             % (source.uri, target.uri))
         
         return source, target
     
