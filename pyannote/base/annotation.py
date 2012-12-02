@@ -23,10 +23,7 @@ from timeline import Timeline
 from mapping import Mapping, ManyToOneMapping
 from collections import Hashable
 import operator
-
-UNIQUE_TRACK = '__@__'
-UNIQUE_LABEL = '__@__'
-DEFAULT_TRACK_PREFIX = 'track'
+import numpy as np
 
 class Unknown(object):
     nextID = 0
@@ -60,194 +57,283 @@ class Unknown(object):
         else:
             return False
 
-class Annotation(object):
+class AnnotationMixin(object):
+    
+    def _valid_segment(self, segment):
+        """Check segment validity
+        
+        A segment is valid it is a non-empty instance of `Segment`.
+        
+        Parameters
+        ----------
+        segment : object
+            Segment candidate
+        
+        Returns
+        -------
+        valid : bool
+            True if segment is a non-empty instance of `Segment`.
+            False otherwise.
+        
+        """
+        return isinstance(segment, Segment) and segment
+    
+    def _valid_track(self, track):
+        """
+        Check track validity
+        
+        Any hashable object can be used as a track name.
+        
+        Parameters
+        ----------
+        track : object
+            Track candidate
+            
+        Returns
+        -------
+        valid : bool
+            True if track is hashable. False otherwise.
+        """
+        return isinstance(track, Hashable)
+    
+    def _valid_label(self, label):
+        """Check label validity
+        
+        Any hashable object (but segment or timeline) can be used as a label.
+        
+        Parameters
+        ----------
+        label : object
+            Label candidate
+        
+        Returns
+        -------
+        valid : bool
+            True if track is hashable. False otherwise.
+        """
+        return isinstance(label, Hashable) and \
+               not isinstance(label, (Segment, Timeline))
+    
+    def __get_timeline(self): 
+        segments = set([s for s,_ in self._df.index])
+        return Timeline(segments, uri=self.uri)
+    timeline = property(fget=__get_timeline)
+    """Timeline of annotated segments"""
+    
+    def __len__(self):
+        """Number of annotated segments"""
+        return len(set([s for s,_ in self._df.index]))
+    
+    def __nonzero__(self):
+        """False if annotation is empty"""
+        return len(self) > 0
+        
+    def __contains__(self, segments):
+        """Check if segments are annotated
+        
+        Parameters
+        ----------
+        segments : `Segment` or `Segment` iterator
+        
+        Returns
+        -------
+        contains : bool
+            True if every segment in `segments` is annotated. False otherwise.
+        """
+        
+        if isinstance(segments, Segment):
+            segments = [segments]
+        
+        return all([segment in self._df.index for segment in segments])
+    
+    def __iter__(self):
+        """Iterate over sorted segments"""
+        return iter(sorted(set([s for s,_ in self._df.index])))
+    
+    def __reversed__(self):
+        """Reverse iterate over sorted segments"""
+        segments = sorted(set([s for s,_ in self._df.index]))
+        return reversed(segment)
+    
+    def itersegments(self):
+        return iter(self)
+    
+    def itertracks(self):
+        """Iterate over annotation as (segment, track) tuple"""
+        
+        # make sure segment/track pairs are sorted
+        self._df = self._df.sort_index()
+        
+        for (segment, track), _ in self._df.iterrows():
+            yield segment, track
+    
+    def crop(self, focus, mode='strict'):
+        """
+        
+        Parameters
+        ----------
+        focus : `Segment` or `Timeline`
+            
+        mode : {'strict', 'loose', 'intersection'}
+            
+        Returns
+        -------
+        
+        
+        Remarks
+        -------
+        In 'intersection' mode, track names might change.
+        
+        """
+        if isinstance(focus, Segment):
+            return self.crop(Timeline([focus], uri=self.uri), 
+                             mode=mode)
+        
+        elif isinstance(focus, Timeline):
+            
+            coverage = focus.coverage()
+            
+            if mode in ['strict', 'loose']:
+                # segments (strictly or loosely) included in requested coverage
+                included = self.timeline(coverage, mode=mode)
+                
+                # boolean array: True if row must be kept, False otherwise
+                keep = [(s in included) for s,_ in self._df.index]
+                
+                # crop-crop
+                A = self.__class__(uri=self.uri, modality=self.modality)
+                A._df = self._df[keep]
+                
+                return A
+            
+            elif mode == 'intersection':
+                raise NotImplementedError('')
+        
+        else:
+            raise TypeError('')
+    
+    
+    def new_track(self, segment, prefix=None):
+        """Track name generator
+        
+        Parameters
+        ----------
+        segment : Segment
+        prefix : str, optional
+        
+        Returns
+        -------
+        track : str
+            New track name
+        """
+        
+        # obtain list of existing tracks for segment
+        try:
+            df = self._df.xs(segment)
+            existing_tracks = set(df.index)
+        except Exception, e:
+            existing_tracks = set([])
+        
+        # by default (if prefix is not provided)
+        # use modality as prefix (eg. speaker1, speaker2, ...)
+        if prefix is None:
+            prefix = '' if self.modality is None else str(self.modality)
+        
+        # find first non-existing track name for segment
+        # eg. if speaker1 exists, try speaker2, then speaker3, ...
+        count = 1
+        while ('%s%d' % (prefix, count)) in existing_tracks:
+            count += 1
+        
+        # return first non-existing track name
+        return '%s%d' % (prefix, count)
+    
+    def __str__(self):
+        """Human-friendly representation"""
+        if self:
+            self._df = self._df.sort_index(inplace=True)
+            return str(self._df)
+        else:
+            return ""
+
+
+from pandas import MultiIndex, DataFrame, Series
+class Annotation(AnnotationMixin, object):
     """
-    Annotated timeline.
-    
-    An annotation is 
-    
     Parameters
     ----------
-    multitrack : bool, optional
-        whether a segment can contain multiple track (True) or not (False).
-        Default is True (multi-track annotation).
+    uri : string, optional
+        uniform resource identifier of annotated document
     modality : string, optional
         name of annotated modality
-    video : string, optional
-        name of (audio or video) annotated document
     
     Returns
     -------
-    annotation : Annotation
+    annotation : BaseAnnotation
         New empty annotation
-        
-    Examples
-    --------
-        >>> annotation = Annotation(video='MyVideo')
-        >>> print annotation.video
-        MyVideo
-    
     """
-    def __init__(self, multitrack=True, video=None, modality=None):
-        
+    
+    def __init__(self, uri=None, modality=None):
         super(Annotation, self).__init__()
         
-        # whether a segment can contain multiple track (True) or not (False)
-        self.__multitrack = multitrack
-        
-        # name of annotated modality
-        self.__modality = modality
-        
-        # path to (or any identifier of) segmented video
-        self.__video = video
-        
-        # this timeline is meant to store annotated segments.
-        # it only contains segments with at least one labelled track.
-        # a segment that is no longer annotated must be removed from it.
-        self.__timeline = Timeline(video=self.video)
-        
-        # this is where tracks and labels are actually stored.
-        # it is a dictionary indexed by segments.
-        # .__data[segment] is a dictionary indexed by tracks.
-        # .__data[segment][track] contains the actual label.
-        self.__data = {}
-        
-        # this is a dictionary indexed by labels.
-        # .__label_timeline[label] is a timeline made of segments for which
-        # there exists at least one track labelled by label.
-        # when a label no longer exists, its entry must be removed.
-        self.__label_timeline = {}
-        
-        # this is a dictionary indexed by labels
-        # .__label_count[label] is a dictionary indexed by segments containing
-        # at least one track labelled by label.
-        # .__label_count[label][segment] contains the number of tracks labelled
-        # as label in this segment. when zero, segment entry must be removed.
-        self.__label_count = {}
+        index = MultiIndex(levels=[[],[]], 
+                           labels=[[],[]], 
+                           names=['segment', 'track'])
+        self._df = DataFrame(index=index)
+        self.modality = modality
+        self.uri = uri
     
-    def __get_multitrack(self):
-        return self.__multitrack
-    def __set_multitrack(self, value):
-        if not isinstance(value, bool):
-            raise TypeError('Multitrack must be either True or False')
-        self.__multitrack = value
-    multitrack = property(fget=__get_multitrack, fset=__set_multitrack)
-    """Can segments contain multiple tracks?"""
     
-    def __get_video(self): 
-        return self.__video
-    def __set_video(self, video):
-        self.__video = video
-        self.__timeline.video = video
-        for label in self.__label_timeline:
-            self.__label_timeline[label].video = video
-    video = property(fget=__get_video, fset=__set_video)
-    """Path to (or any identifier of) annotated video
+    # del annotation[segment]
+    # del annotation[segment, :]
+    # del annotation[segment, track]
+    def __delitem__(self, key):
+        if isinstance(key, Segment):
+            segment = key
+            self._df = self._df.drop(segment, axis=0)
+        elif isinstance(key, tuple) and len(key) == 2:
+            segment, track = key
+            self._df = self._df.drop((segment, track), axis=0)
+        else:
+            raise KeyError('')
     
-    Examples
-    --------
-        >>> annotation = Annotation(video="MyVideo.avi")
-        >>> print annotation.video
-        MyVideo.avi
+    # label = annotation[segment, track]
+    def __getitem__(self, key):
+        segment, track, = key
+        return self._df.get_value((segment, track), 'label')
     
-    """
+    # annotation[segment, track] = label
+    def __setitem__(self, key, label):
+        segment, track = key
+        if not self._valid_segment(segment):
+            raise KeyError('invalid segment.')
+        if not self._valid_track(track):
+            raise KeyError('invalid track name.')
+        if not self._valid_label(label):
+            raise KeyError('invalid label.')
+        self._df = self._df.set_value((segment, track), 'label', label)
     
-    def __get_modality(self): 
-        return self.__modality
-    def __set_modality(self, modality):
-        self.__modality = modality
-    modality = property(fget=__get_modality, fset=__set_modality)
-    """Name (or any identifier) of annotated modality
-    
-    Examples
-    --------
-        >>> annotation = Annotation(modality="speaker")
-        >>> print annotation.modality
-        speaker
-    
-    """
-    
-    def __get_timeline(self): 
-        return self.__timeline.copy()
-    timeline = property(fget=__get_timeline)
-    """Timeline made of every annotated segments
-    
-    Examples
-    --------
-    >>> annotation = Annotation(multitrack=False, modality='speaker')
-    >>> annotation[Segment(0, 10)] = 'Alice'
-    >>> annotation[Segment(8, 20)] = 'Bob'
-    >>> print annotation.timeline
-    [
-       [0 --> 10]
-       [8 --> 20]
-    ]
-    
-    """
-    def __get_timeline_fast(self):
-        return self.__timeline
-    _timeline = property(fget=__get_timeline_fast)
-    """
-    Much faster than .timeline but be careful not to modify the
-    returned timeline, unless you know what you are doing.
-    """
-    
-    # Make sure provided segment is valid.
-    def __valid_segment(self, segment):
-        return isinstance(segment, Segment) and segment
-    
-    # Any hashable object can be used as a track name.
-    def __valid_track(self, track):
-        return isinstance(track, Hashable)
-    
-    # Strings or Unknown can be used as label.
-    def __valid_label(self, label):
-        return isinstance(label, Hashable) and \
-               not isinstance(label, (Segment, Timeline))
-        # return isinstance(label, (Unknown, str))
+    def copy(self):
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df.copy()
+        return A
     
     def labels(self):
-        """Global list of labels
+        """List of labels
         
         Returns
         -------
         labels : list
-            Sorted list of existing labels (based on their string version)
+            Sorted list of existing labels
         
-        """
-        return sorted(self.__label_count.keys(), key=str)
-    
-    def label_timeline(self, label, copy=True):
-        """Get label timeline.
-        
-        Parameters
-        ----------
-        label : existing label
-            
-        copy : bool, optional
-            copy=False is much faster but be careful not to modify the
-            returned timeline, unless you know what you are doing.
-        
-        Returns
+        Remarks
         -------
-        timeline : :class:`pyannote.base.timeline.Timeline`
-            Label timeline
-        
+            Labels are sorted based on their string representation.
         """
-        timeline = self.__label_timeline[label]
-        if copy:
-            return timeline.copy()
-        else:
-            return timeline
-    
-    def label_coverage(self, label):
-        return self.label_timeline(label, copy=False).coverage()
-    
-    def label_duration(self, label):
-        return self.label_timeline(label, copy=False).duration()
+        return sorted(self._df['label'].unique(), key=str)
     
     def get_labels(self, segment):
-        """Local set of labels
+        """Local set of labels 
         
         Parameters
         ----------
@@ -267,550 +353,53 @@ class Annotation(object):
             >>> annotation[segment, 'speaker1'] = 'Bernard'
             >>> annotation[segment, 'speaker2'] = 'John'
             >>> print sorted(annotation.get_labels(segment))
-            ['Bernard', 'John']
+            set(['Bernard', 'John'])
             >>> print annotation.get_labels(Segment(1, 2))
             set([])
             
         """
         
-        if segment not in self:
+        try:
+            return set(self._df.ix[segment]['label'])
+        except Exception, e:
             return set([])
-        else:
-            return set([self.__data[segment][track] \
-                        for track in self.__data[segment]])
     
-    def argmax(self, segment=None, known_first=False):
-        """Get most frequent label
-        
+    def label_timeline(self, label):
+        """Get timeline for a given label
         
         Parameters
         ----------
-        segment : Segment, optional
-            Section of annotation where to look for the most frequent label.
-            Defaults to whole annotation extent.
-        known_first: bool, optional
-            If True, artificially reduces the duration of intersection of 
-            `Unknown` labels so that 'known' labels are returned first.
+        label : 
         
         Returns
         -------
-        label : any existing label or None
-            Label with longest intersection
-            
-        Examples
-        --------
-            
-            >>> annotation = Annotation(multitrack=False, modality='speaker')
-            >>> annotation[Segment(0, 10)] = 'Alice'
-            >>> annotation[Segment(8, 20)] = 'Bob'
-            >>> print "%s is such a talker!" % annotation.argmax()
-            Bob is such a talker!
-            >>> segment = Segment(22, 23)
-            >>> if not annotation.argmax(segment):
-            ...    print "No label intersecting %s" % segment
-            No label intersection [22 --> 23]
+        timeline : :class:`Timeline`
+            Timeline made of all segments annotated with `label`
         
         """
-        
-        # if annotation is empty, obviously there is no most frequent label
-        if not self:
-            return None
-        
-        # if segment is not provided, just look for the overall most frequent
-        # label (ie. set segment to the extent of the annotation)
-        if segment is None:
-            segment = self.__timeline.extent()
-        
-        # compute intersection duration for each label
-        durations = {lbl: (self.__label_timeline[lbl] & segment).duration()
-                     for lbl in self.labels()}
-        
-        # artifically reduce intersection duration of Unknown labels 
-        # so that 'known' labels are returned first
-        if known_first:
-            maxduration = max(durations.values())
-            for lbl in durations.keys():
-                if isinstance(lbl, Unknown):
-                    durations[lbl] = durations[lbl] - maxduration
-        
-        # find the most frequent label
-        label = max(durations.iteritems(), key=operator.itemgetter(1))[0]
-        
-        # in case all durations were zero, there is no most frequent label
-        return label if durations[label] > 0 else None
+        a = self._df.ix[self._df['label'] == label]
+        segments = set([s for s,_ in a.index])
+        return Timeline(segments, uri=self.uri)
     
+    def label_coverage(self, label):
+        return self.label_timeline(label).coverage()
     
-    # Function used to parse key used to access annotation elements
-    # eg. annotation[segment] or annotation[segment, track]
-    def __parse_key(self, key):
-        
-        # For multi-track annotation, 
-        # both segment and track name must be provided.
-        if self.multitrack:
-            if not isinstance(key, tuple) or len(key) != 2:
-               raise KeyError("multi-track annotation, "
-                              "expected 'annotation[segment, track]'")
-            segment = key[0]
-            track = key[1]
-        
-        # For mono-track annotation,
-        # only segment must be provided.
-        else:
-            if not isinstance(key, Segment):
-                raise KeyError("single-track annotation, "
-                               "expected 'annotation[segment]'")
-            segment = key
-            # default name for unique track
-            track = UNIQUE_TRACK
-        
-        return segment, track
+    def label_duration(self, label):
+        return self.label_timeline(label).duration()
     
-    def __getitem__(self, key):
-        """
-        
-        Use expression 'annotation[segment]' for single-track annotation
-                   and 'annotation[segment, track]' for multi-track annotation
-        
-        Examples
-        -------
-        
-            >>> annotation = Annotation(multitrack=True)
-            >>> segment = Segment(0, 2)
-            >>> annotation[segment, 'speaker1'] = 'Bernard'
-            >>> annotation[segment, 'speaker2'] = 'John'
-            >>> print annotation[segment, 'speaker1']
-            Bernard
-            >>> track2name = annotation[segment, :]
-            >>> for track in sorted(track2name):
-            ...     print '%s --> %s' % (track, track2name[track])
-            speaker1 --> Bernard
-            speaker2 --> John
-        
-        """
-        
-        # Parse requested key
-        segment, track = self.__parse_key(key)
-        
-        # case 1: annotation[segment, :]
-        # returns {track --> label} dictionary
-        if track == slice(None,None,None):
-            return dict(self.__data[segment])
-        
-        # case 2: annotation[segment] or annotation[segment, track]
-        # returns corresponding label
-        else:
-            return self.__data[segment][track]
-    
-    def __setitem__(self, key, label):
-        """Add/update label
-        
-        Use expression 'annotation[segment] = label' for single-track annotation
-        and 'annotation[segment, track] = label' for multi-track annotation.
-
-        Parameters
-        ----------
-        key : any valid key (annotation[segment] or annotation[segment, track])
-        label : any valid label 
-        
-        Examples
-        --------
-        
-            Add annotation
-            
-            >>> annotation = Annotation(multitrack=True)
-            >>> segment = Segment(0, 2)
-            >>> annotation[segment, 'speaker1'] = 'Bernard'
-            >>> annotation[segment, 'speaker2'] = 'John'
-            >>> print annotation
-            [
-               [0 --> 2] speaker1 : Bernard
-                         speaker2 : John
-            ]
-            
-            Update annotation
-            
-            >>> annotation[segment, 'speaker1'] = 'Paul'
-            >>> print annotation
-            [
-               [0 --> 2] speaker1 : Paul
-                         speaker2 : John
-            ]
-            
-        """
-        
-        # Parse provided key
-        segment, track = self.__parse_key(key)
-        
-        # Validate segment, track and label
-        if not self.__valid_segment(segment):
-            raise KeyError("invalid segment.")
-        if not self.__valid_track(track):
-            raise KeyError('invalid track name.')
-        if not self.__valid_label(label):
-            raise ValueError('invalid label.')
-        
-        # In case segment/track annotation already exists
-        if segment in self.__data and \
-           track in self.__data[segment]:
-            
-            # do nothing if provided label is the same as existing one
-            if self.__data[segment][track] == label:
-                return
-            
-            # remove existing label if provided label 
-            # is different from existing one
-            else:
-                self.__delitem__(key)
-        
-        # Add segment if necessary
-        if segment not in self.__timeline:
-            # to global timeline
-            self.__timeline += segment
-            # to internal data dictionary
-            self.__data[segment] = {}
-        
-        # Store label for segment/track
-        self.__data[segment][track] = label
-        
-        # Create label timeline if necessary
-        if label not in self.__label_timeline:
-            self.__label_timeline[label] = Timeline(video=self.video)
-        
-        # Add segment to label timeline
-        # Note: it won't be added twice if it already exists (see timeline API)
-        self.__label_timeline[label] += segment
-        
-        # Create label count dictionary if necessary
-        if label not in self.__label_count:
-            self.__label_count[label] = {}
-        
-        # Initialize label count for provided segment if necessar
-        if segment not in self.__label_count[label]:
-            self.__label_count[label][segment] = 0
-            
-        # Increment label count for provided segment
-        self.__label_count[label][segment] += 1
-    
-    def __delitem__(self, key):
-        """Remove label
-        
-        Use expression 'del annotation[segment]' for single-track annotation
-        and 'del annotation[segment, track]' for multi-track annotation.
-        
-        """
-        
-        # Parse provided key
-        segment, track = self.__parse_key(key)
-        
-        # Special case: del T[segment, :]
-        # delete all track labels, one after the other
-        # (recursive calls to del T[segment, track])
-        if track == slice(None,None,None):
-            for t in self.__data[segment].keys():
-                self.__delitem__((segment, t))
-            return
-        
-        # del T[segment, track] for multi-track annotation
-        # or del T[segment (, UNIQUE_TRACK)] for single-track annotation
-        label = self.__data[segment][track]
-        
-        # Remove track from internal data for provided segment
-        del self.__data[segment][track]
-        
-        # If segment no longer has any track
-        # Remove segment as well
-        if not self.__data[segment]:
-            # from internal data 
-            del self.__data[segment]
-            # from global timeline
-            del self.__timeline[segment]
-        
-        # Decrement label count for provided segment
-        self.__label_count[label][segment] -= 1
-        
-        # If label count gets to zero
-        if self.__label_count[label][segment] == 0:
-            
-            # remove segment for label count dictionary
-            del self.__label_count[label][segment]
-            
-            # if label count dictionary is empty
-            # remove label from dictionary
-            if not self.__label_count[label]:
-                del self.__label_count[label]
-                
-            # remove segment from label timeline
-            del self.__label_timeline[label][segment]
-            
-            # if timeline is empty
-            # remove label timeline as well
-            if not self.__label_timeline[label]:
-                del self.__label_timeline[label]
-    
-    def __len__(self):
-        """Use expression 'len(annotation)'
-        
-        Equivalent to 'len(annotation.timeline)
-        
-        Returns
-        -------
-        number : int
-            Number of annotated segments
-        
-        See Also
-        --------
-        Timeline.__len__
-        
-        """
-        return len(self.__timeline)
-    
-    def __nonzero__(self):
-        """Use expression 'if annotation'
-        
-        Equivalent to 'if annotation.timeline'
-        
-        Returns
-        -------
-        empty : bool
-            False if annotation is empty (contains no annotated segment),
-            True otherwise
-        
-        See Also
-        --------
-        Timeline.__nonzero__
-        
-        
-        """
-        return len(self.__timeline) > 0
-        
-    def __contains__(self, included):
-        """Use expression 'included in annotation'
-        
-        Equivalent to 'included in annotation.timeline'
-        
-        Returns
-        -------
-        contains : bool
-            True if every segment in `included` is annotated,
-            False otherwise.
-        
-        See Also
-        --------
-        Timeline.__contains__
-        
-        """
-        return included in self.__timeline
-    
-    def __iter__(self):
-        """Sorted segment iterator
-        
-        See Also
-        --------
-        Timeline.__iter__
-        
-        """
-        return iter(self.__timeline)
-
-    def __reversed__(self):
-        """Reverse-sorted segment iterator
-        
-        See Also
-        --------
-        Timeline.__reversed__
-        
-        """
-        return reversed(self.__timeline)
-    
-    def iterlabels(self):
-        """Annotation iterator
-        
-        Examples
-        --------
-            
-            Iterate multi-track annotation
-            
-            >>> annotation = Annotation(multitrack=True)
-            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
-            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
-            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
-            >>> for segment, track, label in annotation.iterlabels():
-            ...    print '%s.%s --> %s' % (segment, track, label)
-            [0 --> 2].speaker1 --> Bernard
-            [0 --> 2].speaker2 --> John
-            [3 --> 4].speaker1 --> Albert
-            
-            Iterate single-track annotation
-            
-            >>> annotation = Annotation(multitrack=False)
-            >>> annotation[Segment(0, 2)] = 'Bernard'
-            >>> annotation[Segment(3, 4)] = 'Albert'
-            >>> for segment, label in annotation.iterlabels():
-            ...    print '%s --> %s' % (segment, label)
-            [0 --> 2] --> Bernard
-            [3 --> 4] --> Albert
-        
-        """
-        
-        # iterate through sorted segments
-        for segment in self:
-            
-            # iterate through tracks
-            for track in sorted(self.__data[segment]):
-                
-                # yield segment/track/label for multi-track annotation
-                if self.multitrack:
-                    yield segment, track, self.__data[segment][track]
-                    
-                # yield segment/label for single-track annotation
-                else:
-                    yield segment, self.__data[segment][track]
-    
-    def empty(self):
-        """Empty copy of an annotation.
-        
-        See Also
-        --------
-        Timeline.empty
-        
-        Examples
-        --------
-            
-            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
-            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
-            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
-            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
-            >>> empty = annotation.empty()
-            >>> print empty.video
-            MyVideo.avi
-            >>> print empty
-            [
-            ]
-        
-        """
-        T = Annotation(multitrack=self.multitrack, \
-                       video=self.video, \
-                       modality=self.modality)
-        return T
-    
-    def copy(self, segment_func=None, track_func=None, label_func=None):
-        """Duplicate annotation.
-        
-        If `segment_func`, `track_func` or `label_func` are provided, they are 
-        applied to segment, track and label before copying. 
-        In a nutshell:
-           copy[segment_func(s), track_func(t)] = label_func[original[s, t]]
-        
-        Therefore `segment_func` can be used to remove a segment,
-        eg. in case segment_func(segment) is False, None or an empty Segment.
-        
-        Parameters
-        ----------
-        segment_func, track_func, label_func : function
-            Segment, track and label transformation function
-        
-        Returns
-        -------
-        annotation : Annotation
-            A (possibly modified) copy of the annotation
-        
-        Examples
-        --------
-            
-            Extend all segments by one segment on each side
-            
-            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
-            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
-            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
-            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
-            >>> segment_func = lambda s: 1 << s >> 1
-            >>> copy = annotation.copy(segment_func=segment_func)
-            >>> print copy
-            [
-               [-1 --> 3] speaker1 : Bernard
-                          speaker2 : John
-               [2 --> 5] speaker1 : Albert
-            ]
-            
-            Only keep annotation for segment longer than 1 second,
-            and reverse names
-            
-            >>> annotation = Annotation(multitrack=False)
-            >>> annotation[Segment(0, 2)] = 'Bernard'
-            >>> annotation[Segment(3, 4)] = 'Albert'
-            >>> segment_func = lambda s: s if s.duration > 1 else None
-            >>> label_func = lambda l: l[::-1]
-            >>> copy = annotation.copy(segment_func=segment_func, \
-                                       label_func=label_func)
-            >>> print copy
-            [
-               [0 --> 2] : dranreB
-            ]
-        
-        See Also
-        --------
-        Timeline.copy
-        
-        """
-        
-        # starts with an empty copy.
-        T = self.empty()
-        
-        # If functions are not provided
-        # make them pass-trough functions
-        if segment_func is None:
-            segment_func = lambda s: s
-        if track_func is None:
-            track_func = lambda t: t
-        if label_func is None:
-            label_func = lambda l: l
-        
-        if self.multitrack:
-            for segment, track, label in self.iterlabels():
-                new_segment = segment_func(segment)
-                
-                # Copy annotation only if transformed segment is valid
-                # (make sure track and label are transformed as well)
-                if new_segment:
-                    T[new_segment, track_func(track)] = label_func(label)
-        else:
-            for segment, label in self.iterlabels():
-                new_segment = segment_func(segment)
-                
-                # Copy annotation only if transformed segment is valid
-                # (make sure label is transformed as well)
-                if new_segment:
-                    T[new_segment] = label_func(label)
-        
-        return T
-                
-    def __mod__(self, translation):
+    def translate(self, translation):
         """Translate labels
-        
-        Short-cut for Annotation.copy(label_func=translation)
         
         Parameters
         ----------
         translation: dict or ManyToOneMapping
-        
+            Label translation. 
+            Labels with no associated translation are kept unchanged.
+            
         Returns
         -------
-        translated : Annotation
-            
-        
-        Examples
-        --------
-        
-            >>> annotation = Annotation(multitrack=False)
-            >>> annotation[Segment(0, 2)] = 'Bernard'
-            >>> annotation[Segment(3, 4)] = 'Albert'
-            >>> translation = {'Bernard': 'Bernie', 'Albert': 'Al'}
-            >>> translated = annotation % translation
-            >>> print translated
-            [
-               [0 --> 2] : Bernie
-               [3 --> 4] : Al
-            ]
-        
+        translated : :class:`Annotation`
+            New annotation with translated labels.
         """
         
         if not isinstance(translation, (dict, Mapping)):
@@ -822,7 +411,7 @@ class Annotation(object):
             
             # only transform labels that have an actual translation
             # stored in the provided dictionary, keep the others as they are.
-            label_func = lambda x: translation[x] if x in translation else x
+            translate = lambda x: translation[x] if x in translation else x
         
         # translation is provided as a ManyToOneMapping
         elif isinstance(translation, Mapping):
@@ -834,319 +423,296 @@ class Annotation(object):
             
             # only transform labels that actually have a mapping 
             # see ManyToOneMapping.__call__() API
-            label_func = lambda x: translation(x) if translation(x) is not None else x
+            translate = lambda x: translation(x) if translation(x) is not None else x
         
-        # perform the actual translation
-        return self.copy(label_func=label_func)
+        # create empty annotation
+        translated = self.__class__(uri=self.uri, modality=self.modality)
+        # translate labels
+        translated._df = self._df.applymap(translate)
+        
+        return translated
+    
+    def __mod__(self, translation):
+        return self.translate(translation)
     
     def anonymize(self):
         """Anonmyize labels
-    
+        
+        Create a new annotation where labels are anonymized, ie. each label
+        is replaced by a unique `Unknown` instance.
+        
         Returns
         -------
         anonymized : :class:`Annotation`
-            A copy where each label is replaced by an instance of ``Unknown``.
+            New annotation with anonymized labels.
         
         """
         translation = {label: Unknown() for label in self.labels()} 
         return self % translation
     
+    
+    def iterlabels(self):
+        """Iterate over annotation as (segment, track, label) tuple"""
+        
+        # make sure segment/track pairs are sorted
+        self._df = self._df.sort_index()
+        
+        for (segment, track), column in self._df.iterrows():
+            yield segment, track, column['label']
+    
+    
     def smooth(self):
-        """Merge equi-label contiguous tracks"""
-        M = Annotation(multitrack=True, 
-                       video=self.video, modality=self.modality)
+        """Smooth annotation
         
-        for label in self.labels():
-            coverage = self.__label_timeline[label].coverage()
-            for segment in coverage:
-                M[segment, M.new_track(segment)] = label
-        
-        return M
-    
-    def __rshift__(self, timeline):
-        """Tag a timeline
-        
-        Use expression 'tagged = annotation >> timeline'
-        
-        Shortcut for :
-            >>> tagger = DirectTagger()
-            >>> tagged = tagger(annotation, timeline)
-        
-        Parameters
-        ----------
-        timeline : :class:`pyannote.base.timeline.Timeline`
-        
-        Returns
-        -------
-        tagged : :class:`pyannote.base.annotation.Annotation`
-            Tagged timeline - one track per intersecting label.
-            
-        """
-        from pyannote.algorithm.tagging import DirectTagger
-        if not isinstance(timeline, Timeline):
-            raise TypeError('direct tagging (>>) only works with timelines.')
-        return DirectTagger()(self, timeline)
-    
-    def __get_label(self, label):
-        """Sub-annotation extraction for one label."""
-        T = self.empty()
-        
-        if self.multitrack:
-            for segment in self.__label_timeline[label]:
-                for track in self.__data[segment]:
-                    if self.__data[segment][track] == label:
-                        T[segment, track] = label
-        else:
-            for segment in self.__label_timeline[label]:
-                for track in self.__data[segment]:
-                    if self.__data[segment][track] == label:
-                        T[segment] = label
-        
-        return T
-    
-    def __call__(self, subset, mode='strict', invert=False):
-        """Sub-annotation extraction.
-        
-        Use expression 'annotation(subset, ...)'
-        
-        If `subset` is a Segment or a Timeline, only extract segments that
-        are fully included into its coverage. Set mode to 'loose' to extract
-        all intersecting segments. `invert` has no effect in this case.
-        'intersection' mode is the same as 'loose' except only the intersecting
-        part(s) is (are) kept. We also make sure two segments with the same 
-        intersection do not overwrite each other (track names are modified if
-        necessary).
-        
-        If `subset` is a label or a label iterator, only extract tracks with
-        provided labels. Set `invert` to True to extract **all but**
-        provided labels. `mode` has no effect in this case.
-        
-        Parameters
-        ----------
-        subset : Segment, Timeline, any valid label or label iterator
-        mode : {'strict', 'loose', 'intersection'}, optional
-            `mode` only has effect when `subset` is a Segment or Timeline.
-            Defaults to 'strict'. 
-        invert : bool, optional
-            `invert` only has effect when `subset` is a valid label or 
-            label iterator. Defaults to False.
+        Create new annotation where contiguous tracks with same label are
+        merged into one longer track.
         
         Returns
         -------
         annotation : Annotation
-            Extracted sub-annotation.
+            New annotation where contiguous tracks with same label are merged
+            into one long track.
         
-        Examples
-        --------
-        
-            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
-            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
-            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
-            >>> annotation[Segment(3, 4), 'speaker1'] = 'John'
-            >>> annotation[Segment(4, 5), 'speaker1'] = 'Albert'
-            
-            
-            Extract sub-annotation for labels 'John' and 'Nicholas'
-            
-            >>> print annotation(['John', 'Nicholas'])
-            [
-               [0 --> 2] speaker2 : John
-               [3 --> 4] speaker1 : John
-            ]
-            
-            
-            Extract sub-annotation for **all but** labels 'John' and 'Albert'
-            
-            >>> print annotation(['John', 'Albert'], invert=True)
-            [
-               [0 --> 2] speaker1 : Bernard
-            ]
-            
-            
-            Extract sub-annotation for segments fully included in [2 --> 4.5]
-            
-            >>> print annotation(Segment(2, 4.5), mode='strict')
-            [
-               [3 --> 4] speaker1 : John
-            ]
-            
-            
-            Extract sub-annotation for segments intersecting [2 --> 4.5]
-            
-            >>> print annotation(Segment(2, 4.5), mode='loose')
-            [
-               [3 --> 4] speaker1 : John
-               [4 --> 5] speaker1 : Albert
-            ]
+        Remarks
+        -------
+            Track names are lost in the process.
         
         """
         
-        if isinstance(subset, Timeline):
-            timeline = subset
-            
-            if invert:
-                raise NotImplementedError('')
-            
-            coverage = timeline.coverage()
-            
-            if mode == 'strict':
-                # keep segment if it is fully included in timeline coverage
-                segment_func = lambda s : s if coverage.covers(s) else False 
-                return self.copy(segment_func=segment_func)
-            elif mode == 'loose':
-                # keep segment if it intersects timeline coverage
-                segment_func = lambda s : s if coverage.intersects(s) else False
-                return self.copy(segment_func=segment_func)
-            elif mode == 'intersection':
-                # keep segment if it intersects timeline coverage
-                # but only the intersecting part(s)
-                T = Annotation(multitrack=True, 
-                               video=self.video, modality=self.modality)
-                if self.multitrack:
-                    for segment, track, label in self.iterlabels():
-                        # segment can be split into multiple sub-segments
-                        new_segments = coverage & segment
-                        for new_segment in new_segments:
-                            if new_segment not in T:
-                                # first encounter: add seg./track as they are
-                                T[new_segment, track] = label
-                            else:
-                                if track not in T[new_segment, :]:
-                                    # first encounter: add track as they are
-                                    T[new_segment, track] = label
-                                else:
-                                    # second encounter: modify track name
-                                    ntrack = self.new_track(new_segment,
-                                                            prefix=track + '_')
-                                    T[new_segment, ntrack] = label
-                else:
-                    for segment, label in self.iterlabels():
-                        new_segments = coverage & segment
-                        for new_segment in new_segments:
-                            track = T.new_track(new_segment)
-                            T[new_segment, track] = label
-                return T
-            else:
-                raise ValueError('unsupported mode.')
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        labels = self._df['label'].unique()
         
-        # Segment subset
-        # --------------
-        elif isinstance(subset, Segment):
-            segment = subset
-            
-            # --- Recursive call as a Timeline subset.            
-            timeline = Timeline(video=self.video)
-            timeline += segment
-            return self.__call__(timeline, mode=mode, invert=invert)            
+        for label in labels:
+            coverage = self.label_coverage(label)
+            for segment in coverage:
+                A[segment, A.new_track(segment)] = label
         
-        # get set of labels
-        elif isinstance(subset, (tuple, list, set)):
-            
-            # if invert, get the complementary set of labels
-            # otherwise, make sure it is a set (not list or tuple)
-            if invert:
-                labels = set(self.labels()) - set(subset)
-            else:
-                labels = set(subset) & set(self.labels())
-            
-            T = self.empty()
-
-            for label in labels:
-                t = self.__get_label(label)
-                if self.multitrack:
-                    for segment, track, label in t.iterlabels():
-                        T[segment, track] = label
-                else:
-                    for segment, label in t.iterlabels():
-                        T[segment] = label
-            
-            return T
-        
-        # get one single label
-        else:
-            # one single label == set of one label
-            return self.__call__(set([subset]), mode=mode, invert=invert)
+        return A
     
-    def __str__(self):
-        """Human-friendly representation
+    def __get_label(self, label):
+        """Sub-annotation extraction for one label."""
         
-        Examples
-        --------
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df.ix[self._df['label'] == label]
+        return A
+
+
+class Scores(AnnotationMixin, object):
+    """
+    
+    Parameters
+    ----------
+    uri : str, optional
+    
+    modality : str, optional
+    
+    Returns
+    -------
+    scores : `Scores`
+    
+    Examples
+    --------
+    
+        >>> s = Scores(uri='video', modality='speaker')
+        >>> s[Segment(0,1), 's1', 'A'] = 0.1
+        >>> s[Segment(0,1), 's1', 'B'] = 0.2
+        >>> s[Segment(0,1), 's1', 'C'] = 0.3
+        >>> s[Segment(0,1), 's2', 'A'] = 0.4
+        >>> s[Segment(0,1), 's2', 'B'] = 0.3
+        >>> s[Segment(0,1), 's2', 'C'] = 0.2
+        >>> s[Segment(2,3), 's1', 'A'] = 0.2
+        >>> s[Segment(2,3), 's1', 'B'] = 0.1
+        >>> s[Segment(2,3), 's1', 'C'] = 0.3
         
-            >>> annotation = Annotation(multitrack=True, video="MyVideo.avi")
-            >>> annotation[Segment(0, 2), 'speaker1'] = 'Bernard'
-            >>> annotation[Segment(0, 2), 'speaker2'] = 'John'  
-            >>> annotation[Segment(3, 4), 'speaker1'] = 'Albert'
-            >>> print annotation
-            [
-               [0 --> 2] speaker1 : Bernard
-                         speaker2 : John
-               [3 --> 4] speaker1 : Albert
-            ]
-        
+    """
+    @classmethod
+    def from_df(cls, df, segment='segment', 
+                         track='track', 
+                         label='label', 
+                         value='value',
+                         uri=None,
+                         modality=None,
+                         aggfunc=np.mean):
         """
-        
-        string = "[\n"
-        
-        if self.multitrack:
-            
-            previous = Segment(0, 0)
-            for segment, track, label in self.iterlabels():
-                
-                if segment != previous:
-                    previous = segment
-                    string += '   %s %s : %s\n' % (previous, track, label)
-                    n_spaces = len(str(previous))
-                else:
-                    string += '   %s %s : %s\n' % (' ' * n_spaces, track, label)
-        
-        else:
-            
-            previous = Segment(0, 0)
-            for segment, label in self.iterlabels():
-                if segment != previous:
-                    previous = segment
-                    string += '   %s : %s\n' % (previous, label)
-                    n_spaces = len(str(previous))
-                else:
-                    string += '   %s : %s\n' % (' ' * nspaces, label)
-                    
-        string += "]"
-        return string
-            
-    def new_track(self, segment, prefix=DEFAULT_TRACK_PREFIX):
-        """Track name generator
         
         Parameters
         ----------
-        segment : Segment
+        segment : str, optional
+            Name of column containing `Segment` instances. Default is 'segment'.
+        track : str, optional
+            Name of column containing track names. Default is 'track'.
+        label : str, optional
+            Name of column containing labels. Default is 'label'.
+        value : str, optional
+            Name of column containing values. Default is 'value'.
+        uri : str, optional
+        modality : str, optional
+        aggfunc : func
+            
         
-        prefix : str, optional
+        Returns
+        -------
+        
+        """
+        
+        A = cls(uri=uri, modality=modality)
+        
+        # add 'track' column in case `df` does not contain any.
+        # by default, it is filled by '_'
+        if track is None:
+            track = 'track'
+            df[track] = '_'
+        
+        A._df = df.pivot_table(values=value, 
+                               rows=[segment, track], 
+                               cols=[label], 
+                               aggfunc=aggfunc)
+        
+        return A
+    
+    def __init__(self, uri=None, modality=None):
+        super(Scores, self).__init__()
+        
+        index = MultiIndex(levels=[[],[]], 
+                           labels=[[],[]], 
+                           names=['segment', 'track'])
+        
+        self._df = DataFrame(index=index, dtype=np.float64)
+        self.modality = modality
+        self.uri = uri
+    
+    
+    # del scores[segment]
+    # del scores[segment, :]
+    # del scores[segment, track]
+    def __delitem__(self, key):
+        if isinstance(key, Segment):
+            segment = key
+            self._df = self._df.drop(segment, axis=0)
+        elif isinstance(key, tuple) and len(key) == 2:
+            segment, track = key
+            self._df = self._df.drop((segment, track), axis=0)
+        else:
+            raise KeyError('')
+    
+    # value = scores[segment, track, label]
+    def __getitem__(self, key):
+        segment, track, label = key
+        return self._df.get_value((segment, track), label)
+    
+    # scores[segment, track, label] = value
+    def __setitem__(self, key, value):
+        segment, track, label = key
+        if not self._valid_segment(segment):
+            raise KeyError('invalid segment.')
+        if not self._valid_track(track):
+            raise KeyError('invalid track name.')
+        if not self._valid_label(label):
+            raise KeyError('invalid label.')
+        self._df = self._df.set_value((segment, track), label, value)
+    
+    def copy(self):
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df.copy()
+        return A
+    
+    def labels(self):
+        """List of labels
+        
+        Returns
+        -------
+        labels : list
+            Sorted list of existing labels
+        
+        Remarks
+        -------
+            Labels are sorted based on their string representation.
+        """
+        return sorted(self._df.columns, key=str)
+    
+    def itervalues(self):
+        """Iterate over annotation as (segment, track, label, value) tuple"""
+        
+        # make sure segment/track pairs are sorted
+        self._df = self._df.sort_index()
+        
+        # yield one (segment, track, label) tuple per loop
+        labels = self._df.columns
+        for (segment, track), columns in self._df.iterrows():
+            for label in labels:
+                value = columns[label]
+                if np.isnan(value):
+                    continue
+                else:
+                    yield segment, track, label, value
+    
+    def nbest(self, n, invert=False):
+        """
+        
+        Parameters
+        ----------
+        n : int
+            Size of n-best list
+        invert : bool, optional
+            By default, larger scores are better.
+            Set `invert` to True to indicate smaller scores are better.
         
         
         Returns
         -------
-        track : str
-        
-        Raises
-        ------
-        NotImplementedError when annotation is single-track.
+        nbest : `Scores`
+            New scores where only n-best are kept. 
         
         """
-        if not self.multitrack:
-            raise NotImplementedError('annotation is single-track')
-            
-        count = 0
-        if segment in self:
-            existing_tracks = set(self[segment, :])
+        if invert:
+            direction = 1.
         else:
-            existing_tracks = set([])
-        new_track = '%s%d' % (prefix, count)
+            direction = -1.
         
-        while new_track in existing_tracks:
-            count += 1
-            new_track = '%s%d' % (prefix, count)
-        return new_track
+        
+        nbest = (direction*self._df).apply(np.argsort, axis=1).apply(np.argsort, axis=1) < n
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df.copy()
+        A._df[~nbest] = np.nan
+        
+        return A
+    
+    def to_annotation(self, threshold=-np.inf, invert=False):
+        """
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Each track is annotated with the label with the highest score.
+            Yet, if the latter is smaller than `threshold`, label is replaced
+            with an `Unknown` instance.
+        invert : bool, optional
+            By default, larger scores are better.
+            Set `invert` to True to indicate smaller scores are better.
+            `threshold` comparison is modified accordingly.
+        """
+        
+        if invert:
+            raise NotImplementedError('invert = True')
+        
+        A = Annotation(uri=self.uri, modality=self.modality)
+        
+        best = self.nbest(1, invert=invert)
+        for segment, track, label, value in best.itervalues():
+            if (invert and value > threshold) or \
+               (not invert and value < threshold):
+                label = Unknown()
+            A[segment, track] = label
+        
+        return A
+    
+    def map(self, func):
+        """Apply function to all values"""
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = func(self._df)
+        return A
+    
+    
 
 if __name__ == "__main__":
     import doctest

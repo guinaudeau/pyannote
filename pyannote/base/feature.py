@@ -32,16 +32,16 @@ class BaseSegmentFeature(object):
     """
     Base class for any segment/feature iterator.    
     """
-    def __init__(self, video=None):
+    def __init__(self, uri=None):
         super(BaseSegmentFeature, self).__init__()
-        self.__video = video
+        self.__uri = uri
     
-    def __get_video(self): 
-        return self.__video
-    def __set_video(self, value):
-        self.__video = value
-    video = property(fget=__get_video, fset=__set_video)
-    """Path to (or any identifier of) described video"""
+    def __get_uri(self): 
+        return self.__uri
+    def __set_uri(self, value):
+        self.__uri = value
+    uri = property(fget=__get_uri, fset=__set_uri)
+    """Path to (or any identifier of) described resource"""
     
     def __iter__(self):
         """Segment/feature vector iterator
@@ -63,11 +63,11 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
     segment_iterator : :class:`SlidingWindow` or :class:`Timeline`
         Segment iterator.
         Its length must correspond to `data` length.
-    video : string, optional
-        name of (audio or video) described document
+    uri : string, optional
+        name of (audio or video) described resource
     
     """
-    def __init__(self, data, segment_iterator, video=None):
+    def __init__(self, data, segment_iterator, uri=None):
         # make sure data does not contain NaN nor inf
         data = np.asarray_chkfinite(data)
                 
@@ -90,7 +90,7 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
                 raise ValueError("mismatch between number of segments (%d) "
                                  "and number of feature vectors (%d)." % (N, n))
         
-        super(BasePrecomputedSegmentFeature, self).__init__(video=video)
+        super(BasePrecomputedSegmentFeature, self).__init__(uri=uri)
         self.__data = data
         self._segment_iterator = segment_iterator
     
@@ -184,8 +184,8 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
     sliding_window : :class:`SlidingWindow`
         Sliding window. Its length must correspond to `data` length
         (or it can be infinite -- ie. sliding_window.end = None)
-    video : string, optional
-        name of (audio or video) described document
+    uri : string, optional
+        name of (audio or video) described resource
     
     Examples
     --------
@@ -197,10 +197,10 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
         
     """
     
-    def __init__(self, data, sliding_window, video=None):
+    def __init__(self, data, sliding_window, uri=None):
         
         super(PeriodicPrecomputedFeature, self).__init__(data, sliding_window, \
-                                                         video=video)
+                                                         uri=uri)
     
     def __get_sliding_window(self): 
         return self._segment_iterator
@@ -242,8 +242,8 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
         Feature vectors stored in such a way that data[i] is ith feature vector.
     timeline : :class:`Timeline`
         Timeline whose length must correspond to `data` length
-    video : string, optional
-        name of (audio or video) described document
+    uri : string, optional
+        name of (audio or video) described resource
     
     Examples
     --------
@@ -256,9 +256,9 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
     
     """
     
-    def __init__(self, data, timeline, video=None):  
+    def __init__(self, data, timeline, uri=None):  
         super(TimelinePrecomputedFeature, self).__init__(data, timeline, \
-                                                         video=video)
+                                                         uri=uri)
     
     def __get_timeline(self): 
         return self._segment_iterator
