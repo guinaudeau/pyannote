@@ -32,19 +32,19 @@ class UEMParser(BaseTextualTimelineParser):
     def _parse(self, line):
         
         tokens = line.split()
-        # video channel start end
+        # uri channel start end
         
-        video = str(tokens[0])
+        uri = str(tokens[0])
         #channel = tokens[1]
         start_time = float(tokens[2])
         end_time = float(tokens[3])
         segment = Segment(start=start_time, end=end_time)
         
-        return segment, video
+        return segment, uri
     
-    def _append(self, timeline, f, video):
+    def _append(self, timeline, f, uri):
         
-        format = '%s 1 %%g %%g\n' % (video)
+        format = '%s 1 %%g %%g\n' % (uri)
         for segment in timeline:
             f.write(format % (segment.start, segment.end))
         

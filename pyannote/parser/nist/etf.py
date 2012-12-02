@@ -18,45 +18,122 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from ..generic import GenericParser
+from pandas import read_table
+from pyannote import Segment
+import numpy as np
+from pyannote.base.annotation import Scores
 
-class ETF0Parser(GenericParser):
-    """
-    .etf0 file parser
-    """
-    def __init__(self, path2etf0):
+class ETF0:
+    
+    URI = 'uri'
+    CHANNEL = 'channel'
+    START = 'start'
+    DURATION = 'duration'
+    MODALITY = 'modality'
+    x = 'x'
+    LABEL = 'label'
+    SCORE = 'value'
+    X = 'X'
+    
+    fields = [URI, CHANNEL, START, DURATION, MODALITY, 'x', LABEL, SCORE, 'X']
+    
+    SEGMENT = 'segment'
+
+
+class ETF0Parser(object):
+    
+    def __init__(self):
+        super(ETF0Parser, self).__init__()
+    
+    def read(self, path, **kwargs):
         
-        format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {ID} {CONFIDENCE} {NA}' 
-        super(ETF0Parser, self).__init__(path2etf0, \
-                                         format, \
-                                         multitrack = False)
-
-class ETFParser(GenericParser):
-    """
-    .etf file parser
-    """
-    def __init__(self, path2etf):
+        # load whole file
+        df = read_table(path, header=None, sep=' ', names=ETF0.fields)
         
-        format = '{VIDEO} {NA} {START} {DURATION} {MODALITY} {NA} {ID} {CONFIDENCE} {NA}' 
-        super(ETFParser, self).__init__(path2etf, \
-                                         format, \
-                                         multitrack = False)
-
-
-# def toETF(annotation):
-#     """"""
-#     modality = annotation.modality
-#     video    = annotation.video
-#     text = ''
-#     for s, segment in enumerate(annotation):
-#         start = segment.start
-#         duration = segment.duration
-#         for i, identifier in enumerate(annotation.identifiers(segment=segment)):
-#             confidence = annotation.confidence(segment, identifier)
-#             # source 1 start duration type subtype event [score [decision]]
-#             text += '%s 1 %g %g %s - %s %g -\n' % (video, start, duration, modality, identifier, confidence)
-#     return text
-
+        # add 'segment' column build from start time & duration
+        df[ETF0.SEGMENT] = [Segment(s, s+df[ETF0.DURATION][i]) 
+                            for i,s in df[ETF0.START].iteritems()]
+        
+        # obtain list of resources
+        uris = list(df[ETF0.URI].unique())
+        
+        # obtain list of modalities
+        modalities = list(df[ETF0.MODALITY].unique())
+        
+        self.__loaded = {}
+        
+        # loop on resources
+        for uri in uris:
+            
+            # filter based on resource
+            df_ = df[df[ETF0.URI] == uri]
+            
+            # loop on modalities
+            for modality in modalities:
+                
+                # filter based on modality
+                df__ = df_[df_[ETF0.MODALITY] == modality]
+                
+                s = Scores.from_df(df__, segment=ETF0.SEGMENT, 
+                                         track=None,
+                                         label=ETF0.LABEL, 
+                                         value=ETF0.SCORE,
+                                         modality=modality,
+                                         uri=uri)
+                
+                self.__loaded[uri, modality] = s
+        
+        return self
+    
+    def __get_uris(self):
+        return sorted(set([v for (v, m) in self.__loaded]))
+    uris = property(fget=__get_uris)
+    """"""
+    
+    def __get_modalities(self):
+        return sorted(set([m for (v, m) in self.__loaded]))
+    modalities = property(fget=__get_modalities)
+    """"""
+    
+    def __call__(self, uri=None, modality=None, **kwargs):
+        """
+        
+        Parameters
+        ----------
+        uri : str, optional
+            If None and there is more than one resource 
+        modality : str, optional
+        
+        Returns
+        -------
+        annotation : :class:`pyannote.base.annotation.Annotation`
+        
+        """
+        
+        match = dict(self.__loaded)
+        
+        # filter out all annotations 
+        # but the ones for the requested resource
+        if uri is not None:
+            match = {(v, m): ann for (v, m), ann in match.iteritems()
+                                 if v == uri }
+        
+        # filter out all remaining annotations 
+        # but the ones for the requested modality
+        if modality is not None:
+            match = {(v, m): ann for (v, m), ann in match.iteritems()
+                                 if m == modality}
+        
+        if len(match) == 0:
+            A = DataFrame()
+        elif len(match) == 1:
+            A = match.values()[0]
+        else:
+            raise ValueError('Found more than one matching annotation: %s' % match.keys())
+        
+        return A
+    
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

@@ -80,15 +80,15 @@ class AnnotationParser(object):
         self.__parser = None
         self.__kwargs = kwargs
     
-    def __get_videos(self):
-        return self.__parser.videos
-    videos = property(fget=__get_videos)
+    def __get_uris(self):
+        return self.__parser.uris
+    uris = property(fget=__get_uris)
     
     def __get_modalities(self):
         return self.__parser.modalities
     modalities = property(fget=__get_modalities)
     
-    def read(self, path, video=None, modality=None, **kwargs):
+    def read(self, path, uri=None, modality=None, **kwargs):
         GuessParser, extension = self.__class__.guess(path)
         if GuessParser is None:
             raise NotImplementedError(
@@ -96,11 +96,11 @@ class AnnotationParser(object):
             (extension, AnnotationParser.supported.keys()))
         if self.__parser is None or not isinstance(self.__parser, GuessParser):
             self.__parser = GuessParser(**self.__kwargs)
-        self.__parser.read(path, video=video, modality=modality, **kwargs)
+        self.__parser.read(path, uri=uri, modality=modality, **kwargs)
         return self
     
-    def __call__(self, video=None, modality=None, **kwargs):
-        return self.__parser(video=video, modality=modality, **kwargs)
+    def __call__(self, uri=None, modality=None, **kwargs):
+        return self.__parser(uri=uri, modality=modality, **kwargs)
 
 
 class TimelineParser(object):
@@ -116,11 +116,11 @@ class TimelineParser(object):
         super(TimelineParser, self).__init__()
         self.__parser = None
     
-    def __get_videos(self):
-        return self.__parser.videos
-    videos = property(fget=__get_videos)
+    def __get_uris(self):
+        return self.__parser.uris
+    uris = property(fget=__get_uris)
     
-    def read(self, path, video=None, **kwargs):
+    def read(self, path, uri=None, **kwargs):
         import os
         _, extension = os.path.splitext(path)
         GuessParser = self.__guess(extension)
@@ -130,11 +130,11 @@ class TimelineParser(object):
             (extension, TimelineParser.supported.keys()))
         if self.__parser is None or not isinstance(self.__parser, GuessParser):
             self.__parser = GuessParser()
-        self.__parser.read(path, video=video, **kwargs)
+        self.__parser.read(path, uri=uri, **kwargs)
         return self
     
-    def __call__(self, video=None, **kwargs):
-        return self.__parser(video=video, **kwargs)
+    def __call__(self, uri=None, **kwargs):
+        return self.__parser(uri=uri, **kwargs)
     
 if __name__ == "__main__":
     import doctest

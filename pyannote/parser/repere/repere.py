@@ -36,7 +36,7 @@ class REPEREParser(BaseTextualAnnotationParser):
         tokens = line.split()
         # source start end modality identifier confidence
         
-        video = str(tokens[0])
+        uri = str(tokens[0])
         start_time = float(tokens[1])
         end_time = float(tokens[2])
         modality = str(tokens[3])
@@ -44,22 +44,22 @@ class REPEREParser(BaseTextualAnnotationParser):
         #confidence = tokens[5]
         
         segment = Segment(start=start_time, end=end_time)
-        return segment, None, label, video, modality
+        return segment, None, label, uri, modality
     
-    def _append(self, annotation, f, video, modality):
+    def _append(self, annotation, f, uri, modality):
         
         try:
             if annotation.multitrack:
-                format = '%s %%g %%g %s %%s NA\n' % (video, modality)
+                format = '%s %%g %%g %s %%s NA\n' % (uri, modality)
                 for segment, track, label in annotation.iterlabels():
                     f.write(format % (segment.start, segment.end, label))
             else:
                 track = 'NA'
-                format = '%s %%g %%g %s %%s NA\n' % (video, modality)
+                format = '%s %%g %%g %s %%s NA\n' % (uri, modality)
                 for segment, label in annotation.iterlabels():
                     f.write(format % (segment.start, segment.end, label))
         except Exception, e:
-            print "Error @ %s%s %s %s" % (video, segment, track, label)
+            print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e
     
     

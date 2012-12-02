@@ -68,14 +68,14 @@ class BasePeriodicFeatureParser(object):
         """
         raise NotImplementedError('')
         
-    def read(self, path, video=None, **kwargs):
+    def read(self, path, uri=None, **kwargs):
         """
         
         Parameters
         ----------
         path : str
             path to binary feature file
-        video : str, optional
+        uri : str, optional
         
         Returns
         -------
@@ -91,13 +91,13 @@ class BasePeriodicFeatureParser(object):
         # read data
         data = self._read_data(fp, dtype, count=count)
         
-        # if `video` is not provided, use `path` instead
-        if video is None:
-            video = str(path)
+        # if `uri` is not provided, use `path` instead
+        if uri is None:
+            uri = str(path)
         
         # create feature object
         feature =  PeriodicPrecomputedFeature(data, sliding_window, 
-                                              video=video)
+                                              uri=uri)
         # close binary file
         fp.close()
         

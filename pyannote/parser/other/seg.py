@@ -36,15 +36,15 @@ class SEGParser(BaseTextualAnnotationParser):
     def _parse(self, line):
         
         tokens = line.split()
-        # video label 1 start duration
+        # uri label 1 start duration
         
-        video = str(tokens[0])
+        uri = str(tokens[0])
         label = str(tokens[1])
         #channel = tokens[2]
         i0 = int(tokens[3])
         n = int(tokens[4])
         segment = self.__sliding_window.rangeToSegment(i0, n)
-        return segment, None, label, video, None
+        return segment, None, label, uri, None
 
 
 # 
@@ -71,7 +71,7 @@ class SEGParser(BaseTextualAnnotationParser):
 #     order_by: 'time' or 'id'
 #     """
 #     modality = annotation.modality
-#     video    = annotation.video
+#     uri    = annotation.uri
 #     text = ''
 #     
 #     if order_by == 'time':
@@ -79,14 +79,14 @@ class SEGParser(BaseTextualAnnotationParser):
 #             i0, n = toFrameRange(segment)
 #             for i, identifier in enumerate(annotation.identifiers(segment=segment)):
 #                 # source id 1 start duration
-#                 text += '%s %s 1 %d %d\n' % (video, identifier, i0+delta, n)
+#                 text += '%s %s 1 %d %d\n' % (uri, identifier, i0+delta, n)
 #     elif order_by == 'id':
 #         identifiers = annotation.identifiers()
 #         for i, identifier in enumerate(identifiers):
 #             segments = annotation[identifier]
 #             for segment in segments:
 #                 i0, n = toFrameRange(segment)
-#                 text += '%s %s 1 %d %d\n' % (video, identifier, i0+delta, n)
+#                 text += '%s %s 1 %d %d\n' % (uri, identifier, i0+delta, n)
 #     else:
 #         raise ValueError('Unknow order_by argument -- must be time or id')
 #     

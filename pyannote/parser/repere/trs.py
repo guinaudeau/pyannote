@@ -57,13 +57,13 @@ class TRSParser(BaseAnnotationParser):
             m = p.match(string)
         return labels
     
-    def read(self, path, video=None, **kwargs):
+    def read(self, path, uri=None, **kwargs):
         
         # objectify xml file and get root
         root = objectify.parse(path).getroot()
         
-        if video is None:
-            video = root.get('audio_filename')
+        if uri is None:
+            uri = root.get('audio_filename')
         
         # speaker names and genders
         name = {}
@@ -83,7 +83,7 @@ class TRSParser(BaseAnnotationParser):
             section_end = float(section.get('endTime'))
             section_segment = Segment(start=section_start, end=section_end)
             label = section.get('type')
-            self._add(section_segment, None, label, video, 'status')
+            self._add(section_segment, None, label, uri, 'status')
             
             # sync
             self._sync = section_start
@@ -97,7 +97,7 @@ class TRSParser(BaseAnnotationParser):
                 
                 labels = self._parse_speakers(turn)
                 for label in labels:
-                    self._add(turn_segment, None, name[label], video, 'speaker')
+                    self._add(turn_segment, None, name[label], uri, 'speaker')
 
                 self._sync = turn_start
                 self._complete()
@@ -113,7 +113,7 @@ class TRSParser(BaseAnnotationParser):
                     self._incomplete.append(element_segment)
                     labels = self._parse_spoken(element)
                     for label in labels:
-                        self._add(element_segment, None, label, video, 'spoken')
+                        self._add(element_segment, None, label, uri, 'spoken')
                 
                 self._sync = turn_end
                 self._complete()

@@ -90,7 +90,7 @@ class XGTFParser(BaseAnnotationParser):
         
         return labels
     
-    def read(self, path_xgtf, path_idx=None, video=None):
+    def read(self, path_xgtf, path_idx=None, uri=None):
         
         # frame <--> timestamp mapping
         self.__idx.read(path_idx)
@@ -98,8 +98,8 @@ class XGTFParser(BaseAnnotationParser):
         # objectify xml file and get root
         root = objectify.parse(path_xgtf).getroot().data.sourcefile
         
-        if video is None:
-            video = root.get('filename')
+        if uri is None:
+            uri = root.get('filename')
         
         head = []
         written = []
@@ -108,8 +108,8 @@ class XGTFParser(BaseAnnotationParser):
         for element in root.iterchildren():
             
             frame_segment = self._parse_frame(element)
-            if frame_segment and frame_segment not in self(video, "annotated"):
-                self._add(frame_segment, "_", "_", video, "annotated")
+            if frame_segment and frame_segment not in self(uri, "annotated"):
+                self._add(frame_segment, "_", "_", uri, "annotated")
             
             if element.get('name') in ['PERSONNE', 'TEXTE']:
                 
@@ -136,7 +136,7 @@ class XGTFParser(BaseAnnotationParser):
                 
                 if cartouche:
                     written_intro = set(written)
-                    
+                
                 element_segment = Segment(start=element_start, end=element_end)
                 
                 try:
@@ -145,17 +145,53 @@ class XGTFParser(BaseAnnotationParser):
                                                'written': written, 
                                                'head': head}.iteritems():
                         for lbl in new_lbls:
-                            lbls = self(video, 
+                            lbls = self(uri, 
                                         modality).get_labels(element_segment)
                             if lbl not in lbls:
                                 self._add(element_segment, None, lbl, 
-                                          video, modality)
+                                          uri, modality)
                 except Exception, e:
-                    print "Error @ %s %f %f" % (video, element_start,
+                    print "Error @ %s %f %f" % (uri, element_start,
                                                 element_end)
                     raise e
         
         return self
+    
+    
+    def _get_transcription(self, vpr):
+        string = vpr.getchildren()[0].get('value')
+        if not string:
+            return ""
+        return string
+        
+    def print_raw_text(self, path_xgtf):
+        
+        import sys
+        string = ""
+        # objectify xml file and get root
+        root = objectify.parse(path_xgtf).getroot().data.sourcefile
+        
+        for element in root.iterchildren():
+            
+            if element.get('name') == 'TEXTE':
+                
+                transcription = ""
+                cartouche = False
+                
+                for vpr in element.iterchildren():
+                    
+                    attr_name = vpr.get('name')
+                    if attr_name == 'TRANSCRIPTION':
+                        transcription = self._get_transcription(vpr)
+                    elif attr_name == 'CARTOUCHE':
+                        cartouche = self._parse_cartouche(vpr)
+                
+                if transcription == "":
+                    continue
+                
+                string += "%d %s\n" % (bool(cartouche),
+                                       unicode(transcription).encode('UTF-8'))
+        return string
 
 if __name__ == "__main__":
     import doctest

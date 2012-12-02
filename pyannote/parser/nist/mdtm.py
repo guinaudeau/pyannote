@@ -34,9 +34,9 @@ class MDTMParser(BaseTextualAnnotationParser):
     def _parse(self, line):
         
         tokens = line.split()
-        # video 1 start duration modality confidence subtype identifier
+        # uri 1 start duration modality confidence subtype identifier
         
-        video = str(tokens[0])
+        uri = str(tokens[0])
         #channel = tokens[1]
         start_time = float(tokens[2])
         duration = float(tokens[3])
@@ -46,22 +46,22 @@ class MDTMParser(BaseTextualAnnotationParser):
         label = str(tokens[7])
 
         segment = Segment(start=start_time, end=start_time+duration)
-        return segment, None, label, video, modality
+        return segment, None, label, uri, modality
     
-    def _append(self, annotation, f, video, modality):
+    def _append(self, annotation, f, uri, modality):
         
         try:
             if annotation.multitrack:
-                format = '%s 1 %%g %%g %s NA %%s %%s\n' % (video, modality)
+                format = '%s 1 %%g %%g %s NA %%s %%s\n' % (uri, modality)
                 for segment, track, label in annotation.iterlabels():
                     f.write(format % (segment.start, segment.duration, 
                                       track, label))
             else:
-                format = '%s 1 %%g %%g %s NA NA %%s\n' % (video, modality)
+                format = '%s 1 %%g %%g %s NA NA %%s\n' % (uri, modality)
                 for segment, label in annotation.iterlabels():
                     f.write(format % (segment.start, segment.duration, label))
         except Exception, e:
-            print "Error @ %s%s %s %s" % (video, segment, track, label)
+            print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e
         
 if __name__ == "__main__":

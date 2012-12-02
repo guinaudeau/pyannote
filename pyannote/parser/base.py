@@ -25,32 +25,32 @@ class BaseTimelineParser(object):
     def __init__(self):
         super(BaseTimelineParser, self).__init__()
         
-        # (video, modality) ==> timeline
+        # (uri, modality) ==> timeline
         self.reset()
     
-    def __get_videos(self):
+    def __get_uris(self):
         return sorted(self.__loaded)
-    videos = property(fget=__get_videos)
+    uris = property(fget=__get_uris)
     """"""
     
-    def _add(self, segment, video):
-        if video not in self.__loaded:
-            self.__loaded[video] = Timeline(video=video)
-        self.__loaded[video] += segment
+    def _add(self, segment, uri):
+        if uri not in self.__loaded:
+            self.__loaded[uri] = Timeline(uri=uri)
+        self.__loaded[uri] += segment
     
     def reset(self):
         self.__loaded = {}
     
-    def read(self, path, video=None, **kwargs):
+    def read(self, path, uri=None, **kwargs):
         raise NotImplementedError('')
     
-    def __call__(self, video=None, **kwargs):
+    def __call__(self, uri=None, **kwargs):
         """
         
         Parameters
         ----------
-        video : str, optional
-            If None and there is more than one video 
+        uri : str, optional
+            If None and there is more than one resource 
         
         Returns
         -------
@@ -61,14 +61,14 @@ class BaseTimelineParser(object):
         match = dict(self.__loaded)
         
         # filter out all timelines 
-        # but the ones for the requested video
-        if video is not None:
+        # but the ones for the requested resource
+        if uri is not None:
             match = {v: timeline for v, timeline in match.iteritems()
-                                 if v == video }
+                                 if v == uri }
         
         if len(match) == 0:
             # empty annotation
-            return Timeline(video=video)
+            return Timeline(uri=uri)
         elif len(match) == 1:
             return match.values()[0]
         else:
@@ -85,11 +85,11 @@ class BaseTextualTimelineParser(BaseTimelineParser):
     def _parse(self, line):
         raise NotImplementedError('')
     
-    def read(self, path, video=None, **kwargs):
+    def read(self, path, uri=None, **kwargs):
         
-        # default video to path
-        if video is None:
-            video = path
+        # defaults URI to path
+        if uri is None:
+            uri = path
         
         # open file and loop on each line
         fp = open(path, 'r')
@@ -105,9 +105,9 @@ class BaseTextualTimelineParser(BaseTimelineParser):
             # parse current line
             s, v = self._parse(line)
             
-            # found video ?
+            # found resource ?
             if v is None:
-                v = video
+                v = uri
                 
             # add segment
             self._add(s, v)
@@ -116,7 +116,7 @@ class BaseTextualTimelineParser(BaseTimelineParser):
         
         return self
     
-    def write(self, timeline, f=sys.stdout, video=None):
+    def write(self, timeline, f=sys.stdout, uri=None):
         """
         
         Parameters
@@ -125,18 +125,18 @@ class BaseTextualTimelineParser(BaseTimelineParser):
             Timeline
         f : file or str, optional
             Default is stdout.
-        video : str, optional
-            When provided, overrides `timeline` video attribute.
+        uri : str, optional
+            When provided, overrides `timeline` uri attribute.
         """
         
-        if video is None:
-            video = timeline.video
+        if uri is None:
+            uri = timeline.uri
         
         if isinstance(f, file):
-            self._append(timeline, f, video)
+            self._append(timeline, f, uri)
         else:
             f = open(f, 'w')
-            self._append(timeline, f, video)
+            self._append(timeline, f, uri)
             f.close()
 
 
@@ -148,9 +148,9 @@ class BaseAnnotationParser(object):
         self.__multitrack = multitrack
         self.reset()
 
-    def __get_videos(self):
+    def __get_uris(self):
         return sorted(set([v for (v, m) in self.__loaded]))
-    videos = property(fget=__get_videos)
+    uris = property(fget=__get_uris)
     """"""
     
     def __get_modalities(self):
@@ -158,11 +158,10 @@ class BaseAnnotationParser(object):
     modalities = property(fget=__get_modalities)
     """"""
     
-    def _add(self, segment, track, label, video, modality):
-        key = (video, modality)
+    def _add(self, segment, track, label, uri, modality):
+        key = (uri, modality)
         if key not in self.__loaded:
-            self.__loaded[key] = Annotation(video=video, modality=modality,
-                                            multitrack=self.__multitrack)
+            self.__loaded[key] = Annotation(uri=uri, modality=modality)
         if self.__multitrack:
             if track is None:
                 track = self.__loaded[key].new_track(segment)
@@ -173,16 +172,16 @@ class BaseAnnotationParser(object):
     def reset(self):
         self.__loaded = {}
     
-    def read(self, path, video=None, modality=None, **kwargs):
+    def read(self, path, uri=None, modality=None, **kwargs):
         raise NotImplementedError('')
     
-    def __call__(self, video=None, modality=None, **kwargs):
+    def __call__(self, uri=None, modality=None, **kwargs):
         """
         
         Parameters
         ----------
-        video : str, optional
-            If None and there is more than one video 
+        uri : str, optional
+            If None and there is more than one resource 
         modality : str, optional
         
         Returns
@@ -194,10 +193,10 @@ class BaseAnnotationParser(object):
         match = dict(self.__loaded)
         
         # filter out all annotations 
-        # but the ones for the requested video
-        if video is not None:
+        # but the ones for the requested resource
+        if uri is not None:
             match = {(v, m): ann for (v, m), ann in match.iteritems()
-                                 if v == video }
+                                 if v == uri }
         
         # filter out all remaining annotations 
         # but the ones for the requested modality
@@ -206,7 +205,7 @@ class BaseAnnotationParser(object):
                                  if m == modality}
         
         if len(match) == 0:
-            A = Annotation(video=video, modality=modality)
+            A = Annotation(uri=uri, modality=modality)
         elif len(match) == 1:
             A = match.values()[0]
         else:
@@ -231,11 +230,11 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
     def _parse(self, line):
         raise NotImplementedError('')
     
-    def read(self, path, video=None, modality=None, **kwargs):
+    def read(self, path, uri=None, modality=None, **kwargs):
         
-        # default video to path
-        if video is None:
-            video = path
+        # defaults uri to path
+        if uri is None:
+            uri = path
         
         # open file and loop on each line
         fp = open(path, 'r')
@@ -251,9 +250,9 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
             # parse current line
             s, t, l, v, m = self._parse(line)
             
-            # found video ?
+            # found resource ?
             if v is None:
-                v = video
+                v = uri
             
             # found modality ?
             if m is None or m == 'None':
@@ -266,10 +265,10 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
         
         return self
     
-    def _append(self, annotation, f, video, modality):
+    def _append(self, annotation, f, uri, modality):
         raise NotImplementedError('')
     
-    def write(self, annotation, f=sys.stdout, video=None, modality=None):
+    def write(self, annotation, f=sys.stdout, uri=None, modality=None):
         """
         
         Parameters
@@ -278,23 +277,23 @@ class BaseTextualAnnotationParser(BaseAnnotationParser):
             Annotation
         f : file or str, optional
             Default is stdout.
-        video : str, optional
-            When provided, overrides `annotation` video attribute.
+        uri : str, optional
+            When provided, overrides `annotation` uri attribute.
         modality : str, optional
             When provided, overrides `annotation` modality attribute.
         """
         
-        if video is None:
-            video = annotation.video
+        if uri is None:
+            uri = annotation.uri
         if modality is None:
             modality = annotation.modality
         
         if isinstance(f, file):
-            self._append(annotation, f, video, modality)
+            self._append(annotation, f, uri, modality)
             f.flush()
         else:
             f = open(f, 'w')
-            self._append(annotation, f, video, modality)
+            self._append(annotation, f, uri, modality)
             f.close()
 
 
