@@ -36,8 +36,8 @@ class Timeline(object):
     ----------
     segments : Segment iterator, optional
         initial set of segments
-    video : string, optional
-        name of (audio or video) segmented document
+    uri : string, optional
+        name of segmented resource
     
     Returns
     -------
@@ -127,12 +127,12 @@ class Timeline(object):
         
     """
     
-    def __init__(self, segments=None, video=None):
+    def __init__(self, segments=None, uri=None):
         
         super(Timeline, self).__init__()
         
-        # path to (or any identifier of) segmented video
-        self.__video = video
+        # path to (or any identifier of) segmented resource
+        self.__uri = uri
         
         # this list is meant to store segments (as Segment object).
         # it is always sorted (using Segment comparison operators,
@@ -153,19 +153,19 @@ class Timeline(object):
                 raise ValueError('Timeline must be initialized using a'
                                  'Segment iterator.')
     
-    def __get_video(self): 
-        return self.__video
-    def __set_video(self, value):
-        self.__video = value
-    video = property(fget=__get_video, fset=__set_video)
-    """Path to (or any identifier of) segmented video
+    def __get_uri(self): 
+        return self.__uri
+    def __set_uri(self, value):
+        self.__uri = value
+    uri = property(fget=__get_uri, fset=__set_uri)
+    """Path to (or any identifier of) segmented resource
     
     Examples
     --------
     
-    >>> timeline = Timeline(video="MyVideo.avi")
-    >>> timeline.video = "MyOtherVideo.avi"
-    >>> print timeline.video
+    >>> timeline = Timeline(uri="MyVideo.avi")
+    >>> timeline.uri = "MyOtherVideo.avi"
+    >>> print timeline.uri
     MyOtherVideo.avi
     
     """
@@ -260,10 +260,10 @@ class Timeline(object):
             
         # timeline += other_timeline
         if isinstance(other, Timeline):
-            # check for video conflict
-            if self.video != other.video:
-                raise ValueError("video conflict:"
-                                 "'%s' and '%s" % (self.video, other.video))
+            # check for uri conflict
+            if self.uri != other.uri:
+                raise ValueError("URI conflict:"
+                                 "'%s' and '%s" % (self.uri, other.uri))
         
         # call timeline += segment for each segment in iterator/timeline
         # will raise a TypeError in case one segment cannot be added
@@ -506,11 +506,11 @@ class Timeline(object):
                 pass
             else:
                 raise ValueError('Unsupported mode (%s).' % mode)
-            timeline = Timeline(segments=isegments, video=self.video)
+            timeline = Timeline(segments=isegments, uri=self.uri)
         
         
         elif isinstance(subset, Timeline):
-            timeline = Timeline(video=self.video)
+            timeline = Timeline(uri=self.uri)
             for segment in subset.coverage():
                 timeline += self.__call__(segment, mode=mode)
         
@@ -816,17 +816,17 @@ class Timeline(object):
         Examples
         --------
         
-            >>> timeline = Timeline(video="MyVideo.avi")
+            >>> timeline = Timeline(uri="MyVideo.avi")
             >>> timeline += [Segment(0, 1), Segment(2, 3)]
             >>> empty = timeline.empty()
-            >>> print empty.video
+            >>> print empty.uri
             MyVideo.avi
             >>> print empty
             [
             ]
         
         """
-        return Timeline(video=self.video)
+        return Timeline(uri=self.uri)
     
     def copy(self, segment_func=None):
         """Duplicate timeline.
@@ -845,10 +845,10 @@ class Timeline(object):
         Examples
         --------
         
-            >>> timeline = Timeline(video="MyVideo.avi")
+            >>> timeline = Timeline(uri="MyVideo.avi")
             >>> timeline += [Segment(0, 1), Segment(2, 3)]
             >>> cp = timeline.copy()
-            >>> print cp.video
+            >>> print cp.uri
             MyVideo.avi
             >>> print cp
             [
@@ -884,7 +884,7 @@ class Timeline(object):
         Examples
         --------
             
-            >>> timeline = Timeline(video="MyVideo.avi")
+            >>> timeline = Timeline(uri="MyVideo.avi")
             >>> timeline += [Segment(0, 1), Segment(9, 10)]
             >>> print timeline.extent()
             [0 --> 10]
@@ -919,8 +919,8 @@ class Timeline(object):
         if not self:
             return self.copy()
         
-        # Make sure video attribute is kept.
-        coverage = Timeline(video=self.video)
+        # Make sure URI attribute is kept.
+        coverage = Timeline(uri=self.uri)
         
         # Principle: 
         #   * gather all segments with no gap between them
@@ -1166,7 +1166,7 @@ class Timeline(object):
         """
         return self and \
                self.is_segmentation() and \
-               Timeline([self.extent()], video=self.video) == self.coverage()
+               Timeline([self.extent()], uri=self.uri) == self.coverage()
     
     
 
