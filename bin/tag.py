@@ -75,7 +75,7 @@ if args.one_to_many:
 if hasattr(args, 'uris'):
     uris = args.uris
 else:
-    uris = args.input.videos
+    uris = args.input.uris
 
 # process each URI, one after the other
 for u, uri in enumerate(uris):

@@ -61,7 +61,7 @@ def speaker_diarization(args):
         uris = args.uris
     # otherwise, use all resources in input file
     else:
-        uris = args.reference.videos
+        uris = args.reference.uris
     
     for u, uri in enumerate(uris):
     
@@ -228,7 +228,7 @@ fparser.set_defaults(func=face_clustering)
 def input_fparser(path):
     if clicommon.containsURI(path):
         return lambda u: AnnotationParser(load_ids=True)\
-                         .read(clicommon.replaceURI(path, u), video=u)(u)
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
         # load_ids = True makes unassociated tracks labeled as Unknown()
         # associated tracks are labeled with the person identity
     else:

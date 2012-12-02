@@ -91,7 +91,7 @@ global_models = set([])
 if hasattr(args, 'training'):
     parser = AnnotationParser().read(args.training)
     noccurrences = {}
-    for uri in parser.videos:
+    for uri in parser.uris:
         annotation = parser(uri)
         for label in annotation.labels():
             n = len(annotation.label_timeline(label, copy=False))

@@ -35,7 +35,7 @@ def face_clustering(args):
         uris = args.uris
     # otherwise, use all resources in input file
     else:
-        uris = args.input.videos
+        uris = args.input.uris
     
     # add header to output file
     args.output.write('# PyAnnote %s\n' % pyannote.__version__)
@@ -109,7 +109,7 @@ fparser.set_defaults(func=face_clustering)
 def input_fparser(path):
     if clicommon.containsURI(path):
         return lambda u: AnnotationParser(load_ids=False)\
-                         .read(clicommon.replaceURI(path, u), video=u)(u)
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
     else:
         return AnnotationParser().read(path)
 

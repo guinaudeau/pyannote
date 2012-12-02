@@ -80,7 +80,7 @@ table.align[''] = 'l'
 if args.uris:
     uris = args.uris
 else:
-    uris = args.groundtruth.videos
+    uris = args.groundtruth.uris
 
 # process each URI, one after the other
 for uri in uris:

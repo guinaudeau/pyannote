@@ -47,7 +47,7 @@ if hasattr(args, 'uris'):
 else:
     uris = set([])
     for path, annotation in args.annotation:
-        uris.update(annotation.videos)
+        uris.update(annotation.uris)
     uris = sorted(uris)
 
 # initialize matrices meant to store statistics

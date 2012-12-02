@@ -77,7 +77,7 @@ if hasattr(args, 'uris'):
     uris = args.uris
 # otherwise, use 
 else:
-    uris = args.srcA.videos
+    uris = args.srcA.uris
 
 def aAbBiterator():
     for u, uri in enumerate(uris):

@@ -137,7 +137,7 @@ if args.components:
 if hasattr(args, 'uris'):
     uris = args.uris
 else:
-    uris = args.groundtruth.videos
+    uris = args.groundtruth.uris
 
 pb = ProgressBar(widgets=[Bar(),' ', ETA()], term_width=80)
 pb.maxval = len(uris)*len(args.hypothesis)
@@ -155,7 +155,7 @@ else:
 for u, uri in enumerate(uris):
     
     # read reference for current URI
-    ref = args.groundtruth(video=uri, modality=modality)
+    ref = args.groundtruth(uri=uri, modality=modality)
     
     # read UEM if provided
     if hasattr(args, 'uem'):
@@ -197,7 +197,7 @@ for u, uri in enumerate(uris):
     for h, (path, hypothesis) in enumerate(args.hypothesis):
         
         # read hypothesis for current URI
-        hyp = hypothesis(video=uri, modality=ref.modality)
+        hyp = hypothesis(uri=uri, modality=ref.modality)
         
         # focus on UEM if provided
         if uem is not None:

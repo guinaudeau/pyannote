@@ -34,7 +34,7 @@ def src_parser(path):
         global srcContainsURI
         srcContainsURI = True
         return lambda u: AnnotationParser()\
-                         .read(clicommon.replaceURI(path, u), video=u)(u)
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
     else:
         return AnnotationParser().read(path)
 
@@ -85,7 +85,7 @@ if not srcContainsURI:
     src_modalities = args.src.modalities
 
 if not srcContainsURI:
-    uris = args.src.videos
+    uris = args.src.uris
 
 # if list of resources is provided, use it.
 if hasattr(args, 'uris'):
@@ -127,7 +127,7 @@ for u, uri in enumerate(uris):
     else:
         # Modality name conversion
         for modality in src_modalities:
-            src = args.src(video=uri, modality=modality)
+            src = args.src(uri=uri, modality=modality)
             if modality in convert_modality:
                 src.modality = convert_modality[modality]
             writer.write(structural_transforms(src), f=f)
