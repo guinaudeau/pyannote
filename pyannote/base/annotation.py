@@ -182,20 +182,29 @@ class AnnotationMixin(object):
         
         Remarks
         -------
-        In 'intersection' mode, track names might change.
+        In 'intersection' mode, the best is done to keep the track names 
+        unchanged. However, in some cases where two original segments are
+        cropped into the same resulting segments, conflicting track names are
+        modified to make sure no track is lost.
         
         """
         if isinstance(focus, Segment):
+            
             return self.crop(Timeline([focus], uri=self.uri), 
                              mode=mode)
         
         elif isinstance(focus, Timeline):
             
+            # timeline made of all annotated segments
+            timeline = self.timeline
+            
+            # focus coverage
             coverage = focus.coverage()
             
             if mode in ['strict', 'loose']:
+                
                 # segments (strictly or loosely) included in requested coverage
-                included = self.timeline(coverage, mode=mode)
+                included = timeline.crop(coverage, mode=mode)
                 
                 # boolean array: True if row must be kept, False otherwise
                 keep = [(s in included) for s,_ in self._df.index]
@@ -207,19 +216,62 @@ class AnnotationMixin(object):
                 return A
             
             elif mode == 'intersection':
-                raise NotImplementedError('')
-        
+                
+                # two original segments might be cropped into the same resulting
+                # segment -- therefore, we keep track of the mapping
+                intersection, mapping = timeline.crop(coverage, 
+                                                      mode=mode, mapping=True)
+                
+                # create new empty annotation
+                A = self.__class__(uri=self.uri, modality=self.modality)
+                
+                for cropped in intersection:
+                    for original in mapping[cropped]:
+                        for track in self.tracks(original):
+                            # try to use original track name (candidate)
+                            # if it already exists, create a brand new one
+                            new_track = A.new_track(cropped, candidate=track)
+                            A[cropped, new_track] = self[original, track]
+                
+                return A
+                
         else:
             raise TypeError('')
     
     
-    def new_track(self, segment, prefix=None):
+    def tracks(self, segment):
+        """Set of tracks for query segment
+        
+        Parameters
+        ----------
+        segment : `Segment`
+            Query segment
+            
+        Returns
+        -------
+        tracks : set
+            Set of tracks for query segment
+        """
+        
+        try:
+            df = self._df.xs(segment)
+            existing_tracks = set(df.index)
+            
+        except Exception, e:
+            existing_tracks = set([])
+            
+        return existing_tracks
+    
+    
+    def new_track(self, segment, candidate=None, prefix=None):
         """Track name generator
         
         Parameters
         ----------
         segment : Segment
         prefix : str, optional
+        candidate : any valid track name
+            
         
         Returns
         -------
@@ -228,11 +280,16 @@ class AnnotationMixin(object):
         """
         
         # obtain list of existing tracks for segment
-        try:
-            df = self._df.xs(segment)
-            existing_tracks = set(df.index)
-        except Exception, e:
-            existing_tracks = set([])
+        existing_tracks = self.tracks(segment)
+        
+        # if candidate is provided, check whether it already exists
+        # in case it does not, use it
+        if candidate is not None:
+            if candidate not in existing_tracks:
+                return candidate
+        
+        # no candidate was provided or the provided candidate already exists
+        # we need to create a brand new one
         
         # by default (if prefix is not provided)
         # use modality as prefix (eg. speaker1, speaker2, ...)
