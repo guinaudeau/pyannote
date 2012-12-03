@@ -147,13 +147,13 @@ class ContiguousCMx(BaseConstraintMixin):
 #             
 #             # set of tags intersecting label
 #             cov = self.annotation.label_coverage(label)
-#             tags = set(self.cmx_xtags(cov, mode='loose').labels())
+#             tags = set(self.cmx_xtags.crop(cov, mode='loose').labels())
 #             
 #             for other_label in labels[l+1:]:
 #                 
 #                 # set of tags intersecting other label
 #                 other_cov = self.annotation.label_coverage(other_label)
-#                 other_tags = set(self.cmx_xtags(other_cov, mode='loose').labels())
+#                 other_tags = set(self.cmx_xtags.crop(other_cov, mode='loose').labels())
 #                 
 #                 # are there any tag conflicts?
 #                 conflicting_xtags = bool(tags ^ other_tags)
@@ -171,7 +171,7 @@ class ContiguousCMx(BaseConstraintMixin):
 #         
 #         # set of tags intersecting new label
 #         cov = self.annotation.label_coverage(new_label)
-#         tags = set(self.cmx_xtags(cov, mode='loose').labels())
+#         tags = set(self.cmx_xtags.crop(cov, mode='loose').labels())
 #         
 #         # update row and column for new label
 #         labels = self.annotation.labels()
@@ -183,7 +183,7 @@ class ContiguousCMx(BaseConstraintMixin):
 #                 
 #             # set of tags intersection other label
 #             other_cov = self.annotation.label_coverage(label)
-#             other_tags = set(self.cmx_xtags(other_cov, mode='loose').labels())
+#             other_tags = set(self.cmx_xtags.crop(other_cov, mode='loose').labels())
 #             
 #             # are there any tag conflicts
 #             conflicting_xtags = bool(tags ^ other_tags)

@@ -169,7 +169,7 @@ class IdentificationErrorRate(BaseMetric):
         detail = self._init_details()
         
         # common (up-sampled) timeline
-        common_timeline = reference._timeline + hypothesis._timeline
+        common_timeline = reference.timeline + hypothesis.timeline
         common_timeline = common_timeline.segmentation()
         
         # align reference on common timeline

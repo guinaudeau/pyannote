@@ -265,7 +265,7 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
     timeline = property(fget=__get_timeline)
     
     def _segmentToRange(self, segment):
-        timeline = self.timeline(segment, mode='loose')
+        timeline = self.timeline.crop(segment, mode='loose')
         if timeline:
             # index of first segment in sub-timeline
             first_segment = timeline[0]

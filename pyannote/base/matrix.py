@@ -653,7 +653,7 @@ class Cooccurrence(LabelMatrix):
             icov = I.label_coverage(ilabel)
             for jlabel in self.iter_jlabels():
                 jcov = J.label_coverage(jlabel)
-                ijcov = icov(jcov, mode='intersection').duration()
+                ijcov = icov.crop(jcov, mode='intersection').duration()
                 self[ilabel, jlabel] = ijcov
 
 from pyannote.base.segment import SEGMENT_PRECISION

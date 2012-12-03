@@ -214,8 +214,8 @@ class LabelCooccurrenceGraph(object):
             segmentation = (InpA.timeline + InpB.timeline).segmentation()
             timeline = Timeline([s for s in segmentation
                                    if s.duration > self.minduration
-                                   and InpA._timeline.covers(s)
-                                   and InpB._timeline.covers(s)],
+                                   and InpA.timeline.covers(s)
+                                   and InpB.timeline.covers(s)],
                                 uri=uri)
             
             alignedInpA = InpA >> timeline
@@ -273,8 +273,8 @@ class LabelCooccurrenceGraph(object):
         segmentation = (InpA.timeline + InpB.timeline).segmentation()
         timeline = Timeline([s for s in segmentation
                                if s.duration > self.minduration
-                               and InpA._timeline.covers(s)
-                               and InpB._timeline.covers(s)],
+                               and InpA.timeline.covers(s)
+                               and InpB.timeline.covers(s)],
                             uri=uri)
         
         alignedInpA = InpA >> timeline

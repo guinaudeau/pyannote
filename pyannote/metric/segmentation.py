@@ -61,7 +61,7 @@ class SegmentationPrecision(Precision):
         del H[0]
         
         for collar in H:
-            if R(collar, mode='loose'):
+            if R.crop(collar, mode='loose'):
                 detail[PRECISION_RELEVANT_RETRIEVED] += 1
         
         return detail
@@ -102,7 +102,7 @@ class SegmentationRecall(Recall):
         del H[0]
         
         for collar in R:
-            if H(collar, mode='loose'):
+            if H.crop(collar, mode='loose'):
                 detail[RECALL_RELEVANT_RETRIEVED] += 1
         
         return detail
