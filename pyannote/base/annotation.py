@@ -421,6 +421,37 @@ class Annotation(AnnotationMixin, object):
         except Exception, e:
             return set([])
     
+    def subset(self, labels, invert=False):
+        """Annotation subset
+        
+        Extract annotation subset based on labels
+        
+        Parameters
+        ----------
+        labels : set
+            Set of labels
+        invert : bool, optional
+            If invert is True, extract all but requested `labels`
+        
+        Returns
+        -------
+        subset : `Annotation`
+            Annotation subset.
+        """
+        
+        if not isinstance(labels, set):
+            raise TypeError('labels must be provided as a set of labels.')
+        
+        if invert:
+            labels = set(self.labels()) - labels
+        else:
+            labels = labels & set(self.labels())
+        
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df[self._df['label'].apply(lambda l: l in labels)]
+        
+        return A
+    
     def label_timeline(self, label):
         """Get timeline for a given label
         
