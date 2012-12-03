@@ -131,7 +131,7 @@ class BaseMetric(object):
         
         """
         detail = self._get_details(reference, hypothesis, **kwargs)
-        self.__rates.append((reference.video, self._get_rate(detail)))
+        self.__rates.append((reference.uri, self._get_rate(detail)))
         return self.__compute(detail, accumulate=True, detailed=detailed)
     
     def __str__(self):
@@ -164,7 +164,7 @@ class BaseMetric(object):
             return self.__details[component]
     
     def __iter__(self):
-        """Iterator over the accumulated (video, value)"""
+        """Iterator over the accumulated (uri, value)"""
         for v, r in self.__rates:
             yield v, r
     

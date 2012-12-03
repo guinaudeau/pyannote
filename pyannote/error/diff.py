@@ -98,7 +98,7 @@ class Diff(object):
         reference = reference >> timeline
         hypothesis = hypothesis >> timeline
         
-        inventory = Annotation(video=reference.video, \
+        inventory = Annotation(uri=reference.uri, \
                                  modality=reference.modality)
         
         for segment in timeline:
