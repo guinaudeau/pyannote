@@ -173,9 +173,9 @@ class AnnotationMixin(object):
         Parameters
         ----------
         focus : `Segment` or `Timeline`
-            
+        
         mode : {'strict', 'loose', 'intersection'}
-            
+            In 'strict' mode 
         Returns
         -------
         
@@ -375,6 +375,9 @@ class Annotation(AnnotationMixin, object):
         A._df = self._df.copy()
         return A
     
+    def empty(self):
+        return self.__class__(uri=self.uri, modality=self.modality)
+    
     def labels(self):
         """List of labels
         
@@ -475,6 +478,91 @@ class Annotation(AnnotationMixin, object):
     def label_duration(self, label):
         return self.label_timeline(label).duration()
     
+    def argmax(self, segment=None, known_first=False):
+        """Get most frequent label
+        
+        
+        Parameters
+        ----------
+        segment : Segment, optional
+            Section of annotation where to look for the most frequent label.
+            Defaults to whole annotation extent.
+        known_first: bool, optional
+            If True, artificially reduces the duration of intersection of 
+            `Unknown` labels so that 'known' labels are returned first.
+        
+        Returns
+        -------
+        label : any existing label or None
+            Label with longest intersection
+            
+        Examples
+        --------
+            
+            >>> annotation = Annotation(modality='speaker')
+            >>> annotation[Segment(0, 10), 'speaker1'] = 'Alice'
+            >>> annotation[Segment(8, 20), 'speaker1'] = 'Bob'
+            >>> print "%s is such a talker!" % annotation.argmax()
+            Bob is such a talker!
+            >>> segment = Segment(22, 23)
+            >>> if not annotation.argmax(segment):
+            ...    print "No label intersecting %s" % segment
+            No label intersection [22 --> 23]
+        
+        """
+        
+        # if annotation is empty, obviously there is no most frequent label
+        if not self:
+            return None
+        
+        # if segment is not provided, just look for the overall most frequent
+        # label (ie. set segment to the extent of the annotation)
+        if segment is None:
+            segment = self.timeline.extent()
+        
+        # compute intersection duration for each label
+        durations = {lbl: (self.label_timeline(lbl) & segment).duration()
+                     for lbl in self.labels()}
+        
+        # artifically reduce intersection duration of Unknown labels 
+        # so that 'known' labels are returned first
+        if known_first:
+            maxduration = max(durations.values())
+            for lbl in durations.keys():
+                if isinstance(lbl, Unknown):
+                    durations[lbl] = durations[lbl] - maxduration
+        
+        # find the most frequent label
+        label = max(durations.iteritems(), key=operator.itemgetter(1))[0]
+        
+        # in case all durations were zero, there is no most frequent label
+        return label if durations[label] > 0 else None
+    
+    def __rshift__(self, timeline):
+        """Tag a timeline
+        
+        Use expression 'tagged = annotation >> timeline'
+        
+        Shortcut for :
+            >>> tagger = DirectTagger()
+            >>> tagged = tagger(annotation, timeline)
+        
+        Parameters
+        ----------
+        timeline : :class:`pyannote.base.timeline.Timeline`
+        
+        Returns
+        -------
+        tagged : :class:`pyannote.base.annotation.Annotation`
+            Tagged timeline - one track per intersecting label.
+            
+        """
+        from pyannote.algorithm.tagging import DirectTagger
+        if not isinstance(timeline, Timeline):
+            raise TypeError('direct tagging (>>) only works with timelines.')
+        return DirectTagger()(self, timeline)
+    
+    
     def translate(self, translation):
         """Translate labels
         
@@ -547,7 +635,6 @@ class Annotation(AnnotationMixin, object):
         
         for (segment, track), column in self._df.iterrows():
             yield segment, track, column['label']
-    
     
     def smooth(self):
         """Smooth annotation
