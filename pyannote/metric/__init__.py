@@ -21,7 +21,8 @@
 """
 Module :mod:`pyannote.metric` implements several evaluation metrics.
 
-Most of them can be accumulated over multiple documents in order to obtain both an aggregated error and confidence intervals. It is as easy as:
+Most of them can be accumulated over multiple documents in order to obtain both
+an aggregated error and confidence intervals. It is as easy as:
 
     >>> metric = MyMetric()
     >>> for reference, hypothesis in iterator:
@@ -29,7 +30,8 @@ Most of them can be accumulated over multiple documents in order to obtain both 
     >>> aggregated_value = abs(metric)
     >>> mean, (lower_bound, upper_bound) = metric.confidence_interval()
 
-See :class:`pyannote.metric.base.BaseMetric` for details on how to contribute your own metrics.
+See :class:`pyannote.metric.base.BaseMetric` for details on how to contribute 
+your own metrics.
 
 """
 
