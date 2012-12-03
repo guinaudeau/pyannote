@@ -231,7 +231,11 @@ class AnnotationMixin(object):
                             # try to use original track name (candidate)
                             # if it already exists, create a brand new one
                             new_track = A.new_track(cropped, candidate=track)
-                            A[cropped, new_track] = self[original, track]
+                            for label in self._df.columns:
+                                value = self._df.get_value((original, track),
+                                                           label)
+                                A._df = A._df.set_value((cropped, new_track), 
+                                                        label, value)
                 
                 return A
                 
