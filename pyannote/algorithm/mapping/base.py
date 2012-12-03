@@ -118,8 +118,8 @@ class BaseMapper(object):
             
             # extract constrained sub-annotations
             # for later mapping between their labels
-            a = A(lblA)
-            b = B(lblB)
+            a = A.subset(lblA)
+            b = B.subset(lblB)
             
             # get actual `a` and `b` labels
             alabels = a.labels()
