@@ -168,17 +168,23 @@ class AnnotationMixin(object):
             yield segment, track
     
     def crop(self, focus, mode='strict'):
-        """
+        """Crop on focus
         
         Parameters
         ----------
         focus : `Segment` or `Timeline`
         
         mode : {'strict', 'loose', 'intersection'}
-            In 'strict' mode 
+            In 'strict' mode, only segments fully included in focus coverage are
+            kept. In 'loose' mode, any intersecting segment is kept unchanged.
+            In 'intersection' mode, only intersecting segments are kept and
+            replaced by their actual intersection with the focus.
+        
         Returns
         -------
-        
+        cropped : same type as caller
+            Cropped version of the caller containing only tracks matching
+            the provided focus and mode.
         
         Remarks
         -------
