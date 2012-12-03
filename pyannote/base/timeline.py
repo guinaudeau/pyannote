@@ -409,58 +409,90 @@ class Timeline(object):
     
     # ------------------------------------------------------------------- #
     
-    def __intersecting(self, segment):
-        """Sorted list of intersecting segments"""
+    def __intersecting(self, query_segment):
+        """Intersecting segments
         
-        # if segment is empty, it intersects nothing.
-        if not segment:
+        Parameters
+        ----------
+        segment : `Segment`
+            Query segment
+        
+        Returns
+        -------
+        intersecting : list
+            Sorted list of intersecting segments
+        intersection : list
+            Corresponding list of query-cropped intersecting segments
+        i2i : dict
+            (Cropped segment)-to-(set of original segments) dictionary
+        
+        """
+        
+        # if query segment is empty, it intersects nothing.
+        if not query_segment:
             return []
         
-        # any intersecting segment starts before segment ends 
+        # any intersecting segment starts before query ends 
         # and ends after it starts
         
-        dummy_end = Segment(segment.end-SEGMENT_PRECISION, \
-                            segment.end-SEGMENT_PRECISION)
-        index = self.__search(dummy_end, self.__segments)
         # property 1:
-        # every segment in __segments[:index] starts before key ends
+        # every segment in __segments[:index] starts before query ends
+        dummy_end = Segment(query_segment.end-SEGMENT_PRECISION, \
+                            query_segment.end-SEGMENT_PRECISION)
+        index = self.__search(dummy_end, self.__segments)
         
-        dummy_start = RevSegment(Segment(segment.start+SEGMENT_PRECISION, \
-                                         segment.start+SEGMENT_PRECISION))
-        xedni = self.__search(dummy_start, self.__rsegments)
         # property 2:
-        # every segment in __rsegments[xedni:] ends after key starts
+        # every segment in __rsegments[xedni:] ends after query starts
+        dummy_start = RevSegment(Segment(query_segment.start+SEGMENT_PRECISION, \
+                                         query_segment.start+SEGMENT_PRECISION))
+        xedni = self.__search(dummy_start, self.__rsegments)
         
-        # get segments with both properties
+        # get segments with both properties (ie. intersecting query segment)
         both = set(self.__segments[:index]) & set(self.__rsegments[xedni:])
         
-        # make sure every RevSegment is converted to Segment
-        # and return their sorted list
-        return sorted([rsegment.copy() for rsegment in both])
-    
-    def __call__(self, subset, mode='intersection'):
-        """Sub-timeline
+        # convert every RevSegment to Segment + sort them all
+        # (list of segments intersecting query)
+        intersecting = sorted([rsegment.copy() for rsegment in both])
         
-        Use expression 'timeline(subset, mode='intersection')
+        # list of actual intersections with query
+        intersection = [(segment & query_segment) for segment in intersecting]
+        
+        # intersection-to-intersecting dictionary
+        i2i = {cropped: set([]) for cropped in intersection}
+        for original, cropped in zip(intersecting, intersection):
+            i2i[cropped].add(original)
+        
+        return intersecting, intersection, i2i
+    
+    def crop(self, subset, mode='intersection', mapping=False):
+        """Sub-timeline
         
         Parameters
         ----------
         subset : Segment or Timeline
         
-        mode : {'strict', 'loose', 'intersection'}
+        mode : {'strict', 'loose', 'intersection'}, optional
             Default `mode` is 'intersection'.
+        
+        mapping : bool, optional
+            This parameter has no effect in 'strict' or 'loose' mode.
+            In 'intersection' mode, when `mapping` is True, returns
+            the cropped-to-originals segment mapping. One cropped segments
+            might come from two different original segments.
         
         Returns
         -------
         timeline : Timeline
             In 'strict' mode, `timeline` only contains segments that are fully 
             included in provided segment or timeline coverage.
-            In 'loose' mode, `timeine` contains every segment intersecting 
+            In 'loose' mode, `timeline` contains every segment intersecting 
             provided segment or timeline.
             'intersection' mode is similar to 'loose' mode except sub-timeline
-            segments are trimmed to be fully included in provided segment or 
+            segments are cropped to be fully included in provided segment or 
             timeline.
-             
+        mapping : dict
+            Cropped-to-(set of originals) segment mapping. 
+            (returned only when mode = 'intersection' and mapping = True.)
         
         Examples
         --------
@@ -468,7 +500,7 @@ class Timeline(object):
             >>> timeline = Timeline()
             >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]
             >>> timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]
-            >>> print timeline(Segment(1.5, 6.5), mode='loose')
+            >>> print timeline.crop(Segment(1.5, 6.5), mode='loose')
             [
                [1 --> 2]
                [1 --> 8]
@@ -476,13 +508,13 @@ class Timeline(object):
                [2 --> 4]
                [6 --> 7]
             ]
-            >>> print timeline(Segment(1.5, 3), mode='intersection')
+            >>> print timeline.crop(Segment(1.5, 3), mode='intersection')
             [
                [1.5 --> 2]
                [1.5 --> 3]
                [2 --> 3]
             ]
-            >>> print timeline(Segment(1.5, 4), mode='strict')
+            >>> print timeline.crop(Segment(1.5, 4), mode='strict')
             [
                [2 --> 3]
                [2 --> 4]
@@ -495,26 +527,60 @@ class Timeline(object):
                             "Segment or Timeline." % type(subset).__name__)
         
         if isinstance(subset, Segment):
-            segment = subset     
-            isegments = self.__intersecting(segment)
+            
+            query_segment = subset
+            
+            # intersecting segments
+            intersecting, intersection, i2i = self.__intersecting(query_segment)
+            
+            # in strict mode, only keep fully included segments
+            # ie. segments whose cropped version is identical to the original
             if mode == 'strict':
-                isegments = [isegment for isegment in isegments \
-                                      if isegment in segment]
-            elif mode == 'intersection':
-                isegments = [isegment & segment for isegment in isegments]
+                segments = [i for i, I in zip(intersecting, intersection) 
+                              if i == I]
+                timeline = Timeline(segments=segments, uri=self.uri)
+                return timeline
+            
+            # in loose mode, keep any intersecting segments
             elif mode == 'loose':
-                pass
+                timeline = Timeline(segments=intersecting, uri=self.uri)
+                return timeline
+            
+            # in intersection mode, 
+            elif mode == 'intersection':
+                timeline = Timeline(segments=intersection, uri=self.uri)
+                if mapping:
+                    return timeline, i2i
+                else:
+                    return timeline
+                
             else:
                 raise ValueError('Unsupported mode (%s).' % mode)
-            timeline = Timeline(segments=isegments, uri=self.uri)
         
         
         elif isinstance(subset, Timeline):
+            
+            if subset.uri != self.uri:
+                raise ValueError('URI mismatch')
+            
             timeline = Timeline(uri=self.uri)
+            i2i = {}
             for segment in subset.coverage():
-                timeline += self.__call__(segment, mode=mode)
-        
-        return timeline
+                if mode == 'intersection' and mapping:
+                    sub_timeline, sub_i2i = self.crop(segment, mode=mode, 
+                                                               mapping=mapping)
+                    for cropped, originals in sub_i2i.iteritems():
+                        if cropped not in i2i:
+                            i2i[cropped] = set([])
+                        i2i[cropped].update(originals)                                           
+                else:
+                    sub_timeline = self.crop(segment, mode=mode)
+                timeline += sub_timeline
+            
+            if mode == 'intersection' and mapping:
+                return timeline, i2i
+            else:
+                return timeline
     
     def __setitem__(self, key, value):
         raise NotImplementedError("use '+=' operator to add and 'del' operator"
@@ -761,7 +827,7 @@ class Timeline(object):
             # by at least one segment of the timeline
             if isinstance(covered, Segment):
                 return any([covered in segment \
-                            for segment in self(covered, mode='loose')])
+                            for segment in self.crop(covered, mode='loose')])
             
             # True if timeline covers all other timeline segment
             elif isinstance(covered, Timeline):
@@ -790,7 +856,7 @@ class Timeline(object):
             timeline and the provided segment (or timeline segments).
         
         """
-        return self(other, mode='intersection').coverage()
+        return self.crop(other, mode='intersection').coverage()
     
     def __or__(self, other):
         """Union of two timelines (or a timeline and a segment)
@@ -1007,7 +1073,7 @@ class Timeline(object):
             end = focus.start
             
             # focus on the intersection of timeline and provided segment
-            for segment in self(focus, mode='intersection').coverage():
+            for segment in self.crop(focus, mode='intersection').coverage():
                 
                 # add gap between each pair of consecutive segments
                 # if there is no gap, segment is empty, therefore not added
