@@ -103,7 +103,7 @@ class ConservativeDirectTagger(BaseTagger):
         Returns
         -------
         tagged : Annotation
-            Tagged `annotation`
+            Tagged `annotation`.
         
         """
         
@@ -130,13 +130,17 @@ class ConservativeDirectTagger(BaseTagger):
             tracks = tagged.tracks(segment)
             if len(tracks) > 1:
                 continue
+            else:
+                track = tracks.pop()
             
             # don't do anything if source has more than one label
             labels = t.labels()
             if len(labels) > 1:
                 continue
+            else:
+                label = labels[0]
             
-            tagged[segment, tracks.pop()] = labels[0]
+            tagged[segment, track] = label
         
         return tagged
 
