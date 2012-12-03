@@ -77,7 +77,7 @@ for u, uri in enumerate(uris):
         ann = annotation(uri, modality=modality)
         
         if uem is not None:
-            ann = ann(uem, mode='intersection')
+            ann = ann.crop(uem, mode='intersection')
         
         nlabels[uri, path] = len(ann.labels())
         

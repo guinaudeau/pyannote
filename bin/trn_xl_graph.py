@@ -99,10 +99,10 @@ def aAbBiterator():
             tgtB.modality = args.modalityB
         
         if hasattr(args, 'uem'):
-            srcA = srcA(args.uem(uri), mode='intersection')
-            tgtA = tgtA(args.uem(uri), mode='intersection')
-            srcB = srcB(args.uem(uri), mode='intersection')
-            tgtB = tgtB(args.uem(uri), mode='intersection')
+            srcA = srcA.crop(args.uem(uri), mode='intersection')
+            tgtA = tgtA.crop(args.uem(uri), mode='intersection')
+            srcB = srcB.crop(args.uem(uri), mode='intersection')
+            tgtB = tgtB.crop(args.uem(uri), mode='intersection')
         
         yield tgtA, srcA, tgtB, srcB
 

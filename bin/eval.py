@@ -167,7 +167,7 @@ for u, uri in enumerate(uris):
     if args.no_overlap:
         # make sure timeline is a segmentation
         # tag each resulting segment by all intersecting labels
-        tmp_ref = ref >> (ref._timeline.segmentation())
+        tmp_ref = ref >> (ref.timeline.segmentation())
         # overlapping speech regions
         # (ie. timeline made of segments with two tracks or more)
         overlap = pyannote.Timeline([segment for segment in tmp_ref 
@@ -179,12 +179,12 @@ for u, uri in enumerate(uris):
         # remove overlapping speech regions from UEM if requested
         if args.no_overlap:
             uem = overlap.gaps(focus=uem)
-        ref = ref(uem, mode='intersection')
+        ref = ref.crop(uem, mode='intersection')
     else:
         # remove overlapping speech regions if requested
         if args.no_overlap:
-            ref = ref(overlap.gaps(focus=ref.coverage()), 
-                                   mode='intersection')
+            ref = ref.crop(overlap.gaps(focus=ref.coverage()), 
+                           mode='intersection')
     
     
     # remove unknown if requested
@@ -203,12 +203,12 @@ for u, uri in enumerate(uris):
         if uem is not None:
             # UEM was already updated to take overlapping speech regions
             # into account -- so no need to worry about that here.
-            hyp = hyp(uem, mode='intersection')
+            hyp = hyp.crop(uem, mode='intersection')
         else:
             # remove overlapping speech regions if requested
             if args.no_overlap:
-                hyp = hyp(overlap.gaps(focus=hyp.coverage()), 
-                                       mode='intersection')
+                hyp = hyp.crop(overlap.gaps(focus=hyp.coverage()), 
+                               mode='intersection')
         
         # remove unknown if requested
         if hasattr(args, 'unknown') and args.unknown == 'remove':

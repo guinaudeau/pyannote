@@ -79,7 +79,7 @@ def speaker_diarization(args):
         annotation = args.input(uri)
         if hasattr(args, 'uem'):
             uem = args.uem(uri)
-            annotation = annotation(uem, mode='intersection')
+            annotation = annotation.crop(uem, mode='intersection')
         
         # load PLP features
         path = clicommon.replaceURI(args.plp, uri)
@@ -157,7 +157,7 @@ def face_clustering(args):
         annotation = args.input(uri)
         if hasattr(args, 'uem'):
             uem = args.uem(uri)
-            annotation = annotation(uem, mode='intersection')
+            annotation = annotation.crop(uem, mode='intersection')
         
         # load pre-computed distance matrix
         path = clicommon.replaceURI(args.precomputed, uri)

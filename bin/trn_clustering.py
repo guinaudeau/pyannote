@@ -78,8 +78,8 @@ def speaker_diarization(args):
         # focus on UEM
         if hasattr(args, 'uem'):
             uem = args.uem(uri)
-            reference = reference(uem, mode='intersection')
-            annotation = annotation(uem, mode='intersection')
+            reference = reference.crop(uem, mode='intersection')
+            annotation = annotation.crop(uem, mode='intersection')
         
         # get groundtruth
         y = label_clustering_groundtruth(reference, annotation)
@@ -129,7 +129,7 @@ def face_clustering(args):
         annotation = args.input(uri)
         if hasattr(args, 'uem'):
             uem = args.uem(uri)
-            annotation = annotation(uem, mode='intersection')
+            annotation = annotation.crop(uem, mode='intersection')
         
         # focus on associated tracks
         labels = [l for l in annotation.labels() 

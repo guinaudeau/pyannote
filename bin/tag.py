@@ -89,7 +89,7 @@ for u, uri in enumerate(uris):
     # focus on UEM if provided
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
-        names = names(uem, mode='intersection')
+        names = names.crop(uem, mode='intersection')
     
     tagged = tagger(names, original)
     

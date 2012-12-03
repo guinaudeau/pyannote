@@ -65,7 +65,7 @@ def face_clustering(args):
         
         if hasattr(args, 'uem'):
             uem = args.uem(uri)
-            annotation = annotation(uem, mode='intersection')
+            annotation = annotation.crop(uem, mode='intersection')
         
         # save reduced annotation
         MDTMParser().write(annotation, f=args.output)

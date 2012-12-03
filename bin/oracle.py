@@ -126,14 +126,14 @@ for u, uri in enumerate(uris):
         for cross in args.cross:
             annotation = cross(uri)
             if uem is not None:
-                annotation = annotation(uem, mode='intersection')
+                annotation = annotation.crop(uem, mode='intersection')
             labels = annotation.labels()
             local_models.update(labels)
     
     reference = args.reference(uri)
     
     if uem is not None:
-        reference = reference(uem, mode='intersection')
+        reference = reference.crop(uem, mode='intersection')
     
     if hasattr(args, 'detection'):
         detection = args.detection(uri)
@@ -143,7 +143,7 @@ for u, uri in enumerate(uris):
                      '(%s vs. %s)' % (reference.modality, detection.modality))
         
         if uem is not None:
-            detection = detection(uem, mode='intersection')
+            detection = detection.crop(uem, mode='intersection')
         timeline = (reference.timeline + detection.timeline).segmentation()
         reference = argMaxDirectTagger(reference >> timeline, 
                                        detection >> timeline)
