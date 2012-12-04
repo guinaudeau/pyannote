@@ -430,7 +430,7 @@ class Timeline(object):
         
         # if query segment is empty, it intersects nothing.
         if not query_segment:
-            return []
+            return [], [], {}
         
         # any intersecting segment starts before query ends 
         # and ends after it starts
