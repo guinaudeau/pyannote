@@ -273,7 +273,20 @@ class AnnotationMixin(object):
             
         return existing_tracks
     
+    def copy(self):
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df.copy()
+        return A
     
+    def retrack(self):
+        """
+        """
+        A = self.copy()
+        reindex = MultiIndex.from_tuples([(s,n) 
+                                          for n,(s,_) in enumerate(A._df.index)])
+        A._df.index = reindex
+        return A
+        
     def new_track(self, segment, candidate=None, prefix=None):
         """Track name generator
         
@@ -381,11 +394,6 @@ class Annotation(AnnotationMixin, object):
             raise KeyError('invalid label.')
         self._df = self._df.set_value((segment, track), 'label', label)
     
-    def copy(self):
-        A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.copy()
-        return A
-    
     def empty(self):
         return self.__class__(uri=self.uri, modality=self.modality)
     
@@ -419,7 +427,7 @@ class Annotation(AnnotationMixin, object):
         Examples
         --------
             
-            >>> annotation = Annotation(multitrack=True)
+            >>> annotation = Annotation()
             >>> segment = Segment(0, 2)
             >>> annotation[segment, 'speaker1'] = 'Bernard'
             >>> annotation[segment, 'speaker2'] = 'John'
@@ -668,10 +676,12 @@ class Annotation(AnnotationMixin, object):
         A = self.__class__(uri=self.uri, modality=self.modality)
         labels = self._df['label'].unique()
         
+        n = 0
         for label in labels:
             coverage = self.label_coverage(label)
             for segment in coverage:
-                A[segment, A.new_track(segment)] = label
+                A[segment, n] = label
+                n = n+1
         
         return A
     
@@ -796,11 +806,6 @@ class Scores(AnnotationMixin, object):
         if not self._valid_label(label):
             raise KeyError('invalid label.')
         self._df = self._df.set_value((segment, track), label, value)
-    
-    def copy(self):
-        A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.copy()
-        return A
     
     def labels(self):
         """List of labels
