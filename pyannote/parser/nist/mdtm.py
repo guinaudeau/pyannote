@@ -25,8 +25,7 @@ from pyannote.parser.base import BaseTextualAnnotationParser
 class MDTMParser(BaseTextualAnnotationParser):
     
     def __init__(self):
-        multitrack = True
-        super(MDTMParser, self).__init__(multitrack)
+        super(MDTMParser, self).__init__()
     
     def _comment(self, line):
         return line[0] == '#'
@@ -51,15 +50,10 @@ class MDTMParser(BaseTextualAnnotationParser):
     def _append(self, annotation, f, uri, modality):
         
         try:
-            if annotation.multitrack:
-                format = '%s 1 %%g %%g %s NA %%s %%s\n' % (uri, modality)
-                for segment, track, label in annotation.iterlabels():
-                    f.write(format % (segment.start, segment.duration, 
-                                      track, label))
-            else:
-                format = '%s 1 %%g %%g %s NA NA %%s\n' % (uri, modality)
-                for segment, label in annotation.iterlabels():
-                    f.write(format % (segment.start, segment.duration, label))
+            format = '%s 1 %%g %%g %s NA %%s %%s\n' % (uri, modality)
+            for segment, track, label in annotation.iterlabels():
+                f.write(format % (segment.start, segment.duration, 
+                                  track, label))
         except Exception, e:
             print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e

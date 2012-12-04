@@ -143,11 +143,10 @@ class BaseTextualTimelineParser(BaseTimelineParser):
 from pyannote.base.annotation import Annotation, Unknown
 
 class BaseAnnotationParser(object):
-    def __init__(self, multitrack):
+    def __init__(self):
         super(BaseAnnotationParser, self).__init__()
-        self.__multitrack = multitrack
         self.reset()
-
+    
     def __get_uris(self):
         return sorted(set([v for (v, m) in self.__loaded]))
     uris = property(fget=__get_uris)
@@ -162,12 +161,9 @@ class BaseAnnotationParser(object):
         key = (uri, modality)
         if key not in self.__loaded:
             self.__loaded[key] = Annotation(uri=uri, modality=modality)
-        if self.__multitrack:
-            if track is None:
-                track = self.__loaded[key].new_track(segment)
-            self.__loaded[key][segment, track] = label
-        else:
-            self.__loaded[key][segment] = label
+        if track is None:
+            track = self.__loaded[key].new_track(segment)
+        self.__loaded[key][segment, track] = label
     
     def reset(self):
         self.__loaded = {}
@@ -221,8 +217,8 @@ class BaseAnnotationParser(object):
         return A % translation
 
 class BaseTextualAnnotationParser(BaseAnnotationParser):
-    def __init__(self, multitrack):
-        super(BaseTextualAnnotationParser, self).__init__(multitrack)
+    def __init__(self):
+        super(BaseTextualAnnotationParser, self).__init__()
     
     def _comment(self, line):
         raise NotImplementedError('')

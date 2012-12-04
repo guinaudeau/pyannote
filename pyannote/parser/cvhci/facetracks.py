@@ -36,8 +36,7 @@ class FACETRACKSParser(BaseAnnotationParser):
             facetracks.ids file.
         
         """
-        multitrack = True
-        super(FACETRACKSParser, self).__init__(multitrack)
+        super(FACETRACKSParser, self).__init__()
         self.load_ids = load_ids
     
     def read(self, path, uri=None, **kwargs):
