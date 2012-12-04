@@ -35,8 +35,7 @@ class DirectTagger(BaseTagger):
     """
     
     def __init__(self):
-        super(DirectTagger, self).__init__(annotation=False, \
-                                           timeline=True)
+        super(DirectTagger, self).__init__(annotation=False, timeline=True)
     
     def _tag_timeline(self, source, timeline):
         """Timeline tagging
@@ -58,22 +57,17 @@ class DirectTagger(BaseTagger):
         """
         
         # initialize tagged timeline as an empty copy of source
-        T = Annotation(uri=source.uri, modality=source.modality)
+        T = source.empty()
         
-        # tag each segment of target timeline, one after the other
+        # tag each segment of target timeline
         for segment in timeline:
             
             # extract the part of source annotation
             # intersecting current target segment
             t = source.crop(segment, mode='loose')
             
-            # if there is no intersecting segment
-            # just skip to the next one
-            if not t:
-                continue
-            
-            for label in t.labels():
-                T[segment, T.new_track(segment)] = label
+            for _, track, label in t.iterlabels():
+                T[segment, T.new_track(segment, candidate=track)] = label
         
         return T
 
@@ -197,6 +191,9 @@ class ArgMaxDirectTagger(BaseTagger):
         # initialize tagged timeline as an empty copy of source
         T = source.empty()
         
+        # track name
+        n = 0
+        
         # tag each segment of target timeline, one after the other
         for segment in timeline:
             
@@ -222,7 +219,7 @@ class ArgMaxDirectTagger(BaseTagger):
                     
                 # find current best label
                 label = t.argmax(segment, known_first=self.known_first)
-                    
+                
                 # if there is no label in stock
                 # just stop tagging this segment
                 if not label:
@@ -230,8 +227,9 @@ class ArgMaxDirectTagger(BaseTagger):
                 # if current best label exists
                 # create a new track and go for it.
                 else:
-                    T[segment, T.new_track(segment)] = label
-                    t = t.subset(label, invert=True)
+                    T[segment, n] = label
+                    n = n+1
+                    t = t.subset(set([label]), invert=True)
             
         
         return T
@@ -284,7 +282,7 @@ class ArgMaxDirectTagger(BaseTagger):
                 # go for it and tag track
                 else:
                     tagged[segment, track] = label
-                    t = t.subset(label, invert=True)
+                    t = t.subset(set([label]), invert=True)
         
         return tagged
 
