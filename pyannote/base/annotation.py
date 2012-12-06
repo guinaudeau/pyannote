@@ -24,6 +24,8 @@ from mapping import Mapping, ManyToOneMapping
 from collections import Hashable
 import operator
 import numpy as np
+from pyannote.base import SEGMENT, TRACK, LABEL, SCORE
+from pandas import MultiIndex, DataFrame, pivot_table
 
 class Unknown(object):
     nextID = 0
@@ -338,7 +340,6 @@ class AnnotationMixin(object):
             return ""
 
 
-from pandas import MultiIndex, DataFrame, Series
 class Annotation(AnnotationMixin, object):
     """
     Parameters
@@ -354,12 +355,38 @@ class Annotation(AnnotationMixin, object):
         New empty annotation
     """
     
+    @classmethod
+    def from_df(cls, df, uri=None,
+                         modality=None,
+                         aggfunc=np.mean):
+        """
+        
+        Parameters
+        ----------
+        df : DataFrame
+            Must contain the following columns: 'segment', 'track' and 'label'
+        uri : str, optional
+            Resource identifier
+        modality : str, optional
+            Modality
+        aggfunc : func
+            Value aggregation function in case of duplicate (segment, track, 
+            label) tuples
+        
+        Returns
+        -------
+        
+        """
+        A = cls(uri=uri, modality=modality)
+        A._df = df.set_index([SEGMENT, TRACK])[[LABEL]]
+        return A
+    
+    
     def __init__(self, uri=None, modality=None):
         super(Annotation, self).__init__()
-        
         index = MultiIndex(levels=[[],[]], 
                            labels=[[],[]], 
-                           names=['segment', 'track'])
+                           names=[SEGMENT, TRACK])
         self._df = DataFrame(index=index)
         self.modality = modality
         self.uri = uri
@@ -381,7 +408,7 @@ class Annotation(AnnotationMixin, object):
     # label = annotation[segment, track]
     def __getitem__(self, key):
         segment, track, = key
-        return self._df.get_value((segment, track), 'label')
+        return self._df.get_value((segment, track), LABEL)
     
     # annotation[segment, track] = label
     def __setitem__(self, key, label):
@@ -392,7 +419,7 @@ class Annotation(AnnotationMixin, object):
             raise KeyError('invalid track name.')
         if not self._valid_label(label):
             raise KeyError('invalid label.')
-        self._df = self._df.set_value((segment, track), 'label', label)
+        self._df = self._df.set_value((segment, track), LABEL, label)
     
     def empty(self):
         return self.__class__(uri=self.uri, modality=self.modality)
@@ -409,7 +436,7 @@ class Annotation(AnnotationMixin, object):
         -------
             Labels are sorted based on their string representation.
         """
-        return sorted(self._df['label'].unique(), key=str)
+        return sorted(self._df[LABEL].unique(), key=str)
     
     def get_labels(self, segment):
         """Local set of labels 
@@ -439,7 +466,7 @@ class Annotation(AnnotationMixin, object):
         """
         
         try:
-            return set(self._df.ix[segment]['label'])
+            return set(self._df.ix[segment][LABEL])
         except Exception, e:
             return set([])
     
@@ -470,7 +497,7 @@ class Annotation(AnnotationMixin, object):
             labels = labels & set(self.labels())
         
         A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df[self._df['label'].apply(lambda l: l in labels)]
+        A._df = self._df[self._df[LABEL].apply(lambda l: l in labels)]
         
         return A
     
@@ -487,7 +514,7 @@ class Annotation(AnnotationMixin, object):
             Timeline made of all segments annotated with `label`
         
         """
-        a = self._df.ix[self._df['label'] == label]
+        a = self._df.ix[self._df[LABEL] == label]
         segments = set([s for s,_ in a.index])
         return Timeline(segments, uri=self.uri)
     
@@ -653,7 +680,7 @@ class Annotation(AnnotationMixin, object):
         self._df = self._df.sort_index()
         
         for (segment, track), column in self._df.iterrows():
-            yield segment, track, column['label']
+            yield segment, track, column[LABEL]
     
     def smooth(self):
         """Smooth annotation
@@ -674,7 +701,7 @@ class Annotation(AnnotationMixin, object):
         """
         
         A = self.__class__(uri=self.uri, modality=self.modality)
-        labels = self._df['label'].unique()
+        labels = self._df[LABEL].unique()
         
         n = 0
         for label in labels:
@@ -689,7 +716,7 @@ class Annotation(AnnotationMixin, object):
         """Sub-annotation extraction for one label."""
         
         A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.ix[self._df['label'] == label]
+        A._df = self._df.ix[self._df[LABEL] == label]
         return A
 
 
@@ -722,48 +749,33 @@ class Scores(AnnotationMixin, object):
         
     """
     @classmethod
-    def from_df(cls, df, segment='segment', 
-                         track='track', 
-                         label='label', 
-                         value='value',
-                         uri=None,
+    def from_df(cls, df, uri=None,
                          modality=None,
                          aggfunc=np.mean):
         """
         
         Parameters
         ----------
-        segment : str, optional
-            Name of column containing `Segment` instances. Default is 'segment'.
-        track : str, optional
-            Name of column containing track names. Default is 'track'.
-        label : str, optional
-            Name of column containing labels. Default is 'label'.
-        value : str, optional
-            Name of column containing values. Default is 'value'.
+        df : DataFrame
+            Must contain the following columns: 
+            'segment', 'track', 'label' and 'value'
         uri : str, optional
+            Resource identifier
         modality : str, optional
+            Modality
         aggfunc : func
-            
+            Value aggregation function in case of duplicate (segment, track, 
+            label) tuples
         
         Returns
         -------
         
         """
-        
         A = cls(uri=uri, modality=modality)
-        
-        # add 'track' column in case `df` does not contain any.
-        # by default, it is filled by '_'
-        if track is None:
-            track = 'track'
-            df[track] = '_'
-        
-        A._df = df.pivot_table(values=value, 
-                               rows=[segment, track], 
-                               cols=[label], 
-                               aggfunc=aggfunc)
-        
+        A._df = pivot_table(df, values=SCORE, 
+                                rows=[SEGMENT, TRACK], 
+                                cols=LABEL, 
+                                aggfunc=aggfunc)
         return A
     
     def __init__(self, uri=None, modality=None):
@@ -771,7 +783,7 @@ class Scores(AnnotationMixin, object):
         
         index = MultiIndex(levels=[[],[]], 
                            labels=[[],[]], 
-                           names=['segment', 'track'])
+                           names=[SEGMENT, TRACK])
         
         self._df = DataFrame(index=index, dtype=np.float64)
         self.modality = modality
