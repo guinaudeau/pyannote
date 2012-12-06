@@ -26,6 +26,13 @@ The ``pyannote.base`` module contains the foundation object of ``PyAnnote``.
 
 __all__ = ['Segment', 'Timeline', 'Annotation', 'LabelMatrix']
 
+URI = 'uri'
+MODALITY = 'modality'
+SEGMENT = 'segment'
+TRACK = 'track'
+LABEL = 'label'
+SCORE = 'score'
+
 from segment import Segment
 from timeline import Timeline
 from annotation import Annotation
