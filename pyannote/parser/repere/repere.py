@@ -18,51 +18,44 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from pyannote.base.segment import Segment
-from pyannote.parser.base import BaseTextualAnnotationParser
+from pyannote.parser.base import BaseTextualAnnotationParser, BaseTextualFormat
+from pyannote.base import URI, MODALITY, LABEL
 
-class REPEREParser(BaseTextualAnnotationParser):
+class REPEREMixin(BaseTextualFormat):
     
-    def __init__(self):
-        multitrack = True
-        super(REPEREParser, self).__init__(multitrack)
+    START = 'start'
+    END = 'end'
     
-    def _comment(self, line):
-        return False
+    def get_comment(self):
+        return '# '
     
-    def _parse(self, line):
-        
-        tokens = line.split()
-        # source start end modality identifier confidence
-        
-        uri = str(tokens[0])
-        start_time = float(tokens[1])
-        end_time = float(tokens[2])
-        modality = str(tokens[3])
-        label = str(tokens[4])
-        #confidence = tokens[5]
-        
-        segment = Segment(start=start_time, end=end_time)
-        return segment, None, label, uri, modality
+    def get_separator(self):
+        return ' '
+    
+    def get_fields(self):
+        return [URI, 
+                self.START, 
+                self.END, 
+                MODALITY, 
+                LABEL]
+    
+    def get_segment(self, row):
+        return Segment(row[self.START], row[self.END])
     
     def _append(self, annotation, f, uri, modality):
-        
         try:
-            if annotation.multitrack:
-                format = '%s %%g %%g %s %%s NA\n' % (uri, modality)
-                for segment, track, label in annotation.iterlabels():
-                    f.write(format % (segment.start, segment.end, label))
-            else:
-                track = 'NA'
-                format = '%s %%g %%g %s %%s NA\n' % (uri, modality)
-                for segment, label in annotation.iterlabels():
-                    f.write(format % (segment.start, segment.end, label))
+            format = '%s %%g %%g %s %%s NA\n' % (uri, modality)
+            for segment, track, label in annotation.iterlabels():
+                f.write(format % (segment.start, segment.end, label))
         except Exception, e:
             print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e
-    
-    
+
+
+class REPEREParser(BaseTextualAnnotationParser, REPEREMixin):
+    pass
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

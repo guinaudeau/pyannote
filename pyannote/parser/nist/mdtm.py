@@ -20,32 +20,35 @@
 
 
 from pyannote.base.segment import Segment
-from pyannote.parser.base import BaseTextualAnnotationParser
+from pyannote.parser.base import BaseTextualAnnotationParser, BaseTextualFormat
+from pyannote.base import URI, MODALITY, LABEL
 
-class MDTMParser(BaseTextualAnnotationParser):
+class MDTMMixin(BaseTextualFormat):
     
-    def __init__(self):
-        super(MDTMParser, self).__init__()
+    CHANNEL = 'channel'
+    START = 'start'
+    DURATION = 'duration'
+    CONFIDENCE = 'confidence'
+    GENDER = 'gender'
     
-    def _comment(self, line):
-        return line[0] == '#'
+    def get_comment(self):
+        return '# '
     
-    def _parse(self, line):
-        
-        tokens = line.split()
-        # uri 1 start duration modality confidence subtype identifier
-        
-        uri = str(tokens[0])
-        #channel = tokens[1]
-        start_time = float(tokens[2])
-        duration = float(tokens[3])
-        modality = str(tokens[4])
-        #confidence = tokens[5]
-        #subtype = tokens[6]
-        label = str(tokens[7])
-
-        segment = Segment(start=start_time, end=start_time+duration)
-        return segment, None, label, uri, modality
+    def get_separator(self):
+        return ' '
+    
+    def get_fields(self):
+        return [URI, 
+                self.CHANNEL, 
+                self.START, 
+                self.DURATION, 
+                MODALITY, 
+                self.CONFIDENCE,
+                self.GENDER,
+                LABEL]
+    
+    def get_segment(self, row):
+        return Segment(row[self.START], row[self.START]+row[self.DURATION])
     
     def _append(self, annotation, f, uri, modality):
         
@@ -57,7 +60,12 @@ class MDTMParser(BaseTextualAnnotationParser):
         except Exception, e:
             print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e
-        
+
+
+class MDTMParser(BaseTextualAnnotationParser, MDTMMixin):
+    pass
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

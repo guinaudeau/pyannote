@@ -18,32 +18,47 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.segment import SlidingWindow
-from pyannote.parser.base import BaseTextualAnnotationParser
 
-class SEGParser(BaseTextualAnnotationParser):
+
+from pyannote.base.segment import Segment, SlidingWindow
+from pyannote.parser.base import BaseTextualAnnotationParser, BaseTextualFormat
+from pyannote.base import URI, LABEL
+
+class SEGMixin(BaseTextualFormat):
     
+    START = 'start'
+    DURATION = 'duration'
+    CHANNEL = 'channel'
+    
+    def get_comment(self):
+        return '# '
+    
+    def get_separator(self):
+        return ' '
+    
+    def get_fields(self):
+        return [URI, 
+                LABEL,
+                self.CHANNEL,
+                self.START, 
+                self.DURATION]
+    
+    def get_segment(self, row):
+        return self.sliding_window.rangeToSegment(row[self.START], row[self.DURATION])
+
+
+class SEGParser(BaseTextualAnnotationParser, SEGMixin):
     def __init__(self, sliding_window=None):
+        
         super(SEGParser, self).__init__()
+        
         if sliding_window is None:
-            sliding_window = SlidingWindow()
-        self.__sliding_window = sliding_window
-    
-    def _comment(self, line):
-        return line[0] == '#'
-    
-    def _parse(self, line):
-        
-        tokens = line.split()
-        # uri label 1 start duration
-        
-        uri = str(tokens[0])
-        label = str(tokens[1])
-        #channel = tokens[2]
-        i0 = int(tokens[3])
-        n = int(tokens[4])
-        segment = self.__sliding_window.rangeToSegment(i0, n)
-        return segment, None, label, uri, None
+            self.sliding_window = SlidingWindow()
+        else:
+            assert isinstance(sliding_window, SlidingWindow), \
+                   "%r is not a sliding window" % sliding_window
+            self.sliding_window = sliding_window
+
 
 if __name__ == "__main__":
     import doctest

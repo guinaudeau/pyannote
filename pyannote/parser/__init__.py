@@ -64,9 +64,10 @@ class AnnotationParser(object):
             '.seg':    SEGParser,
             '.repere': REPEREParser,
             '.hyp':    REPEREParser,
-            '.trs':    TRSParser, 
-            '.xgtf':   XGTFParser, 
+            '.trs':    TRSParser,
+            '.xgtf':   XGTFParser,
             '.facetracks': FACETRACKSParser,
+            '.etf0':   ETF0Parser,
         }
     
     @classmethod

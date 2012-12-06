@@ -23,10 +23,11 @@ This module contains parser for common file formats used in NIST Rich Transcript
 See http://www.itl.nist.gov/iad/mig/tests/rt/
 """
 
-__all__ = ['MDTMParser', 'UEMParser']
+__all__ = ['MDTMParser', 'UEMParser', 'ETF0Parser']
 
 from mdtm import MDTMParser
 from uem import UEMParser
+from etf import ETF0Parser
 
 if __name__ == "__main__":
     import doctest
