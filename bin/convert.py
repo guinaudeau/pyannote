@@ -64,7 +64,28 @@ group.add_argument('-mo', type=str, metavar='new',
                         'when used on its own, any old modality name '
                         'is convert to new.')
 
+
 group = argparser.add_argument_group('Structure')
+
+import numpy as np
+def threshold_parser(value):
+    if value in ['-oo', '+oo', 'oo']:
+        if value == '-oo':
+            return -np.inf
+        else:
+            return np.inf
+    else:
+        return float(value)
+
+group.add_argument('--to-annotation', type=threshold_parser, metavar='THETA', 
+                   nargs='?', default=SUPPRESS, const=threshold_parser('-oo'), 
+                   help='convert scores to annotation. '
+                        'if the score of the top-score label is higher than '
+                        'THETA, then choose this label. otherwise, set label '
+                        'to Unknown. Default THETA is "-oo"')
+
+group.add_argument('--re-track', action='store_true',
+                   help='rename tracks with unique identifiers')
 
 group.add_argument('--compress', action='store_true',
                        help='compress annotation by making one track of '
@@ -73,7 +94,8 @@ group.add_argument('--compress', action='store_true',
 
 group.add_argument('--anonymize', action='store_true',
                        help='anonymize annotation by changing every label '
-                            'to UnknownXXXXX. ')
+                            'to Unknown. two tracks with the same original '
+                            'label will still have the same Unknown label.')
 
 try:
    args = argparser.parse_args()
@@ -106,10 +128,14 @@ elif len(args.modality_new) == 1:
 writer, f = args.tgt
 
 def structural_transforms(A):
+    if hasattr(args, 'to_annotation'):
+        A = A.to_annotation(threshold=args.to_annotation)
     if args.compress:
         A = A.smooth()
     if args.anonymize:
         A = A.anonymize()
+    if args.re_track:
+        A = A.retrack()
     return A
 
 for u, uri in enumerate(uris):
