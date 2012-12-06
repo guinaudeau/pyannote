@@ -28,8 +28,6 @@ import gurobipy as grb
 import sys
 import numpy as np
 import networkx as nx
-from graph import LabelNode, IdentityNode
-from pyannote.base.annotation import Unknown
 
 optimization_status = {
     grb.GRB.LOADED: 'Model is loaded, but no solution information is '
@@ -99,8 +97,8 @@ class GurobiModel(object):
     
         Parameters
         ----------
-        g : nx.Graph
-            One node per track. Edge attribute 'probability' between nodes.
+        G : nx.Graph
+            Any probability graph
         
         Returns
         -------
@@ -110,20 +108,9 @@ class GurobiModel(object):
             Dictionary of gurobi.grb.Var
             x[node, other_node] is a boolean variable indicating whether
             node and other_node are in the same cluster
-    
+        
         """
         
-        # make sure graph only contains LabelNode(s) and IdentityNode(s)
-        bad_nodes = [node for node in G.nodes_iter() 
-                          if not isinstance(node, (LabelNode, IdentityNode))]
-        if len(bad_nodes) > 0:
-            raise ValueError('Graph contains nodes other than'
-                             'LabelNode or IdentityNode.')
-    
-        # pb = ProgressBar(widgets=[None, ' ', Percentage(), ' ', Bar(),' ', ETA()], 
-        #                  term_width=80, poll=1, 
-        #                  left_justify=True, fd=sys.stderr)
-    
         # create empty model & dictionary to store its variables
         model = grb.Model('My model')
         model.setParam('OutputFlag', False)
@@ -143,63 +130,54 @@ class GurobiModel(object):
         model.update()
         
         # transitivity constraints
-        # pb.widgets[0] = 'Constraints'
-    
-        # Σi|1..N ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
-        # pb.maxval = int(N**3/6. - N**2/2. + N/3.)
-        # pb.start()
-    
+        
         p = {}
         i2n = {}
         for i1 in range(N):
-        
-            # Σi|1..i1 ( Σj|i+1..N ( Σk|j+1..N 1 ) ) 
-            # n = int(N**2*i1/2.- N*i1/2.-N*(i1**2/2.+i1/2.)+i1**3/6.+i1**2/2.+i1/3.)
-            # pb.update(n)
-        
+            
             n1 = nodes[i1]
             i2n[1] = n1
-        
-            for i2 in range(i1+1, N):
             
+            for i2 in range(i1+1, N):
+                
                 n2 = nodes[i2]
                 i2n[2] = n2
-            
+                
                 # probability n1 <--> n2
                 p[1,2] = _n01(G, n1, n2)
-            
+                
                 if p[1,2] in [0, 1]:
                     model.addConstr(x[n1, n2] == p[1,2])
-            
-                for i3 in range(i2+1, N):
                 
+                for i3 in range(i2+1, N):
+                    
                     n3 = nodes[i3]
                     i2n[3] = n3
-                
+                    
                     # probability n1 <--> n3
                     p[1,3] = _n01(G, n1, n3)
-                
+                    
                     # probability n2 <--> n3
                     p[2,3] = _n01(G, n2, n3)
-                
+                    
                     # set of values taken by the 3 edges
                     # {0}, {1}, {None}, {0, 1}, {0, None}, {1, None} or {0, 1, None}
                     values_set = set(p.values())
-                
+                    
                     if not (values_set - set([0, 1])):
                         # there are only 0s and 1s
                         # those constraints will be taken care of by the outer loop
                         continue
-                
+                    
                     # {0: number of 0s, 1: number of 1s, None: number of Nones}
                     value2count = {v: p.values().count(v) for v in [0, 1, None]}
                     value2list = {v: [ij for ij in p if p[ij] == v] 
                                   for v in [0, 1, None]}
-                
+                    
                     # 0/1 values
                     values_set = values_set - set([None])
                     num_values = len(values_set)
-                
+                    
                     # there is only one None
                     if value2count[None] == 1:
                     
@@ -236,8 +214,6 @@ class GurobiModel(object):
                         model.addConstr(x[n1, n2] + x[n1, n3] - x[n2, n3] <= 1)
                         model.addConstr(x[n1, n2] + x[n2, n3] - x[n1, n3] <= 1)
                 
-    
-        # pb.finish()
         
         model.setParam(grb.GRB.Param.Method, self.method)
         
@@ -335,26 +311,20 @@ class GurobiModel(object):
         self.model.setObjective(o, d)
     
     def optimize(self):
-        self.model.optimize()
-    
-    def get_status(self):
-        status = self.model.getAttr(grb.GRB.Attr.Status)
-        return status, optimization_status[status]
-    
-    def reconstruct(self, annotation):
         """
-        Generate new annotation from optimized Gurobi model
         
-        Parameters
-        ----------
-        annotation : Annotation
-            Original annotation
-    
         Returns
         -------
-        new_annotation : dictionary of Annotation
-    
+        clusters : list of lists
+        
+        status : 
+        
+        status_msg : 
+        
         """
+        self.model.optimize()
+        
+        status = self.model.getAttr(grb.GRB.Attr.Status)
         
         g = nx.Graph()
         for (n1, n2), var in self.x.iteritems():
@@ -363,31 +333,5 @@ class GurobiModel(object):
             if var.x == 1.:
                 g.add_edge(n1, n2)
         
-        uri = annotation.uri
-        modality = annotation.modality
-        
-        translation = {}
-        for cc in nx.connected_components(g):
-        
-            labelNodes = [node for node in cc 
-                               if isinstance(node, LabelNode) 
-                              and node.uri == uri 
-                              and node.modality == modality]
-            
-            identityNodes = [node for node in cc 
-                                  if isinstance(node, IdentityNode)]
-            
-            if len(identityNodes) > 1:
-                raise ValueError('Looks like there are more than one identity '
-                                 'in this cluster: %s' % [node.identifier 
-                                                    for node in identityNodes])
-            elif len(identityNodes) == 1:
-                identifier = identityNodes[0].identifier
-            else:
-                identifier = Unknown()
-            
-            for node in labelNodes:
-                translation[node.label] = identifier
-        
-        return (annotation % translation).smooth()
-        
+        return nx.connected_components(g), status, optimization_status[status]
+    
