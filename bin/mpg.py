@@ -51,8 +51,8 @@ def mm_parser(path):
     else:
         return AnnotationParser().read(path)
 
-from pyannote.algorithm.clustering.optimization.graph2 import LabelSimilarityGraph
-from pyannote.algorithm.clustering.optimization.graph2 import DiarizationGraph
+from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
+from pyannote.algorithm.clustering.optimization.graph import DiarizationGraph
 def ss_param_parser(param_pkl):
     """Speaker diarization
     
@@ -136,7 +136,7 @@ def si_parser(path):
     else:
         return AnnotationParser().read(path)
 
-from pyannote.algorithm.clustering.optimization.graph2 import ScoresGraph
+from pyannote.algorithm.clustering.optimization.graph import ScoresGraph
 def si_param_parser(param_pkl):
     """Speaker identification graph
     
@@ -233,7 +233,7 @@ def hi_parser(path):
 def hi_param_parser(path):
     raise NotImplementedError('--hi-param option is not supported yet.')
 
-from pyannote.algorithm.clustering.optimization.graph2 import AnnotationGraph
+from pyannote.algorithm.clustering.optimization.graph import AnnotationGraph
 def wi_parser(path):
     """Written name detection source
     
@@ -272,7 +272,7 @@ def ni_parser(path):
 def ni_param_parser(path):
     raise NotImplementedError('--ni-param option is not supported yet.')
 
-from pyannote.algorithm.clustering.optimization.graph2 import TrackCooccurrenceGraph
+from pyannote.algorithm.clustering.optimization.graph import TrackCooccurrenceGraph
 def x_param_parser(param_pkl):
     """Cross-modal graph
     
@@ -439,7 +439,7 @@ except IOError as e:
 if hasattr(args, 'uris'):
     uris = args.uris
 
-from pyannote.algorithm.clustering.optimization.graph2 import IdentityNode, LabelNode
+from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
 import time
 
 for u, uri in enumerate(uris):
