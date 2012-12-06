@@ -220,6 +220,11 @@ class LogisticProbabilityMaker(object):
             plt.ion()
             plt.figure()
         
+        # remove NaN and infinity
+        finite = np.isfinite(X)
+        X = X[finite]
+        y = y[finite]
+        
         # extract positive/negative similarity samples
         positives = X[np.where(y == 1)]
         negatives = X[np.where(y == 0)]
@@ -270,31 +275,28 @@ class LogisticProbabilityMaker(object):
         x = X[focus]
         y = 1. / (1 + prior * dcount_n[focus] / dcount_p[focus])
         
-        if plot:
-            plt.subplot(2,1,2)
-            plt.scatter(x, y, color='k')
         
         M = mean
         Q = 1.
         B = 1./(mean_p - mean_n)
         v = 1./prior
         
-        if plot:
-            print 'init: B = %g | Q = %g | M = %g | v = %g' % (B, Q, M, v)
-            plt.plot(bins, self.logistic(bins, B, Q, M, v), 'k--', label='init')
-            plt.xlim(*xlim)
+        # if plot:
+        #     print 'init: B = %g | Q = %g | M = %g | v = %g' % (B, Q, M, v)
+        #     plt.plot(bins, self.logistic(bins, B, Q, M, v), 'k--', label='init')
+        #     plt.xlim(*xlim)
         
         self.popt, _ = scipy.optimize.curve_fit(self.logistic, x, y,
                                                 p0=(B, Q, M, v),
                                                 maxfev=maxfev)
         
         if plot:
+            plt.subplot(2,1,2)
             B, Q, M, v = self.popt
             print 'popt: B = %g | Q = %g | M = %g | v = %g' % (B, Q, M, v)
-            plt.plot(bins, self(bins), 'b', label='popt')
+            plt.plot(bins, self(bins), color='grey', linewidth=2, label='popt')
+            plt.scatter(x, y, color='k')
             plt.xlim(*xlim)
             plt.ylim(0, 1)
-            loc = 'upper right' if mean_p < mean_n else 'upper left'
-            plt.legend(loc=loc)
             
         return self
