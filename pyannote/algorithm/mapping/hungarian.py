@@ -44,14 +44,14 @@ class HungarianMapper(BaseMapper):
         
         >>> from pyannote import Segment, Annotation
         
-        >>> A = Annotation(multitrack=False, modality='A')
+        >>> A = Annotation(modality='A')
         >>> A[Segment(0, 4)] = 'a1'
         >>> A[Segment(4, 15)] = 'a2'
         >>> A[Segment(15, 17)] = 'a3'
         >>> A[Segment(17, 25)] = 'a1'
         >>> A[Segment(23, 30)] = 'a2'
         
-        >>> B = Annotation(multitrack=False, modality='B')
+        >>> B = Annotation(modality='B')
         >>> B[Segment(0, 10)] = 'b1'
         >>> B[Segment(10, 15)] = 'b2'
         >>> B[Segment(14, 20)] = 'b1'

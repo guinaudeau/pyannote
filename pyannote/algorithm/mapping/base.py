@@ -65,13 +65,13 @@ class BaseMapper(object):
         Examples
         --------
             
-            >>> A = Annotation(multitrack=False, modality="left")
+            >>> A = Annotation(modality="left")
             >>> A[Segment(0, 1)] = 'a1'
             >>> A[Segment(1, 2)] = 'a2'
             >>> A[Segment(2, 3)] = 'a3'
             >>> A[Segment(3, 4)] = 'a4'
             
-            >>> B = Annotation(multitrack=False, modality="right")
+            >>> B = Annotation(modality="right")
             >>> B[Segment(0, 1)] = 'b1'
             >>> B[Segment(1, 2)] = 'b2'
             >>> B[Segment(2, 3)] = 'b3'

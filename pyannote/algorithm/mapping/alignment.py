@@ -72,10 +72,10 @@ for video in VIDEOS:
 
         for window in sw:
             
-            s = speaker(window, mode='intersection')
-            S = spoken(window, mode='intersection')
-            h = head(window, mode='intersection')
-            w = written(window, mode='intersection')
+            s = speaker.crop(window, mode='intersection')
+            S = spoken.crop(window, mode='intersection')
+            h = head.crop(window, mode='intersection')
+            w = written.crop(window, mode='intersection')
         
             for segment in s:
                 f_speaker.write('%s ' % " ".join(sorted(s.ids(segment))))
