@@ -18,21 +18,26 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+"""Graphical representations"""
 
-Graphical representations
-
-"""
-
-import numpy as np
 import networkx as nx
-from pyannote import Timeline
-from pyannote.base.matrix import LabelMatrix, Cooccurrence, CoTFIDF
+import numpy as np
+from pandas import DataFrame
+
+from pyannote.base.segment import Segment
+from pyannote.base.timeline import Timeline
+from pyannote.base.annotation import Unknown, Annotation, Scores
+from pyannote.base.matrix import Cooccurrence
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
-from pyannote.algorithm.tagging import ArgMaxDirectTagger
 
 class IdentityNode(object):
-    """Graphical representation of an identity"""
+    """Identity node [I]
+    
+    Parameters
+    ----------
+    identifier : hashable
+    
+    """
     def __init__(self, identifier):
         super(IdentityNode, self).__init__()
         self.identifier = identifier
@@ -50,7 +55,8 @@ class IdentityNode(object):
         return "<IdentityNode %s>" % self.identifier
 
 class LabelNode(object):
-    """Graphical representation of a label"""
+    """Label node [L]"""
+    
     def __init__(self, uri, modality, label):
         super(LabelNode, self).__init__()
         self.uri = uri
@@ -73,7 +79,8 @@ class LabelNode(object):
 
 
 class TrackNode(object):
-    """Graphical representation of a track"""
+    """Track node [T]"""
+    
     def __init__(self, uri, modality, segment, track):
         super(TrackNode, self).__init__()
         self.uri = uri
@@ -96,251 +103,252 @@ class TrackNode(object):
     
     def __repr__(self):
         return "<TrackNode %s>" % self
-
-
-# TrackLabelGraph contains LabelNode(s) and TrackNode(s) from the same modality
-# and probability=1 edges between LabelNode(s) and TrackNode(s)
-class TrackLabelGraph(object):
     
-    def __init__(self):
-        super(TrackLabelGraph, self).__init__()
+    def __contains__(self, other):
+        """True if `other` is a sub-track"""
+        assert isinstance(other, TrackNode), \
+               "%r is not a track node" % other
+        
+        return (other.track == self.track) & \
+               (other.segment in self.segment) & \
+               (other.uri == self.uri) & \
+               (other.modality == self.modality)
+
+
+class DiarizationGraph(object):
+    """Diarization (or clustering) graph
+    
+    [T] === [L]
+    
+    - one node per track (track node, [T])
+    - one node per cluster (label node, [L])
+    - one hard edge between a track and its cluster (p=1, ===) 
+    
+    """
+    def __init__(self, **kwargs):
+        super(DiarizationGraph, self).__init__()
         
     def __call__(self, annotation):
         
-        # initialize empty graph
+        assert isinstance(annotation, Annotation), \
+               "%r is not an annotation" % annotation
+        
         G = nx.Graph()
-        uri = annotation.uri
-        modality = annotation.modality
+        u = annotation.uri
+        m = annotation.modality
         
-        # one node per label
-        labelNodes = {label: LabelNode(uri, modality, label) 
-                      for label in annotation.labels()}
-        for node in labelNodes:
-            G.add_node(node)
+        # label nodes
+        lnodes = {l: LabelNode(u,m,l) for l in annotation.labels()}
         
-        # one node per track, connected to its label node
-        for segment, track, label in annotation.iterlabels():
-            trackNode = TrackNode(uri, modality, segment, track)
-            G.add_edge(trackNode, labelNodes[label], probability=1.)
+        # track nodes & track/label hard (p=1) edges
+        for s,t,l in annotation.iterlabels():
+            tnode = TrackNode(u,m,s,t)
+            G.add_edge(tnode, lnodes[l], probability=1.)
         
         return G
 
-class LabelCoreferenceGraph(object):
-    def __init__(self):
-        super(LabelCoreferenceGraph, self).__init__()
-
-# LabelCooccurrenceGraph contains LabelNode(s) from 2 different modalities
-# and probability edges between cooccurring LabelNodes(s)
-class LabelCooccurrenceGraph(object):
-    """
-        
+class AnnotationGraph(object):
+    """Annotation graph
+    
+    [T] === [I]
+    
+    - one node per track (track node, [T])
+    - one node per identity (identity node, [I])
+    - one hard edge between a track and its identity (p=1, ===)
+    
     Parameters
     ----------
-    minduration : float
-        Minimum duration (in seconds) for two labels to be cooccurring
+    unknown : bool, optional
+        Add `Unknown` identity nodes.
+    
     """
-    
-    def __init__(self, P=None, 
-                       modalityA=None, modalityB=None,
-                       minduration=-np.inf,
-                       significant=100,
-                       **kwargs):
-        super(LabelCooccurrenceGraph, self).__init__()
-        if P is not None:
-            self.P = P
-        if modalityA is not None:
-            self.modalityA = modalityA
-        if modalityB is not None:
-            self.modalityB = modalityB
-        self.minduration = minduration
-        self.significant=significant
-        
-    def fit(self, rAiArBiB_iterator):
-        """
-        
-        Parameters
-        ----------
-        rAiArBiB_iterator :(reference_A, input_A, reference_B, input_B) iterator
-        
-        """
-        
-        num_matches = LabelMatrix(dtype=int, default=0)
-        num_times = LabelMatrix(dtype=int, default=0)
-        
-        modalityA = None
-        modalityB = None
-        
-        argMaxDirectTagger = ArgMaxDirectTagger()
-        
-        for RefA, InpA, RefB, InpB in rAiArBiB_iterator:
-            
-            # make sure annotation are for the same resource
-            uri = RefA.uri
-            if InpA.uri != uri or RefB.uri != uri or InpB.uri != uri:
-                raise ValueError('URI mismatch.')
-            
-            modA = RefA.modality
-            if modalityA is None:
-                modalityA = modA
-            
-            modB = RefB.modality
-            if modalityB is None:
-                modalityB = modB
-                
-            # make sure all refs are for the same modality
-            if modalityA != modA:
-                raise ValueError('Modality mismatch (%s vs. %s)' \
-                               % (modalityA, modA))
-            if modalityB != modB:
-                raise ValueError('Modality mismatch (%s vs. %s)' \
-                               % (modalityB, modB))
-            
-            # make sure Ref/Inp are for the same modality
-            if InpA.modality != modA:
-                raise ValueError('Modality mismatch (%s vs. %s)' \
-                                 % (InpA.modality, modA)) 
-            if InpB.modality != modB:
-                raise ValueError('Modality mismatch (%s vs. %s)' \
-                                 % (InpB.modality, modB)) 
-            
-            # make sure annotations are for 2 different modalities
-            if modA == modB:
-                raise ValueError('Both annotations share the same modality.')
-            
-            
-            # project all annotations to a joint timeline
-            # where segments shorter that minduration are removed
-            # intersection = InpA.timeline & InpB.timeline
-            segmentation = (InpA.timeline + InpB.timeline).segmentation()
-            timeline = Timeline([s for s in segmentation
-                                   if s.duration > self.minduration
-                                   and InpA.timeline.covers(s)
-                                   and InpB.timeline.covers(s)],
-                                uri=uri)
-            
-            alignedInpA = InpA >> timeline
-            alignedInpB = InpB >> timeline
-            
-            # tag as many segments as can be
-            taggedInpA = argMaxDirectTagger(RefA, alignedInpA)
-            taggedInpB = argMaxDirectTagger(RefB, alignedInpB)
-            
-            for segment in timeline:
-                
-                nA = len(alignedInpA[segment, :])
-                nB = len(alignedInpB[segment, :])
-                
-                lA = taggedInpA.get_labels(segment)
-                lB = taggedInpB.get_labels(segment)
-                
-                try:
-                    num_matches[nA, nB] += len(lA & lB)
-                    num_times[nA, nB] += 1
-                except Exception, e:
-                    num_matches[nA, nB] = len(lA & lB)
-                    num_times[nA, nB] = 1
-        
-        self.num_matches = num_matches
-        self.num_times = num_times
-        self.P = LabelMatrix(dtype=float, default=np.nan)
-        for nA,nB,N in self.num_times:
-            if N > self.significant:
-                n = self.num_matches[nA,nB]
-                self.P[nA,nB] = 1.*n/(N*nA*nB)
-        
-        self.modalityA = modalityA
-        self.modalityB = modalityB
-        
-        return self
-    
-    def __call__(self, InpA, InpB):
-        
-        G = nx.Graph()
-        
-        # make sure annotation are for the same resource
-        uri = InpA.uri
-        if InpB.uri != uri:
-            raise ValueError('URI mismatch.')
-        
-        # make sure modalities are correct
-        if InpA.modality != self.modalityA:
-            raise ValueError('Modality mismatch (%s vs. %s)' \
-                             % (InpA.modality, self.modalityA))
-        if InpB.modality != self.modalityB:
-            raise ValueError('Modality mismatch (%s vs. %s)' \
-                             % (InpB.modality, self.modalityB))
-        
-        segmentation = (InpA.timeline + InpB.timeline).segmentation()
-        timeline = Timeline([s for s in segmentation
-                               if s.duration > self.minduration
-                               and InpA.timeline.covers(s)
-                               and InpB.timeline.covers(s)],
-                            uri=uri)
-        
-        alignedInpA = InpA >> timeline
-        alignedInpB = InpB >> timeline
-        
-        for segment in timeline:
-            
-            labelsA = alignedInpA.get_labels(segment)
-            labelsB = alignedInpB.get_labels(segment)
-            
-            nA = len(labelsA)
-            nB = len(labelsB)
-            
-            try:
-                p = self.P[nA, nB]
-                if np.isnan(p):
-                    continue
-            except Exception, e:
-                continue
-            
-            
-            for lA in labelsA:
-                nodeA = LabelNode(uri, self.modalityA, lA)
-                for lB in labelsB:
-                    nodeB = LabelNode(uri, self.modalityB, lB)
-                    if G.has_edge(nodeA, nodeB):
-                        old_p = G[nodeA][nodeB]['probability'] 
-                        G[nodeA][nodeB]['probability'] = max(old_p, p)
-                    else:
-                        G.add_edge(nodeA, nodeB, probability=p)
-        
-        return G
-        
-# LabelIdentityGraph contains LabelNode(s) and IdentityNode(s)
-# and probability edges between LabelNode(s) and IdentityNode(s)
-class LabelIdentityGraph(object):
-    def __init__(self):
-        super(LabelIdentityGraph, self).__init__()
+    def __init__(self, unknown=False, **kwargs):
+        super(AnnotationGraph, self).__init__()
+        self.unknown = unknown
     
     def __call__(self, annotation):
         
-        # label nodes are sharing the same uri/modality
-        uri = annotation.uri
-        modality = annotation.modality
+        assert isinstance(annotation, Annotation), \
+               "%r is not an annotation" % annotation
         
         G = nx.Graph()
+        u = annotation.uri
+        m = annotation.modality
         
-        identityNodes = []
+        # identity nodes
+        inodes = {l: IdentityNode(l) for l in annotation.labels()}
         
-        # link each label with its identity node
-        for label in annotation.labels():
-            labelNode = LabelNode(uri, modality, label)
-            identityNode = IdentityNode(label)
-            identityNodes.append(identityNode)
-            G.add_edge(labelNode, identityNode, probability=1.)
-        
-        # identity nodes cannot be merged
-        for n, node in enumerate(identityNodes):
-            for other_node in identityNodes[n+1:]:
-                G.add_edge(node, other_node, probability=0.)
+        # track nodes & track/identity hard (p=1) edges
+        for s,t,l in annotation.iterlabels():
+            tnode = TrackNode(u,m,s,t)
+            if isinstance(l, Unknown):
+                if self.unknown:
+                    G.add_edge(tnode, inodes[l], probability=1.)
+            else:
+                G.add_edge(tnode, inodes[l], probability=1.)
         
         return G
+
+
+class ScoresGraph(object):
+    """Scores graph
+    
+    [T] --- [I]
+    
+    - one node per track (track node, [T])
+    - one node per identity (identity node, [I])
+    - one soft edge between each track and candidate identities (0<p<1, ---)
+    
+    Parameters
+    ----------
+    s2p : func, optional
+        Score-to-probability function.
+        Defaults to identity (p=s)
+    nbest : int, optional
+        Only add `nbest` best identity nodes
+    
+    """
+    def __init__(self, s2p=None, nbest=None, **kwargs):
+        super(ScoresGraph, self).__init__()
         
-# LabelSimilarityGraph contains LabelNode(s) from the same modality
-# and probability edges between LabelNode(s) 
+        if s2p is None:
+            s2p = lambda s: s
+        self.s2p = s2p
+        
+        assert isinstance(nbest, int) or nbest is None, \
+               "%r is not an integer" % nbest
+        self.nbest = nbest
+    
+    # def fit(self, ref_and_scores):
+    #     
+    #     tagger = ArgMaxDirectTagger()
+    #     X = []
+    #     Y = []
+    #     
+    #     for reference, scores in ref_and_scores:
+    #         
+    #         # new annotation with same tracks as `scores`
+    #         # all labels are set to Unknown
+    #         t = scores.to_annotation(threshold=np.inf)
+    #         
+    #         # propagate reference labels to t
+    #         # for each track in t, 
+    #         T = tagger(reference, t)
+    #         
+    #         # list of all available models
+    #         models = scores.labels()
+    #         
+    #         # loop on every track in `scores`
+    #         for segment, track, label in T.iterlabels():
+    #         
+    #             # if label is Unknown, it means that no label was propagated
+    #             # from reference --> skip this track
+    #             if isinstance(label, Unknown):
+    #                 continue
+    #             
+    #             for model in models:
+    #                 
+    #                 # if score is not available for this model (nan)
+    #                 # --> skip this model
+    #                 value = scores[segment, track, model]
+    #                 if np.isnan(value):
+    #                     continue
+    #                 
+    #                 # otherwise, add score to the list
+    #                 X.append(value)
+    #                 
+    #                 # add groundtruth status to the list
+    #                 if model == label:
+    #                     Y.append(1)
+    #                 else:
+    #                     Y.append(0)
+    #     
+    #     self.s2p = LogisticProbabilityMaker().fit(np.array(X), np.array(Y), 
+    #                                               prior=1.)
+    #     return self
+    # 
+    
+    def __call__(self, scores):
+        
+        assert isinstance(scores, Scores), \
+               "%r is not a score" % scores
+        
+        G = nx.Graph()
+        u = scores.uri
+        m = scores.modality
+        
+        # identity nodes
+        inodes = {i: IdentityNode(i) for i in scores.labels()}
+        
+        # track nodes
+        tnodes = {(s,t): TrackNode(u,m,s,t) for s,t in scores.itertracks()}
+        
+        # keep n-best identities
+        if self.nbest is None:
+            probabilities = scores.map(self.s2p)
+        else:
+            probabilities = scores.map(self.s2p).nbest(self.nbest)
+        
+        for s,t,l,p in probabilities.itervalues():
+            G.add_edge(tnodes[s,t], inodes[l], probability=p)
+        
+        return G
+
+
+class TrackSimilarityGraph(object):
+    """Track similarity graph
+    
+    [T] --- [T]
+    
+    - one node per track (track node, [T])
+    - one soft edge between every two tracks (0<p<1, ---)
+    
+    Parameters
+    ----------
+    s2p : func, optional
+        Similarity-to-probability function.
+        Defaults to identity (p=s)
+    """
+    def __init__(self, s2p=None, **kwargs):
+        super(TrackSimilarityGraph, self).__init__()
+        
+        if s2p is None:
+            s2p = lambda s: s
+        self.s2p = s2p
+
+
 class LabelSimilarityGraph(object):
+    """Label similarity graph
+    
+    [L] --- [L]
+    
+    - one node per label (label node, [L])
+    - one soft edge between every two labels (0<p<1, ---)
+    
+    Parameters
+    ----------
+    s2p : func, optional
+        Similarity-to-probability function.
+        Defaults to identity (p=s)
+    """
+    def __init__(self, s2p=None, cooccurring=True, **kwargs):
+        super(LabelSimilarityGraph, self).__init__()
+        
+        if s2p is None:
+            s2p = lambda s: s
+        self.s2p = s2p
+        
+        assert isinstance(cooccurring, bool), \
+               "%r is not a boolean" % cooccurring
+        self.cooccurring = cooccurring
+        
+        # setup model
+        MMx = self.getMx(BaseModelMixin)
+        if len(MMx) == 0:
+            raise ValueError('Missing model mixin (MMx).')
+        elif len(MMx) > 1:
+            raise ValueError('Too many model mixins (MMx): %s' % MMx)
+        self.mmx_setup(**kwargs)
     
     def getMx(self, baseMx):
         
@@ -349,7 +357,7 @@ class LabelSimilarityGraph(object):
         cls = self.__class__
         MX =  [Mx for Mx in cls.mro() 
                   if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
-        
+            
         # build the class inheritance directed graph {subclass --> class}
         G = nx.DiGraph()
         for m, Mx in enumerate(MX):
@@ -368,70 +376,290 @@ class LabelSimilarityGraph(object):
         
         return MX
     
-    def __init__(self, func=None, cooccurring=True, **kwargs):
+    
+    def __call__(self, diarization, feature):
+        
+        assert isinstance(diarization, Annotation), \
+               "%r is not an annotation" % diarization
+        
+        # list of labels in diarization
+        labels = diarization.labels()  
+            
+        # label similarity matrix
+        P = self.mmx_similarity_matrix(labels, annotation=diarization,
+                                               feature=feature)
+        # change it into a probability matrix
+        P.M = self.s2p(P.M)
+        
+        # label cooccurrence matrix
+        if self.cooccurring:
+            K = Cooccurrence(diarization, diarization)
+        
+        G = nx.Graph()
+        u = diarization.uri
+        m = diarization.modality
+        
+        lnodes = {l: LabelNode(u,m,l) for l in labels}
+        
+        for i, l in enumerate(labels):
+            for L in labels[i+1:]:
+                if self.cooccurring and K[l, L] > 0.:
+                    G.add_edge(lnodes[l], lnodes[L], probability=0.)
+                else:
+                    try:
+                        # raises an exception when similarity is not available
+                        G.add_edge(lnodes[l], lnodes[L], probability=P[l, L])
+                    except Exception, e:
+                        # do not add any edge if that happens
+                        pass
+        
+        return G
+
+
+class TrackCooccurrenceGraph(object):
+    """Track cooccurrence graph
+    
+    [T] --- [t]
+    
+    - one node per track in first modality (track node, [T])
+    - one node per track in second modality (track node, [t])
+    - one soft edge between every two cooccurring tracks [T] and [t]
+    
+    Parameters
+    ----------
+    min_duration : float, optional
+        
+    significant : float, optional
+    
+    """
+    def __init__(self, min_duration=0., significant=0., **kwargs):
+        
+        super(TrackCooccurrenceGraph, self).__init__()
+        
+        assert isinstance(min_duration, float), \
+               "%r is not a float" % min_duration
+        self.min_duration = min_duration
+        
+        assert isinstance(significant, float), \
+               "%r is not a float" % significant
+        self.significant = significant
+    
+    
+    def _AB2ab(self, A, B):
         """
         
         Parameters
         ----------
-        func : function
-            Similarity-to-probability function
-        cooccurring : boolean
-            If True, cooccurring labels edges are set to 0 probability
+        A : Annotation
+        B : Annotation
+        
+        Returns
+        -------
+        timeline : Timeline
+        a : Annotation
+        b : Annotation
+        
         """
-        super(LabelSimilarityGraph, self).__init__()
-        self.cooccurring = cooccurring
-        
-        # setup model
-        MMx = self.getMx(BaseModelMixin)
-        if len(MMx) == 0:
-            raise ValueError('Missing model mixin (MMx).')
-        elif len(MMx) > 1:
-            raise ValueError('Too many model mixins (MMx): %s' % MMx)
-        self.mmx_setup(**kwargs)
-        
-        if func is None:
-            self.func = lambda x: x
-        else:
-            self.func = func
+        tl = (A.timeline + B.timeline).segmentation()
+        tl = Timeline([s for s in tl if s.duration > self.min_duration], 
+                      uri=tl.uri)
+        a = A >> tl
+        b = B >> tl
+        return tl, a, b
     
-    def __call__(self, annotation, feature):
+    def fit(self, annotations):
+        """
         
-        # list of labels in annotation
-        labels = annotation.labels()  
+        Parameters
+        ----------
+        annotations : (Annotation, Annotation) iterator
         
-        # Label similarity matrix
-        P = self.mmx_similarity_matrix(labels, annotation=annotation,
-                                               feature=feature)
-        # Label probability matrix
-        P.M = self.func(P.M)
+        Returns
+        -------
         
-        # Initialize empty graph
+        
+        """
+        
+        # possible_match[n, m] is the total possible match duration
+        # when there are n A-tracks & m B-tracks
+        possible_match = DataFrame()
+        
+        # actual_match[n, m] is the total actual match duration
+        # when there are n A-tracks & m B-tracks
+        actual_match = DataFrame()
+        
+        # overlap[n, m] is the total duration 
+        # when there are n A-tracks & m B-tracks
+        overlap = DataFrame()
+        
+        for n, (A, B) in enumerate(annotations):
+            
+            assert isinstance(A, Annotation), "%r is not an Annotation" % A
+            assert isinstance(B, Annotation), "%r is not an Annotation" % B
+            if n == 0:
+                self.modalityA = A.modality
+                self.modalityB = B.modality
+            else:
+                assert A.modality == self.modalityA, \
+                       "bad modality (%r, %r)" % (self.modalityA, A.modality)
+                assert B.modality == self.modalityB, \
+                       "bad modality (%r, %r)" % (self.modalityB, B.modality)
+            assert A.uri == B.uri, \
+                   "resource mismatch (%r, %r)" % (A.uri, B.uri)
+            
+            timeline, a, b = self._AB2ab(A, B)
+            
+            for segment in timeline:
+                
+                duration = segment.duration
+                
+                # number of tracks 
+                atracks = a.tracks(segment)
+                Na = len(atracks)
+                btracks = b.tracks(segment)
+                Nb = len(btracks)
+                
+                if Na == 0 or Nb == 0:
+                    continue
+                
+                # number of matching tracks
+                N = len(a.get_labels(segment) & b.get_labels(segment))
+                
+                # increment possible_match & actual_match
+                try:
+                    p_m = possible_match.get_value(Na, Nb)
+                    a_m = actual_match.get_value(Na, Nb)
+                    ovl = overlap.get_value(Na, Nb)
+                except Exception, e:
+                    p_m = 0.
+                    a_m = 0.
+                    ovl = 0.
+                
+                possible_match = possible_match.set_value(Na, NB, 
+                                                          p_m + Na*Nb*duration)
+                actual_match = actual_match.set_value(Na, Nb, 
+                                                      a_m + N*duration)
+                overlap = overlap.set_value(Na, Nb, ovl + duration)
+        
+        self.P = possible_match / actual_match
+        
+        # remove statistically insignificant probabilities
+        self.P[overlap < self.significant] = np.nan
+        
+        return self
+    
+    def __call__(self, A, B):
+        
+        assert isinstance(A, Annotation), "%r is not an Annotation" % A
+        assert isinstance(B, Annotation), "%r is not an Annotation" % B
+        
+        assert A.uri == B.uri, "resource mismatch (%r, %r)" % (A.uri, B.uri)
+        
+        ma = A.modality
+        mb = B.modality
+        assert ma == self.modalityA, \
+               "bad modality (%r, %r)" % (self.modalityA, ma)
+        assert mb == self.modalityB, \
+               "bad modality (%r, %r)" % (self.modalityB, mb)
+        
         G = nx.Graph()
-        uri = annotation.uri
-        modality = annotation.modality
+        u = A.uri
         
-        # Label cooccurrence matrix
-        if self.cooccurring:
-            K = Cooccurrence(annotation, annotation)
+        timeline, a, b = self._AB2ab(A, B)
         
-        # Complete undirected graph with one LabelNode per label 
-        for l, label in enumerate(labels):
-            node = LabelNode(uri, modality, label)
-            G.add_node(node)
-            for other_label in labels[l+1:]:
-                other_node = LabelNode(uri, modality, other_label)
-                # Label-to-label edge is weighted by probability
-                # or set to 0. if labels are cooccurring (the same person
-                # cannot appear twice at the same time...)
-                if self.cooccurring and K[label, other_label] > 0.:
-                    G.add_edge(node, other_node, probability=0.)
-                else:
-                    try:
-                        # it might happen that l/L similarity is not available
-                        G.add_edge(node, other_node, 
-                                   probability=P[label, other_label])
-                    except Exception, e:
-                        # do not add any edge if that happens
-                        pass
+        for s in timeline:
+            
+            # number of tracks
+            atracks = a.tracks(s)
+            Na = len(atracks)
+            btracks = b.tracks(s)
+            Nb = len(btracks)
+            
+            # if one modality does not have any track
+            # go to next segment
+            if Na == 0 or Nb == 0:
+                continue
+            
+            # if cross-modal probability is not available for this configuration
+            # (either never seen before or not significant), go to next segment
+            try:
+                probability = self.P.get_value(Na, Nb)
+                assert not np.isnan(probability)
+            except Exception, e:
+                continue
+            
+            # add a soft edge between each cross-modal pair of tracks
+            for ta in atracks:
+                atnode = TrackNode(u, ma, s, ta)
+                for tb in btracks:
+                    btnode = TrackNode(u, mb, s, tb)
+                    G.add_node(atnode, btnode, probability=probability)
+        
         return G
+
+
+def meta_mpg(g):
+    """Meta Multimodal Probability Graph
+    
+    Parameters
+    ----------
+    g : nx.Graph
+        Multimodal probability graph
+    
+    Returns
+    -------
+    G : nx.Graph
+        Multimodal probability graph where hard-linked nodes (p=1) are
+        grouped into meta-nodes
+    groups : list of lists
+        Groups of nodes
+    """
+    
+    # obtain groups of hard-linked nodes
+    meta = nx.Graph()
+    meta.add_edges_from([(e,f,d) for e,f,d in g.edges_iter(data=True)
+                                 if d['probability'] == 1.])
+    meta.add_nodes_from(g)
+    cc = nx.connected_components(meta)
+    
+    # meta graph with one node per group
+    G = nx.blockmodel(g, cc, multigraph=True)
+    
+    return G, cc
+
+
+def draw(G):
+    
+    import networkx as nx
+    from matplotlib import pyplot as plt
+    plt.ion()
+    
+    pos = nx.spring_layout(G, weight='probability')
+    for e,f,d in G.edges_iter(data=True):
+        nx.draw_networkx_edges(G, pos, edgelist=[(e,f)], 
+                                       width=3*d['probability'], 
+                                       alpha=d['probability'])
+    
+    shapes = {TrackNode: 's', IdentityNode: 'o', LabelNode: 'd'}
+    colors = {'speaker': 'r', 'head': 'g', 'written': 'b', 'spoken': 'y'}
+    
+    for nodeType, node_shape in shapes.iteritems(): 
+        nodelist = [n for n in G if isinstance(n, nodeType)]
+        if nodeType == IdentityNode:
+            node_color = 'w'
+            nx.draw_networkx_nodes(G, pos, 
+                                   nodelist=nodelist,
+                                   node_shape=node_shape, 
+                                   node_color=node_color)
+        else:
+            for modality, node_color in colors.iteritems():
+                nodesublist = [n for n in nodelist 
+                                 if n.modality == modality]
+                nx.draw_networkx_nodes(G, pos, 
+                                       nodelist=nodesublist,
+                                       node_shape=node_shape, 
+                                       node_color=node_color)
+    plt.draw()
+
+
 
