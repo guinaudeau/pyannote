@@ -633,8 +633,7 @@ def meta_mpg(g):
                 if len(G[n][m]) > 1:
                     raise ValueError('More than one edge between the following '
                                      'meta-nodes:\n%s\n%s' % (cc[n], cc[m]))
-                mmpg.add_edge(n, m,
-                              data={'probability': G[n][m][0]['probability']})
+                mmpg.add_edge(n, m, probability=G[n][m][0]['probability'])
     return mmpg, cc
 
 
