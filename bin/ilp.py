@@ -158,7 +158,7 @@ for u, uri in enumerate(uris):
                       for n in mpg if not isinstance(n, IdentityNode)])
     
     # get meta-MPG (create one meta-node for nodes connected with prob=1)
-    meta_mpg, meta_nodes = meta_mpg(mpg)
+    mmpg, meta_nodes = meta_mpg(mpg)
     
     # # pruning
     # for e,f,data in G.edges(data=True):
@@ -177,9 +177,9 @@ for u, uri in enumerate(uris):
     #         else:
     #             pass
     
-    if hasattr(args, 'maxnodes') and len(meta_mpg) > args.maxnodes:
+    if hasattr(args, 'maxnodes') and len(mmpg) > args.maxnodes:
         
-        status_msg = 'Too many nodes (%d > %d).' % (len(meta_mpg), args.maxnodes)
+        status_msg = 'Too many nodes (%d > %d).' % (len(mmpg), args.maxnodes)
         model_time = 0
         optimization_time = 0
         
@@ -201,7 +201,7 @@ for u, uri in enumerate(uris):
         
         # create Gurobi model
         start_time = time.time()
-        model = GurobiModel(meta_mpg, method=method_parser(args.method), 
+        model = GurobiModel(mmpg, method=method_parser(args.method),
                                       mipGap=args.mip_gap,
                                       threads=threads,
                                       timeLimit=stopAfter, 
