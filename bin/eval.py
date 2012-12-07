@@ -189,9 +189,9 @@ for u, uri in enumerate(uris):
     
     # remove unknown if requested
     if hasattr(args, 'unknown') and args.unknown == 'remove':
-        unknows = [label for label in ref.labels() 
-                         if isinstance(label, Unknown)]
-        ref = ref(unknows, invert=True)
+        unknows = set([label for label in ref.labels() 
+                             if isinstance(label, Unknown)])
+        ref = ref.subset(unknows, invert=True)
         
     # process each hypothesis file, one after the other
     for h, (path, hypothesis) in enumerate(args.hypothesis):
@@ -212,9 +212,9 @@ for u, uri in enumerate(uris):
         
         # remove unknown if requested
         if hasattr(args, 'unknown') and args.unknown == 'remove':
-            unknows = [label for label in hyp.labels() 
-                             if isinstance(label, Unknown)]
-            hyp = hyp(unknows, invert=True)
+            unknows = set([label for label in hyp.labels() 
+                                 if isinstance(label, Unknown)])
+            hyp = hyp.subset(unknows, invert=True)
         
         # compute 
         for name, metric in metrics.iteritems():
