@@ -625,7 +625,17 @@ def meta_mpg(g):
     # meta graph with one node per group
     G = nx.blockmodel(g, cc, multigraph=True)
     
-    return G, cc
+    mmpg = nx.Graph()
+    for n in range(len(cc)):
+        mmpg.add_node(n)
+        for m in range(n+1, len(cc)):
+            if G.has_edge(n, m):
+                if len(G[n][m]) > 1:
+                    raise ValueError('More than one edge between the following '
+                                     'meta-nodes:\n%s\n%s' % (cc[n], cc[m]))
+                mmpg.add_edge(n, m,
+                              data={'probability': G[n][m][0]['probability']})
+    return mmpg, cc
 
 
 def draw(G):
