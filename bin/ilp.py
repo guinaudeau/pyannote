@@ -115,9 +115,9 @@ from pyannote.parser import MDTMParser
 from pyannote.base.annotation import Annotation, Unknown
 import time
 
-def reconstruct(clusters, modality):
+def reconstruct(clusters, uri, modality):
     
-    A = Annotation(modality=modality)
+    A = Annotation(uri=uri, modality=modality)
     
     for cluster in clusters:
         
@@ -133,7 +133,7 @@ def reconstruct(clusters, modality):
         
         tracks = {}
         for n in tnodes:
-            if n.track not in segments:
+            if n.track not in tracks:
                 tracks[n.track] = n.segment
             else:
                 tracks[n.track] = tracks[n.track] | n.segment 
@@ -220,16 +220,16 @@ for u, uri in enumerate(args.uris):
         start_time = time.time()
         CC, status_num, status_msg = model.optimize()
         optimization_time = time.time() - start_time
-        
+
         # concatenate every meta-nodes from each cluster
         clusters = [list() for cc in CC]
         for c, cc in enumerate(CC):
             for meta_node in cc:
-                clusters[c].extend(meta_node)
+                clusters[c].extend(meta_nodes[meta_node])
         
         del model
-    
-    annotations = {modality: reconstruct(clusters, modality=modality)}
+
+    annotations = {modality: reconstruct(clusters, uri=uri, modality=modality) for modality in modalities}
     
     args.output.write('# %s\n' % uri)
     args.output.write('# %s\n' % status_msg)
