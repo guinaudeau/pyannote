@@ -93,9 +93,9 @@ def dump_model_parser(model_mps):
         model.model.write(path)
     return dump
 
-msg = "dump meta-graph before optimization." + clicommon.msgURI()
-dgroup.add_argument('--dump-graph', type=dump_graph_parser,
-                    metavar='graph.pkl', help=msg, default=SUPPRESS)
+# msg = "dump meta-graph before optimization." + clicommon.msgURI()
+# dgroup.add_argument('--dump-graph', type=dump_graph_parser,
+#                     metavar='graph.pkl', help=msg, default=SUPPRESS)
 
 msg = "dump model before optimization." + clicommon.msgURI()
 dgroup.add_argument('--dump-model', type=dump_model_parser,
@@ -109,7 +109,7 @@ except IOError as e:
 if not hasattr(args, 'uris'):
     raise IOError('missing list of resources (--uris)')
 
-from pyannote.algorithm.clustering.optimization.graph import IdentityNode, TrackNode
+from pyannote.algorithm.clustering.optimization.graph import IdentityNode, TrackNode, meta_mpg
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 from pyannote.parser import MDTMParser
 from pyannote.base.annotation import Annotation, Unknown
@@ -144,10 +144,10 @@ def reconstruct(clusters, modality):
     return A
 
 
-for u, uri in enumerate(uris):
+for u, uri in enumerate(args.uris):
     
     if args.verbose:
-        sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+        sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
         sys.stdout.flush()
     
     # load Multimodal Probability Graph
