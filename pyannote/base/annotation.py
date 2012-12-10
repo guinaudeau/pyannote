@@ -436,7 +436,10 @@ class Annotation(AnnotationMixin, object):
         -------
             Labels are sorted based on their string representation.
         """
-        return sorted(self._df[LABEL].unique(), key=str)
+        if LABEL in self._df:
+            return sorted(self._df[LABEL].unique(), key=str)
+        else:
+            return []
     
     def get_labels(self, segment):
         """Local set of labels 
