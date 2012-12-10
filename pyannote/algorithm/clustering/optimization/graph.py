@@ -432,9 +432,15 @@ class TrackCooccurrenceGraph(object):
     significant : float, optional
     
     """
-    def __init__(self, min_duration=0., significant=0., **kwargs):
+    def __init__(self, P=None, min_duration=0., significant=0., 
+                       modalityA=None, modalityB=None, **kwargs):
         
         super(TrackCooccurrenceGraph, self).__init__()
+        
+        if P is not None:
+            assert isinstance(P, DataFrame), \
+                   "%r is not a DataFrame" % P
+            self.P = P
         
         assert isinstance(min_duration, float), \
                "%r is not a float" % min_duration
@@ -443,7 +449,9 @@ class TrackCooccurrenceGraph(object):
         assert isinstance(significant, float), \
                "%r is not a float" % significant
         self.significant = significant
-    
+        
+        self.modalityA = modalityA
+        self.modalityB = modalityB
     
     def _AB2ab(self, A, B):
         """
@@ -535,9 +543,9 @@ class TrackCooccurrenceGraph(object):
                     a_m = 0.
                     ovl = 0.
                 
-                possible_match = possible_match.set_value(Na, NB, 
+                possible_match = possible_match.set_value(Na, Nb,
                                                           p_m + Na*Nb*duration)
-                actual_match = actual_match.set_value(Na, Nb, 
+                actual_match = actual_match.set_value(Na, Nb,
                                                       a_m + N*duration)
                 overlap = overlap.set_value(Na, Nb, ovl + duration)
         
