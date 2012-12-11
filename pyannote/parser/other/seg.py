@@ -31,7 +31,7 @@ class SEGMixin(BaseTextualFormat):
     CHANNEL = 'channel'
     
     def get_comment(self):
-        return '# '
+        return '#'
     
     def get_separator(self):
         return ' '

@@ -367,6 +367,30 @@ class BaseTextualParser(object):
         
         return A
     
+    def comment(self, text, f=sys.stdout):
+        """Add comment to a file
+        
+        Comment marker is automatically added in front of the text
+        
+        Parameters
+        ----------
+        text : str
+            Actual comment
+        f : file or str, optional
+            Default is stdout.
+        
+        """
+        comment_marker = self.get_comment()
+        if comment_marker is None:
+            raise NotImplementedError('Comments are not supported.')
+        
+        if isinstance(f, file):
+            f.write('%s %s\n' % (comment_marker, text))
+            f.flush()
+        else:
+            with open(f, 'w') as g:
+                g.write('%s %s\n' % (comment_marker, text))
+    
     def write(self, annotation, f=sys.stdout, uri=None, modality=None):
         """
         

@@ -231,15 +231,15 @@ for u, uri in enumerate(args.uris):
 
     annotations = {modality: reconstruct(clusters, uri=uri, modality=modality) for modality in modalities}
     
-    args.output.write('# %s\n' % uri)
-    args.output.write('# %s\n' % status_msg)
-    args.output.write('# Model took %ds to create and %ds to optimize.\n' % \
-                      (int(model_time), int(optimization_time)))
+    MDTMParser().comment(uri, f=args.output)
+    MDTMParser().comment(status_msg, f=args.output)
+    msg = 'Model took %ds to create and %ds to optimize.\n' % \
+                                                        (int(model_time), 
+                                                         int(optimization_time))
+    MDTMParser().comment(msg, f=args.output)
     
     for modality in annotations:
         MDTMParser().write(annotations[modality], f=args.output)
-    
-    
     
 args.output.close()
     
