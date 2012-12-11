@@ -478,6 +478,8 @@ for u, uri in enumerate(uris):
         si_src = args.si(uri=uri, modality='speaker')
         if uem is not None:
             si_src = si_src.crop(uem, mode='intersection')
+        if ss_src is None:
+            ss_src = si_src.to_annotation(threshold=np.inf)
     else:
         si_src = None
     
@@ -487,13 +489,6 @@ for u, uri in enumerate(uris):
         if args.verbose:
             sys.stdout.write('   - [speaker/speaker] similarity graph\n')
             sys.stdout.flush()
-        
-        # if --ss option is missing, try to use speaker tracks from --si option
-        if ss_src is None:
-            if si_src is None:
-                raise ValueError('missing speaker tracks')
-            else:
-                ss_src = si_src.to_annotation(threshold=np.inf)
         
         # get PLP features
         plp = args.ss_plp(uri)
