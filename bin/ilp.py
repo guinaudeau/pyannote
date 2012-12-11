@@ -38,12 +38,20 @@ def input_parser(path):
 msg = 'path to input Multimodal Probability Graph. ' + clicommon.msgURI()
 argparser.add_argument('input', type=input_parser, metavar='mpg.pkl', help=msg)
 
-def output_parser(path):
+def out_parser(path):
     try:
        with open(path) as f: pass
     except IOError as e:
-       return open(path, 'w')
+        writer, extension = AnnotationParser.guess(path)
+        return writer(), open(path, 'w')
     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
+
+# def output_parser(path):
+#     try:
+#        with open(path) as f: pass
+#     except IOError as e:
+#        return open(path, 'w')
+#     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                        help='path to where to store output in MDTM format')
 
@@ -143,6 +151,7 @@ def reconstruct(clusters, uri, modality):
     
     return A
 
+writer, f = args.output
 
 for u, uri in enumerate(args.uris):
     
@@ -231,15 +240,14 @@ for u, uri in enumerate(args.uris):
 
     annotations = {modality: reconstruct(clusters, uri=uri, modality=modality) for modality in modalities}
     
-    MDTMParser().comment(uri, f=args.output)
-    MDTMParser().comment(status_msg, f=args.output)
+    writer.comment(uri, f=f)
+    writer.comment(status_msg, f=f)
     msg = 'Model took %ds to create and %ds to optimize.\n' % \
                                                         (int(model_time), 
                                                          int(optimization_time))
-    MDTMParser().comment(msg, f=args.output)
+    writer.comment(msg, f=f)
     
     for modality in annotations:
-        MDTMParser().write(annotations[modality], f=args.output)
-    
-args.output.close()
-    
+        writer.write(annotations[modality], f=f)
+
+f.close()
