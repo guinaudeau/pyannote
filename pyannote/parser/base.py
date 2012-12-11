@@ -430,6 +430,11 @@ class BaseTextualAnnotationParser(BaseTextualParser):
                                names=names,
                                comment=self.get_comment())
         
+        # remove comment lines 
+        # (i.e. lines for which all fields are either None or NaN)
+        keep = [not all([pandas.isnull(r[n]) for n in names]) for _,r in df.iterrows()]
+        df = df[keep]
+        
         # add unique track numbers if they are not read from file
         if TRACK not in names:
             df[TRACK] = range(df.shape[0])
@@ -480,6 +485,10 @@ class BaseTextualScoresParser(BaseTextualParser):
                                names=names,
                                comment=self.get_comment())
         
+        # remove comment lines 
+        # (i.e. lines for which all fields are either None or NaN)
+        keep = [not all([pandas.isnull(r[n]) for n in names]) for _,r in df.iterrows()]
+        df = df[keep]
         
         # add 'segment' column build from start time & duration
         df[SEGMENT] = [self.get_segment(row) for r, row in df.iterrows()]
