@@ -238,9 +238,8 @@ for u, uri in enumerate(args.uris):
     
     writer.comment(uri, f=f)
     writer.comment(status_msg, f=f)
-    msg = 'Model took %ds to create and %ds to optimize.\n' % \
-                                                        (int(model_time), 
-                                                         int(optimization_time))
+    msg = 'Model took %ds to create and %ds to optimize.' % \
+                                    (int(model_time), int(optimization_time))
     writer.comment(msg, f=f)
     
     for modality in annotations:
