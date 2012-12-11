@@ -23,7 +23,7 @@ import pickle
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser
-from pyannote.algorithm.clustering.optimization.graph import LabelCooccurrenceGraph
+from pyannote.algorithm.clustering.optimization.graph import TrackCooccurrenceGraph
 
 from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
@@ -41,17 +41,13 @@ def output_parser(path):
     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 
 argparser.add_argument('srcA', type=input_parser,
-                       help='path to source annotation for modality A')
-argparser.add_argument('tgtA', type=input_parser,
-                       help='path to target annotation for modality A')
+                       help='path to annotation for modality A')
 argparser.add_argument('--modalityA', type=str, default=SUPPRESS,
                        metavar='name',
                        help='rename source/target modality A')
 
 argparser.add_argument('srcB', type=input_parser,
-                       help='path to source annotation for modality B')
-argparser.add_argument('tgtB', type=input_parser,
-                       help='path to target annotation for modality B')
+                       help='path to annotation for modality B')
 argparser.add_argument('--modalityB', type=str, default=SUPPRESS,
                        metavar='name',
                        help='rename source/target modality B')
@@ -60,12 +56,13 @@ argparser.add_argument('dump', type=output_parser, metavar='dump_to',
                         help='path where to save parameters of trained '
                              'cross-modal cooccurrence graph')
 
-argparser.add_argument('--duration', metavar='seconds', type=float, default=0.,
-                       help='Minimum cooccurrence duration for two labels to '
+argparser.add_argument('--min-duration', metavar='in_seconds', 
+                       type=float, default=0.,
+                       help='Minimum cooccurrence duration for two tracks to '
                             'be considered cooccurring (default is 0 second)')
 
-argparser.add_argument('--significant', metavar='N', type=int, default=50,
-                       help='Blah blah (default is 50.)')
+argparser.add_argument('--significant', metavar='in_seconds', type=float, default=60.,
+                       help='Blah blah (default is 60.)')
 
 try:
     args = argparser.parse_args()
@@ -79,7 +76,7 @@ if hasattr(args, 'uris'):
 else:
     uris = args.srcA.uris
 
-def aAbBiterator():
+def ABiterator():
     for u, uri in enumerate(uris):
         
         if args.verbose:
@@ -87,36 +84,29 @@ def aAbBiterator():
             sys.stdout.flush()
         
         srcA = args.srcA(uri)
-        tgtA = args.tgtA(uri)
         if hasattr(args, 'modalityA'):
             srcA.modality = args.modalityA
-            tgtA.modality = args.modalityA
         
         srcB = args.srcB(uri)
-        tgtB = args.tgtB(uri)
         if hasattr(args, 'modalityB'):
             srcB.modality = args.modalityB
-            tgtB.modality = args.modalityB
         
         if hasattr(args, 'uem'):
             srcA = srcA.crop(args.uem(uri), mode='intersection')
-            tgtA = tgtA.crop(args.uem(uri), mode='intersection')
             srcB = srcB.crop(args.uem(uri), mode='intersection')
-            tgtB = tgtB.crop(args.uem(uri), mode='intersection')
         
-        yield tgtA, srcA, tgtB, srcB
+        yield srcA, srcB
 
-labelCooccurrenceGraph = LabelCooccurrenceGraph(minduration=args.duration,
-                                                significant=args.significant)
-labelCooccurrenceGraph.fit(aAbBiterator())
+cooccurrenceGraph = TrackCooccurrenceGraph(min_duration=args.min_duration,
+                                           significant=args.significant)
+cooccurrenceGraph.fit(ABiterator())
 
 data = {}
-data['modalityA'] = labelCooccurrenceGraph.modalityA
-data['modalityB'] = labelCooccurrenceGraph.modalityB
-data['minduration'] = labelCooccurrenceGraph.minduration
-data['# matches'] = labelCooccurrenceGraph.num_matches
-data['# times'] = labelCooccurrenceGraph.num_times
-data['P'] = labelCooccurrenceGraph.P
+data['modalityA'] = cooccurrenceGraph.modalityA
+data['modalityB'] = cooccurrenceGraph.modalityB
+data['min_duration'] = cooccurrenceGraph.min_duration
+data['significant'] = cooccurrenceGraph.significant
+data['P'] = cooccurrenceGraph.P
 
 pickle.dump(data, args.dump)
 args.dump.close()
