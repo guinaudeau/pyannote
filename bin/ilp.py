@@ -38,7 +38,7 @@ def input_parser(path):
 msg = 'path to input Multimodal Probability Graph. ' + clicommon.msgURI()
 argparser.add_argument('input', type=input_parser, metavar='mpg.pkl', help=msg)
 
-def out_parser(path):
+def output_parser(path):
     try:
        with open(path) as f: pass
     except IOError as e:
@@ -46,14 +46,8 @@ def out_parser(path):
         return writer(), open(path, 'w')
     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 
-# def output_parser(path):
-#     try:
-#        with open(path) as f: pass
-#     except IOError as e:
-#        return open(path, 'w')
-#     raise IOError('ERROR: output file %s already exists. Delete it first.\n' % path)
 argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
-                       help='path to where to store output in MDTM format')
+                       help='path to where to store the output')
 
 group = argparser.add_argument_group('Objective function')
 
