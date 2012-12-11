@@ -25,6 +25,7 @@ import numpy as np
 
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
+from pyannote.algorithm.clustering.optimization.graph import *
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Probability Graph')
@@ -51,8 +52,6 @@ def mm_parser(path):
     else:
         return AnnotationParser().read(path)
 
-from pyannote.algorithm.clustering.optimization.graph import LabelSimilarityGraph
-from pyannote.algorithm.clustering.optimization.graph import DiarizationGraph
 def ss_param_parser(param_pkl):
     """Speaker diarization
     
@@ -136,7 +135,6 @@ def si_parser(path):
     else:
         return AnnotationParser().read(path)
 
-from pyannote.algorithm.clustering.optimization.graph import ScoresGraph
 def si_param_parser(param_pkl):
     """Speaker identification graph
     
@@ -233,7 +231,6 @@ def hi_parser(path):
 def hi_param_parser(path):
     raise NotImplementedError('--hi-param option is not supported yet.')
 
-from pyannote.algorithm.clustering.optimization.graph import AnnotationGraph
 def wi_parser(path):
     """Written name detection source
     
@@ -264,21 +261,24 @@ def wi_param_parser(path):
     else:
         raise NotImplementedError('--wi-param option is not supported yet.')
     return graph_generator
-    
-    
+
 def ni_parser(path):
     raise NotImplementedError('--ni option is not supported yet.')
 
 def ni_param_parser(path):
     raise NotImplementedError('--ni-param option is not supported yet.')
 
-from pyannote.algorithm.clustering.optimization.graph import TrackCooccurrenceGraph
 def x_param_parser(param_pkl):
     """Cross-modal graph
     
+    - [t1] sub-track nodes (first modality)
+    - [t2] sub-track nodes (second modality)
+    - [t1] -- [t2] soft edges
+    
     - [T1] track nodes (first modality)
     - [T2] track nodes (second modality)
-    - [T1] -- [T2] soft edges
+    - [t1] == [T1] hard edges
+    - [t2] == [T2] hard edges
     
     Parameters
     ----------
@@ -295,17 +295,17 @@ def x_param_parser(param_pkl):
     with open(param_pkl, 'r') as f:
         params = pickle.load(f)
     
-    graph_generator = TrackCooccurrenceGraph(**params)
+    tcg = TrackCooccurrenceGraph(**params)
     
     def xgraph(src1, src2):
-        modA = graph_generator.modalityA
-        modB = graph_generator.modalityB
+        modA = tcg.modalityA
+        modB = tcg.modalityB
         mod1 = src1.modality
         mod2 = src2.modality
         if mod1 == modA and mod2 == modB:
-            return graph_generator(src1, src2)
+            return tcg(src1, src2)
         elif mod1 == modB and mod2 == modA:
-            return graph_generator(src2, src1)
+            return tcg(src2, src1)
         else:
             msg = 'Crossmodal graph modality mismatch [%s/%s] vs. [%s/%s].' \
                   % (modA, modB, mod1, mod2)
@@ -317,7 +317,6 @@ def x_param_parser(param_pkl):
 msg = "path where to store multimodal probability graph." + clicommon.msgURI()
 argparser.add_argument('output', type=str, metavar='graph.pkl', help=msg)
 
-
 # == Speaker ==
 sgroup = argparser.add_argument_group('[speaker] modality')
 
@@ -326,9 +325,9 @@ sgroup = argparser.add_argument_group('[speaker] modality')
 msg = "path to source for speaker diarization. " + clicommon.msgURI()
 sgroup.add_argument('--ss', type=mm_parser, metavar='source.mdtm', 
                     default=SUPPRESS, help=msg)
-                    
+
 sgroup.add_argument('--ss-param', metavar='param.pkl', 
-                    type=ss_param_parser, dest='ssgraph', 
+                    type=ss_param_parser, dest='ssgraph', default=SUPPRESS,
                     help='path to trained parameters for speaker diarization')
 
 msg = "path to PLP feature files." + clicommon.msgURI()
@@ -356,7 +355,7 @@ hgroup.add_argument('--hh', type=mm_parser, metavar='source.mdtm',
                     default=SUPPRESS, help=msg)
 
 hgroup.add_argument('--hh-param', type=hh_param_parser, metavar='param.pkl',
-                    dest='hhgraph', default=hh_param_parser(None),
+                    dest='hhgraph', default=SUPPRESS,
                     help='path to trained parameters for head clustering')
 
 msg = "path to precomputed similarity matrices." + clicommon.msgURI()
@@ -369,8 +368,8 @@ hgroup.add_argument('--hi', type=hi_parser, metavar='source.nbl',
                     help='path to source for head recognition')
 
 hgroup.add_argument('--hi-param', type=hi_param_parser, metavar='param.pkl',
-                    help='path to trained parameters for head '
-                         'recognition')
+                    default=SUPPRESS, help='path to trained parameters for head '
+                                           'recognition')
 
 # == Written ==
 wgroup = argparser.add_argument_group('[written] modality')
@@ -380,10 +379,11 @@ wgroup.add_argument('--wi', type=wi_parser, metavar='source.mdtm',
                     default=SUPPRESS, 
                     help='path to source for written name detection')
 
-wgroup.add_argument('--wi-param', metavar='param.pkl', dest='wigraph',
-                    type=wi_param_parser, default=wi_param_parser(None),
+wgroup.add_argument('--wi-param', type=wi_param_parser, metavar='param.pkl', 
+                    default=wi_param_parser(None), dest='wigraph', 
                     help='path to trained parameters for written name '
                          'detection')
+
 
 # == Spoken ==
 ngroup = argparser.add_argument_group('[spoken] modality')
@@ -430,7 +430,6 @@ xgroup.add_argument('--wn-param', metavar='param.pkl', type=x_param_parser,
                     help='path to trained parameters for '
                          '[written/spoken] cross-modal clustering.')
 
-
 try:
     args = argparser.parse_args()
 except IOError as e:
@@ -439,7 +438,6 @@ except IOError as e:
 if hasattr(args, 'uris'):
     uris = args.uris
 
-from pyannote.algorithm.clustering.optimization.graph import IdentityNode, LabelNode
 import time
 
 for u, uri in enumerate(uris):
@@ -464,6 +462,25 @@ for u, uri in enumerate(uris):
     # start with an empty graph
     G = nx.Graph()
     
+    # SPEAKER DIARIZATION & IDENTIFICATION
+    # ====================================
+    
+    # load speaker diarization input (ss)
+    if hasattr(args, 'ss'):
+        ss_src = args.ss(uri=uri, modality='speaker')
+        if uem is not None:
+            ss_src = ss_src.crop(uem, mode='intersection')
+    else:
+        ss_src = None
+    
+    # load speaker identification scores (si)
+    if hasattr(args, 'si'):
+        si_src = args.si(uri=uri, modality='speaker')
+        if uem is not None:
+            si_src = si_src.crop(uem, mode='intersection')
+    else:
+        si_src = None
+    
     # speaker diarization
     if hasattr(args, 'ssgraph'):
         
@@ -471,16 +488,12 @@ for u, uri in enumerate(uris):
             sys.stdout.write('   - [speaker/speaker] similarity graph\n')
             sys.stdout.flush()
         
-        # get source
-        if hasattr(args, 'ss'):
-            ss_src = args.ss(uri)
-        elif hasattr(args, 'si'):
-            ss_src = args.si(uri).to_annotation(threshold=np.inf)
-        else:
-            raise ValueError('missing speaker tracks')
-        
-        if uem is not None:
-            ss_src = ss_src.crop(uem, mode='intersection')
+        # if --ss option is missing, try to use speaker tracks from --si option
+        if ss_src is None:
+            if si_src is None:
+                raise ValueError('missing speaker tracks')
+            else:
+                ss_src = si_src.to_annotation(threshold=np.inf)
         
         # get PLP features
         plp = args.ss_plp(uri)
@@ -491,23 +504,14 @@ for u, uri in enumerate(uris):
         # add it the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del plp
-        del g
-        
+    
+    
     # speaker identification
-    if hasattr(args, 'si'):
+    if hasattr(args, 'sigraph'):
         
         if args.verbose:
             sys.stdout.write('   - [speaker] identity graph\n')
             sys.stdout.flush()
-        
-        # get source
-        si_src = args.si(uri)
-        if uem is not None:
-            si_src = si_src.crop(uem, mode='intersection')
         
         # keep only n-best identities
         if hasattr(args, 'si_nbest'):
@@ -515,10 +519,13 @@ for u, uri in enumerate(uris):
         
         # make sure the tracks are named the same way 
         # in speaker diarization and speaker identification
-        if hasattr(args, 'ss'):
-            assert ss_src.timeline == si_src.timeline and \
-                   all([ss_src.tracks(s) == si_src.track(s) for s in ss_src]), \
-                   "speaker diarization and identification tracks are not the same"
+        if ss_src is not None:
+            assert ss_src.timeline == si_src.timeline, \
+                   "speaker diarization and identification timelines are not the same"
+            for s in ss_src:
+                assert ss_src.tracks(s) == si_src.tracks(s), \
+                       "ss and si tracks are not the same " \
+                       "%r: %r vs. %r" % (s, ss_src.tracks(s), si_src.tracks(s))
         
         # build speaker identity graph
         g = args.sigraph(si_src)
@@ -526,22 +533,40 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
+    
+    # HEAD CLUSTERING & RECOGNITION
+    # =============================
+    
+    # load face clustering input (hh)
+    if hasattr(args, 'hh'):
+        hh_src = args.hh(uri=uri, modality='head')
+        if uem is not None:
+            hh_src = hh_src.crop(uem, mode='intersection')
+    else:
+        hh_src = None
+    
+    # load head identification scores (hi)
+    if hasattr(args, 'hi'):
+        hi_src = args.hi(uri=uri, modality='head')
+        if uem is not None:
+            hi_src = hi_src.crop(uem, mode='intersection')
+    else:
+        hi_src = None
     
     # face clustering
-    if hasattr(args, 'hh'):
+    if hasattr(args, 'hhgraph'):
         
         if args.verbose:
             sys.stdout.write('   - [head/head] similarity graph\n')
             sys.stdout.flush()
         
-        # get source
-        hh_src = args.hh(uri)
-        if uem is not None:
-            hh_src = hh_src.crop(uem, mode='intersection')
+        # if --hh option is missing, try to use head tracks from --hi option
+        if hh_src is None:
+            if hi_src is None:
+                raise ValueError('missing head tracks')
+            else:
+                hh_src = hi_src.to_annotation(threshold=np.inf)
         
         # get precomputed matrix
         precomputed = args.hh_precomputed(uri)
@@ -552,15 +577,43 @@ for u, uri in enumerate(uris):
         # add it the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del precomputed
-        del g
+    
     
     # face recognition
-    if hasattr(args, 'hi'):
-        pass
+    if hasattr(args, 'higraph'):
+        
+        if args.verbose:
+            sys.stdout.write('   - [head] identity graph\n')
+            sys.stdout.flush()
+        
+        # keep only n-best identities
+        if hasattr(args, 'hi_nbest'):
+            hi_src = hi_src.nbest(args.hi_nbest)
+        
+        # make sure the tracks are named the same way 
+        # in head clustering and head recognition
+        if hh_src is not None:
+            assert hh_src.timeline == hi_src.timeline and \
+                   all([hh_src.tracks(s) == hi_src.track(s) for s in hh_src]), \
+                   "head clustering and recognition tracks are not the same"
+        
+        # build head identity graph
+        g = args.higraph(hi_src)
+        
+        # add it to the multimodal graph
+        G.add_nodes_from(g.nodes_iter(data=True))
+        G.add_edges_from(g.edges_iter(data=True))
+    
+    
+    # WRITTEN NAMES
+    # =============
+    
+    if hasattr(args, 'wi'):
+        wi_src = args.wi(uri=uri, modality='written')
+        if uem is not None:
+            wi_src = wi_src.crop(uem, mode='intersection')
+    else:
+        wi_src = None
     
     # written name detection
     if hasattr(args, 'wi'):
@@ -569,22 +622,17 @@ for u, uri in enumerate(uris):
             sys.stdout.write('   - [written] identity graph\n')
             sys.stdout.flush()
         
-        # get source
-        wi_src = args.wi(uri)
-        if uem is not None:
-            wi_src = wi_src.crop(uem, mode='intersection')
-        
         # build written identity graph
         g = args.wigraph(wi_src)
         
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
-        
+    
+    
+    # SPOKEN NAMES
+    # ============
+    
     # spoken name detection
     if hasattr(args, 'ni'):
         pass
@@ -601,10 +649,7 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
     
     # speaker/written
     if hasattr(args, 'swgraph'):
@@ -618,10 +663,7 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
     
     # speaker/spoken
     if hasattr(args, 'sngraph'):
@@ -635,10 +677,7 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
     
     # head/written
     if hasattr(args, 'hwgraph'):
@@ -652,10 +691,7 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
     
     # head/spoken
     if hasattr(args, 'hngraph'):
@@ -669,10 +705,7 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
+    
     
     # written/spoken
     if hasattr(args, 'wngraph'):
@@ -686,19 +719,12 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
-        
-        # free some memory
-        # (not sure it is necessary)
-        del g
     
-    # add p=0 edges between all identity nodes
-    inodes = [node for node in G if isinstance(node, IdentityNode)]
-    for n, node in enumerate(inodes):
-        for other_node in inodes[n+1:]:
-            G.add_edge(node, other_node, probability=0.)
     
-    # add p=1 edges between tracks and their sub-tracks
-    # TODO
+    G = add_unique_identity_constraint(G)
+    G = add_twin_tracks_constraint(G)
+    G = add_cooccurring_labels_contraint(G)
+    
     
     # dump graph
     nx.write_gpickle(G, foutput)
