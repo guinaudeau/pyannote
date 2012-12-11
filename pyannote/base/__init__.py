@@ -32,7 +32,6 @@ SEGMENT = 'segment'
 TRACK = 'track'
 LABEL = 'label'
 SCORE = 'score'
-PROBABILITY = 'probability'
 
 from segment import Segment
 from timeline import Timeline
