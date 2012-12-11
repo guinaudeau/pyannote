@@ -167,12 +167,12 @@ for u, uri in enumerate(args.uris):
     #     if isinstance(e, LabelNode) and isinstance(f, LabelNode):
     #         # mono-modal label/label pruning
     #         if e.modality == f.modality:
-    #             if data['probability'] < args.prune_mm:
+    #             if data[PROBABILITY] < args.prune_mm:
     #                 # keep track of pruning info
     #                 # only for debugging purpose
     #                 if hasattr(args, 'dump_graph'):
     #                     G[e][f]['pruned'] = True
-    #                 G[e][f]['probability'] = 0.
+    #                 G[e][f][PROBABILITY] = 0.
     #         # cross-modal label/label pruning
     #         else:
     #             pass

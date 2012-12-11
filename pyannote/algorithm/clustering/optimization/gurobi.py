@@ -28,6 +28,7 @@ import gurobipy as grb
 import sys
 import numpy as np
 import networkx as nx
+from pyannote.base import PROBABILITY
 
 optimization_status = {
     grb.GRB.LOADED: 'Model is loaded, but no solution information is '
@@ -68,7 +69,7 @@ optimization_status = {
 
 def _n01(g, n1, n2):
     if g.has_edge(n1, n2):
-        p = g[n1][n2]['probability']
+        p = g[n1][n2][PROBABILITY]
         if p in [0,1]:
             return int(p)
     return None
@@ -266,7 +267,7 @@ class GurobiModel(object):
         nodes = self.graph.nodes()
         P = np.array(nx.to_numpy_matrix(self.graph,
                                         nodelist=nodes,
-                                        weight='probability'))
+                                        weight=PROBABILITY))
         
         # normalization coefficient
         k = 1000. / np.sum([1 for n,_ in enumerate(nodes)

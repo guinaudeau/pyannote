@@ -21,6 +21,7 @@
 import gurobipy as grb
 import numpy as np
 import networkx as nx
+from pyannote.base import PROBABILITY
 
 # class BaseObjectiveMixin(object):
 #     
@@ -146,7 +147,7 @@ def obj_IOP(x, g, alpha=0.5, weighted=False):
     nodes = g.nodes()
     N = len(nodes)
     
-    P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight='probability'))
+    P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight=PROBABILITY))
     
     W = np.ones(P.shape, dtype=float)
     
@@ -211,7 +212,7 @@ def obj_Q(x, g, power=1):
     nodes = g.nodes()
     N = len(nodes)
     
-    P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight='probability'))
+    P = np.array(nx.to_numpy_matrix(g, nodelist=nodes, weight=PROBABILITY))
     P = P**power
     
     # total weights in graph
