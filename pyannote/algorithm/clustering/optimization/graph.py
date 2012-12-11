@@ -516,9 +516,8 @@ class TrackCooccurrenceGraph(object):
                                                       a_m + N*duration)
                 overlap = overlap.set_value(Na, Nb, ovl + duration)
         
-        # TODO: make sure no probability equals 1
-        #       this might lead to weird behavior
-        self.P = actual_match / possible_match
+        # make sure probability is smaller than 1.
+        self.P = np.minimum(1 - 1e-6, actual_match / possible_match)
         
         # remove statistically insignificant probabilities
         self.P[overlap < self.significant] = np.nan
