@@ -28,7 +28,7 @@ import gurobipy as grb
 import sys
 import numpy as np
 import networkx as nx
-from pyannote.base import PROBABILITY
+from graph import PROBABILITY
 
 optimization_status = {
     grb.GRB.LOADED: 'Model is loaded, but no solution information is '

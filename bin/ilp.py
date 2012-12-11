@@ -24,6 +24,7 @@ import networkx as nx
 
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
+from pyannote.parser import AnnotationParser
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Prob Graph ILP clustering')
@@ -37,6 +38,7 @@ def input_parser(path):
     
 msg = 'path to input Multimodal Probability Graph. ' + clicommon.msgURI()
 argparser.add_argument('input', type=input_parser, metavar='mpg.pkl', help=msg)
+
 
 def output_parser(path):
     try:

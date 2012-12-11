@@ -723,7 +723,7 @@ def meta_mpg(g):
             probabilities = [data[PROBABILITY] for data in G[n][m].values()]
             
             # raise an error in case of conflict (p=0 vs. p>0)
-            if len(probabilities) > 1 and 0 in probabilities:
+            if len(set(probabilities)) > 1 and 0 in probabilities:
                 raise ValueError('conflict in meta-edges between %r and %r:' \
                                  'probabilities = %r' % (groups[n], 
                                                          groups[m], 
