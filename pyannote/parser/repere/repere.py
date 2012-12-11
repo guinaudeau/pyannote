@@ -31,10 +31,10 @@ class REPEREMixin(BaseTextualFormat):
         return '# '
     
     def get_separator(self):
-        return ' '
+        return '[ \t]+'
     
     def get_fields(self):
-        return [URI, 
+        return [URI,
                 self.START, 
                 self.END, 
                 MODALITY, 
