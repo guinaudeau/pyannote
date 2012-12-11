@@ -551,6 +551,10 @@ class TrackCooccurrenceGraph(object):
         timeline, a, b = self._AB2ab(A, B)
         for s in timeline:
             
+            # if tracks are too short, skip them
+            if s.duration < self.min_duration:
+                continue
+            
             # Sub-tracks for current segment
             atracks = a.tracks(s)
             btracks = b.tracks(s)

@@ -102,10 +102,10 @@ cooccurrenceGraph = TrackCooccurrenceGraph(min_duration=args.min_duration,
 cooccurrenceGraph.fit(ABiterator())
 
 data = {}
-data['modalityA'] = cooccurrenceGraph.modalityA
-data['modalityB'] = cooccurrenceGraph.modalityB
 data['min_duration'] = cooccurrenceGraph.min_duration
 data['significant'] = cooccurrenceGraph.significant
+data['modalityA'] = cooccurrenceGraph.modalityA
+data['modalityB'] = cooccurrenceGraph.modalityB
 data['P'] = cooccurrenceGraph.P
 
 pickle.dump(data, args.dump)
