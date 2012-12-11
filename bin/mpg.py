@@ -340,7 +340,7 @@ sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
                     help='path to speaker identification scores')
 
 sgroup.add_argument('--si-param', metavar='param.pkl',
-                    type=si_param_parser, dest='sigraph',
+                    type=si_param_parser, dest='sigraph', default=SUPPRESS,
                     help='path to trained parameters for speaker identification')
 
 sgroup.add_argument('--si-nbest', metavar='N', type=int, default=SUPPRESS,
