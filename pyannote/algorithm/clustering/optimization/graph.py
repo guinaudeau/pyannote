@@ -48,7 +48,8 @@ class IdentityNode(object):
         self.identifier = identifier
     
     def __eq__(self, other):
-        return self.identifier == other.identifier
+        return isinstance(other, IdentityNode) and \
+               self.identifier == other.identifier
     
     def __hash__(self):
         return hash(self.identifier)
@@ -84,7 +85,8 @@ class LabelNode(object):
         self.label = label
     
     def __eq__(self, other):
-        return self.uri == other.uri and \
+        return isinstance(other, LabelNode) and \
+               self.uri == other.uri and \
                self.modality == other.modality and \
                self.label == other.label
     
@@ -121,7 +123,8 @@ class TrackNode(object):
         self.track = track
     
     def __eq__(self, other):
-        return self.uri == other.uri and \
+        return isinstance(other, TrackNode) and \
+               self.uri == other.uri and \
                self.modality == other.modality and \
                self.segment == other.segment and \
                self.track == other.track
