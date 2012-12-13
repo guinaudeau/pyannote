@@ -290,6 +290,61 @@ class GurobiModel(object):
         
         return objective, grb.GRB.MAXIMIZE
     
+    def objective_NormFinkel(self, alpha=0.5, log_prob=False):
+        """
+        Maximize
+                       ∑  xij.pij              ∑ (1-xij).(1-pij)
+                      j>i                     j>i
+                 α . ------------- + (1-α) . --------------------
+                         ∑  xij                    ∑ (1-xij)
+                        j>i                       j>i
+        
+        Parameters
+        ----------
+        alpha : float, optional
+            Value of α in above formulas (default value is 0.5).
+        log_prob : bool, optional
+            If True, use log pij and log (1-pij) in place of pij and (1-pij)
+        
+        """
+        
+        nodes = self.graph.nodes()
+        P = np.array(nx.to_numpy_matrix(self.graph,
+                                        nodelist=nodes,
+                                        weight=PROBABILITY))
+        
+        # normalization coefficient
+        k = 1000. / np.sum([1 for n,_ in enumerate(nodes)
+                              for m,_ in enumerate(nodes)
+                              if m > n and P[n,m] not in [0, 1]])
+        
+        a = alpha
+        if log_prob:
+            raise NotImplementedError('')
+        else:
+            pintra = grb.quicksum([P[n,m]*self.x[N,M]
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+            nintra = grb.quicksum([self.x[N,M]
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+            pinter = grb.quicksum([(1-P[n,m])*(1-self.x[N,M])
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+            ninter = grb.quicksum([(1-self.x[N,M])
+                                          for n, N in enumerate(nodes)
+                                          for m, M in enumerate(nodes)
+                                          if m > n and P[n,m] not in [0, 1]])
+            
+            objective = alpha * ninter * pintra + (1-alpha) * nintra * pinter 
+            
+        return objective, grb.GRB.MAXIMIZE
+    
+    
+    
     def setObjective(self, type='finkel', alpha=0.5, log_prob=False):
         """
         Set the objective function
@@ -308,6 +363,8 @@ class GurobiModel(object):
         if type == 'finkel':
             o, d = self.objective_Finkel(alpha=alpha,
                                          log_prob=log_prob)
+        elif type == 'norm_finkel':
+            o, d = self.objective_NormFinkel(alpha=alpha, log_prob=log_prob)
         
         self.model.setObjective(o, d)
     

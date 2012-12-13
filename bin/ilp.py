@@ -53,8 +53,8 @@ argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
 
 group = argparser.add_argument_group('Objective function')
 
-group.add_argument('--objective', choices = ('finkel', ), default='finkel',
-                   help='choose objective function.')
+group.add_argument('--objective', choices = ('finkel', 'norm_finkel', ), 
+                   default='finkel', help='choose objective function.')
 group.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                    help='set α value to ALPHA in objective function.')
 group.add_argument('--log-prob', action='store_true', 
