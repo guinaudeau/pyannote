@@ -616,6 +616,9 @@ class TrackCooccurrenceGraph(object):
             aTnode = TrackNode(u, ma, sa, ta)
             G.add_node(aTnode, {SUBTRACK: False})
             for tnode in tnodes.get((ma,ta), []):
+                # do not add self-loop (yes, this can happen)
+                if tnode == aTnode:
+                    continue
                 G.add_edge(aTnode, tnode, {PROBABILITY: 1., SUBTRACK: True})
         
         # [Tb] tracks
@@ -625,6 +628,9 @@ class TrackCooccurrenceGraph(object):
             bTnode = TrackNode(u, mb, sb, tb)
             G.add_node(bTnode, {SUBTRACK: False})
             for tnode in tnodes.get((mb,tb), []):
+                # do not add self-loop (yes, this can happen)
+                if tnode == bTnode:
+                    continue
                 G.add_edge(bTnode, tnode, {PROBABILITY: 1., SUBTRACK: True})
         
         return G
