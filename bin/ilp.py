@@ -53,7 +53,7 @@ argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
 
 group = argparser.add_argument_group('Objective function')
 
-group.add_argument('--complete', action=store_true, 
+group.add_argument('--complete', action='store_true', 
                    help='complete multimodal probability graph')
 group.add_argument('--objective', choices = ('finkel', 'norm_finkel', ), 
                    default='finkel', help='choose objective function.')
@@ -115,7 +115,7 @@ except IOError as e:
 if not hasattr(args, 'uris'):
     raise IOError('missing list of resources (--uris)')
 
-from pyannote.algorithm.clustering.optimization.graph import IdentityNode, TrackNode, meta_mpg
+from pyannote.algorithm.clustering.optimization.graph import IdentityNode, TrackNode, meta_mpg, complete_mpg
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 from pyannote.parser import MDTMParser
 from pyannote.base.annotation import Annotation, Unknown
