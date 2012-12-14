@@ -681,7 +681,7 @@ def add_cooccurring_labels_contraint(G):
                     G[node][other_node][PROBABILITY] = 0.
     
     return G
-    
+
 
 def meta_mpg(g):
     """Meta Multimodal Probability Graph
@@ -734,6 +734,52 @@ def meta_mpg(g):
             meta.add_edge(n, m, {PROBABILITY: np.mean(probabilities)})
     
     return meta, groups
+
+
+def complete_mpg(g):
+    """Make complete graph from MPG
+    
+    Parameters
+    ----------
+    g : nx.Graph
+        Probability graph
+    
+    Returns
+    -------
+    complete : nx.Graph
+        Complete probability graph. Each pair of nodes is weighted by the
+        probability of the highest probability path between them.
+        
+    
+    """
+    # create 
+    log = nx.Graph()
+    log.add_nodes_from(g.nodes_iter(data=True))
+    
+    for e,f,d in g.edges_iter(data=True):
+        D = dict(d)
+        p = d[PROBABILITY]
+        if p > 0:
+            D[PROBABILITY] = -np.log(p)
+            log.add_edge(e,f,D)
+    
+    shortest = nx.shortest_path_length(log, weight=PROBABILITY)
+    
+    complete = nx.Graph()
+    complete.add_nodes_from(g.nodes_iter(data=True))
+    nodes = complete.nodes()
+    for n, e in enumerate(nodes):
+        for f in nodes[n+1:]:
+            if g.has_edge(e, f):
+                D = dict(g[e][f])
+                p = D[PROBABILITY]
+                if p > 0:
+                    D[PROBABILITY] = np.exp(-shortest[e][f])
+            else:
+                D = {PROBABILITY: np.exp(-shortest[e][f])}
+            complete.add_edge(e, f, D)
+    
+    return complete
 
 
 def draw(G, threshold=0.0):

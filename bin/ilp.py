@@ -53,6 +53,8 @@ argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
 
 group = argparser.add_argument_group('Objective function')
 
+group.add_argument('--complete', action=store_true, 
+                   help='complete multimodal probability graph')
 group.add_argument('--objective', choices = ('finkel', 'norm_finkel', ), 
                    default='finkel', help='choose objective function.')
 group.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
@@ -164,6 +166,11 @@ for u, uri in enumerate(args.uris):
     
     # get meta-MPG (create one meta-node for nodes connected with prob=1)
     mmpg, meta_nodes = meta_mpg(mpg)
+    
+    
+    # complete meta-MPG if requested
+    if args.complete:
+        mmpg = complete_mpg(mmpg)
     
     # # pruning
     # for e,f,data in G.edges(data=True):
