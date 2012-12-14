@@ -770,13 +770,16 @@ def complete_mpg(g):
     nodes = complete.nodes()
     for n, e in enumerate(nodes):
         for f in nodes[n+1:]:
-            if g.has_edge(e, f):
-                D = dict(g[e][f])
-                p = D[PROBABILITY]
-                if p > 0:
-                    D[PROBABILITY] = np.exp(-shortest[e][f])
+            if e in shortest and f in shortest[e]:
+                if g.has_edge(e, f):
+                    D = dict(g[e][f])
+                    p = D[PROBABILITY]
+                    if p > 0:
+                        D[PROBABILITY] = np.exp(-shortest[e][f])
+                else:
+                    D = {PROBABILITY: np.exp(-shortest[e][f])}
             else:
-                D = {PROBABILITY: np.exp(-shortest[e][f])}
+                D = {PROBABILITY: 0.}
             complete.add_edge(e, f, D)
     
     return complete
