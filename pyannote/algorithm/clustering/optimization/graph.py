@@ -742,26 +742,31 @@ def meta_mpg(g):
     return meta, groups
 
 
-def complete_mpg(g):
-    """Make complete graph from MPG
+def complete_mpg(g, existing=False):
+    """Make complete graph from existing probability graph
     
     Parameters
     ----------
     g : nx.Graph
         Probability graph
+    existing : bool
+        When True, even existings edge are updated in case a higher probability
+        path connects the same nodes. By default, existing edges are kept
+        unchanged.
     
     Returns
     -------
     complete : nx.Graph
         Complete probability graph. Each pair of nodes is weighted by the
         probability of the highest probability path between them.
-        
     
     """
-    # create 
+    
+    # create new probability graph where each edge probability P 
+    # is replaced by -log P except when P = 0 
+    # (otherwise -log P = +oo and shortest path algorithm quietly fails)
     log = nx.Graph()
     log.add_nodes_from(g.nodes_iter(data=True))
-    
     for e,f,d in g.edges_iter(data=True):
         D = dict(d)
         p = d[PROBABILITY]
@@ -769,23 +774,41 @@ def complete_mpg(g):
             D[PROBABILITY] = -np.log(p)
             log.add_edge(e,f,D)
     
+    # compute maximum probability path between each pair of nodes
+    # where the probability of a path is the product of every encountered
+    # probabilities (actually -log π pij)
     shortest = nx.shortest_path_length(log, weight=PROBABILITY)
     
+    # create new complete probability graph where each edge probability P
+    # is replaced by the probability of the maximum probability path
+    # except when P = 0 or when 'existing' is True and the edge exists 
+    # in the original probability graph (in these case P is kept unchanged)
     complete = nx.Graph()
     complete.add_nodes_from(g.nodes_iter(data=True))
     nodes = complete.nodes()
+    
     for n, e in enumerate(nodes):
         for f in nodes[n+1:]:
-            if e in shortest and f in shortest[e]:
-                if g.has_edge(e, f):
-                    D = dict(g[e][f])
-                    p = D[PROBABILITY]
-                    if p > 0:
-                        D[PROBABILITY] = np.exp(-shortest[e][f])
-                else:
-                    D = {PROBABILITY: np.exp(-shortest[e][f])}
+            
+            # special behavior in case there is an edge connecting the 2 nodes
+            # in the original graph: don't update if p=0 or if existing=False
+            if g.has_edge(e,f):
+                D = dict(g[e][f])
+                if D[PROBABILITY] != 0. and existing:
+                    D[PROBABILITY] = np.exp(-shortest[e][f])
+                # else:
+                #     pass
             else:
-                D = {PROBABILITY: 0.}
+                # in case e and f are in two different connected components
+                # no shortest path can be computed -- therefore we need
+                # to test whether it happens and set probability to 0
+                if e in shortest and f in shortest[e]:
+                    D = {PROBABILITY: np.exp(-shortest[e][f])}
+                else:
+                    D = {PROBABILITY: 0.}
+            
+            # add edge with updated probability
+            # all other edge variables are kept unchanged
             complete.add_edge(e, f, D)
     
     return complete
