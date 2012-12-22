@@ -639,7 +639,7 @@ def remove_nbest_identity(G, nbest):
     for n, inode in enumerate(inodes):
         ranks = set([G[inode][node].get(RANK, np.inf) 
                      for node in G.neighbors_iter(inode)])
-        if all(ranks > nbest):
+        if all([r>nbest for r in ranks]):
             remove.append(inode)
     G.remove_nodes_from(remove)
     return G
