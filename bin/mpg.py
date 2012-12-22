@@ -317,6 +317,9 @@ def x_param_parser(param_pkl):
 msg = "path where to store multimodal probability graph." + clicommon.msgURI()
 argparser.add_argument('output', type=str, metavar='graph.pkl', help=msg)
 
+argparser.add_argument('--nbest', metavar='N', type=int, default=SUPPRESS,
+                       help='remove identity nodes not in any n-best lists')
+
 # == Speaker ==
 sgroup = argparser.add_argument_group('[speaker] modality')
 
@@ -343,8 +346,6 @@ sgroup.add_argument('--si-param', metavar='param.pkl',
                     type=si_param_parser, dest='sigraph', default=SUPPRESS,
                     help='path to trained parameters for speaker identification')
 
-sgroup.add_argument('--si-nbest', metavar='N', type=int, default=SUPPRESS,
-                    help='path to trained parameters for speaker identification')
 
 # == Head ==
 hgroup = argparser.add_argument_group('[head] modality')
@@ -508,10 +509,6 @@ for u, uri in enumerate(uris):
             sys.stdout.write('   - [speaker] identity graph\n')
             sys.stdout.flush()
         
-        # keep only n-best identities
-        if hasattr(args, 'si_nbest'):
-            si_src = si_src.nbest(args.si_nbest)
-        
         # make sure the tracks are named the same way 
         # in speaker diarization and speaker identification
         if ss_src is not None:
@@ -580,10 +577,6 @@ for u, uri in enumerate(uris):
         if args.verbose:
             sys.stdout.write('   - [head] identity graph\n')
             sys.stdout.flush()
-        
-        # keep only n-best identities
-        if hasattr(args, 'hi_nbest'):
-            hi_src = hi_src.nbest(args.hi_nbest)
         
         # make sure the tracks are named the same way 
         # in head clustering and head recognition
@@ -715,11 +708,11 @@ for u, uri in enumerate(uris):
         G.add_nodes_from(g.nodes_iter(data=True))
         G.add_edges_from(g.edges_iter(data=True))
     
-    
+    if hasattr(args, 'nbest'):
+        G = remove_nbest_identity(G, args.nbest)
     G = add_unique_identity_constraint(G)
     G = add_twin_tracks_constraint(G)
     G = add_cooccurring_labels_contraint(G)
-    
     
     # dump graph
     nx.write_gpickle(G, foutput)
