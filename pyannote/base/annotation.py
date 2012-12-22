@@ -852,6 +852,34 @@ class Scores(AnnotationMixin, object):
                 else:
                     yield segment, track, label, value
     
+    
+    def rank(self, invert=False):
+        """
+        
+        Parameters
+        ----------
+        invert : bool, optional
+            By default, larger scores are better.
+            Set `invert` to True to indicate smaller scores are better.
+        
+        Returns
+        -------
+        rank : `Scores`
+        
+        """
+        if invert:
+            direction = 1.
+        else:
+            direction = -1.
+        
+        rank = (direction*self._df).apply(np.argsort, axis=1)\
+                                    .apply(np.argsort, axis=1)
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = rank
+        
+        return A
+        
+        
     def nbest(self, n, invert=False):
         """
         
@@ -862,7 +890,6 @@ class Scores(AnnotationMixin, object):
         invert : bool, optional
             By default, larger scores are better.
             Set `invert` to True to indicate smaller scores are better.
-        
         
         Returns
         -------
@@ -875,13 +902,45 @@ class Scores(AnnotationMixin, object):
         else:
             direction = -1.
         
-        
-        nbest = (direction*self._df).apply(np.argsort, axis=1).apply(np.argsort, axis=1) < n
+        nbest = (direction*self._df).apply(np.argsort, axis=1)\
+                                    .apply(np.argsort, axis=1) < n
         A = self.__class__(uri=self.uri, modality=self.modality)
         A._df = self._df.copy()
         A._df[~nbest] = np.nan
         
         return A
+    
+    def subset(self, labels, invert=False):
+        """Scores subset
+        
+        Extract scores subset based on labels
+        
+        Parameters
+        ----------
+        labels : set
+            Set of labels
+        invert : bool, optional
+            If invert is True, extract all but requested `labels`
+        
+        Returns
+        -------
+        subset : `Scores`
+            Scores subset.
+        """
+        
+        if not isinstance(labels, set):
+            raise TypeError('labels must be provided as a set of labels.')
+        
+        if invert:
+            labels = set(self.labels()) - labels
+        else:
+            labels = labels & set(self.labels())
+        
+        A = self.__class__(uri=self.uri, modality=self.modality)
+        A._df = self._df[list(labels)]
+        
+        return A
+    
     
     def to_annotation(self, threshold=-np.inf, invert=False):
         """
