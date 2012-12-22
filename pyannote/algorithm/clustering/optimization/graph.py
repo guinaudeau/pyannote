@@ -34,6 +34,7 @@ from pyannote.algorithm.clustering.model.base import BaseModelMixin
 PROBABILITY = 'probability'
 SUBTRACK = 'subtrack'
 COOCCURRING = 'cooccurring'
+RANK = 'rank'
 
 class IdentityNode(object):
     """Identity node [I]
@@ -219,9 +220,11 @@ class AnnotationGraph(object):
             G.add_node(tnode)
             if isinstance(l, Unknown):
                 if self.unknown:
-                    G.add_edge(tnode, inodes[l], {PROBABILITY: 1.})
+                    G.add_edge(tnode, inodes[l], 
+                               {PROBABILITY: 1., RANK: 0})
             else:
-                G.add_edge(tnode, inodes[l], {PROBABILITY: 1.})
+                G.add_edge(tnode, inodes[l], 
+                           {PROBABILITY: 1., RANK: 0})
         
         return G
 
@@ -240,20 +243,15 @@ class ScoresGraph(object):
     s2p : func, optional
         Score-to-probability function.
         Defaults to identity (p=s)
-    nbest : int, optional
-        Only add `nbest` best identity nodes
     
     """
-    def __init__(self, s2p=None, nbest=None, **kwargs):
+    def __init__(self, s2p=None, **kwargs):
         super(ScoresGraph, self).__init__()
         
         if s2p is None:
             s2p = lambda s: s
         self.s2p = s2p
-        
-        assert isinstance(nbest, int) or nbest is None, \
-               "%r is not an integer" % nbest
-        self.nbest = nbest
+    
     
     def __call__(self, scores):
         
@@ -270,14 +268,12 @@ class ScoresGraph(object):
         # track nodes
         tnodes = {(s,t): TrackNode(u,m,s,t) for s,t in scores.itertracks()}
         
-        # keep n-best identities
-        if self.nbest is None:
-            probabilities = scores.map(self.s2p)
-        else:
-            probabilities = scores.map(self.s2p).nbest(self.nbest)
+        probabilities = scores.map(self.s2p)
+        rank = probabilities.rank()
         
         for s,t,l,p in probabilities.itervalues():
-            G.add_edge(tnodes[s,t], inodes[l], {PROBABILITY:p})
+            G.add_edge(tnodes[s,t], inodes[l], {PROBABILITY:p,
+                                                RANK:rank[s,t,l]})
         
         return G
 
@@ -636,6 +632,17 @@ class TrackCooccurrenceGraph(object):
         return G
 
 
+def remove_nbest_identity(G, nbest):
+    """Remove any identity nodes not in any n-best list"""
+    inodes = [node for node in G if isinstance(node, IdentityNode)]
+    remove = []
+    for n, inode in enumerate(inodes):
+        ranks = set([G[inode][node].get(RANK, np.inf) 
+                     for node in G.neighbors_iter(inode)])
+        if all(ranks > nbest):
+            remove.append(inode)
+    G.remove_nodes_from(remove)
+    return G
 
 
 def add_unique_identity_constraint(G):
