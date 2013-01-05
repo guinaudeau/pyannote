@@ -446,6 +446,8 @@ if hasattr(args, 'uris'):
     uris = args.uris
 
 import time
+from pyannote.algorithm.mpg.util import *
+
 
 for u, uri in enumerate(uris):
     
