@@ -26,6 +26,7 @@ from pyannote.algorithm.clustering.model.base import BaseModelMixin
 from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
 from pandas import DataFrame
 import networkx as nx
+import numpy as np
 
 PROBABILITY = 'probability'
 SUBTRACK = 'subtrack'

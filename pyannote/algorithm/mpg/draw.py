@@ -20,6 +20,8 @@
 
 import networkx as nx
 from matplotlib import pyplot as plt
+from pyannote.algorithm.mpg.graph import PROBABILITY, SUBTRACK
+from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
 
 def draw(G, threshold=0.0):
     
