@@ -23,7 +23,7 @@ from pyannote.base.timeline import Timeline
 from pyannote.base.annotation import Unknown, Annotation, Scores
 from pyannote.base.matrix import Cooccurrence
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
-from pyanote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
+from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
 from pandas import DataFrame
 import networkx as nx
 

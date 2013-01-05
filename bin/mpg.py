@@ -23,10 +23,9 @@ import pickle
 import networkx as nx
 import numpy as np
 
+# New argument parser
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
-from pyannote.algorithm.clustering.optimization.graph import *
-
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Probability Graph')
 
@@ -52,6 +51,8 @@ def mm_parser(path):
     else:
         return AnnotationParser().read(path)
 
+
+from pyannote.algorithm.mpg.graph import LabelSimilarityGraph, DiarizationGraph
 def ss_param_parser(param_pkl):
     """Speaker diarization
     
@@ -135,6 +136,8 @@ def si_parser(path):
     else:
         return AnnotationParser().read(path)
 
+
+from pyannote.algorithm.mpg.graph import ScoresGraph
 def si_param_parser(param_pkl):
     """Speaker identification graph
     
@@ -191,14 +194,14 @@ def hh_param_parser(param_pkl):
     else:
         with open(param_pkl, 'r') as f:
             params = pickle.load(f)
-    
+        
         mmx = params.pop('__mmx__')
         func = params.pop('__s2p__')
-    
+        
         class HHGraph(LabelSimilarityGraph, mmx):
             def __init__(self):
                 super(HHGraph, self).__init__(func=func, **params)
-    
+        
         graph_generator = HHGraph()
     
     return graph_generator
@@ -248,6 +251,7 @@ def wi_parser(path):
     """
     return AnnotationParser().read(path)
 
+from pyannote.algorithm.mpg.graph import AnnotationGraph
 def wi_param_parser(path):
     """Written names
     
@@ -268,6 +272,8 @@ def ni_parser(path):
 def ni_param_parser(path):
     raise NotImplementedError('--ni-param option is not supported yet.')
 
+
+from pyannote.algorithm.mpg.graph import TrackCooccurrenceGraph
 def x_param_parser(param_pkl):
     """Cross-modal graph
     
