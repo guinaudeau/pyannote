@@ -81,8 +81,9 @@ def add_cooccurring_labels_contraint(G):
         # loop on each pair of labels and check if they are cooccurring
         for n, node in enumerate(lnodes):
             for other_node in lnodes[n+1:]:
-                if G[node][other_node][COOCCURRING]:
-                    G[node][other_node][PROBABILITY] = 0.
+                if G.has_edge(node, other_node):
+                    if G[node][other_node][COOCCURRING]:
+                        G[node][other_node][PROBABILITY] = 0.
     
     return G
 
