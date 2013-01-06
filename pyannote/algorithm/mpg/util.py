@@ -173,154 +173,86 @@ def log_mpg(g):
     return log
 
 
-def complete_mpg(g, existing=False):
-    """Make complete graph from existing probability graph
+def propagate_constraints(g):
     
-    The returned complete probability graph only contains track nodes 
-    and identity nodes (label nodes are usually not needed)
+    G = nx.Graph(g)
     
-    Parameters
-    ----------
-    g : nx.Graph
-        Probability graph
-    existing : bool
-        When True, even existings edge are updated in case a higher probability
-        path connects the same nodes. By default, existing edges are kept
-        unchanged.
-    
-    Returns
-    -------
-    complete : nx.Graph
-        Complete probability graph. Each pair of nodes is weighted by the
-        probability of the highest probability path between them.
-    
-    """
-    
-    # create new probability graph where each edge probability P 
-    # is replaced by -log P except when P = 0 
-    # (otherwise -log P = +oo and shortest path algorithm quietly fails)
-    log = log_mpg(g)
-    
-    # compute maximum probability path between each pair of nodes
-    # where the probability of a path is the product of every encountered
-    # probabilities (actually -log π pij)
-    shortest = nx.shortest_path_length(log, weight=PROBABILITY)
-    
-    # create new complete probability graph where each edge probability P
-    # is replaced by the probability of the maximum probability path
-    # except when P = 0 or when 'existing' is True and the edge exists 
-    # in the original probability graph (in these case P is kept unchanged)
-    complete = nx.Graph()
-    complete.add_nodes_from(g.nodes_iter(data=True))
-    nodes = complete.nodes()
-    
-    for n, e in enumerate(nodes):
-        for f in nodes[n+1:]:
-            
-            # special behavior in case there is an edge connecting the 2 nodes
-            # in the original graph: don't update if p=0 or if existing=False
-            if g.has_edge(e,f):
-                D = dict(g[e][f])
-                if D[PROBABILITY] != 0. and existing:
-                    D[PROBABILITY] = np.exp(-shortest[e][f])
-                # else:
-                #     pass
-            else:
-                # in case e and f are in two different connected components
-                # no shortest path can be computed -- therefore we need
-                # to test whether it happens and set probability to 0
-                if e in shortest and f in shortest[e]:
-                    D = {PROBABILITY: np.exp(-shortest[e][f])}
+    # p = 1 constraints
+    c = nx.Graph(g)
+    c.remove_edges_from([(e,f) for e,f,d in g.edges_iter(data=True)
+                               if d[PROBABILITY] != 1])
+    components = nx.connected_components(c)
+    for component in components:
+        for i,n in enumerate(component):
+            for m in component[i+1:]:
+                if G.has_edge(n, m):
+                    G[n][m][PROBABILITY] = 1.
                 else:
-                    D = {PROBABILITY: 0.}
-            
-            # add edge with updated probability
-            # all other edge variables are kept unchanged
-            complete.add_edge(e, f, D)
+                    G.add_edge(n, m, **{PROBABILITY: 1.})
     
-    return complete
-
-
-def _add_shortest_edge(complete, g, existing, e, f, shortest):
-    # special behavior in case there is an edge connecting the 2 nodes
-    # in the original graph: don't update if p=0 or if existing=False
-    if g.has_edge(e,f):
-        D = dict(g[e][f])
-        if D[PROBABILITY] != 0. and existing:
-            D[PROBABILITY] = np.exp(-shortest[e][f])
-        # else:
-        #     pass
-    else:
-        # in case e and f are in two different connected components
-        # no shortest path can be computed -- therefore we need
-        # to test whether it happens and set probability to 0
-        if e in shortest and f in shortest[e]:
-            D = {PROBABILITY: np.exp(-shortest[e][f])}
-        else:
-            D = {PROBABILITY: 0.}
-            
-    # add edge with updated probability
-    # all other edge variables are kept unchanged
-    complete.add_edge(e, f, D)
-
-
-
-def complete_mpg2(g, existing=False):
-    """Make complete graph from existing probability graph
+    # p = 0 constraints
+    c = nx.Graph(g)
+    c.remove_edges_from([(e,f) for e,f,d in g.edges_iter(data=True)
+                               if d[PROBABILITY] != 0])
+    c = nx.blockmodel(c, components, multigraph=True)
+    for e,f in c.edges_iter():
+        for n in components[e]:
+            for m in components[f]:
+                if G.has_edge(n, m):
+                    G[n][m][PROBABILITY] = 0.
+                else:
+                    G.add_edge(n, m, **{PROBABILITY: 0.})
     
-    The returned complete probability graph only contains track nodes 
-    and identity nodes (label nodes are usually not needed)
+    return G
     
-    Parameters
-    ----------
-    g : nx.Graph
-        Probability graph
-    existing : bool
-        When True, even existings edge are updated in case a higher probability
-        path connects the same nodes. By default, existing edges are kept
-        unchanged.
+def complete_mpg(g):
     
-    Returns
-    -------
-    complete : nx.Graph
-        Complete probability graph. Each pair of nodes is weighted by the
-        probability of the highest probability path between them.
+    G = propagate_constraints(g)
     
-    """
-    
-    # create new probability graph where each edge probability P 
-    # is replaced by -log P except when P = 0 
-    # (otherwise -log P = +oo and shortest path algorithm quietly fails)
-    log = log_mpg(g)
-    
-    inodes = [node for node in log if isinstance(node, IdentityNode)]
-    tnodes = [node for node in log if isinstance(node, TrackNode)]
-    
+    log = log_mpg(G)
     complete = nx.Graph()
-    complete.add_nodes_from(inodes)
-    complete.add_nodes_from(tnodes)
     
-    # track to identity shortest paths
-    for inode in inodes:
-        # create new graph where all other identity nodes are removed
-        # in order to prevent meaningless shortest paths
-        _log = nx.Graph(log)
-        _log.remove_nodes_from([n for n in inodes if n != inode])
-        shortest = nx.shortest_path_length(_log, source=inode, weight=PROBABILITY)
-        for tnode in shortest:
-            if isinstance(tnode, TrackNode):
-                _add_shortest_edge(complete, g, existing, 
-                                   inode, tnode, {inode: shortest})
+    # all track nodes of interest
+    # ie speaker/head node not subtrack
+    tnodes = [(n,d) for n,d in G.nodes_iter(data=True) \
+                    if isinstance(n, TrackNode) \
+                    and n.modality in ['speaker', 'head'] \
+                    and not d.get(SUBTRACK, False)]
     
-    # track to track shortest paths
+    # all identity nodes
+    inodes = [(n,d) for n,d in G.nodes_iter(data=True) \
+                    if isinstance(n, IdentityNode)]
+    
+    # tnode/tnode shortest path (with forbidden identity nodes)
     _log = nx.Graph(log)
-    _log.remove_nodes_from(inodes)
-    shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
-    for tnode1 in shortest:
-        if isinstance(tnode1, TrackNode):
-            for tnode2 in shortest[tnode1]:
-                if isinstance(tnode2, TrackNode):
-                    _add_shortest_edge(complete, g, existing, 
-                                       tnode1, tnode2, shortest)
+    _log.remove_nodes_from(zip(*inodes)[0])
+    _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
+    for i, (n, d) in enumerate(tnodes):
+        complete.add_node(n, **d)
+        for N, D in tnodes[i+1:]:
+            if G.has_edge(n, N):
+                data = dict(g[n][N])
+            else:
+                data = {PROBABILITY: np.exp(-_shortest[n][N])}
+            complete.add_edge(n, N, **data)
+    
+    # inode/tnodes shortest path (with forbidden other identity nodes)
+    for i, (n, d) in enumerate(inodes):
+        complete.add_node(n, **d)
+        _log = nx.Graph(log)
+        _log.remove_nodes_from([m for j,(m,_) in enumerate(inodes) if j != i])
+        _shortest = nx.shortest_path_length(_log, source=n, weight=PROBABILITY)
+        for N, D in tnodes:
+            if G.has_edge(n, N):
+                data = dict(G[n][N])
+            else:
+                data = {PROBABILITY: np.exp(-_shortest[N])}
+            complete.add_edge(n, N, **data)
+    
+    # inode/inode constraint
+    for i, (n, d) in enumerate(inodes):
+        for m,_ in inodes[i+1:]:
+            G.add_edge(n, m, **{PROBABILITY: 0})
     
     return complete
+    
