@@ -115,7 +115,8 @@ except IOError as e:
 if not hasattr(args, 'uris'):
     raise IOError('missing list of resources (--uris)')
 
-from pyannote.algorithm.clustering.optimization.graph import IdentityNode, TrackNode, meta_mpg, complete_mpg
+from pyannote.algorithm.mpg.node import IdentityNode, TrackNode
+from pyannote.algorithm.mpg.util import meta_mpg, complete_mpg
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
 from pyannote.parser import MDTMParser
 from pyannote.base.annotation import Annotation, Unknown
