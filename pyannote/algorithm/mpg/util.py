@@ -231,7 +231,7 @@ def complete_mpg(g):
         complete.add_node(n, **d)
         for N, D in tnodes[i+1:]:
             if G.has_edge(n, N):
-                data = dict(g[n][N])
+                data = dict(G[n][N])
             else:
                 data = {PROBABILITY: np.exp(-_shortest[n][N])}
             complete.add_edge(n, N, **data)
