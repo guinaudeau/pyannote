@@ -165,13 +165,17 @@ for u, uri in enumerate(args.uris):
     modalities = set([n.modality 
                       for n in mpg if not isinstance(n, IdentityNode)])
     
+    
+    if args.complete:
+        mpg = complete_mpg(mpg)
+    
     # get meta-MPG (create one meta-node for nodes connected with prob=1)
     mmpg, meta_nodes = meta_mpg(mpg)
     
     
-    # complete meta-MPG if requested
-    if args.complete:
-        mmpg = complete_mpg(mmpg)
+    # # complete meta-MPG if requested
+    # if args.complete:
+    #     mmpg = complete_mpg(mmpg)
     
     # # pruning
     # for e,f,data in G.edges(data=True):
