@@ -20,6 +20,7 @@
 
 import sys
 import pandas
+import numpy as np
 from pyannote.base.timeline import Timeline
 from pyannote.base.annotation import Annotation, Scores
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
@@ -420,7 +421,19 @@ class BaseTextualParser(object):
 
 class BaseTextualAnnotationParser(BaseTextualParser):
     
-    def read(self, path, **kwargs):
+    def read(self, path, modality=None, **kwargs):
+        """
+        
+        Parameters
+        ----------
+        path : str
+        
+        modality : str, optional
+            Force all entries to be considered as coming from this modality.
+            Only taken into account when file format does not provide
+            any field related to modality (e.g. .seg files)
+        
+        """
         
         names = self.get_fields()
         
@@ -428,7 +441,8 @@ class BaseTextualAnnotationParser(BaseTextualParser):
         df = pandas.read_table(path, header=None, 
                                sep=self.get_separator(), 
                                names=names,
-                               comment=self.get_comment())
+                               comment=self.get_comment(),
+                               converters={LABEL: lambda x: x})
         
         # remove comment lines 
         # (i.e. lines for which all fields are either None or NaN)
@@ -445,6 +459,10 @@ class BaseTextualAnnotationParser(BaseTextualParser):
         # obtain list of resources
         uris = list(df[URI].unique())
         
+        # add modality column in case it does not exist
+        if MODALITY not in df:
+            df[MODALITY] = modality if modality is not None else ""
+        
         # obtain list of modalities
         modalities = list(df[MODALITY].unique())
         
@@ -460,7 +478,7 @@ class BaseTextualAnnotationParser(BaseTextualParser):
             for modality in modalities:
                 
                 # filter based on modality
-                df__ = df_[df_[MODALITY] == modality]
+                df__ = df_[df_[MODALITY] == (modality if modality is not None else "")]
                 
                 a = Annotation.from_df(df__, modality=modality,
                                              uri=uri)
