@@ -311,6 +311,10 @@ class BaseTextualFormat(object):
     
     def get_segment(self, row):
         raise NotImplementedError('')
+        
+    def get_converters(self):
+        return None
+
 
 class BaseTextualParser(object):
     
@@ -437,12 +441,18 @@ class BaseTextualAnnotationParser(BaseTextualParser):
         
         names = self.get_fields()
         
+        converters = self.get_converters()
+        if converters is None:
+            converters = {}
+        if LABEL not in converters:
+            converters[LABEL] = lambda x: x
+        
         # load whole file
         df = pandas.read_table(path, header=None, 
                                sep=self.get_separator(), 
                                names=names,
                                comment=self.get_comment(),
-                               converters={LABEL: lambda x: x})
+                               converters=converters)
         
         # remove comment lines 
         # (i.e. lines for which all fields are either None or NaN)
@@ -497,11 +507,18 @@ class BaseTextualScoresParser(BaseTextualParser):
         
         names = self.get_fields()
         
+        converters = self.get_converters()
+        if converters is None:
+            converters = {}
+        if LABEL not in converters:
+            converters[LABEL] = lambda x: x
+        
         # load whole file
         df = pandas.read_table(path, header=None, 
                                sep=self.get_separator(), 
                                names=names,
-                               comment=self.get_comment())
+                               comment=self.get_comment(),
+                               converters=converters)
         
         # remove comment lines 
         # (i.e. lines for which all fields are either None or NaN)
