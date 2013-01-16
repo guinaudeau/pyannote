@@ -44,6 +44,10 @@ class TVMMixin(BaseTextualFormat):
     def get_segment(self, row):
         return Segment(row[self.START], row[self.START]+row[self.DURATION])
     
+    def get_converters(self):
+        # 'head_52' ==> '52'
+        return {TRACK: lambda x: x.split('_')[1]}
+        
     def _append(self, scores, f, uri, modality):
         try:
             format = '%s %%g %%g %s %%s %%g\n' % (uri, modality)
