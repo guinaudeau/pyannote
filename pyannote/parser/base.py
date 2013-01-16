@@ -33,17 +33,17 @@ class BaseTimelineParser(object):
         self.reset()
     
     def __get_uris(self):
-        return sorted(self.__loaded)
+        return sorted(self._loaded)
     uris = property(fget=__get_uris)
     """"""
     
     def _add(self, segment, uri):
-        if uri not in self.__loaded:
-            self.__loaded[uri] = Timeline(uri=uri)
-        self.__loaded[uri] += segment
+        if uri not in self._loaded:
+            self._loaded[uri] = Timeline(uri=uri)
+        self._loaded[uri] += segment
     
     def reset(self):
-        self.__loaded = {}
+        self._loaded = {}
     
     def read(self, path, uri=None, **kwargs):
         raise NotImplementedError('')
@@ -62,7 +62,7 @@ class BaseTimelineParser(object):
         
         """
         
-        match = dict(self.__loaded)
+        match = dict(self._loaded)
         
         # filter out all timelines 
         # but the ones for the requested resource
@@ -152,25 +152,25 @@ class BaseAnnotationParser(object):
         self.reset()
     
     def __get_uris(self):
-        return sorted(set([v for (v, m) in self.__loaded]))
+        return sorted(set([v for (v, m) in self._loaded]))
     uris = property(fget=__get_uris)
     """"""
     
     def __get_modalities(self):
-        return sorted(set([m for (v, m) in self.__loaded]))
+        return sorted(set([m for (v, m) in self._loaded]))
     modalities = property(fget=__get_modalities)
     """"""
     
     def _add(self, segment, track, label, uri, modality):
         key = (uri, modality)
-        if key not in self.__loaded:
-            self.__loaded[key] = Annotation(uri=uri, modality=modality)
+        if key not in self._loaded:
+            self._loaded[key] = Annotation(uri=uri, modality=modality)
         if track is None:
-            track = self.__loaded[key].new_track(segment)
-        self.__loaded[key][segment, track] = label
+            track = self._loaded[key].new_track(segment)
+        self._loaded[key][segment, track] = label
     
     def reset(self):
-        self.__loaded = {}
+        self._loaded = {}
     
     def read(self, path, uri=None, modality=None, **kwargs):
         raise NotImplementedError('')
@@ -190,7 +190,7 @@ class BaseAnnotationParser(object):
         
         """
         
-        match = dict(self.__loaded)
+        match = dict(self._loaded)
         
         # filter out all annotations 
         # but the ones for the requested resource
@@ -493,7 +493,7 @@ class BaseTextualAnnotationParser(BaseTextualParser):
 
 class BaseTextualScoresParser(BaseTextualParser):
     
-    def read(self, path, **kwargs):
+    def read(self, path, modality=None, **kwargs):
         
         names = self.get_fields()
         
@@ -517,6 +517,10 @@ class BaseTextualScoresParser(BaseTextualParser):
             df[TRACK] = [s2t[s] for s in df[SEGMENT]]
         
         
+        # add modality column in case it does not exist
+        if MODALITY not in df:
+            df[MODALITY] = modality if modality is not None else ""
+        
         # remove all columns but those six
         df = df[[URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE]]
         
@@ -538,7 +542,7 @@ class BaseTextualScoresParser(BaseTextualParser):
             for modality in modalities:
                 
                 # filter based on modality
-                df__ = df_[df_[MODALITY] == modality]
+                df__ = df_[df_[MODALITY] == (modality if modality is not None else "")]
                 
                 s = Scores.from_df(df__, modality=modality,
                                          uri=uri)
