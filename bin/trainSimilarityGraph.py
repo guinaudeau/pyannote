@@ -134,11 +134,11 @@ def face_clustering(args):
         # focus on associated tracks
         labels = [l for l in annotation.labels() 
                         if not isinstance(l, Unknown)]
-        annotation = annotation(labels)
+        annotation = annotation.subset(set(labels))
         
         for l, label in enumerate(labels):
-            t = annotation(label)
-            other_t = annotation(label, invert=True)
+            t = annotation.subset(set([label]))
+            other_t = annotation.subset(set([label]), invert=True)
             for _, track, _ in t.iterlabels():
                 for _, other_track, _ in t.iterlabels():
                     if track == other_track:
