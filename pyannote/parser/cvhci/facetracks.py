@@ -19,9 +19,11 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyannote.base.segment import Segment
-from pyannote.base.annotation import Unknown
+from pyannote.base.annotation import Annotation, Unknown
 from pyannote.parser.base import BaseAnnotationParser
 import cvhcistandards
+from pyannote.base import SEGMENT, TRACK, LABEL
+from pandas import DataFrame
 
 class FACETRACKSParser(BaseAnnotationParser):
     
@@ -42,9 +44,14 @@ class FACETRACKSParser(BaseAnnotationParser):
     def read(self, path, uri=None, **kwargs):
         
         modality = 'head'
-        tracks, _, _ = cvhcistandards.read_tracks(path, load_ids=self.load_ids)
+        facetracks, _, _ = cvhcistandards.read_tracks(path, 
+                                                      load_ids=self.load_ids)
         
-        for track, data in tracks.iteritems():
+        segments = []
+        tracks = []
+        labels = []
+        
+        for track, data in facetracks.iteritems():
             
             segment = Segment(data['state'][0][1], data['state'][-1][1])
             if not segment:
@@ -57,7 +64,15 @@ class FACETRACKSParser(BaseAnnotationParser):
             else:
                 label = track
             
-            self._add(segment, track, label, uri, modality)
+            segments.append(segment)
+            tracks.append(track)
+            labels.append(label)
+        
+        df = DataFrame(data={SEGMENT: segments, 
+                             TRACK: tracks, 
+                             LABEL: labels})
+        annotation = Annotation.from_df(df, uri=uri, modality='head')
+        self._loaded = {(uri, modality): annotation}
         
         return self
     
