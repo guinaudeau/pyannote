@@ -20,6 +20,7 @@
 
 from nist import *
 from repere import *
+from repere.inria import *
 from other import *
 from feature import *
 from cvhci import *
@@ -28,6 +29,7 @@ class LabelMatrixParser(object):
     
     specific = {
         '.mat': METRICMATParser,
+        '.tvt': TVTParser,
     }
     
     @classmethod
@@ -60,14 +62,15 @@ class LabelMatrixParser(object):
 class AnnotationParser(object):
     
     supported = {
-            '.mdtm':   MDTMParser,
-            '.seg':    SEGParser,
+            '.mdtm': MDTMParser,
+            '.seg': SEGParser,
             '.repere': REPEREParser,
-            '.hyp':    REPEREParser,
-            '.trs':    TRSParser,
-            '.xgtf':   XGTFParser,
+            '.hyp': REPEREParser,
+            '.trs': TRSParser,
+            '.xgtf': XGTFParser,
             '.facetracks': FACETRACKSParser,
-            '.etf0':   ETF0Parser,
+            '.etf0': ETF0Parser,
+            '.tvm': TVMParser,
         }
     
     @classmethod
