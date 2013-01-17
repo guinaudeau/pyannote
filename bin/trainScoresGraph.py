@@ -112,7 +112,58 @@ def speaker_identification(args):
     args.output.close()
 
 def face_recognition(args):
-    raise NotImplementedError('Face recognition not supported yet')
+    
+    X = []
+    Y = []
+    
+    uris = args.uris
+    
+    for u, uri in enumerate(uris):
+        
+        if args.verbose:
+            sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
+            sys.stdout.flush()
+        
+        # load input annotation and scores
+        annotation = args.input(uri)
+        scores = args.scores(uri)
+        
+        # focus on annotated region ...
+        if hasattr(args, 'uem'):
+            uem = args.uem(uri)
+            annotation = annotation.crop(uem, mode='loose')
+            scores = scores.crop(uem, mode='loose')
+        
+        # ... and annotated tracks
+        labels = [l for l in annotation.labels()
+                        if not isinstance(l, Unknown)]
+        annotation = annotation.subset(set(labels))
+        
+        # loop on tracks for which scores were computed
+        for s,t,l in annotation.iterlabels():
+            
+            if not scores.has_track(s,t):
+                continue
+            
+            for L,V in scores.get_track_scores(s,t).iteritems():
+                Y.append(int(l==L))
+                X.append(V)
+    
+    
+    X = np.array(X)
+    Y = np.array(Y)
+    
+    s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+    
+    params = {}
+    params['__uris__'] = uris
+    params['__X__'] = X
+    params['__Y__'] = Y
+    params['__s2p__'] = s2p
+    
+    pickle.dump(params, args.output)
+    args.output.close()
+
 
 from pyannote import clicommon
 from argparse import ArgumentParser, SUPPRESS
@@ -156,21 +207,29 @@ fparser = subparsers.add_parser('face', parents=[clicommon.parser],
                                         help='face recognition')
 fparser.set_defaults(func=face_recognition)
 
-# def input_fparser(path):
-#     if clicommon.containsURI(path):
-#         return lambda u: AnnotationParser(load_ids=True)\
-#                          .read(clicommon.replaceURI(path, u), uri=u)(u)
-#         # load_ids = True makes unassociated tracks labeled as Unknown()
-#         # associated tracks are labeled with the person identity
-#     else:
-#         raise IOError('Only .facetracks input files are supported for now.')
-# 
-# msg = "path to input associated tracks. " + clicommon.msgURI()
-# fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
-# 
-# msg = "path to precomputed similarity matrix. " + clicommon.msgURI()
-# fparser.add_argument('precomputed', type=str, metavar='matrix',
-#                      help=msg)
+def input_fparser(path):
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser(load_ids=True)\
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
+        # load_ids = True makes unassociated tracks labeled as Unknown()
+        # associated tracks are labeled with the person identity
+    else:
+        raise IOError('Only .facetracks input files are supported for now.')
+
+msg = "path to input associated tracks. " + clicommon.msgURI()
+fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
+
+
+def scores_fparser(path):
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser()\
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
+    else:
+        return AnnotationParser().read(path)
+
+msg = "path to precomputed distances to models. " + clicommon.msgURI()
+fparser.add_argument('scores', type=scores_fparser, metavar='scores',
+                     help=msg)
 
 fparser.add_argument('output', type=output_parser, metavar='params.pkl',
                      help='path to output file')
