@@ -26,7 +26,7 @@ import pyannote
 from pyannote.base.annotation import Annotation, Unknown, Timeline
 from pyannote.parser import AnnotationParser
 from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
-from pyannote.algorithm.tagging import ConservativeDirectTagger
+from pyannote.algorithm.tagging import ArgMaxDirectTagger
 
 def speaker_identification(args):
     
@@ -38,7 +38,7 @@ def speaker_identification(args):
     else:
         uris = args.reference.uris
     
-    tagger = ConservativeDirectTagger()
+    tagger = ArgMaxDirectTagger()
     X = []
     Y = []
     
@@ -99,13 +99,17 @@ def speaker_identification(args):
     
     X = np.array(X)
     Y = np.array(Y)
-    s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
     
     params = {}
     params['__uris__'] = uris
     params['__X__'] = X
     params['__Y__'] = Y
-    params['__s2p__'] = s2p
+    
+    try:
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        params['__s2p__'] = s2p
+    except Exception, e:
+        print "Could not fit logistic probability maker"
     
     # save to output file
     pickle.dump(params, args.output)
