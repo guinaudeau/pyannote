@@ -23,7 +23,7 @@ import pickle
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
 from pyannote.parser import AnnotationParser
-from pyannote.algorithm.clustering.optimization.graph import TrackCooccurrenceGraph
+from pyannote.algorithm.mpg.graph import TrackCooccurrenceGraph
 
 from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
@@ -31,8 +31,13 @@ argparser = ArgumentParser(parents=[clicommon.parser],
                                        'graph training')
 
 def input_parser(path):
-    return AnnotationParser().read(path)
-    
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser(load_ids=True)\
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
+    else:
+        return AnnotationParser().read(path)
+
+
 def output_parser(path):
     try:
        with open(path) as f: pass
@@ -57,9 +62,9 @@ argparser.add_argument('dump', type=output_parser, metavar='dump_to',
                              'cross-modal cooccurrence graph')
 
 argparser.add_argument('--min-duration', metavar='in_seconds', 
-                       type=float, default=0.,
+                       type=float, default=1.,
                        help='Minimum cooccurrence duration for two tracks to '
-                            'be considered cooccurring (default is 0 second)')
+                            'be considered cooccurring (default is 1 second)')
 
 argparser.add_argument('--significant', metavar='in_seconds', type=float, default=60.,
                        help='Blah blah (default is 60.)')
@@ -92,16 +97,20 @@ def ABiterator():
             srcB.modality = args.modalityB
         
         if hasattr(args, 'uem'):
-            srcA = srcA.crop(args.uem(uri), mode='intersection')
-            srcB = srcB.crop(args.uem(uri), mode='intersection')
+            srcA = srcA.crop(args.uem(uri), mode='loose')
+            srcB = srcB.crop(args.uem(uri), mode='loose')
         
-        yield srcA, srcB
+        cvgA = srcA.timeline.coverage()
+        cvgB = srcB.timeline.coverage()
+        
+        yield srcA.crop(cvgB, mode='loose'), srcB.crop(cvgA, mode='loose')
 
 cooccurrenceGraph = TrackCooccurrenceGraph(min_duration=args.min_duration,
                                            significant=args.significant)
 cooccurrenceGraph.fit(ABiterator())
 
 data = {}
+data['graph'] = cooccurrenceGraph
 data['min_duration'] = cooccurrenceGraph.min_duration
 data['significant'] = cooccurrenceGraph.significant
 data['modalityA'] = cooccurrenceGraph.modalityA
