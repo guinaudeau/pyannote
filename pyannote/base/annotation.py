@@ -275,6 +275,42 @@ class AnnotationMixin(object):
             
         return existing_tracks
     
+    def has_track(self, segment, track):
+        """Check whether a given track exists
+        
+        Parameters
+        ----------
+        segment : `Segment`
+            Query segment
+        track : 
+            Query track
+        
+        Returns
+        -------
+        exists : bool
+            True if track exists for segment
+        """
+        return (segment, track) in self._df.index
+    
+    def get_track_by_name(self, track):
+        """Get all tracks with given name
+        
+        Parameters
+        ----------
+        track : any valid track name
+            Requested name track
+        
+        Returns
+        -------
+        tracks : list
+            List of (segment, track) tuples
+        """
+        try:
+            segments = list(self._df.xs(track, level=1).index)
+        except Exception, e:
+            segments = []
+        return [(s, track) for s in segments] 
+    
     def copy(self):
         A = self.__class__(uri=self.uri, modality=self.modality)
         A._df = self._df.copy()
@@ -810,6 +846,22 @@ class Scores(AnnotationMixin, object):
     def __getitem__(self, key):
         segment, track, label = key
         return self._df.get_value((segment, track), label)
+    
+    def get_track_scores(self, segment, track):
+        """Get all scores for a given track.
+        
+        Parameters
+        ----------
+        segment : Segment
+        track : hashable
+            segment, track must be a valid track
+        
+        Returns
+        -------
+        scores : dict
+            {label: score} dictionary
+        """
+        return {l: self._df.get_value((segment, track), l) for l in self._df}
     
     # scores[segment, track, label] = value
     def __setitem__(self, key, value):
