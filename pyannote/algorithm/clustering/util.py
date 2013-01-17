@@ -191,7 +191,8 @@ class LogisticProbabilityMaker(object):
         self.popt = popt
     
     def __call__(self, x):
-        return self.logistic(x, *(self.popt))
+        y = self.logistic(x, *(self.popt))
+        return np.maximum(np.minimum(y, 1-1e-6), 1e-6)
     
     def logistic(self, x, B, Q, M, v):
         y = 1. / (1. + Q *  np.exp(-B*(x-M)))**(1./v)
