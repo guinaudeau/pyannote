@@ -93,12 +93,17 @@ def speaker_diarization(args):
         
         X = np.append(X, M.M)
     
+    
+    params['__uris__'] = uris
     params['__X__'] = X
     params['__Y__'] = Y
-    params['__uris__'] = uris
-    params['__s2p__'] = LogisticProbabilityMaker().fit(params['__X__'],
-                                                       params['__Y__'],
-                                                       prior=1.)
+    
+    try:
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        params['__s2p__'] = s2p
+    except Exception, e:
+        print "Could not fit logistic probability maker"
+    
     # save to output file
     pickle.dump(params, args.output)
     args.output.close()
@@ -155,13 +160,20 @@ def face_clustering(args):
                     except Exception, e:
                         pass
     
-    params['__X__'] = np.array(X)
-    params['__Y__'] = np.array(y)
+    
+    X = np.array(X)
+    Y = np.array(y)
     if hasattr(args, 'uris'):
         params['__uris__'] = args.uris
-    params['__s2p__'] = LogisticProbabilityMaker().fit(params['__X__'],
-                                                       params['__Y__'],
-                                                       prior=1.)
+    params['__X__'] = X
+    params['__Y__'] = Y
+    
+    try:
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        params['__s2p__'] = s2p
+    except Exception, e:
+        print "Could not fit logistic probability maker"
+    
     # save to output file
     pickle.dump(params, args.output)
     args.output.close()

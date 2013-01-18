@@ -157,13 +157,16 @@ def face_recognition(args):
     X = np.array(X)
     Y = np.array(Y)
     
-    s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
-    
     params = {}
     params['__uris__'] = uris
     params['__X__'] = X
     params['__Y__'] = Y
-    params['__s2p__'] = s2p
+    
+    try:
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        params['__s2p__'] = s2p
+    except Exception, e:
+        print "Could not fit logistic probability maker"
     
     pickle.dump(params, args.output)
     args.output.close()
