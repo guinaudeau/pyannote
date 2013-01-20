@@ -111,11 +111,12 @@ class TrackNode(object):
         return isinstance(other, TrackNode) and \
                self.uri == other.uri and \
                self.modality == other.modality and \
-               self.segment == other.segment and \
+               abs(self.segment.start - other.segment.start) < 0.01 and \
+               abs(self.segment.end - other.segment.end) < 0.01 and \
                self.track == other.track
     
     def __hash__(self):
-        return hash(self.uri) + hash(self.segment)
+        return hash(self.uri) + hash(self.track)
     
     def __str__(self):
         return "%s|%s_%s" % (self.modality, self.segment, self.track)
