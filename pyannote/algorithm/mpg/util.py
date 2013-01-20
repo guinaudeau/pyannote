@@ -36,58 +36,6 @@ def remove_nbest_identity(G, nbest):
     return G
 
 
-def add_unique_identity_constraint(G):
-    """Add p=0. edges between all pairs of identity nodes"""
-    inodes = [node for node in G if isinstance(node, IdentityNode)]
-    for n, node in enumerate(inodes):
-        for other_node in inodes[n+1:]:
-            G.add_edge(node, other_node, {PROBABILITY: 0.})
-    return G
-
-def add_twin_tracks_constraint(G):
-    """Add p=0 edges between all intra-modality 
-       overlapping tracks (not subtracks)
-    """ 
-    
-    # obtain the list of all modalities in graph
-    modalities = set([n.modality for n in G if isinstance(n, TrackNode)])
-    
-    for modality in modalities:
-        # obtain the list of tracks for this modality
-        # (note that subtracks are not part of this list, 
-        # they are hard-linked to their main track anyway)
-        tnodes = [n for n in G if isinstance(n, TrackNode) \
-                               and n.modality == modality \
-                               and not G.node[n].get(SUBTRACK, False)]
-        # loop on each pair of tracks and check for overlapping ones
-        for n, node in enumerate(tnodes):
-            for other_node in tnodes[n+1:]:
-                # are they overlapping?
-                if node.segment & other_node.segment:
-                    G.add_edge(node, other_node, 
-                               {PROBABILITY: 0., COOCCURRING: True})
-    
-    return G
-
-def add_cooccurring_labels_contraint(G):
-    
-    # obtain the list of all modalities in graph
-    modalities = set([n.modality for n in G if isinstance(n, LabelNode)])
-    
-    for modality in modalities:
-        # obtain the list of labels for this modality
-        lnodes = [n for n in G if isinstance(n, LabelNode) \
-                               and n.modality == modality]
-        # loop on each pair of labels and check if they are cooccurring
-        for n, node in enumerate(lnodes):
-            for other_node in lnodes[n+1:]:
-                if G.has_edge(node, other_node):
-                    if G[node][other_node][COOCCURRING]:
-                        G[node][other_node][PROBABILITY] = 0.
-    
-    return G
-
-
 def meta_mpg(g):
     """Meta Multimodal Probability Graph
     
@@ -173,38 +121,6 @@ def log_mpg(g):
     return log
 
 
-def propagate_constraints(g):
-    
-    G = nx.Graph(g)
-    
-    # p = 1 constraints
-    c = nx.Graph(g)
-    c.remove_edges_from([(e,f) for e,f,d in g.edges_iter(data=True)
-                               if d[PROBABILITY] != 1])
-    components = nx.connected_components(c)
-    for component in components:
-        for i,n in enumerate(component):
-            for m in component[i+1:]:
-                if G.has_edge(n, m):
-                    G[n][m][PROBABILITY] = 1.
-                else:
-                    G.add_edge(n, m, **{PROBABILITY: 1.})
-    
-    # p = 0 constraints
-    c = nx.Graph(g)
-    c.remove_edges_from([(e,f) for e,f,d in g.edges_iter(data=True)
-                               if d[PROBABILITY] != 0])
-    c = nx.blockmodel(c, components, multigraph=True)
-    for e,f in c.edges_iter():
-        for n in components[e]:
-            for m in components[f]:
-                if G.has_edge(n, m):
-                    G[n][m][PROBABILITY] = 0.
-                else:
-                    G.add_edge(n, m, **{PROBABILITY: 0.})
-    
-    return G
-    
 def complete_mpg(g):
     
     G = propagate_constraints(g)
