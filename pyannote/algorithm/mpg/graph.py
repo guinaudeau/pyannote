@@ -129,29 +129,26 @@ class MultimodalProbabilityGraph(nx.Graph):
     def add_track_constraints(self):
         """Add p=0 edges between each intra-modality pair of 
         cooccurring tracks"""
-    
-    # obtain the list of all modalities in graph
-    modalities = set([n.modality for n in self 
-                                 if isinstance(n, TrackNode)])
-    
-    for modality in modalities:
-        # obtain the list of tracks for this modality
-        # (note that subtracks are not part of this list, 
-        # they are hard-linked to their main track anyway)
-        tnodes = [n for n in self if isinstance(n, TrackNode) \
-                                  and n.modality == modality \
-                                  and not self.node[n].get(SUBTRACK, False)]
         
-        # loop on each pair of tracks and check for overlapping ones
-        for n, node in enumerate(tnodes):
-            for other_node in tnodes[n+1:]:
-                # are they overlapping?
-                if node.segment.intersects(other_node.segment):
-                    self.update_edge(node, other_node, 
-                                     probability=0., cooccurring=True)
+        # obtain the list of all modalities in graph
+        modalities = set([n.modality for n in self 
+                                     if isinstance(n, TrackNode)])
         
-        return self
-        
+        for modality in modalities:
+            # obtain the list of tracks for this modality
+            # (note that subtracks are not part of this list, 
+            # they are hard-linked to their main track anyway)
+            tnodes = [n for n in self if isinstance(n, TrackNode) \
+                                      and n.modality == modality \
+                                      and not self.node[n].get(SUBTRACK, False)]
+            
+            # loop on each pair of tracks and check for overlapping ones
+            for n, node in enumerate(tnodes):
+                for other_node in tnodes[n+1:]:
+                    # are they overlapping?
+                    if node.segment.intersects(other_node.segment):
+                        self.update_edge(node, other_node, 
+                                         probability=0., cooccurring=True)
     
     def add_identity_constraints(self):
         """Add p=0 edges between each pair of identity nodes
@@ -191,6 +188,33 @@ class MultimodalProbabilityGraph(nx.Graph):
             self.update_edge(n,m, probability=1.)
         for n,m in p0:
             self.update_edge(n,m, probability=0.)
+
+
+class SegmentationGraph(object):
+    """Segmentation graph (one node per track, no edge)
+    
+    [T]
+    
+    - one node per track
+    """
+    def __init__(self):
+        super(SegmentationGraph, self).__init__()
+    
+    def __call__(self, annotation):
+        
+        assert isinstance(annotation, Annotation), \
+               "%r is not an annotation" % annotation
+        
+        G = MultimodalProbabilityGraph()
+        u = annotation.uri
+        m = annotation.modality
+        
+        # track nodes, track/label and label/ID edges
+        for s,t,l in annotation.iterlabels():
+            tnode = TrackNode(u,m,s,t)
+            G.add_node(tnode, **{SUBTRACK: False})
+        
+        return G
 
 
 class AnnotationGraph(object):
