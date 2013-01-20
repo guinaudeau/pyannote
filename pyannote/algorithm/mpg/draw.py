@@ -23,9 +23,16 @@ from matplotlib import pyplot as plt
 from pyannote.algorithm.mpg.graph import PROBABILITY, SUBTRACK
 from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
 
-def draw(G, threshold=0.0):
+def draw_mpg(g, threshold=0.1):
     
     plt.ion()
+    
+    # remove inodes that have no edge higher than p=0.1
+    inodes = [n for n in g 
+                if isinstance(n, IdentityNode) 
+                and max([g[n][m][PROBABILITY] for m in g.neighbors(n)]) < threshold]
+    G = nx.Graph(g)
+    G.remove_nodes_from(inodes)
     
     pos = nx.spring_layout(G, weight=PROBABILITY)
     for e,f,d in G.edges_iter(data=True):
@@ -51,7 +58,7 @@ def draw(G, threshold=0.0):
             if probability > threshold:
                 nx.draw_networkx_edges(G, pos, edgelist=[(e,f)], 
                                                width=3*probability, 
-                                               alpha=probability**5,
+                                               alpha=probability,
                                                style='dashed')
     
     shapes = {TrackNode: 's', IdentityNode: 'o', LabelNode: 'h'}
@@ -77,6 +84,16 @@ def draw(G, threshold=0.0):
                 nx.draw_networkx_nodes(G, pos, 
                                        node_size=node_size,
                                        nodelist=nodesublist,
-                                       node_shape=node_shape, 
+                                       node_shape=node_shape,
                                        node_color=node_color)
+            if nodeType == TrackNode:
+                nx.draw_networkx_labels(G, pos, font_size=8,
+                                        labels={n:n.track for n in nodelist})
+    
     plt.draw()
+
+from pyannote.algorithm.mpg.graph import AnnotationGraph
+def draw_annotation(annotation):
+    g = AnnotationGraph()(annotation)
+    draw_mpg(g)
+    
