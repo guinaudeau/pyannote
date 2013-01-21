@@ -77,13 +77,13 @@ for u, uri in enumerate(args.uris):
     mpg = args.input(uri)
     
     # make it a complete graph
-    C = mpg.complete()
+    C = mpg.complete()  
     
     annotations = C.to_annotation()
     
     writer.comment(uri, f=f)
     
-    for modality in annotations:
+    for uri, modality in annotations:
         writer.write(annotations[uri, modality], f=f)
 
 f.close()
