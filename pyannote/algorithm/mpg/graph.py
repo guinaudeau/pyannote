@@ -188,7 +188,118 @@ class MultimodalProbabilityGraph(nx.Graph):
             self.update_edge(n,m, probability=1.)
         for n,m in p0:
             self.update_edge(n,m, probability=0.)
-
+        
+        return self
+    
+    def _log(self):
+        
+        # new graph containing nodes from input graph
+        log = nx.Graph()
+        log.add_nodes_from(self.nodes_iter(data=True))
+    
+        # convert P to -log P for all input edges
+        # don't add the edge when P = 0
+        for e,f,d in self.edges_iter(data=True):
+            D = dict(d)
+            p = d[PROBABILITY]
+            if p > 0:
+                D[PROBABILITY] = -np.log(p)
+                log.add_edge(e,f,D)
+        
+        return log
+    
+    def complete(self):
+        
+        # propagate constraints (on a copy) and get -log prob graph
+        g = MultimodalProbabilityGraph()
+        g.add(self)
+        g.propagate_constraints()
+        
+        log = g._log()
+        
+        c = MultimodalProbabilityGraph()
+        
+        # all track nodes of interest
+        # ie speaker/head node not subtrack
+        tnodes = [(n,d) for n,d in self.nodes_iter(data=True) \
+                        if isinstance(n, TrackNode) \
+                        and n.modality in ['speaker', 'head'] \
+                        and not d.get(SUBTRACK, False)]
+        
+        # all identity nodes
+        inodes = [(n,d) for n,d in self.nodes_iter(data=True) \
+                        if isinstance(n, IdentityNode)]
+        
+        # tnode/tnode shortest path (with forbidden identity nodes)
+        _log = nx.Graph(log)
+        _log.remove_nodes_from(zip(*inodes)[0])
+        # _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
+        # for i, (n, d) in enumerate(tnodes):
+        #     c.add_node(n, **d)
+        #     for N, D in tnodes[i+1:]:
+        #         if g.has_edge(n, N):
+        #             data = dict(self[n][N])
+        #         else:
+        #             data = {PROBABILITY: np.exp(-_shortest[n][N])}
+        #         c.update_edge(n, N, **data)
+    
+        # inode/tnodes shortest path (with forbidden other identity nodes)
+        for i, (n, d) in enumerate(inodes):
+            c.add_node(n, **d)
+            _log = nx.Graph(log)
+            _log.remove_nodes_from([m for j,(m,_) in enumerate(inodes) if j != i])
+            _shortest = nx.shortest_path_length(_log, source=n, weight=PROBABILITY)
+            for N, D in tnodes:
+                c.add_node(N, **D)
+                if N not in _shortest:
+                    continue
+                if g.has_edge(n, N):
+                    data = dict(g[n][N])
+                else:
+                    data = {PROBABILITY: np.exp(-_shortest[N])}
+                c.update_edge(n, N, **data)
+        
+        # inode/inode constraint
+        c.add_identity_constraints()
+        
+        return c
+    
+    def to_annotation(self):
+        
+        tnodes = [n for n,d in self.nodes_iter(data=True) \
+                        if isinstance(n, TrackNode) \
+                        and not d.get(SUBTRACK, False)]
+        inodes = [n for n in self if isinstance(n, IdentityNode)]
+        
+        modalities = set([n.modality for n in tnodes])
+        uris = set([n.uri for n in tnodes])
+        
+        annotations = {}
+        for modality in modalities:
+            for uri in uris:
+                _tnodes = [n for n in tnodes 
+                             if n.modality == modality and n.uri == uri]
+                A = Annotation(uri=uri, modality=modality)
+                for tnode in _tnodes:
+                    p = 0.
+                    n = None
+                    for inode in inodes:
+                        if not self.has_edge(tnode, inode):
+                            continue
+                        if self[tnode][inode][PROBABILITY] > p:
+                            n = inode
+                            p = self[tnode][inode][PROBABILITY]
+                    if n is None:
+                        A[tnode.segment, tnode.track] = Unknown()
+                    else:
+                        A[tnode.segment, tnode.track] = n.identifier
+                
+                annotations[uri, modality] = A
+        
+        return annotations
+        
+        
+        
 
 class SegmentationGraph(object):
     """Segmentation graph (one node per track, no edge)
