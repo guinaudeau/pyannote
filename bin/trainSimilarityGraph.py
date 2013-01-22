@@ -53,8 +53,8 @@ def speaker_diarization(args):
     
     matrix = Matrix()
     
-    X = np.empty((0,1))
-    Y = np.empty((0,1))
+    X = []
+    Y = []
     
     # if requested, use provided resources
     if hasattr(args, 'uris'):
@@ -82,24 +82,26 @@ def speaker_diarization(args):
             annotation = annotation.crop(uem, mode='intersection')
         
         # get groundtruth
-        y = label_clustering_groundtruth(reference, annotation)
-        Y = np.append(Y, y.M)
+        G = label_clustering_groundtruth(reference, annotation)
         
         # load PLP features
         path = clicommon.replaceURI(args.plp, uri)
         feature = PLPParser().read(path)
+        S = matrix(annotation, feature)
         
-        M = matrix(annotation, feature)
-        
-        X = np.append(X, M.M)
+        for i,j,x in S:
+            y = G[i,j]
+            X.append(x)
+            Y.append(y)
     
-    
+    X = np.array(X)
+    Y = np.array(Y)
     params['__uris__'] = uris
     params['__X__'] = X
     params['__Y__'] = Y
     
     try:
-        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1, plot=False)
         params['__s2p__'] = s2p
     except Exception, e:
         print "Could not fit logistic probability maker"
