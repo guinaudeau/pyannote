@@ -155,13 +155,7 @@ for u, uri in enumerate(args.uris):
     if args.hw == False:
         mpg.remove_crossmodal_edges('head', 'written')
     
-    # make it a complete graph
-    if args.verbose:
-        sys.stdout.write('    computing shortest paths\n')
-        sys.stdout.flush()
-    
     C = mpg.complete()  
-    
     annotations = C.to_annotation()
     
     writer.comment(uri, f=f)
