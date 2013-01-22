@@ -191,6 +191,23 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         return self
     
+    def get_tracks(self, modality, name):
+        tnodes = [n for n in self if isinstance(n, TrackNode)
+                                 and n.track == name
+                                 and n.modality == modality]
+        return tnodes
+    
+    def get_label(self, modality, name):
+        lnodes = [n for n in self if isinstance(n, LabelNode)
+                                 and n.label == name
+                                 and n.modality == modality]
+        return lnodes[0]
+        
+    def get_identity(self, name):
+        inodes = [n for n in self if isinstance(n, IdentityNode)
+                                 and n.identifier == name]
+        return inodes[0]
+    
     def _log(self):
         
         # new graph containing nodes from input graph
@@ -207,6 +224,28 @@ class MultimodalProbabilityGraph(nx.Graph):
                 log.add_edge(e,f,D)
         
         return log
+    
+    
+    def shortest_path(self, inode, tnode):
+        log = self._log()
+        
+        # remove all inodes but inode
+        inodes = [n for n in log if isinstance(n, IdentityNode)
+                                and n != inode]
+        log.remove_nodes_from(inodes)
+        
+        path = nx.shortest_path(log, source=inode, target=tnode, 
+                                     weight=PROBABILITY)
+        
+        P = []
+        s = path[0]
+        for t in path[1:]:
+            p = self[s][t][PROBABILITY]
+            print "%.2f %s %s" % (p, s, t)
+            P.append(p)
+            s = t
+        
+        return path, P
     
     def complete(self):
         
@@ -264,6 +303,40 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         return c
     
+    def inodes(self):
+        return [n for n in self if isinstance(n, IdentityNode)]
+    
+    def tnodes(self):
+        return [n for n in self if isinstance(n, TrackNode)]
+    
+    def lnodes(self):
+        return [n for n in self if isinstance(n, LabelNode)]
+    
+    def remove_recognition_edges(self, modality):
+        inodes = self.inodes()
+        tnodes = [n for n in self.tnodes() if n.modality == modality]
+        for t in tnodes:
+            for i in inodes:
+                if self.has_edge(t, i):
+                    self.remove_edge(t, i)
+    
+    def remove_diarization_edges(self, modality):
+        lnodes = [n for n in self.lnodes() if n.modality == modality]
+        for i,l in enumerate(lnodes):
+            for L in lnodes[i+1:]:
+                if self.has_edge(l, L):
+                    self.remove_edge(l, L)
+    
+    def remove_crossmodal_edges(self, modality1, modality2):
+        tnodes = self.tnodes()
+        tnodes1 = [n for n in tnodes if n.modality == modality1]
+        tnodes2 = [n for n in tnodes if n.modality == modality2]
+        for t1 in tnodes1:
+            for t2 in tnodes2:
+                if self.has_edge(t1, t2):
+                    self.remove_edge(t1, t2)
+        
+        
     def to_annotation(self):
         
         tnodes = [n for n,d in self.nodes_iter(data=True) \
