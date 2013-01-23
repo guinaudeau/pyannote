@@ -22,13 +22,16 @@
 
 # --------------------------------------------------------------------------- #
 
-CONFUSION_NAME =        'Cooccurrence       '
-FALSE_ALARM_NAME =      'False Alarm     '
-MISSED_DETECTION_NAME = 'Missed Detection' 
+import pandas
 
-class CooccurrenceError(object):
+CONFUSION_NAME = 'Confusion'
+FALSE_ALARM_NAME = 'False alarm'
+MISSED_DETECTION_NAME = 'Missed'
+
+class ConfusionError(object):
+    
     def __init__(self, reference, hypothesis):
-        super(CooccurrenceError, self).__init__()
+        super(ConfusionError, self).__init__()
         self.__reference = reference
         self.__hypothesis = hypothesis
         
@@ -45,8 +48,6 @@ class CooccurrenceError(object):
                      fdel=None, \
                      doc="Hypothesis")
     
-    
-    
     def __hash__(self):
         return hash(self.__reference) + hash(self.__hypothesis)
     
@@ -55,30 +56,30 @@ class CooccurrenceError(object):
                self.__hypothesis == other.__hypothesis
     
     def __str__(self):
-        return "%s [%s | %s]" % (CONFUSION_NAME, \
-                                 self.reference, \
-                                 self.hypothesis)                               
+        return "%s vs. %s" % (self.reference, self.hypothesis)                               
+    
+    def type(self):
+        return CONFUSION_NAME
     
     def __repr__(self):
         return str(self)
         
-class FalseAlarmError(CooccurrenceError):
+class FalseAlarmError(ConfusionError):
     def __init__(self, hypothesis):
-        super(FalseAlarmError, self).__init__(None, hypothesis)
+        super(FalseAlarmError, self).__init__('∅', hypothesis)
+    
+    def type(self):
+        return FALSE_ALARM_NAME
 
-    def __str__(self):
-        return "%s [%s]" % (FALSE_ALARM_NAME, \
-                            self.hypothesis)
 
-class MissedDetectionError(CooccurrenceError):
+class MissedDetectionError(ConfusionError):
     def __init__(self, reference):
-        super(MissedDetectionError, self).__init__(reference, None)
+        super(MissedDetectionError, self).__init__(reference, '∅')
+    
+    def type(self):
+        return MISSED_DETECTION_NAME
 
-    def __str__(self):
-        return "%s [%s]" % (MISSED_DETECTION_NAME, \
-                            self.reference)
-
-from identification import DefaultIDMatcher
+from pyannote.metric.identification import DefaultIDMatcher
 from pyannote.base.mapping import OneToOneMapping, NoMatch
 from pyannote.base.annotation import Annotation
 
@@ -93,17 +94,17 @@ class Diff(object):
         
     def __call__(self, reference, hypothesis):
         
-        timeline = abs(reference.timeline + hypothesis.timeline) 
+        timeline = (reference.timeline + hypothesis.timeline).segmentation()
         
         reference = reference >> timeline
         hypothesis = hypothesis >> timeline
         
         inventory = Annotation(uri=reference.uri, \
-                                 modality=reference.modality)
+                               modality=reference.modality)
         
         for segment in timeline:
-            R = reference.ids(segment)
-            H = hypothesis.ids(segment)
+            R = reference.get_labels(segment)
+            H = hypothesis.get_labels(segment)
             matching = self.__diff(R, H)
             for r, h in matching.to_dict(single=True).iteritems():
                 if isinstance(r, NoMatch):
@@ -111,8 +112,11 @@ class Diff(object):
                 elif isinstance(h, NoMatch):
                     error = MissedDetectionError(r)
                 else:
-                    error = CooccurrenceError(r, h)
-                inventory[segment, error] = True
+                    error = ConfusionError(r, h)
+                track = inventory.new_track(segment, 
+                                            candidate=error.type(), 
+                                            prefix=error.type())
+                inventory[segment, track] = error
         
         return inventory
 
@@ -148,9 +152,17 @@ class Diff(object):
         return mapping
     
     def aggregate(self, inventory):
-        return {identifier: inventory(identifier).timeline.duration() \
-                for identifier in inventory.IDs}
-        
+        unordered = [(error, inventory.subset(set([error])).timeline.duration())
+                      for error in inventory.labels()]
+        ordered = sorted(unordered, key=lambda x: x[1], reverse=True)
+        total = sum([d for _,d in ordered])
+        data = {'Type': [e.type() for e,_ in ordered],
+             'Reference': [e.reference for e,_ in ordered],
+             'Hypothesis': [e.hypothesis for e,_ in ordered],
+             'Duration': [d for _,d in ordered],
+             '%': [int(100 * d / total) for _,d in ordered]}
+        df = pandas.DataFrame(data=data, columns=['Type', 'Reference', 'Hypothesis', 'Duration', '%'])
+        return df
 
 if __name__ == "__main__":
     import doctest
