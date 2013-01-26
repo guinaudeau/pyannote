@@ -10,10 +10,23 @@ parser.add_argument('--version', action='version',
 parser.add_argument('--verbose', action='append_const', dest='verbose',
                     const=1, default=[], help='print progress information')
 
+
+
+# --uri and --uris are mutually exclusive
+# --uri is to process only one video
+# --uris is to process a list of videos
+uris = parser.add_mutually_exclusive_group()
+
+def uri_parser(path):
+    return [path]
+uris.add_argument('--uri', type=uri_parser, metavar='URI',
+                    dest='uris', default=SUPPRESS,
+                    help='identifier of unique resource to process')
+
 def uris_parser(path):
     return LSTParser().read(path)
-parser.add_argument('--uris', type=uris_parser, metavar='uri.lst',
-                       default=SUPPRESS, 
+uris.add_argument('--uris', type=uris_parser, metavar='uri.lst',
+                  dest='uris', default=SUPPRESS, 
                        help='list of resources to process')
 
 def uem_parser(path):
