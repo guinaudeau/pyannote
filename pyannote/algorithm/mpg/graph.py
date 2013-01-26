@@ -332,7 +332,7 @@ class MultimodalProbabilityGraph(nx.Graph):
         for i,l in enumerate(lnodes):
             for L in lnodes[i+1:]:
                 if self.has_edge(l, L):
-                    if self[l][l][PROBABILITY] != 0.:
+                    if self[l][L][PROBABILITY] != 0.:
                         self.remove_edge(l, L)
     
     def remove_crossmodal_edges(self, modality1, modality2):
