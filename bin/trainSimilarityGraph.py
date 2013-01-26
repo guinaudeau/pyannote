@@ -101,7 +101,7 @@ def speaker_diarization(args):
     params['__Y__'] = Y
     
     try:
-        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1, plot=False)
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
         params['__s2p__'] = s2p
     except Exception, e:
         print "Could not fit logistic probability maker"
@@ -171,7 +171,7 @@ def face_clustering(args):
     params['__Y__'] = Y
     
     try:
-        s2p = LogisticProbabilityMaker().fit(X, Y, prior=1.)
+        s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
         params['__s2p__'] = s2p
     except Exception, e:
         print "Could not fit logistic probability maker"
@@ -216,6 +216,10 @@ def output_parser(path):
 sparser.add_argument('output', type=output_parser, metavar='params.pkl',
                      help='path to output file')
 
+sparser.add_argument('--prior', action='store_const', 
+                     const=None, default=1.,
+                     help='do not assume equal priors. estimate them.')
+
 # Speech turn similarity
 sparser.add_argument('--similarity', choices=('bic', 'clr', 'ivector'),
                      help='choose speech turn similarity measure '
@@ -247,6 +251,10 @@ def input_fparser(path):
         # associated tracks are labeled with the person identity
     else:
         raise IOError('Only .facetracks input files are supported for now.')
+
+fparser.add_argument('--prior', action='store_const', 
+                     const=None, default=1.,
+                     help='do not assume equal priors. estimate them.')
 
 msg = "path to input associated tracks. " + clicommon.msgURI()
 fparser.add_argument('input', type=input_fparser, metavar='input', help=msg)
