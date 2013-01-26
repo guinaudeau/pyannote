@@ -191,10 +191,16 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         return self
     
-    def get_tracks(self, modality, name):
+    def get_tracks_by_name(self, modality, name):
         tnodes = [n for n in self if isinstance(n, TrackNode)
                                  and n.track == name
                                  and n.modality == modality]
+        return tnodes
+    
+    def get_tracks_by_time(self, modality, seconds):
+        tnodes = [n for n in self if isinstance(n, TrackNode)
+                                 and n.segment.start <= seconds
+                                 and n.segment.end >= seconds]
         return tnodes
     
     def get_label(self, modality, name):
@@ -321,11 +327,13 @@ class MultimodalProbabilityGraph(nx.Graph):
                     self.remove_edge(t, i)
     
     def remove_diarization_edges(self, modality):
+        """Remove intra-modality edges, except in case of p=0 constraints"""
         lnodes = [n for n in self.lnodes() if n.modality == modality]
         for i,l in enumerate(lnodes):
             for L in lnodes[i+1:]:
                 if self.has_edge(l, L):
-                    self.remove_edge(l, L)
+                    if self[l][l][PROBABILITY] != 0.:
+                        self.remove_edge(l, L)
     
     def remove_crossmodal_edges(self, modality1, modality2):
         tnodes = self.tnodes()
