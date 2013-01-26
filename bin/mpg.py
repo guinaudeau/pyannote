@@ -139,7 +139,7 @@ def si_parser(path):
 
 
 from pyannote.algorithm.mpg.graph import ScoresGraph
-def si_param_parser(param_pkl):
+def id_param_parser(param_pkl):
     """Speaker identification graph
     
     - [T] track nodes
@@ -150,6 +150,7 @@ def si_param_parser(param_pkl):
     ----------
     param_pkl : str
         Path to 'param.pkl' parameter file.
+        If "identity", scores are considered as probabilities
         
     Returns
     -------
@@ -158,10 +159,13 @@ def si_param_parser(param_pkl):
         that returns a label similarity graph
     """
     
-    with open(param_pkl, 'r') as f:
-        params = pickle.load(f)
-    
-    s2p = params.pop('__s2p__')
+    if param_pkl == 'identity':
+        params = {}
+        s2p = lambda p: p
+    else:
+        with open(param_pkl, 'r') as f:
+            params = pickle.load(f)
+        s2p = params.pop('__s2p__')
     
     class SIGraph(ScoresGraph):
         def __init__(self):
@@ -242,20 +246,6 @@ def hi_parser(path):
                          .read(clicommon.replaceURI(path, u), uri=u, modality='head')(u)
     else:
         return AnnotationParser().read(path)
-
-
-def hi_param_parser(path):
-    
-    with open(path, 'r') as f:
-        params = pickle.load(f)
-    
-    s2p = params.pop('__s2p__')
-    
-    class HIGraph(ScoresGraph):
-        def __init__(self):
-            super(HIGraph, self).__init__(s2p=s2p, **params)
-    
-    return HIGraph()
 
 
 def wi_parser(path):
@@ -373,8 +363,10 @@ sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
                     help='path to speaker identification scores')
 
 sgroup.add_argument('--si-param', metavar='param.pkl',
-                    type=si_param_parser, dest='sigraph', default=SUPPRESS,
-                    help='path to trained parameters for speaker identification')
+                    nargs='?', const=id_param_parser('identity'),
+                    type=id_param_parser, dest='sigraph', default=SUPPRESS,
+                    help='path to trained parameters for speaker identification. '
+                         'use "identity" when scores are probabilities.')
 
 
 # == Head ==
@@ -398,9 +390,11 @@ hgroup.add_argument('--hi', type=hi_parser, metavar='source.nbl',
                     default=SUPPRESS,
                     help='path to source for head recognition')
 
-hgroup.add_argument('--hi-param', type=hi_param_parser, metavar='param.pkl',
-                    dest='higraph', default=SUPPRESS, 
-                    help='path to trained parameters for head recognition')
+hgroup.add_argument('--hi-param', metavar='param.pkl',
+                    nargs='?', const=id_param_parser('identity'),
+                    type=id_param_parser, dest='higraph', default=SUPPRESS,
+                    help='path to trained parameters for face recognition. '
+                         'use "identity" when scores are probabilities.')
 
 # == Written ==
 wgroup = argparser.add_argument_group('[written] modality')
