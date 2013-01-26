@@ -949,6 +949,7 @@ class Scores(AnnotationMixin, object):
             New scores where only n-best are kept. 
         
         """
+        
         if invert:
             direction = 1.
         else:
@@ -1013,6 +1014,8 @@ class Scores(AnnotationMixin, object):
             raise NotImplementedError('invert = True')
         
         A = Annotation(uri=self.uri, modality=self.modality)
+        if not self:
+            return A
         
         best = self.nbest(1, invert=invert)
         for segment, track, label, value in best.itervalues():
