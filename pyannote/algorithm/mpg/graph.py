@@ -278,16 +278,16 @@ class MultimodalProbabilityGraph(nx.Graph):
         # tnode/tnode shortest path (with forbidden identity nodes)
         _log = nx.Graph(log)
         _log.remove_nodes_from(zip(*inodes)[0])
-        # _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
-        # for i, (n, d) in enumerate(tnodes):
-        #     c.add_node(n, **d)
-        #     for N, D in tnodes[i+1:]:
-        #         if g.has_edge(n, N):
-        #             data = dict(self[n][N])
-        #         else:
-        #             data = {PROBABILITY: np.exp(-_shortest[n][N])}
-        #         c.update_edge(n, N, **data)
-    
+        _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
+        for i, (n, d) in enumerate(tnodes):
+            c.add_node(n, **d)
+            for N, D in tnodes[i+1:]:
+                if g.has_edge(n, N):
+                    data = dict(g[n][N])
+                else:
+                    data = {PROBABILITY: np.exp(-_shortest[n][N])}
+                c.update_edge(n, N, **data)
+        
         # inode/tnodes shortest path (with forbidden other identity nodes)
         for i, (n, d) in enumerate(inodes):
             c.add_node(n, **d)
