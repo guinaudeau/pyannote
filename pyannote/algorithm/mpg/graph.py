@@ -343,8 +343,27 @@ class MultimodalProbabilityGraph(nx.Graph):
             for t2 in tnodes2:
                 if self.has_edge(t1, t2):
                     self.remove_edge(t1, t2)
+    
+    def remove_track_nodes(self, modality):
+        tnodes = self.tnodes()
+        tnodes = [n for n in tnodes if n.modality == modality]
+        self.remove_nodes_from(tnodes)
+    
+    
+    def remove_identity_nodes(self, threshold=0.001):
+        """Remove identity nodes with incoming probabilities smaller than threshold
+        
+        Parameters
+        ----------
         
         
+        """
+        inodes = [inode for inode in self.inodes()
+                        if max([self[inode][n][PROBABILITY] 
+                                for n in self.neighbors(inode)]) < threshold]
+        self.remove_nodes_from(inodes)
+    
+    
     def to_annotation(self):
         
         tnodes = [n for n,d in self.nodes_iter(data=True) \
