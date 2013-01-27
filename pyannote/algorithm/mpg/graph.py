@@ -253,7 +253,14 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         return path, P
     
-    def complete(self):
+    def complete(self, tracks=False):
+        """
+        
+        Parameters
+        ----------
+        tracks : bool
+            If tracks is True, complete graph also contains track2track edges
+        """
         
         # propagate constraints (on a copy) and get -log prob graph
         g = MultimodalProbabilityGraph()
@@ -278,15 +285,19 @@ class MultimodalProbabilityGraph(nx.Graph):
         # tnode/tnode shortest path (with forbidden identity nodes)
         _log = nx.Graph(log)
         _log.remove_nodes_from(zip(*inodes)[0])
-        _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
-        for i, (n, d) in enumerate(tnodes):
-            c.add_node(n, **d)
-            for N, D in tnodes[i+1:]:
-                if g.has_edge(n, N):
-                    data = dict(g[n][N])
-                else:
-                    data = {PROBABILITY: np.exp(-_shortest[n][N])}
-                c.update_edge(n, N, **data)
+        if tracks:
+            _shortest = nx.shortest_path_length(_log, weight=PROBABILITY)
+            for i, (n, d) in enumerate(tnodes):
+                c.add_node(n, **d)
+                for N, D in tnodes[i+1:]:
+                    if g.has_edge(n, N):
+                        data = dict(g[n][N])
+                    else:
+                        if N in _shortest[n]:
+                            data = {PROBABILITY: np.exp(-_shortest[n][N])}
+                        else:
+                            data = {PROBABILITY: 0.}
+                    c.update_edge(n, N, **data)
         
         # inode/tnodes shortest path (with forbidden other identity nodes)
         for i, (n, d) in enumerate(inodes):
