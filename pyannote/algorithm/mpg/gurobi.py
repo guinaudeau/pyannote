@@ -1,3 +1,9 @@
+import os
+import socket
+os.putenv('GRB_LICENSE_FILE', 
+          "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
+                                  socket.gethostname()))
+
 import gurobipy as grb
 from graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
