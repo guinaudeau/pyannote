@@ -50,6 +50,8 @@ def output_parser(path):
 argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                        help='path to where to store the output')
 
+argparser.add_argument('--ilp', action='store_true', 
+                       help='use ILP for constrained optimization')
 
 ss = argparser.add_mutually_exclusive_group()
 ss.add_argument('--ss', action='store_const', dest='ss',
@@ -155,8 +157,15 @@ for u, uri in enumerate(args.uris):
     if args.hw == False:
         mpg.remove_crossmodal_edges('head', 'written')
     
-    C = mpg.complete()  
-    annotations = C.to_annotation()
+    if args.ilp:
+        from pyannote.algorithm.mpg.gurobi import GurobiModel
+        C = mpg.complete(tracks=True)
+        C.remove_identity_nodes(threshold=0.003)
+        model = pyannote.algorithm.mpg.gurobi.GurobiModel(C, quiet=False)
+        annotations = model.optimize()
+    else:
+        C = mpg.complete()
+        annotations = C.to_annotation()
     
     writer.comment(uri, f=f)
     
