@@ -329,6 +329,12 @@ class MultimodalProbabilityGraph(nx.Graph):
     def lnodes(self):
         return [n for n in self if isinstance(n, LabelNode)]
     
+    def modalities(self):
+        return set([n.modality for n in self.tnodes()])
+    
+    def uris(self):
+        return set([n.uri for n in self.tnodes()])
+    
     def remove_recognition_edges(self, modality):
         inodes = self.inodes()
         tnodes = [n for n in self.tnodes() if n.modality == modality]
@@ -382,8 +388,8 @@ class MultimodalProbabilityGraph(nx.Graph):
                         and not d.get(SUBTRACK, False)]
         inodes = [n for n in self if isinstance(n, IdentityNode)]
         
-        modalities = set([n.modality for n in tnodes])
-        uris = set([n.uri for n in tnodes])
+        modalities = self.modalities()
+        uris = self.uris()
         
         annotations = {}
         for modality in modalities:
