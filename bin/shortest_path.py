@@ -25,6 +25,7 @@ import networkx as nx
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
 from pyannote.parser import AnnotationParser
+from pyannote.algorithm.mpg.graph import MultimodalProbabilityGraph
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Prob Graph Shortest Path')
@@ -161,8 +162,15 @@ for u, uri in enumerate(args.uris):
         from pyannote.algorithm.mpg.gurobi import GurobiModel
         C = mpg.complete(tracks=True)
         C.remove_identity_nodes(threshold=0.003)
-        model = GurobiModel(C, quiet=False)
-        annotations = model.optimize()
+        modalities = C.modalities()
+        annotations = {}
+        for modality in modalities:
+            c = MultimodalProbabilityGraph()
+            c.add(C)
+            for m in set(modalities)-set([modality]):
+                c.remove_track_nodes(modality)
+            model = GurobiModel(c, quiet=False)
+            annotations.update(model.optimize())
     else:
         C = mpg.complete()
         annotations = C.to_annotation()
