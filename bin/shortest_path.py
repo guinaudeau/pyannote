@@ -161,7 +161,7 @@ for u, uri in enumerate(args.uris):
         from pyannote.algorithm.mpg.gurobi import GurobiModel
         C = mpg.complete(tracks=True)
         C.remove_identity_nodes(threshold=0.003)
-        model = pyannote.algorithm.mpg.gurobi.GurobiModel(C, quiet=False)
+        model = GurobiModel(C, quiet=False)
         annotations = model.optimize()
     else:
         C = mpg.complete()
