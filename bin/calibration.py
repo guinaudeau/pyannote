@@ -145,7 +145,12 @@ def apply_calibration(args):
     
     writer, f = args.output
     
-    for uri in uris:
+    for u, uri in enumerate(uris):
+        
+        if args.verbose:
+            sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+            sys.stdout.flush()
+        
         
         s = args.scores(uri)
         
