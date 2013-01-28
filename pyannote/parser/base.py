@@ -449,8 +449,8 @@ class BaseTextualAnnotationParser(BaseTextualParser):
             converters = {}
         if LABEL not in converters:
             converters[LABEL] = lambda x: x
-        if TRACKS not in converters:
-            converters[TRACKS] = lambda x: x
+        if TRACK not in converters:
+            converters[TRACK] = lambda x: x
         
         # load whole file
         df = pandas.read_table(path, header=None, 
