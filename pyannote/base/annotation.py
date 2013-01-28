@@ -867,11 +867,11 @@ class Scores(AnnotationMixin, object):
     def __setitem__(self, key, value):
         segment, track, label = key
         if not self._valid_segment(segment):
-            raise KeyError('invalid segment.')
+            raise KeyError('invalid segment: %s' % repr(segment))
         if not self._valid_track(track):
-            raise KeyError('invalid track name.')
+            raise KeyError('invalid track name: %s' % repr(track))
         if not self._valid_label(label):
-            raise KeyError('invalid label.')
+            raise KeyError('invalid label: %s' % repr(label))
         self._df = self._df.set_value((segment, track), label, value)
     
     def labels(self):
