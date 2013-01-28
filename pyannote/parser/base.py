@@ -314,6 +314,9 @@ class BaseTextualFormat(object):
         
     def get_converters(self):
         return None
+    
+    def get_default_modality(self):
+        return None
 
 
 class BaseTextualParser(object):
@@ -471,6 +474,8 @@ class BaseTextualAnnotationParser(BaseTextualParser):
         
         # add modality column in case it does not exist
         if MODALITY not in df:
+            if modality is None:
+                modality = self.get_default_modality()
             df[MODALITY] = modality if modality is not None else ""
         
         # obtain list of modalities
@@ -533,9 +538,10 @@ class BaseTextualScoresParser(BaseTextualParser):
             s2t = {s: t for t,s in enumerate(df[SEGMENT].unique())}
             df[TRACK] = [s2t[s] for s in df[SEGMENT]]
         
-        
         # add modality column in case it does not exist
         if MODALITY not in df:
+            if modality is None:
+                modality = self.get_default_modality()
             df[MODALITY] = modality if modality is not None else ""
         
         # remove all columns but those six

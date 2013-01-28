@@ -41,6 +41,9 @@ class TVMMixin(BaseTextualFormat):
                 LABEL,
                 SCORE]
     
+    def get_default_modality(self):
+        return "head"
+    
     def get_segment(self, row):
         return Segment(row[self.START], row[self.START]+row[self.DURATION])
     
