@@ -23,12 +23,12 @@ from argparse import ArgumentParser, SUPPRESS
 import numpy as np
 import pickle
 from pyannote import clicommon
-from pyannote.base.annotation import Scores
+from pyannote.base.annotation import Annotation, Scores, Unknown
 from pyannote.parser import AnnotationParser, LSTParser
 from pyannote.algorithm.util.calibration import IDScoreCalibration
 from pyannote.algorithm.tagging import ArgMaxDirectTagger
 
-def train_calibration(args):
+def train_speaker_calibration(args):
     
     if hasattr(args, 'uris'):
         uris = args.uris
@@ -80,6 +80,59 @@ def train_calibration(args):
         pickle.dump(calibration, f)
 
 
+def train_head_calibration(args):
+    
+    if hasattr(args, 'uris'):
+        uris = args.uris
+    else:
+        raise ValueError('missing uri list')
+    
+    references = []
+    scores = []
+    targets = None
+    
+    for u, uri in enumerate(uris):
+        
+        if args.verbose:
+            sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+            sys.stdout.flush()
+        
+        reference = args.references(uri)
+        score = args.scores(uri)
+        
+        if not targets:
+            targets = score.labels()
+        
+        new_r = Annotation(uri=reference.uri, modality=reference.modality)
+        new_s = Scores(uri=score.uri, modality=score.modality)
+        
+        for s,t,l in reference.iterlabels():
+            if isinstance(l, Unknown):
+                continue
+            s_t = score.get_track_by_name(t)
+            if not s_t:
+                continue
+            for L,v in score.get_track_scores(*(s_t[0])).iteritems():
+                new_r[s, t] = l
+                new_s[s, t, L] = v
+        
+        reference = new_r
+        score = new_s
+        
+        if hasattr(args, 'uem'):
+            reference = reference.crop(args.uem(uri), mode='loose')
+            score = score.crop(args.uem(uri), mode='loose')
+        
+        references.append(reference)
+        scores.append(score)
+    
+    calibration = IDScoreCalibration().fit(targets, references, scores)
+    
+    with open(args.output, 'w') as f:
+        pickle.dump(calibration, f)
+
+
+
 def apply_calibration(args):
     
     if hasattr(args, 'uris'):
@@ -118,15 +171,18 @@ def apply_calibration(args):
     f.close()
 
 argparser = ArgumentParser(description='Identification scores calibration')
-subparsers = argparser.add_subparsers(help='commands')
+subparsers = argparser.add_subparsers(help='mode')
 
-# calibration train
-train_parser = subparsers.add_parser('train', parents=[clicommon.parser], 
-                                     help='Train calibration')
-train_parser.set_defaults(func=train_calibration)
+# calibration train speaker
+train_parser = subparsers.add_parser('train', help='Train calibration')
+
+train_subparsers = train_parser.add_subparsers(help='modality')
+train_speaker_parser = train_subparsers.add_parser('speaker', parents=[clicommon.parser],
+                                                   help='Speaker identification')
+train_speaker_parser.set_defaults(func=train_speaker_calibration)
 
 annotation_parser = lambda path: AnnotationParser().read(path)
-train_parser.add_argument('references', metavar='file.mdtm', 
+train_speaker_parser.add_argument('references', metavar='file.mdtm', 
                           type=annotation_parser, help='path to references')
                           
 def scores_parser(path):
@@ -136,15 +192,39 @@ def scores_parser(path):
     else:
         return AnnotationParser().read(path)
 msg = "path to identification scores. " + clicommon.msgURI()
-train_parser.add_argument('scores', metavar='scores.etf0|[URI].tvm',
+train_speaker_parser.add_argument('scores', metavar='scores.etf0|[URI].tvm',
                           type=scores_parser, help=msg)
 
-train_parser.add_argument('output', metavar='calibration.pkl',
+train_speaker_parser.add_argument('output', metavar='calibration.pkl',
                           type=str, help='path to calibration file')
 
 list_parser = lambda path: LSTParser().read(path)
-train_parser.add_argument('--targets', metavar='targets.lst', default=SUPPRESS,
+train_speaker_parser.add_argument('--targets', metavar='targets.lst', default=SUPPRESS,
                           type=list_parser, help='path to list of targets')
+
+# calibration train head
+train_head_parser = train_subparsers.add_parser('head', parents=[clicommon.parser],
+                                                 help='Face recognition')
+train_head_parser.set_defaults(func=train_head_calibration)
+
+def input_fparser(path):
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser(load_ids=True)\
+                         .read(clicommon.replaceURI(path, u), uri=u)(u)
+    else:
+        raise IOError('Only .facetracks input files are supported for now.')
+
+msg = "path to input associated tracks. " + clicommon.msgURI()
+train_head_parser.add_argument('references', metavar='[URI].facetracks', 
+                               type=input_fparser, help='path to references')
+
+msg = "path to identification scores. " + clicommon.msgURI()
+train_head_parser.add_argument('scores', metavar='scores.etf0|[URI].tvm',
+                          type=scores_parser, help=msg)
+
+train_head_parser.add_argument('output', metavar='calibration.pkl',
+                               type=str, help='path to calibration file')
+
 
 # calibration apply
 apply_parser = subparsers.add_parser('apply', parents=[clicommon.parser],
