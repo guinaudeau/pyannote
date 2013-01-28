@@ -151,12 +151,13 @@ def apply_calibration(args):
             sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
             sys.stdout.flush()
         
-        
         s = args.scores(uri)
         
         # only keep tracks with scores for targets
         new_s = Scores(uri=s.uri, modality=s.modality)
         for s,t,l,v in s.itervalues():
+            if not s:
+                continue
             if np.isnan(v):
                 continue
             if l in targets:
