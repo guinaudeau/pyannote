@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO: Faster implementation of .__contains__() (for use in .__iadd__()) 
-#       Possibly with an additional interal set of segments?
+#       Possibly with an additional internal set of segments?
 #       or with interpolated binary search.
 
 from segment import Segment, RevSegment, SEGMENT_PRECISION
@@ -1233,19 +1233,8 @@ class Timeline(object):
         return self and \
                self.is_segmentation() and \
                Timeline([self.extent()], uri=self.uri) == self.coverage()
-    
-    
 
-class Segmentation(Timeline):    
-    def __iadd__(self, other):
-        raise NotImplementedError('')
-        
-class Partition(Segmentation):
-    def __iadd__(self, other):
-        raise NotImplementedError('')
-    def __delitem__(self, key):
-        raise NotImplementedError('')
-    
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
