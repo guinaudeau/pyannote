@@ -386,7 +386,7 @@ hgroup.add_argument('--hh-precomputed', type=hh_precomputed_parser,
                     metavar='matrix.pkl', help=msg)
 
 # Head recognition
-hgroup.add_argument('--hi', type=hi_parser, metavar='source.nbl',
+hgroup.add_argument('--hi', type=hi_parser, metavar='source.etf0',
                     default=SUPPRESS,
                     help='path to source for head recognition')
 
