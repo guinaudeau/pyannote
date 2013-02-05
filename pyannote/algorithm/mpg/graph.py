@@ -418,6 +418,7 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         
 
+
 class SegmentationGraph(object):
     """Segmentation graph (one node per track, no edge)
     
@@ -445,27 +446,20 @@ class SegmentationGraph(object):
         return G
 
 
+
 class AnnotationGraph(object):
     """Annotation graph
     
-    [T] === [L] === [I]
+    [T] === [I]
     
     - one node per track (track node, [T])
-    - one label node per cluster (label node, [L])
     - one node per identity (identity node, [I])
-    - one hard edge between a track and its label (p=1, ===)
-    - one hard edge between a label and its known identity (p=1, ===)
-    
-    Parameters
-    ----------
-    diarization : bool, optional
-        When True, labels are considered anonymous so no identity node
-        is added.
+    - one hard edge between a track and its known identity (p=1, ===)
+    - one hard edge between each pair of tracks with the same label
     
     """
-    def __init__(self, diarization=False, **kwargs):
+    def __init__(self, **kwargs):
         super(AnnotationGraph, self).__init__()
-        self.diarization = diarization
     
     def __call__(self, annotation):
         
@@ -478,45 +472,34 @@ class AnnotationGraph(object):
         
         # identity nodes
         inodes = {l: IdentityNode(l) for l in annotation.labels()}
-        # label nodes
-        lnodes = {l: LabelNode(u,m,l) for l in annotation.labels()}
         
-        # track nodes, track/label and label/ID edges
+        # add edges between tracks and identities
         for s,t,l in annotation.iterlabels():
-            # track/label edge
+            
             tnode = TrackNode(u,m,s,t)
-            G.update_edge(tnode, lnodes[l], **{PROBABILITY: 1.})
-            # add id node in case of 
-            if (not self.diarization) and (not isinstance(l, Unknown)):
-                G.update_edge(lnodes[l], inodes[l], **{PROBABILITY: 1.})
+            G.add_node(tnode)
+            
+            if not isinstance(l, Unknown):
+                G.update_edge(tnode, inodes[l], **{PROBABILITY: 1.})
         
-        # cooccurring clusters are marked as such
-        K = Cooccurrence(annotation, annotation)
-        for l, L, k in K:
-            if l == L:
-                continue
-            if k>0:
-                G.update_edge(lnodes[l], lnodes[L], **{PROBABILITY: 0,
-                                                         COOCCURRING: True})
+        # add hard edges between tracks with the same identity
+        tnodes = [TrackNode(u,m,s,t) for s,t in annotation.itertracks()]
+        for i, n in enumerate(tnodes):
+            
+            s = n.segment
+            t = n.track
+            l = annotation[s,t]
+            
+            for N in tnodes[i+1:]:
+                
+                S = N.segment
+                T = N.track
+                L = annotation[S, T]
+                
+                if l == L:
+                    G.update_edge(n, N, **{PROBABILITY: 1.})
         
         return G
-
-
-class DiarizationGraph(AnnotationGraph):
-    """Diarization (or clustering) graph
-    
-    [T] === [L] -x- [L]
-    
-    Nodes:
-    - one per track (track node, [T])
-    - one per cluster (label node, [L])
-    Edges:
-    - one hard edge between a track and its cluster (p=1, ===)
-    - one (p=0, -x-) edge between cooccurring clusters
-    
-    """
-    def __init__(self, **kwargs):
-        super(DiarizationGraph, self).__init__(diarization=True)
 
 
 class ScoresGraph(object):
@@ -559,14 +542,12 @@ class ScoresGraph(object):
         tnodes = {(s,t): TrackNode(u,m,s,t) for s,t in scores.itertracks()}
         
         probabilities = scores.map(self.s2p)
-        # rank = probabilities.rank()
         
         for s,t,l,p in probabilities.itervalues():
             G.update_edge(tnodes[s,t], inodes[l], **{PROBABILITY:p})
-            # G.update_edge(tnodes[s,t], inodes[l], **{PROBABILITY:p,
-            #                                     RANK:rank[s,t,l]})
         
         return G
+
 
 
 class LabelSimilarityGraph(object):
@@ -630,7 +611,7 @@ class LabelSimilarityGraph(object):
         
         # list of labels in diarization
         labels = diarization.labels()  
-            
+        
         # label similarity matrix
         P = self.mmx_similarity_matrix(labels, annotation=diarization,
                                                feature=feature)

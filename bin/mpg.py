@@ -54,7 +54,7 @@ def mm_parser(path):
         return AnnotationParser().read(path)
 
 
-from pyannote.algorithm.mpg.graph import LabelSimilarityGraph, DiarizationGraph
+from pyannote.algorithm.mpg.graph import LabelSimilarityGraph
 def ss_param_parser(param_pkl):
     """Speaker diarization
     
