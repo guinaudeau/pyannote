@@ -569,15 +569,12 @@ class ScoresGraph(object):
         return G
 
 
-
 class LabelSimilarityGraph(object):
     """Label similarity graph
     
-    [L] --- [L]
-    
-    - one node per label (label node, [L])
-    - one soft edge between every two labels (0<p<1, ---)
-    - edges between cooccurring labels are marked as such
+    [T] === [T] for tracks with the same label
+    [T] --- [T] for tracks with different labels
+    [T] -x- [T] for tracks with different co-occurring labels
     
     Parameters
     ----------
@@ -626,7 +623,6 @@ class LabelSimilarityGraph(object):
         
         return MX
     
-    
     def __call__(self, diarization, feature):
         
         assert isinstance(diarization, Annotation), \
@@ -648,21 +644,132 @@ class LabelSimilarityGraph(object):
         u = diarization.uri
         m = diarization.modality
         
-        lnodes = {l: LabelNode(u,m,l) for l in labels}
-        
-        for i, l in enumerate(labels):
-            G.add_node(lnodes[l])
-            for L in labels[i+1:]:
-                try:
-                    # raises an exception when similarity is not available
-                    G.update_edge(lnodes[l], lnodes[L], 
-                                    **{PROBABILITY: P[l,L], 
-                                       COOCCURRING: K[l,L] > 0})
-                except Exception, e:
-                    # do not add any edge if that happens
-                    pass
+        tnodes = [TrackNode(u,m,s,t) for s,t in diarization.itertracks()]
+        for i, n in enumerate(tnodes):
+            
+            G.add_node(n)
+            
+            s = n.segment
+            t = n.track
+            l = diarization[s,t]
+            
+            for N in tnodes[i+1:]:
+                
+                S = N.segment
+                T = N.track
+                L = diarization[S, T]
+                
+                if l == L:
+                    p = 1.
+                    k = False
+                elif K[l,L] > 0:
+                    p = 0.
+                    k = True
+                else:
+                    k = False
+                    try:
+                        p = P[l,L]
+                    except Exception, e:
+                        pass
+                
+                G.update_edge(n, N, **{PROBABILITY: p, COOCCURRING: k})
         
         return G
+
+
+# class LabelSimilarityGraph(object):
+#     """Label similarity graph
+#     
+#     [L] --- [L]
+#     
+#     - one node per label (label node, [L])
+#     - one soft edge between every two labels (0<p<1, ---)
+#     - edges between cooccurring labels are marked as such
+#     
+#     Parameters
+#     ----------
+#     s2p : func, optional
+#         Similarity-to-probability function.
+#         Defaults to identity (p=s)
+#     """
+#     def __init__(self, s2p=None, **kwargs):
+#         super(LabelSimilarityGraph, self).__init__()
+#         
+#         if s2p is None:
+#             s2p = lambda s: s
+#         self.s2p = s2p
+#         
+#         # setup model
+#         MMx = self.getMx(BaseModelMixin)
+#         if len(MMx) == 0:
+#             raise ValueError('Missing model mixin (MMx).')
+#         elif len(MMx) > 1:
+#             raise ValueError('Too many model mixins (MMx): %s' % MMx)
+#         self.mmx_setup(**kwargs)
+#     
+#     def getMx(self, baseMx):
+#         
+#         # get all mixins subclass of baseMx
+#         # but the class itself and the baseMx itself
+#         cls = self.__class__
+#         MX =  [Mx for Mx in cls.mro() 
+#                   if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
+#             
+#         # build the class inheritance directed graph {subclass --> class}
+#         G = nx.DiGraph()
+#         for m, Mx in enumerate(MX):
+#             G.add_node(Mx)
+#             for otherMx in MX[m+1:]:
+#                 if issubclass(Mx, otherMx):
+#                     G.add_edge(Mx, otherMx)
+#                 elif issubclass(otherMx, Mx):
+#                     G.add_edge(otherMx, Mx)
+#         
+#         # only keep the deeper subclasses in each component
+#         MX = []
+#         for components in nx.connected_components(G.to_undirected()):
+#             g = G.subgraph(components)
+#             MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
+#         
+#         return MX
+#     
+#     
+#     def __call__(self, diarization, feature):
+#         
+#         assert isinstance(diarization, Annotation), \
+#                "%r is not an annotation" % diarization
+#         
+#         # list of labels in diarization
+#         labels = diarization.labels()  
+#             
+#         # label similarity matrix
+#         P = self.mmx_similarity_matrix(labels, annotation=diarization,
+#                                                feature=feature)
+#         # change it into a probability matrix
+#         P.M = self.s2p(P.M)
+#         
+#         # label cooccurrence matrix
+#         K = Cooccurrence(diarization, diarization)
+#         
+#         G = MultimodalProbabilityGraph()
+#         u = diarization.uri
+#         m = diarization.modality
+#         
+#         lnodes = {l: LabelNode(u,m,l) for l in labels}
+#         
+#         for i, l in enumerate(labels):
+#             G.add_node(lnodes[l])
+#             for L in labels[i+1:]:
+#                 try:
+#                     # raises an exception when similarity is not available
+#                     G.update_edge(lnodes[l], lnodes[L], 
+#                                     **{PROBABILITY: P[l,L], 
+#                                        COOCCURRING: K[l,L] > 0})
+#                 except Exception, e:
+#                     # do not add any edge if that happens
+#                     pass
+#         
+#         return G
 
 
 class TrackCooccurrenceGraph(object):

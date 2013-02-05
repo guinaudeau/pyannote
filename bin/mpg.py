@@ -87,15 +87,17 @@ def ss_param_parser(param_pkl):
             super(SSGraph, self).__init__(s2p=s2p, **params)
     
     ssGraph = SSGraph()
-    diarizationGraph = DiarizationGraph()
+    # diarizationGraph = DiarizationGraph()
+    # 
+    # def graph_generator(annotation, feature):
+    #     G = ssGraph(annotation, feature) # [L] -- [L] edges
+    #     g = diarizationGraph(annotation) # [T] == [L] edges
+    #     G.add(g)
+    #     return G
+    # 
+    # return graph_generator
+    return ssGraph
     
-    def graph_generator(annotation, feature):
-        G = ssGraph(annotation, feature) # [L] -- [L] edges
-        g = diarizationGraph(annotation) # [T] == [L] edges
-        G.add(g)
-        return G
-    
-    return graph_generator
 
 from pyannote.parser import PLPParser
 def ss_plp_parser(path):
@@ -208,16 +210,16 @@ def hh_param_parser(param_pkl):
         
         hhGraph = HHGraph()
     
-    diarizationGraph = DiarizationGraph()
-        
-    def graph_generator(annotation, feature):
-        G = hhGraph(annotation, feature) # [L] -- [L] edges
-        g = diarizationGraph(annotation) # [T] == [L] edges
-        G.add(g)
-        return G
-    
-    return graph_generator
-
+    # diarizationGraph = DiarizationGraph()
+    #     
+    # def graph_generator(annotation, feature):
+    #     G = hhGraph(annotation, feature) # [L] -- [L] edges
+    #     g = diarizationGraph(annotation) # [T] == [L] edges
+    #     G.add(g)
+    #     return G
+    # 
+    # return graph_generator
+    return hhGraph
 
 from pyannote.parser import LabelMatrixParser
 def hh_precomputed_parser(path):
