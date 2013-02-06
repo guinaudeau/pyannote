@@ -7,6 +7,7 @@ os.putenv('GRB_LICENSE_FILE',
 import gurobipy as grb
 from graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
+from node import IdentityNode, TrackNode
 
 class GurobiModel(object):
     def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 
@@ -95,24 +96,38 @@ class GurobiModel(object):
         
         return self.getAnnotations()
     
+    
     def getAnnotations(self):
         
+        # get clusters
+        c = nx.Graph()
+        for (n1, n2), var in self.x.iteritems():
+            c.add_node(n1)
+            c.add_node(n2)
+            if var.x == 1.:
+                c.add_edge(n1, n2)
+        clusters = nx.connected_components(c)
+        
         annotations = {}
-        for modality in self.graph.modalities():
-            for uri in self.graph.uris():
-                A = Annotation(uri=uri, modality=modality)
-                for tnode in [n for n in self.graph.tnodes() 
-                                if n.modality == modality and n.uri == uri]:
-                    identifier = None
-                    for inode in self.graph.inodes():
-                        if self.x[inode, tnode].x == 1:
-                            identifier = inode.identifier
-                            break
-                    if identifier is None:
-                        identifier = Unknown()
-                    A[tnode.segment, tnode.track] = identifier
-                annotations[uri, modality] = A
+        modalities = self.graph.modalities()
+        uris = self.graph.uris()
+        for modality in modalities:
+            for uri in uris:
+                annotations[uri, modality] = Annotation(uri=uri, modality=modality)
+        
+        for cluster in clusters:
+            # find cluster identity
+            identities = [n.identifier for n in cluster if isinstance(n, IdentityNode)]
+            if identities:
+                identity = identities[0]
+            else:
+                identity = Unknown()
+            # add tracks to annotations
+            trackNodes = [n for n in cluster if isinstance(n, TrackNode)]
+            for n in trackNodes:
+                annotations[n.uri, n.modality][n.segment, n.track] = identity
         
         return annotations
     
+
     
