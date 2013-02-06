@@ -20,6 +20,7 @@ class GurobiModel(object):
         self.quiet = quiet
         self.model, self.x = self._model(graph)
     
+    
     def _model(self, G):
         """
         G : MultimodalProbabilityGraph
@@ -79,10 +80,22 @@ class GurobiModel(object):
         
         return model, x
     
-    def optimize(self):
+    def probMaximizeIntraMinimizeInter(self, alpha=0.5):
         
+        intra = grb.quicksum([self.x[n,m] * self.graph[n][m][PROBABILITY] 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)])
+                              
+        inter = grb.quicksum([(1.-self.x[n,m]) * (1.-self.graph[n][m][PROBABILITY]) 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)])
+                              
+        self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
         self.model.optimize()
-        status = self.model.getAttr(grb.GRB.Attr.Status)
+        
+        return self.getAnnotations()
+    
+    def getAnnotations(self):
         
         annotations = {}
         for modality in self.graph.modalities():
