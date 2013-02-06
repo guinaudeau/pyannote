@@ -113,6 +113,32 @@ class GurobiModel(object):
         
         return self.getAnnotations()
     
+    def maximizeClusterSize(self):
+        """
+        Maximize ∑  xij
+                j>i
+        """
+        
+        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
+        
+        self.model.setObjective(cluster, grb.GRB.MAXIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
+    
+    def minimizeClusterSize(self):
+        """
+        Minimize ∑  xij
+                j>i
+        """
+        
+        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
+        
+        self.model.setObjective(cluster, grb.GRB.MINIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
+    
     
     def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
