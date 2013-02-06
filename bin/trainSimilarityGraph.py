@@ -24,7 +24,8 @@ import pickle
 import numpy as np
 import pyannote
 from pyannote.parser import AnnotationParser
-from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
+# from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
+from pyannote.algorithm.util.calibration import TwoClassesCalibration
 
 def speaker_diarization(args):
     
@@ -90,6 +91,8 @@ def speaker_diarization(args):
         S = matrix(annotation, feature)
         
         for i,j,x in S:
+            if i == j:
+                continue
             y = G[i,j]
             X.append(x)
             Y.append(y)
@@ -101,10 +104,15 @@ def speaker_diarization(args):
     params['__Y__'] = Y
     
     try:
-        s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
-        params['__s2p__'] = s2p
+        
+        calibration = TwoClassesCalibration().fit(X, Y)
+        params['__s2p__'] = calibration
+        # s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
+        # params['__s2p__'] = s2p
+        
     except Exception, e:
-        print "Could not fit logistic probability maker"
+        print "Could not perform calibration"
+        # print "Could not fit logistic probability maker"
     
     # save to output file
     pickle.dump(params, args.output)
@@ -171,10 +179,15 @@ def face_clustering(args):
     params['__Y__'] = Y
     
     try:
-        s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
-        params['__s2p__'] = s2p
+        calibration = TwoClassesCalibration().fit(X, Y)
+        params['__s2p__'] = calibration
+        # s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
+        # params['__s2p__'] = s2p
+        
     except Exception, e:
-        print "Could not fit logistic probability maker"
+        print "Could not perform calibration"
+        # print "Could not fit logistic probability maker"
+    
     
     # save to output file
     pickle.dump(params, args.output)

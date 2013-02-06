@@ -24,6 +24,88 @@ from pyannote.algorithm.tagging import ArgMaxDirectTagger
 import numpy as np
 import sc2llr
 
+class TwoClassesCalibration(object):
+    """
+    Score calibration for two-class classification
+    """
+    def __init__(self):
+        super(TwoClassesCalibration, self).__init__()
+        # self.P: prior probability of being in the same cluster
+        # self.s2llr: 
+    
+    def fit(self, X, Y):
+        """Estimate priors and likelihood ratio
+        
+        Parameters
+        ----------
+        X : array
+            Similarity or distance.
+        Y : array
+            Groundtruth (1 for hypothesis H, 0 for ¬H, -1 for unknown)
+        """
+        X = np.array(X)
+        Y = np.array(Y)
+        positive = X[np.where(Y == 1)]
+        negative = X[np.where(Y == 0)]
+        self.s2llr = sc2llr.computeLinearMapping(negative, positive)
+        self.P = 1. * len(positive) / (len(positive) + len(negative))
+        return self
+    
+    def fit_and_show(self, X, Y, nbins=100, m=None, M=None):
+        
+        self.fit(X,Y)
+        X = np.array(X)
+        Y = np.array(Y)
+        if m is None:
+            m = np.min(X)
+        if M is None:
+            M = np.max(X)
+        bins = np.arange(m, M, (M-m)/nbins)
+        positive = X[np.where(Y == 1)]
+        negative = X[np.where(Y == 0)]
+        from matplotlib import pyplot
+        pyplot.ion()
+        
+        pyplot.subplot(3,1,1)
+        pyplot.hist(positive, bins, normed=True, color='g', alpha=0.5)
+        pyplot.hist(negative, bins, normed=True, color='r', alpha=0.5)
+        pyplot.xlim(m, M)
+        
+        t = np.arange(m, M, (M-m)/1000)
+        pyplot.subplot(3,1,2)
+        pyplot.plot(t, self.get_llr(t))
+        pyplot.xlim(m, M)
+        
+        pyplot.subplot(3,1,3)
+        pyplot.plot(t, self.get_prob(t))
+        pyplot.xlim(m, M)
+    
+    
+    def get_llr(self, x):
+        """Compute log-likelihood ratio log p(x|H) - log p(x|¬H)"""
+        a,b = self.s2llr
+        return a*x+b
+    
+    def get_prob(self, x):
+        """Compute posterior probability p(H|x)
+                               1
+        p(H|x) = -------------------
+                 1 + p(¬H)   p(x|¬H)
+                     ----- . -------
+                     p(H)    p(x|H)
+        """
+        
+        # p(x|¬H)/p(x|H)
+        lr = 1./np.exp(self.get_llr(x))
+        # p(¬H)/p(H)
+        rho = (1.-self.P)/self.P
+        return 1./(1.+rho*lr)
+    
+    def __call__(self, x):
+        """Shortcut for get_prob"""
+        return self.get_prob(x)
+
+
 class IDScoreCalibration(object):
     
     def __init__(self):
