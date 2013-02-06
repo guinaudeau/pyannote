@@ -82,11 +82,11 @@ class GurobiModel(object):
     
     def probMaximizeIntraMinimizeInter(self, alpha=0.5):
         
-        intra = grb.quicksum([self.x[n,m] * self.graph[n][m][PROBABILITY] 
+        intra = grb.quicksum([self.graph[n][m][PROBABILITY]*self.x[n,m] 
                               for (n,m) in self.x 
                               if self.graph.has_edge(n,m)])
                               
-        inter = grb.quicksum([(1.-self.x[n,m]) * (1.-self.graph[n][m][PROBABILITY]) 
+        inter = grb.quicksum([(1-self.graph[n][m][PROBABILITY])*(1-self.x[n,m]) 
                               for (n,m) in self.x 
                               if self.graph.has_edge(n,m)])
                               
