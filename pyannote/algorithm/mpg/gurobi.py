@@ -12,6 +12,7 @@ from graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
 from node import IdentityNode, TrackNode
 import networkx as nx
+import numpy as np
 
 class GurobiModel(object):
     
