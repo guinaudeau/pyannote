@@ -167,9 +167,9 @@ class GurobiModel(object):
         # modularity matrix
         Q = (P - kout*kin.T/t) / t
         
-        modularity = grb.quicksum([Q[n,m]*x[N,M] for n,N in enumerate(nodes)
-                                                 for m,M in enumerate(nodes)
-                                                 if (N,M) in self.x])
+        modularity = grb.quicksum([Q[n,m]*self.x[N,M] for n,N in enumerate(nodes)
+                                                      for m,M in enumerate(nodes)
+                                                      if (N,M) in self.x])
         
         self.model.setObjective(modularity, grb.GRB.MAXIMIZE)
         self.model.optimize()
