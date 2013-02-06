@@ -17,7 +17,7 @@ import numpy as np
 class GurobiModel(object):
     
     def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 
-                          threads=None, quiet=True):
+                       threads=None, quiet=True):
         super(GurobiModel, self).__init__()
         self.graph = graph
         self.method = method
@@ -115,8 +115,7 @@ class GurobiModel(object):
     
     def maximizeClusterSize(self):
         """
-        Maximize ∑  xij
-                j>i
+        Generate clusters as big as possible (taking constraints into account)
         """
         
         cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
@@ -128,8 +127,7 @@ class GurobiModel(object):
     
     def minimizeClusterSize(self):
         """
-        Minimize ∑  xij
-                j>i
+        Generate clusters as small as possible (taking constraints into account)
         """
         
         cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
@@ -138,7 +136,6 @@ class GurobiModel(object):
         self.model.optimize()
         
         return self.getAnnotations()
-    
     
     def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
