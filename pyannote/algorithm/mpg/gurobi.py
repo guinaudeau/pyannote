@@ -11,6 +11,7 @@ from node import IdentityNode, TrackNode
 import networkx as nx
 
 class GurobiModel(object):
+    
     def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 
                           threads=None, quiet=True):
         super(GurobiModel, self).__init__()
@@ -82,13 +83,16 @@ class GurobiModel(object):
         
         return model, x
     
+    
     def probMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
+        Maximize ∑  α.xij.pij + (1-α).(1-xij).(1-pij)
+                j>i
+        
         Parameters
         ----------
         alpha : float, optional
-        weighted : boolean, optional
-            
+            0 < α < 1 in above equation
         
         """
         
@@ -104,6 +108,7 @@ class GurobiModel(object):
         self.model.optimize()
         
         return self.getAnnotations()
+    
     
     def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
@@ -136,24 +141,35 @@ class GurobiModel(object):
         
         return self.getAnnotations()
     
-    # def probMaximizeIntraMinimizeInterAveraged(self, alpha=0.5):
-    #     
-    #     intra = grb.quicksum([self.graph[n][m][PROBABILITY]*self.x[n,m] 
-    #                           for (n,m) in self.x 
-    #                           if self.graph.has_edge(n,m)])
-    #     nintra = grb.quicksum([self.x[n,m] for (n,m) in self.x 
-    #                                        if self.graph.has_edge(n,m)])
-    #     
-    #     inter = grb.quicksum([(1-self.graph[n][m][PROBABILITY])*(1-self.x[n,m]) 
-    #                           for (n,m) in self.x 
-    #                           if self.graph.has_edge(n,m)])
-    #     ninter = grb.quicksum([(1-self.x[n,m]) for (n,m) in self.x 
-    #                                            if self.graph.has_edge(n,m)])
-    #                           
-    #     self.model.setObjective(alpha*intra*ninter+(1-alpha)*inter*nintra, grb.GRB.MAXIMIZE)
-    #     self.model.optimize()
-    #     
-    #     return self.getAnnotations()
+    
+    def maximizeModularity(self):
+        """
+        """
+        
+        # list of nodes
+        nodes = self.graph.nodes()
+        
+        # adjacency matrix
+        P = nx.to_numpy_matrix(self.graph, nodelist=nodes, weight=PROBABILITY)
+        P = np.array(P)
+        
+        # node degree (total weight of {in|out}going edges)
+        kin = np.sum(P, axis=0)[:, np.newaxis]
+        kout = np.sum(P, axis=1)[:, np.newaxis]
+        
+        # total edge weight
+        t = np.sum(P)
+        
+        # modularity matrix
+        Q = (P - kout*kin.T/t) / t
+        
+        modularity = grb.quicksum([Q[n,m]*x[N,M] for n,N in enumerate(nodes)
+                                                 for m,M in enumerate(nodes)
+                                                 if (N,M) in self.x])
+        
+        self.model.setObjective(modularity, grb.GRB.MAXIMIZE)
+        self.model.optimize()
+        return self.getAnnotations()
     
     
     def getAnnotations(self):
