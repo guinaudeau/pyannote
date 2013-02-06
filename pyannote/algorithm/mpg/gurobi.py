@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
 import os
 import socket
 os.putenv('GRB_LICENSE_FILE', 
