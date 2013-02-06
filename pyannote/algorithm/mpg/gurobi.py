@@ -97,6 +97,25 @@ class GurobiModel(object):
         
         return self.getAnnotations()
     
+    def probMaximizeIntraMinimizeInterAveraged(self, alpha=0.5):
+        
+        intra = grb.quicksum([self.graph[n][m][PROBABILITY]*self.x[n,m] 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)])
+        nintra = grb.quicksum([self.x[n,m] for (n,m) in self.x 
+                                           if self.graph.has_edge(n,m)])
+        
+        inter = grb.quicksum([(1-self.graph[n][m][PROBABILITY])*(1-self.x[n,m]) 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)])
+        ninter = grb.quicksum([(1-self.x[n,m]) for (n,m) in self.x 
+                                               if self.graph.has_edge(n,m)])
+                              
+        self.model.setObjective(alpha*intra/nintra+(1-alpha)*inter/ninter, grb.GRB.MAXIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
+    
     
     def getAnnotations(self):
         
