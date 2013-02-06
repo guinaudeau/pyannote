@@ -8,6 +8,7 @@ import gurobipy as grb
 from graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
 from node import IdentityNode, TrackNode
+import networkx as nx
 
 class GurobiModel(object):
     def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 
