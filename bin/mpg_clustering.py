@@ -140,7 +140,7 @@ for u, uri in enumerate(args.uris):
         pg.remove_crossmodal_edges('head', 'written')
     
     # create ILP problem
-    model = GurobiModel(pg, method=method
+    model = GurobiModel(pg, method=method,
                             mipGap=mipGap,
                             threads=threads,
                             timeLimit=timeLimit,
