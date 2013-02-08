@@ -658,101 +658,6 @@ class LabelSimilarityGraph(object):
         return G
 
 
-# class LabelSimilarityGraph(object):
-#     """Label similarity graph
-#     
-#     [L] --- [L]
-#     
-#     - one node per label (label node, [L])
-#     - one soft edge between every two labels (0<p<1, ---)
-#     - edges between cooccurring labels are marked as such
-#     
-#     Parameters
-#     ----------
-#     s2p : func, optional
-#         Similarity-to-probability function.
-#         Defaults to identity (p=s)
-#     """
-#     def __init__(self, s2p=None, **kwargs):
-#         super(LabelSimilarityGraph, self).__init__()
-#         
-#         if s2p is None:
-#             s2p = lambda s: s
-#         self.s2p = s2p
-#         
-#         # setup model
-#         MMx = self.getMx(BaseModelMixin)
-#         if len(MMx) == 0:
-#             raise ValueError('Missing model mixin (MMx).')
-#         elif len(MMx) > 1:
-#             raise ValueError('Too many model mixins (MMx): %s' % MMx)
-#         self.mmx_setup(**kwargs)
-#     
-#     def getMx(self, baseMx):
-#         
-#         # get all mixins subclass of baseMx
-#         # but the class itself and the baseMx itself
-#         cls = self.__class__
-#         MX =  [Mx for Mx in cls.mro() 
-#                   if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
-#             
-#         # build the class inheritance directed graph {subclass --> class}
-#         G = nx.DiGraph()
-#         for m, Mx in enumerate(MX):
-#             G.add_node(Mx)
-#             for otherMx in MX[m+1:]:
-#                 if issubclass(Mx, otherMx):
-#                     G.add_edge(Mx, otherMx)
-#                 elif issubclass(otherMx, Mx):
-#                     G.add_edge(otherMx, Mx)
-#         
-#         # only keep the deeper subclasses in each component
-#         MX = []
-#         for components in nx.connected_components(G.to_undirected()):
-#             g = G.subgraph(components)
-#             MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
-#         
-#         return MX
-#     
-#     
-#     def __call__(self, diarization, feature):
-#         
-#         assert isinstance(diarization, Annotation), \
-#                "%r is not an annotation" % diarization
-#         
-#         # list of labels in diarization
-#         labels = diarization.labels()  
-#             
-#         # label similarity matrix
-#         P = self.mmx_similarity_matrix(labels, annotation=diarization,
-#                                                feature=feature)
-#         # change it into a probability matrix
-#         P.M = self.s2p(P.M)
-#         
-#         # label cooccurrence matrix
-#         K = Cooccurrence(diarization, diarization)
-#         
-#         G = MultimodalProbabilityGraph()
-#         u = diarization.uri
-#         m = diarization.modality
-#         
-#         lnodes = {l: LabelNode(u,m,l) for l in labels}
-#         
-#         for i, l in enumerate(labels):
-#             G.add_node(lnodes[l])
-#             for L in labels[i+1:]:
-#                 try:
-#                     # raises an exception when similarity is not available
-#                     G.update_edge(lnodes[l], lnodes[L], 
-#                                     **{PROBABILITY: P[l,L], 
-#                                        COOCCURRING: K[l,L] > 0})
-#                 except Exception, e:
-#                     # do not add any edge if that happens
-#                     pass
-#         
-#         return G
-
-
 class TrackCooccurrenceGraph(object):
     """Track cooccurrence graph
     
@@ -932,35 +837,33 @@ class TrackCooccurrenceGraph(object):
         assert mb == self.modalityB, \
                "bad modality (%r, %r)" % (self.modalityB, mb)
         
+        
         G = MultimodalProbabilityGraph()
         u = A.uri
-        
-        # (modality, track)-indexed dictionaries
-        # tnodes[m, t] is the set of nodes of modality m with tracks called t
-        tnodes = {}
-        
+                
         # Sub-tracks graph
         # it contains only [ta] -- [tb] edges for cooccurring subtracks
+        # track names are kept unchanged
         timeline, a, b = self._AB2ab(A, B)
         
         for s in timeline:
             
-            # if tracks are too short, skip them
+            # do not add edges for very short tracks
             if s.duration < self.min_duration:
                 continue
             
-            # Sub-tracks for current segment
-            atracks = a.tracks(s)
-            btracks = b.tracks(s)
-            # and their number
-            Na = len(atracks)
-            Nb = len(btracks)
+            # Sub-tracks for current sub-segment and their number
+            subtracks_a = a.tracks(s)
+            Na = len(subtracks_a)
+            subtracks_b = b.tracks(s)
+            Nb = len(subtracks_b)
             
-            # if one modality does not have any track
-            # go to next segment
+            # if one modality does not have any track, go to next segment
             if Na == 0 or Nb == 0:
                 continue
             
+            # if one modality has more than one coocurring track
+            # and option only1x1 is ON, go to next segment
             if only1x1 and (Na != 1 or Nb != 1):
                 continue
             
@@ -972,61 +875,24 @@ class TrackCooccurrenceGraph(object):
             except Exception, e:
                 continue
             
-            # add a soft edge between each cross-modal pair of tracks
-            for ta in atracks:
-                
-                atnode = TrackNode(u, ma, s, ta)
-                
-                # initialize tnodes[ma, ta] with empty set
-                # if it is the first time we meet this track name
-                if (ma, ta) not in tnodes:
-                    tnodes[ma,ta] = set([])
-                
-                G.add_node(atnode, {SUBTRACK: True})
-                
-                # add atnode to the list of tnodes
-                tnodes[ma,ta].add(atnode)
-                
-                for tb in btracks:
-                    btnode = TrackNode(u, mb, s, tb)
-                    
-                    # initialize tnodes[mb, tb] with empty set
-                    # if it is the first time we meet this track name
-                    if (mb, tb) not in tnodes:
-                        tnodes[mb,tb] = set([])
-                    
-                    # add btnode to the list of tnodes
-                    tnodes[mb,tb].add(btnode)
-                    
-                    # add cross-modal edge between sub-tracks
-                    if probability is not None:
-                        G.add_node(btnode, {SUBTRACK: True})
-                        G.update_edge(atnode, btnode, **{PROBABILITY: probability,
-                                                           COOCCURRING: True})
-        
-        # [Ta] tracks
-        # [Ta] == [ta] hard edges
-        for sa,ta in A.itertracks():
-            # original track
-            aTnode = TrackNode(u, ma, sa, ta)
-            G.add_node(aTnode, {SUBTRACK: False})
-            for tnode in tnodes.get((ma,ta), []):
-                # do not add self-loop (yes, this can happen)
-                if tnode == aTnode:
-                    continue
-                G.update_edge(aTnode, tnode, **{PROBABILITY: 1., 
-                                                  SUBTRACK: True})
-        
-        # [Tb] tracks
-        # [Tb] == [tb] hard edges
-        for sb,tb in B.itertracks():
-            # original track
-            bTnode = TrackNode(u, mb, sb, tb)
-            G.add_node(bTnode, {SUBTRACK: False})
-            for tnode in tnodes.get((mb,tb), []):
-                # do not add self-loop (yes, this can happen)
-                if tnode == bTnode:
-                    continue
-                G.update_edge(bTnode, tnode, **{PROBABILITY: 1., SUBTRACK: True})
+            # get original track corresponding to each subtrack
+            tracks_A = set([])
+            for t in subtracks_a:
+                for S, T in A.get_track_by_name(t):
+                    if s in S:
+                        tracks_A.add((S,T))
+            tracks_B = set([])
+            for t in subtracks_b:
+                for S, T in B.get_track_by_name(t):
+                    if s in S:
+                        tracks_B.add((S,T))
+            
+            # add edges between co-occurring tracks
+            for sA, tA in tracks_A:
+                node_A = TrackNode(u, ma, sA, tA)
+                for sB, tB in tracks_B:
+                    node_B = TrackNode(u, mb, sB, tB)
+                    G.update_edge(node_A, node_B, **{PROBABILITY: probability,
+                                                   COOCCURRING: True})
         
         return G
