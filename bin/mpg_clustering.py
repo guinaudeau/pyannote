@@ -155,7 +155,7 @@ for u, uri in enumerate(args.uris):
     if args.objective == 1:
         annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
     elif args.objective == 2:
-        annotations = model.weigthedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+        annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
     elif args.objective == 3:
         annotations = model.maximizeModularity()
     
