@@ -1025,7 +1025,7 @@ class Scores(AnnotationMixin, object):
                 if Pid > Pu:
                     A[segment, track] = label
                 else:
-                    A[segment, track] = Unknown
+                    A[segment, track] = Unknown()
         else:
             best = self.nbest(1, invert=False)
             for segment, track, label, value in best.itervalues():
