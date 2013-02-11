@@ -69,11 +69,13 @@ group = argparser.add_argument_group('Structure')
 
 import numpy as np
 def threshold_parser(value):
-    if value in ['-oo', '+oo', 'oo']:
+    if value in ['-oo', '+oo', 'oo', 'P']:
         if value == '-oo':
             return -np.inf
-        else:
+        elif value in ['+oo', 'oo']:
             return np.inf
+        else:
+            return None
     else:
         return float(value)
 
@@ -82,7 +84,8 @@ group.add_argument('--to-annotation', type=threshold_parser, metavar='THETA',
                    help='convert scores to annotation. '
                         'if the score of the top-score label is higher than '
                         'THETA, then choose this label. otherwise, set label '
-                        'to Unknown. Default THETA is "-oo"')
+                        'to Unknown. Default THETA is "-oo". Use "P" to indicate '
+                        'scores are posteriors.')
 
 group.add_argument('--re-track', action='store_true',
                    help='rename tracks with unique identifiers')
@@ -129,7 +132,10 @@ writer, f = args.tgt
 
 def structural_transforms(A):
     if hasattr(args, 'to_annotation'):
-        A = A.to_annotation(threshold=args.to_annotation)
+        if args.to_annotation is None:
+            A = A.to_annotation(posterior=True)
+        else:
+            A = A.to_annotation(threshold=args.to_annotation)
     if args.compress:
         A = A.smooth()
     if args.anonymize:

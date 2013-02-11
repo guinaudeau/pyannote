@@ -963,6 +963,7 @@ class Scores(AnnotationMixin, object):
         
         return A
     
+    
     def subset(self, labels, invert=False):
         """Scores subset
         
@@ -995,7 +996,7 @@ class Scores(AnnotationMixin, object):
         return A
     
     
-    def to_annotation(self, threshold=-np.inf, invert=False):
+    def to_annotation(self, threshold=-np.inf, posterior=False):
         """
         
         Parameters
@@ -1004,25 +1005,34 @@ class Scores(AnnotationMixin, object):
             Each track is annotated with the label with the highest score.
             Yet, if the latter is smaller than `threshold`, label is replaced
             with an `Unknown` instance.
-        invert : bool, optional
-            By default, larger scores are better.
-            Set `invert` to True to indicate smaller scores are better.
-            `threshold` comparison is modified accordingly.
+        posterior : bool, optional
+            If True, scores are posterior probabilities in open-set identification.
+            If top model posterior is higher than unknown posterior, it is selected.
+            Otherwise, label is replaced with an `Unknown` instance.
         """
-        
-        if invert:
-            raise NotImplementedError('invert = True')
         
         A = Annotation(uri=self.uri, modality=self.modality)
         if not self:
             return A
         
-        best = self.nbest(1, invert=invert)
-        for segment, track, label, value in best.itervalues():
-            if (invert and value > threshold) or \
-               (not invert and value < threshold):
-                label = Unknown()
-            A[segment, track] = label
+        if posterior:
+            best = self.nbest(1, invert=False)
+            for segment, track in self.itertracks():
+                all_scores = self.get_track_scores(segment, track)
+                Pu = 1.-np.sum([v for l,v in all_scores.iteritems() if not np.isnan(v)])
+                best_scores = best.get_track_scores(segment, track)
+                label, Pid = [(l,v) for l,v in best_scores.iteritems() if not np.isnan(v)][0]
+                if Pid > Pu:
+                    A[segment, track] = label
+                else:
+                    A[segment, track] = Unknown
+        else:
+            best = self.nbest(1, invert=False)
+            for segment, track, label, value in best.itervalues():
+                if (invert and value > threshold) or \
+                   (not invert and value < threshold):
+                    label = Unknown()
+                A[segment, track] = label
         
         return A
     
