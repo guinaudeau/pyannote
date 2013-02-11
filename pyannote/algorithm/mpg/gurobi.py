@@ -195,7 +195,7 @@ class GurobiModel(object):
                               if self.graph.has_edge(n,m)
                               and self.graph[n][m][PROBABILITY] < 1])
         
-        self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
+        self.model.setObjective((1-alpha)*intra+alpha*inter, grb.GRB.MAXIMIZE)
         self.model.optimize()
         
         return self.getAnnotations()
