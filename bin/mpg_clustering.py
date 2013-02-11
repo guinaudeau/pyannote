@@ -98,7 +98,8 @@ fgroup.add_argument('--objective', type=int, metavar='N', default=1,
                     help='select objective function:'
                          '1 = Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)'
                          '2 = Maximize ∑ α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)'
-                         '3 = Maximize modularity')
+                         '3 = Maximize modularity'
+                         '4 = Maximize ∑ α.xij.log(pij) + (1-α).(1-xij).log(1-pij)')
 fgroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                     help='set α value to ALPHA in objective function.')
 
@@ -158,7 +159,8 @@ for u, uri in enumerate(args.uris):
         annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
     elif args.objective == 3:
         annotations = model.maximizeModularity()
-    
+    elif args.objective == 4:
+        annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
     
     # save to file
     for uri, modality in annotations:

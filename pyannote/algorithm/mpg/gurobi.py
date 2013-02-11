@@ -87,6 +87,29 @@ class GurobiModel(object):
         
         return model, x
     
+    def maximizeClusterSize(self):
+        """
+        Generate clusters as big as possible (taking constraints into account)
+        """
+        
+        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
+        
+        self.model.setObjective(cluster, grb.GRB.MAXIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
+    
+    def minimizeClusterSize(self):
+        """
+        Generate clusters as small as possible (taking constraints into account)
+        """
+        
+        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
+        
+        self.model.setObjective(cluster, grb.GRB.MINIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
     
     def probMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
@@ -109,30 +132,6 @@ class GurobiModel(object):
                               if self.graph.has_edge(n,m)])
                               
         self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
-        self.model.optimize()
-        
-        return self.getAnnotations()
-    
-    def maximizeClusterSize(self):
-        """
-        Generate clusters as big as possible (taking constraints into account)
-        """
-        
-        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
-        
-        self.model.setObjective(cluster, grb.GRB.MAXIMIZE)
-        self.model.optimize()
-        
-        return self.getAnnotations()
-    
-    def minimizeClusterSize(self):
-        """
-        Generate clusters as small as possible (taking constraints into account)
-        """
-        
-        cluster = grb.quicksum([self.x[n,m] for (n,m) in self.x])
-        
-        self.model.setObjective(cluster, grb.GRB.MINIMIZE)
         self.model.optimize()
         
         return self.getAnnotations()
@@ -169,6 +168,33 @@ class GurobiModel(object):
                               for (n,m) in self.x 
                               if self.graph.has_edge(n,m)])
                               
+        self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
+        self.model.optimize()
+        
+        return self.getAnnotations()
+    
+    def logProbMaximizeIntraMinimizeInter(self, alpha=0.5):
+        """
+        Maximize ∑  α.xij.log(pij) + (1-α).(1-xij).log(1-pij)
+                j>i
+        
+        Parameters
+        ----------
+        alpha : float, optional
+            0 < α < 1 in above equation
+        
+        """
+        
+        intra = grb.quicksum([np.log(self.graph[n][m][PROBABILITY])*self.x[n,m] 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)
+                              and self.graph[n][m][PROBABILITY] > 0])
+                              
+        inter = grb.quicksum([np.log(1-self.graph[n][m][PROBABILITY])*(1-self.x[n,m]) 
+                              for (n,m) in self.x 
+                              if self.graph.has_edge(n,m)
+                              and self.graph[n][m][PROBABILITY] < 1])
+        
         self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
         self.model.optimize()
         
