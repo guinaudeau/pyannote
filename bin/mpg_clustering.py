@@ -94,6 +94,11 @@ ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS,
 #                          'is higher than N.')
 
 fgroup = argparser.add_argument_group('Objective function')
+fgroup.add_argument('--objective', type=int, metavar='N', default=1,
+                    help='select objective function:'
+                         '1 = Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)'
+                         '2 = Maximize ∑ α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)'
+                         '3 = Maximize modularity')
 fgroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                     help='set α value to ALPHA in objective function.')
 
@@ -147,7 +152,13 @@ for u, uri in enumerate(args.uris):
                             quiet=quiet)
     
     # actual optimization
-    annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
+    if args.objective == 1:
+        annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
+    elif args.objective == 2:
+        annotations = model.weigthedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+    elif args.objective == 3:
+        annotations = model.maximizeModularity()
+    
     
     # save to file
     for uri, modality in annotations:
