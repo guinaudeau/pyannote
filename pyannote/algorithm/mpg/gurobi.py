@@ -139,6 +139,12 @@ class GurobiModel(object):
     
     def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5):
         """
+        Maximize ∑  α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)
+                j>i
+        
+        where wij is the geometric mean of duration of tracks i and j
+        
+        
         Parameters
         ----------
         alpha : float, optional
