@@ -50,13 +50,16 @@ class PCenterModel(object):
         # Equation 1.4 (in Dupuy et al., JEP'12)
         for k,nk in enumerate(nodes):
             for j,nj in enumerate(nodes):
+                if nk == nj:
+                    continue
                 model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] < self.alpha)
         
         # Equation 1 (in Dupuy et al., JEP'12)
         nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
         dispersion = grb.quicksum([(1-G[nk,nj][PROBABILITY])*x[nk,nj] 
                                    for k,nk in enumerate(nodes) 
-                                   for j,nj in enumerate(nodes)])
+                                   for j,nj in enumerate(nodes)
+                                   if nj != nk])
         model.setObjective(nClusters + dispersion, grb.GRB.MINIMIZE)
         
         return model, x
