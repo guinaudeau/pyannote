@@ -14,6 +14,93 @@ from node import IdentityNode, TrackNode
 import networkx as nx
 import numpy as np
 
+class PCenterModel():
+    def __init__(self, graph, alpha=0.5, method=-1, mipGap=1e-4, timeLimit=None,
+                       threads=None, quiet=True):
+        super(PCenterModel, self).__init__()
+        self.graph = graph
+        self.alpha = alpha
+        self.method = method
+        self.mipGap = mipGap
+        self.timeLimit = timeLimit
+        self.threads = threads
+        self.quiet = quiet
+        self.model, self.x = self._model(graph)
+    
+    def _model(self, G):
+        
+        model = grb.Model()
+        model.setParam('OutputFlag', False)
+        
+        nodes = G.nodes()
+        
+        # Equation 1.2 (in Dupuy et al., JEP'12)
+        x = {}
+        for k, nk in enumerate(nodes):
+            for j, nj in enumerate(nodes):
+                x[nk,nj] = model.addVar(vtype=grb.GRB.BINARY)
+        model.update()
+        
+        # Equation 1.3 (in Dupuy et al., JEP'12)
+        for j,nj in enumerate(nodes):
+            model.addConstr(grb.quicksum([x[nk,nj] for k,nk in enumerate(nodes)]) == 1)
+        
+        # Equation 1.4 (in Dupuy et al., JEP'12)
+        for k,nk in enumerate(nodes):
+            for j,nj in enumerate(nodes):
+                model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] < self.alpha)
+        
+        # Equation 1 (in Dupuy et al., JEP'12)
+        nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
+        dispersion = grb.quicksum([(1-G[nk,nj][PROBABILITY])*x[nk,nj] 
+                                   for k,nk in enumerate(nodes) 
+                                   for j,nj in enumerate(nodes)])
+        model.setObjective(nClusters + dispersion, grb.GRB.MINIMIZE)
+        
+        return model, x
+    
+    def optimize(self):
+        self.model.optimize()
+        return self.getAnnotations()
+    
+    def getAnnotations(self):
+        
+        c = nx.Graph()
+        for (nk,nj), var in self.x.iteritems():
+            c.add_node(nk)
+            c.add_node(nj)
+            # node j is assigned to center node k
+            if var.x == 1:
+                c.add_edge(nk,nj)
+                # node k is a center
+                if nk == nj:
+                    c.node[nk]['center'] = True
+        clusters = nx.connected_components()
+        
+        annotations = {}
+        modalities = self.graph.modalities()
+        uris = self.graph.uris()
+        for modality in modalities:
+            for uri in uris:
+                annotations[uri, modality] = Annotation(uri=uri, modality=modality)
+        
+        for cluster in clusters:
+            # find cluster identity
+            identities = [n.identifier for n in cluster if isinstance(n, IdentityNode)]
+            if identities:
+                identity = identities[0]
+            else:
+                identity = Unknown()
+            # add tracks to annotations
+            trackNodes = [n for n in cluster if isinstance(n, TrackNode)]
+            for n in trackNodes:
+                annotations[n.uri, n.modality][n.segment, n.track] = identity
+        
+        return annotations
+        
+    
+    
+        
 class GurobiModel(object):
     
     def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 

@@ -24,7 +24,7 @@ import networkx as nx
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
 from pyannote.parser import AnnotationParser
-from pyannote.algorithm.mpg.gurobi import GurobiModel
+from pyannote.algorithm.mpg.gurobi import GurobiModel, PCenterModel
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Probability Graph Clustering')
@@ -99,7 +99,8 @@ fgroup.add_argument('--objective', type=int, metavar='N', default=1,
                          '1 = Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)'
                          '2 = Maximize ∑ α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)'
                          '3 = Maximize modularity'
-                         '4 = Maximize ∑ α.xij.log(pij) + (1-α).(1-xij).log(1-pij)')
+                         '4 = Maximize ∑ α.xij.log(pij) + (1-α).(1-xij).log(1-pij)'
+                         '5 = Minimize ∑ xii + ∑ ∑ (1-pij).xij')
 fgroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                     help='set α value to ALPHA in objective function.')
 
@@ -146,22 +147,30 @@ for u, uri in enumerate(args.uris):
         pg.remove_crossmodal_edges('head', 'written')
     
     # create ILP problem
-    model = GurobiModel(pg, method=method,
-                            mipGap=mipGap,
-                            threads=threads,
-                            timeLimit=timeLimit,
-                            quiet=quiet)
-    
-    # actual optimization
-    if args.objective == 1:
-        annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
-    elif args.objective == 2:
-        annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
-    elif args.objective == 3:
-        annotations = model.maximizeModularity()
-    elif args.objective == 4:
-        annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
-    
+    if args.objective in [1,2,3,4]:
+        model = GurobiModel(pg, method=method,
+                                mipGap=mipGap,
+                                threads=threads,
+                                timeLimit=timeLimit,
+                                quiet=quiet)
+        # actual optimization
+        if args.objective == 1:
+            annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
+        elif args.objective == 2:
+            annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+        elif args.objective == 3:
+            annotations = model.maximizeModularity()
+        elif args.objective == 4:
+            annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+    elif args.objective in [5]:
+        model = PCenterModel(pg, alpha=args.alpha, 
+                                 method=method,
+                                 mipGap=mipGap,
+                                 threads=threads,
+                                 timeLimit=timeLimit,
+                                 quiet=quiet)
+        annotations = model.optimize()
+        
     # save to file
     for uri, modality in annotations:
         writer.write(annotations[uri, modality], f=f)
