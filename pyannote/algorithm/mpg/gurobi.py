@@ -14,9 +14,11 @@ from node import IdentityNode, TrackNode
 import networkx as nx
 import numpy as np
 
-class PCenterModel():
+class PCenterModel(object):
+    
     def __init__(self, graph, alpha=0.5, method=-1, mipGap=1e-4, timeLimit=None,
                        threads=None, quiet=True):
+        
         super(PCenterModel, self).__init__()
         self.graph = graph
         self.alpha = alpha
