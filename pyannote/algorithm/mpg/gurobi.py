@@ -52,7 +52,7 @@ class PCenterModel(object):
             for j,nj in enumerate(nodes):
                 if nk == nj:
                     continue
-                model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] < self.alpha)
+                model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] <= self.alpha)
         
         # Equation 1 (in Dupuy et al., JEP'12)
         nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
