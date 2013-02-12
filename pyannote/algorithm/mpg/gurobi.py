@@ -56,11 +56,20 @@ class PCenterModel(object):
         
         # Equation 1 (in Dupuy et al., JEP'12)
         nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
-        dispersion = grb.quicksum([(1-G[nk,nj][PROBABILITY])*x[nk,nj] 
+        dispersion = grb.quicksum([(1-G[nk][nj][PROBABILITY])*x[nk,nj] 
                                    for k,nk in enumerate(nodes) 
                                    for j,nj in enumerate(nodes)
                                    if nj != nk])
         model.setObjective(nClusters + dispersion, grb.GRB.MINIMIZE)
+
+        model.setParam(grb.GRB.Param.Method, self.method)
+        if self.threads is not None:
+            model.setParam(grb.GRB.Param.Threads, self.threads)
+        model.setParam(grb.GRB.Param.NodefileStart, 0.5)
+        model.setParam(grb.GRB.Param.MIPGap, self.mipGap)
+        if self.timeLimit is not None:
+            model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
+        model.setParam(grb.GRB.Param.OutputFlag, not self.quiet)
         
         return model, x
     
@@ -80,7 +89,7 @@ class PCenterModel(object):
                 # node k is a center
                 if nk == nj:
                     c.node[nk]['center'] = True
-        clusters = nx.connected_components()
+        clusters = nx.connected_components(c)
         
         annotations = {}
         modalities = self.graph.modalities()
