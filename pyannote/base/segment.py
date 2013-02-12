@@ -18,6 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import timedelta
 SEGMENT_PRECISION = 1e-6
 
 class Segment(object):
@@ -110,40 +111,8 @@ class Segment(object):
     
     def __init__(self, start=0., end=0.):
         super(Segment, self).__init__()
-        self._start = float(start)
-        self._end   = float(end)
-    
-    def _get_start(self): 
-        return self._start
-    def _set_start(self, value):
-        self._start = value
-    start = property(fget=_get_start, fset=_set_start, fdel=None)
-    """Start time, in seconds.
-
-    Examples
-    --------
-
-    >>> segment = Segment(start=13., end=37)
-    >>> print segment.start
-    13
-    >>> segment.start = 36
-    >>> print segment
-    [36 --> 37]
-
-    """
-    
-    def _get_end(self): 
-        return self._end
-    def _set_end(self, value):
-        self._end = value
-    end = property(fget=_get_end, fset=_set_end)
-    """Get/set end time, in seconds.
-    
-    See Also
-    --------
-    pyannote.base.segment.Segment.start
-
-    """
+        self.start = float(start)
+        self.end = float(end)
     
     def __nonzero__(self):
         """Use the expression 'if segment'
@@ -183,12 +152,9 @@ class Segment(object):
     
     def __eq__(self, other):
         """Use the expression 'segment == other'"""
-        if isinstance(other, Segment):
-            return (self.start == other.start) and \
-                   (self.end == other.end)
-        else:
-            return False
-        
+        return (self.start == other.start) and \
+               (self.end == other.end)
+    
     def __ne__(self, other):
         """Use the expression 'segment != other'"""
         return (self.start != other.start) or \
@@ -437,8 +403,26 @@ class Segment(object):
         else:
             return '∅'
     
+    def _pretty(self, seconds):
+        td = timedelta(seconds=seconds)
+        days = td.days
+        seconds = td.seconds
+        microseconds = td.microseconds
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if abs(days) > 0:
+            return '%d:%02d:%02d:%02d.%03d' % (days, hours, minutes, 
+                                               seconds, microseconds/1000)
+        else:
+            return '%02d:%02d:%02d.%03d' % (hours, minutes, seconds, 
+                                            microseconds/1000)
+    
+    def pretty(self):
+        """Human-readable representation of segments"""
+        return '[%s --> %s]' % (self._pretty(self.start), 
+                                self._pretty(self.end)) 
+    
     def __repr__(self):
-        
         return '<Segment(%g, %g)>' % (self.start, self.end)
     
 
@@ -448,6 +432,7 @@ class RevSegment(Segment):
     
     def __init__(self, segment):
         super(RevSegment, self).__init__(start=segment.start, end=segment.end)    
+    
     def __lt__(self, other):
         return (self.end < other.end) or \
                ((self.end == other.end) and (self.start > other.start))
