@@ -1029,8 +1029,7 @@ class Scores(AnnotationMixin, object):
         else:
             best = self.nbest(1, invert=False)
             for segment, track, label, value in best.itervalues():
-                if (invert and value > threshold) or \
-                   (not invert and value < threshold):
+                if value < threshold:
                     label = Unknown()
                 A[segment, track] = label
         
