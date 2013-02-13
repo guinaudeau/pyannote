@@ -45,6 +45,21 @@ class SEGMixin(BaseTextualFormat):
     
     def get_segment(self, row):
         return self.sliding_window.rangeToSegment(row[self.START], row[self.DURATION])
+    
+    def _append(self, annotation, f, uri, modality):
+        
+        try:
+            format = '%s %%d 1 %%d %%d\n' % uri
+            
+            translation = {label:l+1 for l, label in enumerate(annotation.labels())}
+            
+            A = annotation % translation
+            for segment, track, label in A.iterlabels():
+                i0, n = self.sliding_window.segmentToRange(segment)
+                f.write(format % (label, i0, n))
+        except Exception, e:
+            print "Error @ %s%s %s %s" % (uri, segment, track, label)
+            raise e
 
 
 class SEGParser(BaseTextualAnnotationParser, SEGMixin):
