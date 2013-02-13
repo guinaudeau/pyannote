@@ -51,14 +51,14 @@ class SEGMixin(BaseTextualFormat):
         try:
             format = '%s %%d 1 %%d %%d\n' % uri
             
-            translation = {label:l+1 for l, label in enumerate(annotation.labels())}
-            
-            A = annotation % translation
-            for segment, track, label in A.iterlabels():
-                i0, n = self.sliding_window.segmentToRange(segment)
-                f.write(format % (label, i0, n))
+            labels = annotation.labels()
+            for l, label in enumerate(labels):
+                A  = annotation.subset(set([label]))
+                for segment, _ in A.itertracks():
+                    i0, n = self.sliding_window.segmentToRange(segment)
+                    f.write(format % (l, i0, n))
         except Exception, e:
-            print "Error @ %s%s %s %s" % (uri, segment, track, label)
+            print "Error @ %s%s %s" % (uri, segment, label)
             raise e
 
 
