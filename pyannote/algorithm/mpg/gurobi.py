@@ -54,6 +54,11 @@ class PCenterModel(object):
                     continue
                 model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] <= self.alpha)
         
+        # Missing Equation 1.5
+        for k,nk in enumerate(nodes):
+            for j,nj in enumerate(nodes):
+                model.addConstr(x[nk,nk] >= x[nk,nj])
+        
         # Equation 1 (in Dupuy et al., JEP'12)
         nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
         dispersion = grb.quicksum([(1-G[nk][nj][PROBABILITY])*x[nk,nj] 
