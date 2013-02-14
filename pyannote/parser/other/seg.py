@@ -56,7 +56,7 @@ class SEGMixin(BaseTextualFormat):
                 A  = annotation.subset(set([label]))
                 for segment, _ in A.itertracks():
                     i0, n = self.sliding_window.segmentToRange(segment)
-                    f.write(format % (l, i0, n))
+                    f.write(format % (l+1, i0, n))
         except Exception, e:
             print "Error @ %s%s %s" % (uri, segment, label)
             raise e
