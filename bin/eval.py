@@ -228,6 +228,7 @@ for u, uri in enumerate(uris):
 
 pb.finish()
 
+MEDIAN   = '__ median __'
 AVERAGED = '__ averaged __'
 COMBINED = '__ combined __'
 
@@ -235,11 +236,14 @@ COMBINED = '__ combined __'
 for name, metric in metrics.iteritems():
     for h, (path, _) in enumerate(args.hypothesis):
         M[name][AVERAGED, path] = np.mean(M[name][set(uris), path].M)
+        M[name][MEDIAN, path] = np.median(M[name][set(uris), path].M)
         M[name][COMBINED, path] = abs(metric[h])
         if args.components:
             for component in C[name]:
                 C[name][component][AVERAGED, path] = \
                                 np.mean(C[name][component][set(uris), path].M)
+                C[name][component][MEDIAN, path] = \
+                                np.median(C[name][component][set(uris), path].M)
                 C[name][component][COMBINED, path] = \
                                 np.sum(C[name][component][set(uris), path].M)
             
@@ -259,12 +263,14 @@ else:
         for uri in uris:
             V[uri, name] = M[name][uri, path]
         V[AVERAGED, name] = M[name][AVERAGED, path]
+        V[MEDIAN, name] = M[name][MEDIAN, path]
         V[COMBINED, name] = M[name][COMBINED, path]
         if args.components:
             for cname in C[name]:
                 for uri in uris:
                     V[uri, '(%s)' % cname] = C[name][cname][uri, path]
                 V[AVERAGED, '(%s)' % cname] = C[name][cname][AVERAGED, path]
+                V[MEDIAN, '(%s)' % cname] = C[name][cname][MEDIAN, path]
                 V[COMBINED, '(%s)' % cname] = C[name][cname][COMBINED, path]
     print V.to_table(fmt='1.3', factorize='')
 
