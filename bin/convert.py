@@ -151,8 +151,17 @@ for u, uri in enumerate(uris):
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
     
+    if hasattr(args, 'uem'):
+        uem = args.uem(uri)
+    else:
+        uem = None
+    
     if srcContainsURI:
         src = args.src(uri)
+        
+        if uem is not None:
+            src = src.crop(uem, mode='intersection')
+        
         if src.modality in convert_modality:
             src.modality = convert_modality[src.modality]
         writer.write(structural_transforms(src), f=f)
@@ -160,6 +169,10 @@ for u, uri in enumerate(uris):
         # Modality name conversion
         for modality in src_modalities:
             src = args.src(uri=uri, modality=modality)
+            
+            if uem is not None:
+                src = src.crop(uem, mode='intersection')
+            
             if modality in convert_modality:
                 src.modality = convert_modality[modality]
             writer.write(structural_transforms(src), f=f)
