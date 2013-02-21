@@ -26,8 +26,7 @@ import re
 class TRSParser(BaseAnnotationParser):
     
     def __init__(self):
-        multitrack = True
-        super(TRSParser, self).__init__(multitrack)
+        super(TRSParser, self).__init__()
     
     def _complete(self):
         for segment in self._incomplete:
@@ -52,7 +51,11 @@ class TRSParser(BaseAnnotationParser):
         while(m):
             # split Jean-Marie_LEPEN,Marine_LEPEN ("les LEPEN")
             for label in m.group(1).split(','):
-                labels.append(str(label))
+                try:
+                    labels.append(str(label))
+                except Exception, e:
+                    print "label = %s" % label
+                    raise e
             string = string[m.end():]
             m = p.match(string)
         return labels
