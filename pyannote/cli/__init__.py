@@ -21,4 +21,5 @@
 from argparse import SUPPRESS
 from pyannote.cli.uris import URIHandler, URI_PLACEHOLDER, URI_SUPPORT
 from pyannote.cli.parent import initParser
-from pyannote.cli.argtypes import InputGetTimeline, InputGetAnnotation, InputGetAnnotationAndPath, InputList, OutputWriteAnnotation
+from pyannote.cli.argtypes import InputGetTimeline, InputGetAnnotation, InputGetAnnotationAndPath, InputList, InputFileHandle 
+from pyannote.cli.argtypes import OutputWriteAnnotation, OutputFileHandle

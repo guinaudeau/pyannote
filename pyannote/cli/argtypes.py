@@ -18,9 +18,22 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import os.path
 import pyannote.cli
 from pyannote.parser import TimelineParser, AnnotationParser, LSTParser
+
+
+class InputFileHandle(object):
+    def __init__(self):
+        super(InputFileHandle, self).__init__()
+    def __call__(self, path):
+        if path == '-':
+            return sys.stdin
+        else:
+            if not os.path.isfile(path):
+                raise IOError('File %s does not exists.' % path)
+            return open(path, 'r')
 
 
 class InputGetTimeline(object):
@@ -34,12 +47,12 @@ class InputGetTimeline(object):
         """
         super(InputGetTimeline, self).__init__()
         self.initArgs = {} if initArgs is None else initArgs
-        self.parser = TimelineParser(**(self.initArgs))
+        # self.parser = TimelineParser(**(self.initArgs))
     
     def __call__(self, path):
         
         # initialize parser
-        parser = TimelineParser(**(self.initArgs))
+        self.parser = TimelineParser(**(self.initArgs))
     
         # there is one timeline file per resource
         if pyannote.cli.URI_PLACEHOLDER in path:
@@ -78,12 +91,12 @@ class InputGetAnnotation(object):
         """
         super(InputGetAnnotation, self).__init__()
         self.initArgs = {} if initArgs is None else initArgs
-        self.parser = AnnotationParser(**(self.initArgs))
+        # self.parser = AnnotationParser(**(self.initArgs))
     
     def __call__(self, path):
         
         # initialize parser
-        parser = AnnotationParser(**(self.initArgs))
+        self.parser = AnnotationParser(**(self.initArgs))
     
         # there is one annotation file per resource
         if pyannote.cli.URI_PLACEHOLDER in path:
@@ -140,6 +153,20 @@ class InputList(object):
         """
         return self.parser.read(path)
 
+
+class OutputFileHandle(object):
+    
+    def __init__(self, ):
+        super(OutputFileHandle, self).__init__()
+    
+    def __call__(self, path):
+        
+        if path == '-':
+            return sys.stdout
+        else:
+            if os.path.isfile(path):
+                raise IOError('File %s already exists.' % path)
+            return open(path, 'w')
 
 class OutputWriteAnnotation(object):
     
