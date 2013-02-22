@@ -23,7 +23,14 @@ from matplotlib import pyplot as plt
 from pyannote.algorithm.mpg.graph import PROBABILITY, SUBTRACK
 from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode
 
-def draw_mpg(g, threshold=0.1):
+def draw_mpg(g, threshold=0.0, forbidden=True):
+    """
+    Parameters
+    ----------
+    forbidden : bool, optional
+        When False, do not draw red crossed forbidden edges
+    
+    """
     
     plt.ion()
     
@@ -39,7 +46,7 @@ def draw_mpg(g, threshold=0.1):
         probability = d[PROBABILITY]
         
         # mark 'forbidden' edges with an 'x'
-        if probability == 0:
+        if probability == 0 and forbidden:
             if isinstance(e, IdentityNode) and isinstance(f, IdentityNode):
                 continue
             nx.draw_networkx_edges(G, pos, edgelist=[(e,f)], 
