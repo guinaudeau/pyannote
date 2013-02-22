@@ -24,6 +24,7 @@ import networkx as nx
 import numpy as np
 from pyannote.algorithm.mpg.graph import MultimodalProbabilityGraph
 from pyannote.algorithm.mpg.graph import SegmentationGraph
+from pyannote import Annotation, Scores
 
 # New argument parser
 from argparse import ArgumentParser, SUPPRESS
@@ -87,15 +88,6 @@ def ss_param_parser(param_pkl):
             super(SSGraph, self).__init__(s2p=s2p, **params)
     
     ssGraph = SSGraph()
-    # diarizationGraph = DiarizationGraph()
-    # 
-    # def graph_generator(annotation, feature):
-    #     G = ssGraph(annotation, feature) # [L] -- [L] edges
-    #     g = diarizationGraph(annotation) # [T] == [L] edges
-    #     G.add(g)
-    #     return G
-    # 
-    # return graph_generator
     return ssGraph
     
 
@@ -140,13 +132,14 @@ def si_parser(path):
         return AnnotationParser().read(path)
 
 
-from pyannote.algorithm.mpg.graph import ScoresGraph
+from pyannote.algorithm.mpg.graph import ScoresGraph, AnnotationGraph
 def id_param_parser(param_pkl):
     """Speaker identification graph
     
     - [T] track nodes
     - [I] identity nodes
-    - [T] -- [I] soft edges
+    - [T] -- [I] soft edges in case of scores
+    - [T] == [I] hard edges in case of annotation
     
     Parameters
     ----------
@@ -157,8 +150,6 @@ def id_param_parser(param_pkl):
     Returns
     -------
     graph_generator : ScoresGraph
-        callable (e.g. graph_generator(annotation, feature)) object 
-        that returns a label similarity graph
     """
     
     if param_pkl == 'identity':
@@ -173,7 +164,18 @@ def id_param_parser(param_pkl):
         def __init__(self):
             super(SIGraph, self).__init__(s2p=s2p, **params)
     
-    return SIGraph()
+    scoresGraph = SIGraph()
+    annotationGraph = AnnotationGraph()
+    
+    def getGraph(annotationOrScores):
+        if isinstance(annotationOrScores, Scores):
+            scores = annotationOrScores
+            return scoresGraph(scores)
+        elif isinstance(annotationOrScores, Annotation):
+            annotation = annotationOrScores
+            return annotationGraph(annotation)
+    
+    return getGraph
 
 
 from pyannote.algorithm.clustering.model import PrecomputedMMx
@@ -210,15 +212,6 @@ def hh_param_parser(param_pkl):
         
         hhGraph = HHGraph()
     
-    # diarizationGraph = DiarizationGraph()
-    #     
-    # def graph_generator(annotation, feature):
-    #     G = hhGraph(annotation, feature) # [L] -- [L] edges
-    #     g = diarizationGraph(annotation) # [T] == [L] edges
-    #     G.add(g)
-    #     return G
-    # 
-    # return graph_generator
     return hhGraph
 
 from pyannote.parser import LabelMatrixParser
@@ -362,7 +355,7 @@ sgroup.add_argument('--ss-plp', type=ss_plp_parser, metavar='uri.plp', help=msg)
 
 sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
                     default=SUPPRESS,
-                    help='path to speaker identification scores')
+                    help='path to speaker identification scores (or annotation)')
 
 sgroup.add_argument('--si-param', metavar='param.pkl',
                     nargs='?', const=id_param_parser('identity'),
@@ -514,7 +507,10 @@ for u, uri in enumerate(uris):
         if uem is not None:
             si_src = si_src.crop(uem, mode='loose')
         if ss_src is None:
-            ss_src = si_src.to_annotation(threshold=np.inf)
+            if isinstance(si_src, Scores):
+                ss_src = si_src.to_annotation(threshold=np.inf)
+            elif isinstance(si_src, Annotation):
+                ss_src = si_src.anonymize()
     else:
         si_src = None
     
