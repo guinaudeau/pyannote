@@ -653,7 +653,7 @@ class LabelSimilarityGraph(object):
                     except Exception, e:
                         p = None
                 
-                if is not None:
+                if p is not None:
                     G.update_edge(n, N, **{PROBABILITY: p, COOCCURRING: k})
         
         return G
