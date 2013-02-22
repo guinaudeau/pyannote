@@ -226,8 +226,6 @@ def view(args):
         for name,value in best:
             print "%s : %.3f" % (name, value)
         
-        
-        
         exit(1)
     
     print "Runs sorted by median value"
