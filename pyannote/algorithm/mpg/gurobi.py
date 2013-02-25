@@ -17,11 +17,12 @@ import numpy as np
 class PCenterModel(object):
     
     def __init__(self, graph, alpha=0.5, method=-1, mipGap=1e-4, timeLimit=None,
-                       threads=None, quiet=True):
+                       threads=None, quiet=True, missing_constraint=False):
         
         super(PCenterModel, self).__init__()
         self.graph = graph
         self.alpha = alpha
+        self.missing_constraint = missing_constraint
         self.method = method
         self.mipGap = mipGap
         self.timeLimit = timeLimit
@@ -54,10 +55,11 @@ class PCenterModel(object):
                     continue
                 model.addConstr((1-G[nk][nj][PROBABILITY])*x[nk,nj] <= self.alpha)
         
-        # Missing Equation 1.5
-        for k,nk in enumerate(nodes):
-            for j,nj in enumerate(nodes):
-                model.addConstr(x[nk,nk] >= x[nk,nj])
+        if not self.missing_constraint: 
+            # Missing Equation 1.5
+            for k,nk in enumerate(nodes):
+                for j,nj in enumerate(nodes):
+                    model.addConstr(x[nk,nk] >= x[nk,nj])
         
         # Equation 1 (in Dupuy et al., JEP'12)
         nClusters = grb.quicksum([x[nk,nk] for k,nk in enumerate(nodes)])
@@ -242,7 +244,7 @@ class GurobiModel(object):
         
         return self.getAnnotations()
     
-    def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5):
+    def weightedProbMaximizeIntraMinimizeInter(self, alpha=0.5, weight='gmean'):
         """
         Maximize ∑  α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)
                 j>i
@@ -253,7 +255,13 @@ class GurobiModel(object):
         Parameters
         ----------
         alpha : float, optional
-        
+            Value of α in above formula
+        weight : {'gmean', 'min', 'max'}
+            Describes how weights wij are computed from durations di and dj
+            - 'gmean' : wij = sqrt(di.dj)
+            - 'mean' : wij = .5*(di+dj)
+            - 'min' : wij = min(di,dj)
+            - 'max' : wij = max(di,dj)
         """
         from scipy.stats import gmean
         
@@ -264,7 +272,14 @@ class GurobiModel(object):
                 d.append(n.segment.duration)
             if hasattr(m, 'segment'):
                 d.append(m.segment.duration)
-            w[n,m] = gmean(d) if d else 1.
+            if weight == 'gmean':
+                w[n,m] = gmean(d) if d else 1.
+            elif weight == 'mean':
+                w[n,m] = np.mean(d)
+            elif weight == 'min':
+                w[n,m] = min(d)
+            elif weight == 'max':
+                w[n,m] = max(d)
         
         intra = grb.quicksum([w[n,m]*self.graph[n][m][PROBABILITY]*self.x[n,m] 
                               for (n,m) in self.x 

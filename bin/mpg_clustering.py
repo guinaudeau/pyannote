@@ -101,8 +101,14 @@ fgroup.add_argument('--objective', type=int, metavar='N', default=1,
                          '3 = Maximize modularity'
                          '4 = Maximize ∑ α.xij.log(pij) + (1-α).(1-xij).log(1-pij)'
                          '5 = Minimize ∑ xii + ∑ ∑ (1-pij).xij')
+
+description = 'set α value to ALPHA in objective function.'
 fgroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
-                    help='set α value to ALPHA in objective function.')
+                    help=description)
+
+description = 'describe how weights wij are computed in objective function #2'
+fgroup.add_argument('--weight', choices=('min', 'max', 'gmean', 'mean'),
+                    defaut='gmean', help=description)
 
 try:
     args = argparser.parse_args()
@@ -157,7 +163,8 @@ for u, uri in enumerate(args.uris):
         if args.objective == 1:
             annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
         elif args.objective == 2:
-            annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+            annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha,
+                                                                       weight=args.weight)
         elif args.objective == 3:
             annotations = model.maximizeModularity()
         elif args.objective == 4:
