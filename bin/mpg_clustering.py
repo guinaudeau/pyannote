@@ -108,7 +108,7 @@ fgroup.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
 
 description = 'describe how weights wij are computed in objective function #2'
 fgroup.add_argument('--weight', choices=('min', 'max', 'gmean', 'mean'),
-                    defaut='gmean', help=description)
+                    default='gmean', help=description)
 
 try:
     args = argparser.parse_args()
