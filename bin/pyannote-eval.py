@@ -164,74 +164,93 @@ def view(args):
     
     if args.list:
         
-        print "Metrics"
-        print "======="
-        for column in M:
-            print column
+        if 'M' in args.list:
+            print "Metrics"
+            print "======="
+            for column in M:
+                print column
         
-        print ""
-        print "Hypotheses"
-        print "=========="
-        for hyp in hypotheses:
-            print hyp
+        if 'H' in args.list:
+            print "Hypotheses"
+            print "=========="
+            for hyp in hypotheses:
+                print hyp
         
-        print ""
-        print "URIS"
-        print "===="
-        for uri in uris:
-            print uri
+        if 'U' in args.list:
+            print "URIS"
+            print "===="
+            for uri in uris:
+                print uri
         
         exit(1)
     
-    
     # focus on requested metric
+    if not args.metric:
+        exit('ERROR: missing --metric name.')
+    
     metricName = args.metric
     m = M[metricName]
     
     # get scores for all hypothesis/resource
-    runs = [(h, m[h][uris]) for h in hypotheses]
+    runs = [(path, m[path][uris]) for path in hypotheses]
     
-    # median values for all hypothesis
-    medians = []
+    combined = {path: m[path]['/all'] for path in hypotheses}
+    averaged = {path: np.mean(run) for path,run in runs}
+    geometric = {path: scipy.stats.gmean(run) for path,run in runs}
+    harmonic = {path: scipy.stats.hmean(run) for path,run in runs}
+    medianed = {path: np.median(run) for path,run in runs}
     
-    # perform statistical significance tests on median values
+    if args.aggregate == 'combine':
+        aggregated = combined
+    elif args.aggregate == 'average':
+        aggregated = averaged
+    elif args.aggregate == 'median':
+        aggregated = medianed
+    elif args.aggregate == 'geometric':
+        aggregated = geometric
+    elif args.aggregate == 'harmonic':
+        aggregated = harmonic
+    
+    # perform statistical significance tests on metric values
     # create a directed graph with one vertex per hypothesis file
     # directed edges mean source is significantly better than target 
     G = nx.DiGraph(name=metricName)
     for r, (path,run) in enumerate(runs):
-        median = np.median(run)
-        medians.append((path, median))
-        G.add_node(path, **{metricName: median})
+        value = aggregated[path]
+        G.add_node(path, **{metricName: value})
         for (other_path,other_run) in runs[r+1:]:
-            other_median = np.median(other_run)
+            other_value = aggregated[other_path]
             _,p = scipy.stats.wilcoxon(run, other_run)
             if p < 0.05:
-                if median < other_median:
+                if value < other_value:
                     G.add_edge(path, other_path, wilcoxon=p)
                 else:
                     G.add_edge(other_path, path, wilcoxon=p)
     
-    # obtain best runs (nodes with no incoming edges)
-    # and sort them based on their median value
-    best = sorted([(n, G.node[n][metricName]) 
-                   for n in G if G.in_degree(n) == 0],
-                   key=lambda t:t[1])
+    nx.write_gpickle(G, '/tmp/significance.nxg')
     
-    medians = sorted(medians, key=lambda t:t[1])
+    # sort runs based on how many times they are significantly better
+    # than other runs
+    D = max([d for _,d in G.out_degree_iter()])
+    best = sorted([(p, G.node[p][metricName]) for p,d in G.out_degree_iter() 
+                                              if d == D],
+                  key=lambda t:t[1], reverse=True)
     
     if args.significance:
-        
-        print "The following runs are significantly better than all the others"
-        print "==============================================================="
-        for name,value in best:
-            print "%s : %.3f" % (name, value)
+        print "Statistically best runs"
+        print "======================="
+        for p,v in best:
+            print "%s : %.3f" % (p,v)
         
         exit(1)
     
-    print "Runs sorted by median value"
-    print "==========================="
-    for r, (name,value) in enumerate(medians):
-        print "%s : %.3f" % (name, value)
+    ordered = [(p,v) for p,v in aggregated.iteritems()]
+    ordered = sorted(ordered, key=lambda t:t[1])
+    print "%d best runs" % args.best
+    print "=============="
+    for k, (p,v) in enumerate(ordered):
+        if k < args.best:
+            print "%s : %.3f" % (p,v)
     
     
 
@@ -305,14 +324,23 @@ viewparser.add_argument('input', metavar='evaluation.csv',
                        type=pyannote.cli.InputFileHandle(), 
                        help=description)
 
-description = 'list content of evaluation file'
-viewparser.add_argument('--list', action='store_true', help=description)
+description = 'list file content (M: metrics, H: hypotheses, U: URIs)'
+viewparser.add_argument('--list', action='append', choices=('M', 'H', 'U'),
+                        default=[], help=description)
 
-description = 'select evaluation metric. use --list to know which are available.'
+description = 'select evaluation metric. use --list M to know which are available.'
 viewparser.add_argument('--metric', type=str, help=description)
+
+description = 'select how metric values are aggregated.'
+viewparser.add_argument('--aggregate', default='combine',
+                        choices=('combine', 'average', 'median', 'geometric', 'harmonic'),
+                        help=description)
 
 description = 'display output of Wilcoxon significance test'
 viewparser.add_argument('--significance', action='store_true', help=description)
+
+description = 'display only N best runs (default to 10)'
+viewparser.add_argument('--best', type=int, default=10, help=description)
 
 # Actual argument parsing
 try:
