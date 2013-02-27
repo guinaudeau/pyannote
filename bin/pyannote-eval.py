@@ -53,8 +53,16 @@ def run(args):
     metrics = {}
     columns = []
     for Metric in args.requested:
+        # get metric name
         metricName = Metric.metric_name()
-        metrics[metricName] = {h: Metric() for h,(_,_) in enumerate(args.hypothesis)}
+        # instantiate one metric per hypothesis
+        if Metric == IdentificationErrorRate:
+            metrics[metricName] = {h: Metric(matcher=UnknownIDMatcher()) 
+                                   for h,(_,_) in enumerate(args.hypothesis)}
+        else:
+            metrics[metricName] = {h: Metric() for h,(_,_) in enumerate(args.hypothesis)}
+            
+        # add metric name
         columns.append(metricName)
         columns.extend(['%s | %s' % (metricName, componentName) 
                         for componentName in Metric.metric_components()])
@@ -310,9 +318,18 @@ group.add_argument('--completeness', action='append_const', dest='requested',
                                     help='compute clustering completeness')
 
 group = runparser.add_argument_group('Detection')
+
+description = 'compute detection error rate'
 group.add_argument('--detection', action='append_const', dest='requested',
                                     const=DetectionErrorRate, default=[],
-                                    help='compute detection error rate')
+                                    help=description)
+
+group = runparser.add_argument_group('Identification')
+
+description = 'compute identification error rate'
+group.add_argument('--identification', action='append_const', dest='requested',
+                                       const=IdentificationErrorRate, default=[],
+                                       help=description)
 
 viewparser = subparsers.add_parser('view', 
                                   parents=[pyannote.cli.parent.parentArgumentParser(uem=False, uri=False)],
