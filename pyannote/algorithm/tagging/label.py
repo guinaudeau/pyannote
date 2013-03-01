@@ -78,13 +78,13 @@ class LabelTagger(BaseTagger):
         
         # get many-to-one label mapping
         mapping = ManyToOneMapping.fromMapping(self.__mapper(target, source))
-        
         # we only want to translate labels for which a mapping label was found.
         # the other labels are left unchanged.
         label_func = lambda x: mapping(x) if mapping(x) else x
         
         # do the actual translation
-        return target.copy(label_func=label_func)
+        return target.translate(label_func)
+        # return target.copy(label_func=label_func)
 
 
 class HungarianTagger(LabelTagger):
