@@ -536,7 +536,8 @@ class Annotation(AnnotationMixin, object):
             labels = labels & set(self.labels())
         
         A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df[self._df[LABEL].apply(lambda l: l in labels)]
+        if self:
+            A._df = self._df[self._df[LABEL].apply(lambda l: l in labels)]
         
         return A
     
@@ -663,7 +664,9 @@ class Annotation(AnnotationMixin, object):
             New annotation with translated labels.
         """
         
-        if not isinstance(translation, (dict, Mapping)):
+        
+        if not (hasattr(translation, '__call__') or \
+                isinstance(translation, (dict, Mapping))):
             raise TypeError("unsupported operand types(s) for '\%': "
                             "Annotation and %s" % type(translation).__name__)
         
@@ -686,6 +689,9 @@ class Annotation(AnnotationMixin, object):
             # see ManyToOneMapping.__call__() API
             translate = lambda x: translation(x) if translation(x) is not None else x
         
+        else:
+            translate = translation
+            
         # create empty annotation
         translated = self.__class__(uri=self.uri, modality=self.modality)
         # translate labels
@@ -695,6 +701,7 @@ class Annotation(AnnotationMixin, object):
     
     def __mod__(self, translation):
         return self.translate(translation)
+    
     
     def anonymize(self):
         """Anonmyize labels
@@ -712,6 +719,24 @@ class Annotation(AnnotationMixin, object):
         return self % translation
     
     
+    def anonymize_tracks(self):
+        """
+        Anonymize tracks
+        
+        Create a new annotation where each track is anonymized, i.e. the label
+        of each track is set to a unique `Unknown` instance
+        
+        Returns
+        -------
+        anonymized : `Annotation`
+            Anonymized annotation
+        
+        """
+        annotation = self.empty()
+        for s,t,_ in self.iterlabels():
+            annotation[s,t] = Unknown()
+        return annotation
+        
     def iterlabels(self):
         """Iterate over annotation as (segment, track, label) tuple"""
         
