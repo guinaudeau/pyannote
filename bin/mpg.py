@@ -351,6 +351,9 @@ sgroup.add_argument('--ss-param', metavar='param.pkl',
 msg = "path to PLP feature files." + clicommon.msgURI()
 sgroup.add_argument('--ss-plp', type=ss_plp_parser, metavar='uri.plp', help=msg)
 
+msg = "do not trust input speaker diarization (ie. no hard edges between speech turns)"
+sgroup.add_argument('--ss-dont-trust', action='store_true', help=msg)
+
 # Speaker identification
 
 sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
@@ -535,8 +538,10 @@ for u, uri in enumerate(uris):
         plp = args.ss_plp(uri)
         
         # build speaker similarity graph
-        g = args.ssgraph(ss_src, plp)
-        
+        if args.ss_dont_trust:
+            g = args.ssgraph(ss_src.anonymize_tracks(), plp)
+        else:
+            g = args.ssgraph(ss_src, plp)
         # add it the multimodal graph
         G.add(g)
     
