@@ -242,7 +242,8 @@ class MultimodalProbabilityGraph(nx.Graph):
         components = nx.connected_components(G)
         
         for component in components:
-            yield self.subgraph(self)
+            yield self.subgraph(component)
+    
     
     def shortest_path(self, inode, tnode):
         log = self._log()
