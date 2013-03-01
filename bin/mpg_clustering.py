@@ -152,34 +152,37 @@ for u, uri in enumerate(args.uris):
     if args.hw:
         pg.remove_crossmodal_edges('head', 'written')
     
-    # create ILP problem
-    if args.objective in [1,2,3,4]:
-        model = GurobiModel(pg, method=method,
-                                mipGap=mipGap,
-                                threads=threads,
-                                timeLimit=timeLimit,
-                                quiet=quiet)
-        # actual optimization
-        if args.objective == 1:
-            annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
-        elif args.objective == 2:
-            annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha,
-                                                                       weight=args.weight)
-        elif args.objective == 3:
-            annotations = model.maximizeModularity()
-        elif args.objective == 4:
-            annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
-    elif args.objective in [5]:
-        model = PCenterModel(pg, alpha=args.alpha, 
-                                 method=method,
-                                 mipGap=mipGap,
-                                 threads=threads,
-                                 timeLimit=timeLimit,
-                                 quiet=quiet)
-        annotations = model.optimize()
+    # process each connected components subgraph separately
+    for g in pg.subgraphs_iter():
         
-    # save to file
-    for uri, modality in annotations:
-        writer.write(annotations[uri, modality], f=f)
+        # create ILP problem
+        if args.objective in [1,2,3,4]:
+            model = GurobiModel(g, method=method,
+                                    mipGap=mipGap,
+                                    threads=threads,
+                                    timeLimit=timeLimit,
+                                    quiet=quiet)
+            # actual optimization
+            if args.objective == 1:
+                annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
+            elif args.objective == 2:
+                annotations = model.weightedProbMaximizeIntraMinimizeInter(alpha=args.alpha,
+                                                                           weight=args.weight)
+            elif args.objective == 3:
+                annotations = model.maximizeModularity()
+            elif args.objective == 4:
+                annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
+        elif args.objective in [5]:
+            model = PCenterModel(g, alpha=args.alpha, 
+                                    method=method,
+                                    mipGap=mipGap,
+                                    threads=threads,
+                                    timeLimit=timeLimit,
+                                    quiet=quiet)
+            annotations = model.optimize()
+    
+        # save to file
+        for uri, modality in annotations:
+            writer.write(annotations[uri, modality], f=f)
 
 f.close()
