@@ -232,6 +232,18 @@ class MultimodalProbabilityGraph(nx.Graph):
         return log
     
     
+    def subgraphs_iter(self):
+        
+        zeros = [(e,f) for (e,f,d) in self.edges_iter(data=True) if d[PROBABILITY] == 0]
+        
+        G = MultimodalProbabilityGraph()
+        G.add(self)
+        G.remove_edges_from(zeros)
+        components = nx.connected_components(G)
+        
+        for component in components:
+            yield self.subgraph(self)
+    
     def shortest_path(self, inode, tnode):
         log = self._log()
         
