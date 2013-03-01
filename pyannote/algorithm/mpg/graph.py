@@ -618,6 +618,12 @@ class LabelSimilarityGraph(object):
         return MX
     
     def __call__(self, diarization, feature):
+        """
+        Parameters
+        ----------
+        diarization : Annotation
+        feature : Feature
+        """
         
         assert isinstance(diarization, Annotation), \
                "%r is not an annotation" % diarization
@@ -653,12 +659,17 @@ class LabelSimilarityGraph(object):
                 T = N.track
                 L = diarization[S, T]
                 
+                # if two tracks have the same label
+                # set probability to 1 
                 if l == L:
                     p = 1.
                     k = False
+                # if two tracks are cooccurring
+                # set probability to 0
                 elif K[l,L] > 0:
                     p = 0.
                     k = True
+                # otherwise, try and get the probability from probability matrix
                 else:
                     k = False
                     try:
@@ -666,6 +677,7 @@ class LabelSimilarityGraph(object):
                     except Exception, e:
                         p = None
                 
+                # if probability is not available, do not add any edge
                 if p is not None:
                     G.update_edge(n, N, **{PROBABILITY: p, COOCCURRING: k})
         
