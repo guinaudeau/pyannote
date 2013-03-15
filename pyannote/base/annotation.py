@@ -24,8 +24,9 @@ from mapping import Mapping, ManyToOneMapping
 from collections import Hashable
 import operator
 import numpy as np
-from pyannote.base import SEGMENT, TRACK, LABEL, SCORE
+from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
 from pandas import MultiIndex, DataFrame, pivot_table
+from pyannote.util import deprecated
 
 class Unknown(object):
     nextID = 0
@@ -702,8 +703,7 @@ class Annotation(AnnotationMixin, object):
     def __mod__(self, translation):
         return self.translate(translation)
     
-    
-    def anonymize(self):
+    def anonymize_labels(self):
         """Anonmyize labels
         
         Create a new annotation where labels are anonymized, ie. each label
@@ -718,6 +718,21 @@ class Annotation(AnnotationMixin, object):
         translation = {label: Unknown() for label in self.labels()} 
         return self % translation
     
+    @deprecated(anonymize_labels)
+    def anonymize(self):
+        """Anonmyize labels
+        
+        Create a new annotation where labels are anonymized, ie. each label
+        is replaced by a unique `Unknown` instance.
+        
+        Returns
+        -------
+        anonymized : :class:`Annotation`
+            New annotation with anonymized labels.
+        
+        """
+        translation = {label: Unknown() for label in self.labels()} 
+        return self % translation
     
     def anonymize_tracks(self):
         """
@@ -782,8 +797,14 @@ class Annotation(AnnotationMixin, object):
         A = self.__class__(uri=self.uri, modality=self.modality)
         A._df = self._df.ix[self._df[LABEL] == label]
         return A
-
-
+    
+    
+    def to_json(self):
+        annotation = [{SEGMENT:s.to_json(), TRACK:t, LABEL:l} 
+                      for s,t,l in self.iterlabels()]
+        return {URI:self.uri, MODALITY:self.modality, 'annotation': annotation}
+    
+    
 class Scores(AnnotationMixin, object):
     """
     
