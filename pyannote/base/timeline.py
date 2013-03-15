@@ -1234,7 +1234,10 @@ class Timeline(object):
                self.is_segmentation() and \
                Timeline([self.extent()], uri=self.uri) == self.coverage()
 
-
+    def to_json(self):
+        return [s.to_json() for s in self]
+    
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

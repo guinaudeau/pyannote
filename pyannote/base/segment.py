@@ -425,7 +425,9 @@ class Segment(object):
     def __repr__(self):
         return '<Segment(%g, %g)>' % (self.start, self.end)
     
-
+    def to_json(self):
+        return {'start': self.start, 'end': self.end}
+    
 class RevSegment(Segment):
     """Reversed segment.
     """
