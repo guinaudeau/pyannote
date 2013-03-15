@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='PyAnnote',
-    version='0.2.2',
+    version='0.3',
     description='Python module for collaborative annotation of multimedia content',
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
@@ -22,7 +22,8 @@ setup(
               'pyannote.parser.nist'],
     install_requires=['numpy >=1.6.1', 
                       'scipy >=0.10.1',
-                      'munkres >=1.0.5', 
+                      'munkres >=1.0.5',
+                      'decorator >=3.4.0', 
                       'scikit-learn >=0.12',
                       'networkx >=1.6',
                       'lxml >=2.3.4',
