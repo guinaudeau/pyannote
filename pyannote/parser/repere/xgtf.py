@@ -28,8 +28,7 @@ import re
 class XGTFParser(BaseAnnotationParser):
     
     def __init__(self):
-        multitrack = True
-        super(XGTFParser, self).__init__(multitrack)
+        super(XGTFParser, self).__init__()
         self.__idx = IDXParser()
     
     def _parse_frame(self, element):
