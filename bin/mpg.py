@@ -332,8 +332,9 @@ def x_param_parser(param_pkl):
 msg = "path where to store multimodal probability graph." + clicommon.msgURI()
 argparser.add_argument('output', type=str, metavar='graph.pkl', help=msg)
 
+msg = "remove identity nodes not in any n-best lists."
 argparser.add_argument('--nbest', metavar='N', type=int, default=SUPPRESS,
-                       help='remove identity nodes not in any n-best lists')
+                       help=msg)
 
 # == Speaker ==
 sgroup = argparser.add_argument_group('[speaker] modality')
@@ -344,9 +345,10 @@ msg = "path to source for speaker diarization. " + clicommon.msgURI()
 sgroup.add_argument('--ss', type=mm_parser, metavar='source.mdtm', 
                     default=SUPPRESS, help=msg)
 
+msg = "path to trained parameters for speaker diarization."
 sgroup.add_argument('--ss-param', metavar='param.pkl', 
                     type=ss_param_parser, dest='ssgraph', default=SUPPRESS,
-                    help='path to trained parameters for speaker diarization')
+                    help=msg)
 
 msg = "path to PLP feature files." + clicommon.msgURI()
 sgroup.add_argument('--ss-plp', type=ss_plp_parser, metavar='uri.plp', help=msg)
@@ -356,16 +358,15 @@ sgroup.add_argument('--ss-dont-trust', action='store_true', help=msg)
 
 # Speaker identification
 
+msg = "path to speaker identification scores (or annotation)."
 sgroup.add_argument('--si', type=si_parser, metavar='source.etf0',
-                    default=SUPPRESS,
-                    help='path to speaker identification scores (or annotation)')
+                    default=SUPPRESS, help=msg)
 
+msg = "path to trained parameters for speaker identification. use 'identity' when scores are probabilities."
 sgroup.add_argument('--si-param', metavar='param.pkl',
                     nargs='?', const=id_param_parser('identity'),
                     type=id_param_parser, dest='sigraph', default=SUPPRESS,
-                    help='path to trained parameters for speaker identification. '
-                         'use "identity" when scores are probabilities.')
-
+                    help=msg)
 
 # == Head ==
 hgroup = argparser.add_argument_group('[head] modality')
@@ -384,41 +385,39 @@ hgroup.add_argument('--hh-precomputed', type=hh_precomputed_parser,
                     metavar='matrix.pkl', help=msg)
 
 # Head recognition
+msg = "path to source for head recognition."
 hgroup.add_argument('--hi', type=hi_parser, metavar='source.etf0',
-                    default=SUPPRESS,
-                    help='path to source for head recognition')
+                    default=SUPPRESS, help=msg)
 
+msg = 'path to trained parameters for face recognition. use "identity" when scores are probabilities.'
 hgroup.add_argument('--hi-param', metavar='param.pkl',
                     nargs='?', const=id_param_parser('identity'),
                     type=id_param_parser, dest='higraph', default=SUPPRESS,
-                    help='path to trained parameters for face recognition. '
-                         'use "identity" when scores are probabilities.')
+                    help=msg)
 
 # == Written ==
 wgroup = argparser.add_argument_group('[written] modality')
 
 # Written name detection
+msg = 'path to source for written name detection'
 wgroup.add_argument('--wi', type=wi_parser, metavar='source.mdtm',
-                    default=SUPPRESS, 
-                    help='path to source for written name detection')
+                    default=SUPPRESS, help=msg)
 
+msg = 'path to trained parameters for written name detection'
 wgroup.add_argument('--wi-param', type=wi_param_parser, metavar='param.pkl', 
-                    default=wi_param_parser(None), dest='wigraph', 
-                    help='path to trained parameters for written name '
-                         'detection')
-
+                    default=wi_param_parser(None), dest='wigraph', help=msg)
 
 # == Spoken ==
 ngroup = argparser.add_argument_group('[spoken] modality')
 
 # Spoken name detection
+msg = 'path to source for spoken name detection'
 ngroup.add_argument('--ni', type=ni_parser, metavar='source.mdtm',
-                    default=SUPPRESS,
-                    help='path to source for spoken name detection')
+                    default=SUPPRESS, help=msg)
 
+msg = 'path to trained parameters for spoken name detection'
 ngroup.add_argument('--ni-param', type=ni_param_parser, metavar='param.pkl',
-                    help='path to trained parameters for spoken name '
-                         'detection')
+                    help=msg)
 
 # == Cross-modality ==
 xgroup = argparser.add_argument_group('cross-modality')
