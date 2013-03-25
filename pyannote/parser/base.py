@@ -21,6 +21,7 @@
 import sys
 import pandas
 import numpy as np
+from pyannote.base.segment import Segment
 from pyannote.base.timeline import Timeline
 from pyannote.base.annotation import Annotation, Scores
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
@@ -428,7 +429,7 @@ class BaseTextualParser(object):
 
 class BaseTextualAnnotationParser(BaseTextualParser):
     
-    def read(self, path, modality=None, **kwargs):
+    def read(self, path, uri=None, modality=None, **kwargs):
         """
         
         Parameters
@@ -471,6 +472,12 @@ class BaseTextualAnnotationParser(BaseTextualParser):
         # add 'segment' column build from start time & duration
         df[SEGMENT] = [self.get_segment(row) for r, row in df.iterrows()]
         
+        # add uri column in case it does not exist
+        if URI not in df:
+            if uri is None:
+                raise ValueError('missing uri -- use uri=')
+            df[URI] = uri
+        
         # obtain list of resources
         uris = list(df[URI].unique())
         
@@ -507,6 +514,68 @@ class BaseTextualAnnotationParser(BaseTextualParser):
     def no_match(self, uri=None, modality=None):
         return Annotation(uri=uri, modality=modality)
 
+
+class CustomTextualAnnotationParser(BaseTextualAnnotationParser):
+    """docstring for CustomTextualAnnotationParser"""
+    def __init__(self, num_fields, uri=None, modality=None, 
+                                   label=None, track=None, 
+                                   start=None, end=None, duration=None,
+                                   comment=None):
+        super(CustomTextualAnnotationParser, self).__init__()
+        
+        self.num_fields = num_fields
+        self.fields = {}
+        
+        if isinstance(uri, int):
+            self.fields[uri] = URI
+        
+        if isinstance(modality, int):
+            self.fields[modality] = MODALITY
+        
+        if isinstance(track, int):
+            self.fields[track] = TRACK
+        
+        if isinstance(label, int):
+            self.fields[label] = LABEL
+        
+        if isinstance(start, int):
+            self.fields[start] = 'start'
+        
+        if isinstance(end, int):
+            self.fields[end] = 'end'
+        
+        if isinstance(duration, int):
+            self.fields[duration] = 'duration'
+        
+        self.start = start
+        self.end = end
+        self.duration = duration
+        
+        self.comment = comment
+    
+    def get_converters(self):
+        return None
+    
+    def get_default_modality(self):
+        return None
+    
+    def get_comment(self):
+        return self.comment
+    
+    def get_separator(self):
+        return ' '
+    
+    def get_fields(self):
+        return [self.fields[i] if i in self.fields else i
+                for i in range(self.num_fields)]
+    
+    def get_segment(self, row):
+        if self.end is not None:
+            return Segment(row['start'], row['end'])
+        elif self.duration is not None:
+            return Segment(row['start'], row['start'] + row['duration'])
+        else:
+            raise ValueError('do not know how to build a segment')
 
 class BaseTextualScoresParser(BaseTextualParser):
     
