@@ -67,12 +67,14 @@ class TwoClassesCalibration(object):
         pyplot.ion()
         
         pyplot.subplot(3,1,1)
-        pyplot.hist(positive, bins, normed=True, color='g', alpha=0.5)
-        pyplot.hist(negative, bins, normed=True, color='r', alpha=0.5)
+        npositive,_,_ = pyplot.hist(positive, bins, normed=True, color='g', alpha=0.5)
+        nnegative,_,_ = pyplot.hist(negative, bins, normed=True, color='r', alpha=0.5)
         pyplot.xlim(m, M)
         
         t = np.arange(m, M, (M-m)/1000)
         pyplot.subplot(3,1,2)
+        
+        pyplot.scatter(.5*(bins[1:]+bins[:-1]), np.log(npositive)-np.log(nnegative))
         pyplot.plot(t, self.get_llr(t))
         pyplot.xlim(m, M)
         
