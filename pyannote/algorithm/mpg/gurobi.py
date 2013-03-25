@@ -154,7 +154,7 @@ class GurobiModel(object):
         
         # nodes pairs
         for i, node in enumerate(nodes):
-            x[node, node] = model.addVar(vtype=grb.GBR.BINARY)
+            x[node, node] = model.addVar(vtype=grb.GRB.BINARY)
             for other_node in nodes[i+1:]:
                 x[node, other_node] = model.addVar(vtype=grb.GRB.BINARY)
         
