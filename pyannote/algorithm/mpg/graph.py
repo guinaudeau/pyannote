@@ -232,9 +232,9 @@ class MultimodalProbabilityGraph(nx.Graph):
         return log
     
     
-    def subgraphs_iter(self):
+    def subgraphs_iter(self, threshold=0.):
         
-        zeros = [(e,f) for (e,f,d) in self.edges_iter(data=True) if d[PROBABILITY] == 0]
+        zeros = [(e,f) for (e,f,d) in self.edges_iter(data=True) if d[PROBABILITY] <= threshold]
         
         G = MultimodalProbabilityGraph()
         G.add(self)
