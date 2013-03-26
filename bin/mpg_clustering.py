@@ -82,6 +82,20 @@ ogroup.add_argument('--mip-gap', type=float, metavar='MIPGAP', default=1e-4,
                     help='The MIP solver will terminate when the relative gap '
                          'between the lower and upper objective bound is less '
                          'than MIPGAP times the upper bound.')
+
+ogroup.add_argument('--mip-focus', type=int, metavar='N', default=0,
+                    help=''
+        'The MIPFocus parameter allows you to modify your high-level solution '
+        'strategy, depending on your goals. By default, the Gurobi MIP solver '
+        'strikes a balance between finding new feasible solutions and proving '
+        'that the current solution is optimal. If you are more interested in '
+        'finding feasible solutions quickly, you can select MIPFocus=1. '
+        'If you believe the solver is having no trouble finding good quality '
+        'solutions, and wish to focus more attention on proving optimality, '
+        'select MIPFocus=2. If the best objective bound is moving very slowly '
+        '(or not at all), you may want to try MIPFocus=3 to focus on the '
+        'bound.')
+                         
 ogroup.add_argument('--time-limit', type=int, metavar='N', default=SUPPRESS,
                        help='stop optimization after N minutes')
 ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
@@ -123,6 +137,7 @@ if not hasattr(args, 'uris'):
     raise IOError('missing list of resources (--uris)')
 
 mipGap = args.mip_gap
+mipFocus = args.mip_focus
 method = method_parser(args.method)
 threads = args.threads if hasattr(args, 'threads') else None
 timeLimit = args.time_limit*60 if hasattr(args, 'time_limit') else None
@@ -163,6 +178,7 @@ for u, uri in enumerate(args.uris):
         if args.objective in [1,2,3,4]:
             model = GurobiModel(g, method=method,
                                     mipGap=mipGap,
+                                    mipFocus=mipFocus,
                                     threads=threads,
                                     timeLimit=timeLimit,
                                     quiet=quiet)
