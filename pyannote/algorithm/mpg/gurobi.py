@@ -124,12 +124,60 @@ class PCenterModel(object):
         
 class GurobiModel(object):
     
-    def __init__(self, graph, method=-1, mipGap=1e-4, timeLimit=None, 
-                       threads=None, quiet=True):
+    def __init__(self, graph, method=-1, mipGap=1e-4, mipFocus=0, heuristics=0.05,
+                       timeLimit=None, 
+                       threads=0, quiet=True):
+        """
+        
+        Parameters
+        ----------
+        mipFocus : {0, 1, 2, 3}
+            The MIPFocus parameter allows you to modify your high-level solution
+            strategy, depending on your goals. By default, the Gurobi MIP solver
+            strikes a balance between finding new feasible solutions and proving
+            that the current solution is optimal. If you are more interested in 
+            finding feasible solutions quickly, you can select MIPFocus=1. 
+            If you believe the solver is having no trouble finding good quality 
+            solutions, and wish to focus more attention on proving optimality, 
+            select MIPFocus=2. If the best objective bound is moving very slowly
+            (or not at all), you may want to try MIPFocus=3 to focus on the 
+            bound.
+        heuristics : float between 0 and 1
+            Determines the amount of time spent in MIP heuristics. You can think
+            of the value as the desired fraction of total MIP runtime devoted to
+            heuristics (so by default, we aim to spend 5% of runtime on 
+            heuristics).
+            Larger values produce more and better feasible solutions, at a cost 
+            of slower progress in the best bound.
+        threads : int
+            Controls the number of threads to apply to parallel barrier or 
+            parallel MIP. The default value of 0 sets the thread count equal to 
+            its maximum value, which is the number of logical cores in the 
+            machine.
+            While you will generally get the best performance by using all 
+            available cores in your machine, there are a few exceptions. One is 
+            of course when you are sharing a machine with other jobs. In this 
+            case, you should select a thread count that doesn't oversubscribe 
+            the machine.
+            We have also found that certain classes of MIP models benefit from 
+            reducing the thread count, often all the way down to one thread. 
+            Starting multiple threads introduces contention for machine 
+            resources. For classes of models where the first solution found by 
+            the MIP solver is almost always optimal, and that solution isn't 
+            found at the root, it is often better to allow a single thread to 
+            explore the search tree uncontended.
+            Another situation where reducing the thread count can be helpful is 
+            when memory is tight. Each thread can consume a significant amount 
+            of memory.
+        """
+                       
+                       
         super(GurobiModel, self).__init__()
         self.graph = graph
         self.method = method
         self.mipGap = mipGap
+        self.mipFocus = mipFocus
+        self.heuristics = heuristics
         self.timeLimit = timeLimit
         self.threads = threads
         self.quiet = quiet
@@ -190,10 +238,11 @@ class GurobiModel(object):
         model.setObjective(objective, grb.GRB.MAXIMIZE)
         
         model.setParam(grb.GRB.Param.Method, self.method)
-        if self.threads is not None:
-            model.setParam(grb.GRB.Param.Threads, self.threads)
+        model.setParam(grb.GRB.Param.MIPFocus, self.mipFocus)
+        model.setParam(grb.GRB.Param.Heuristics, self.heuristics)
         model.setParam(grb.GRB.Param.NodefileStart, 0.5)
         model.setParam(grb.GRB.Param.MIPGap, self.mipGap)
+        model.setParam(grb.GRB.Param.Threads, self.threads)
         if self.timeLimit is not None:
             model.setParam(grb.GRB.Param.TimeLimit, self.timeLimit)
         model.setParam(grb.GRB.Param.OutputFlag, not self.quiet)
