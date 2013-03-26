@@ -87,9 +87,8 @@ ogroup.add_argument('--time-limit', type=int, metavar='N', default=SUPPRESS,
 ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
                     help='number of threads to use.')
 
-msg = 'Prune search space by processing each connected component separately in graph where edges with probability < THRESHOLD are removed.'
-ogroup.add_argument('--pruning', type=float, metavar='THRESHOLD', default=0.,
-                    help=msg)
+msg = 'Prune search space by processing each connected component separately in graph where edges with probability < 1-α are removed.'
+ogroup.add_argument('--pruning', action='store_true', help=msg)
 # ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
 #                     help='set probability of mono-modal edges to zero '
 #                          'in case it is already lower than P.')
@@ -156,8 +155,9 @@ for u, uri in enumerate(args.uris):
     if args.hw:
         pg.remove_crossmodal_edges('head', 'written')
     
+    
     # process each connected components subgraph separately
-    for g in pg.subgraphs_iter(threshold=args.pruning):
+    for g in pg.subgraphs_iter(threshold=(1.-args.alpha) if args.pruning else 0.):
         
         # create ILP problem
         if args.objective in [1,2,3,4]:
