@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL
 
 class IdentityNode(object):
     """Identity node [I]
@@ -48,8 +49,10 @@ class IdentityNode(object):
         
     def __repr__(self):
         return "<IdentityNode %s>" % self.identifier
-
-
+    
+    def to_json(self):
+        return {'kind': 'identity',
+                LABEL: str(self.identifier)}
 
 class LabelNode(object):
     """Label node [L]
@@ -133,3 +136,11 @@ class TrackNode(object):
                (other.segment in self.segment) & \
                (other.uri == self.uri) & \
                (other.modality == self.modality)
+    
+    def to_json(self):
+        return {'kind': 'track',
+                URI: str(self.uri),
+                MODALITY: str(self.modality),
+                SEGMENT: self.segment.to_json(),
+                TRACK: str(self.track)}
+    

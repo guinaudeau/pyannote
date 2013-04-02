@@ -428,8 +428,24 @@ class MultimodalProbabilityGraph(nx.Graph):
         
         return annotations
         
+    def to_json(self):
         
+        nodes = self.nodes()
+        N = len(nodes)
         
+        nodes_json = [node.to_json() for node in nodes]
+        
+        links_json = []
+        for n, node in enumerate(nodes):
+            for m in range(n+1, N):
+                other_node = nodes[m]
+                if not self.has_edge(node, other_node):
+                    continue
+                links_json.append({'source': n, 
+                                   'target': m,
+                                   PROBABILITY: self[node][other_node][PROBABILITY]}) 
+        
+        return {'nodes': nodes_json, 'links': links_json}
 
 
 class SegmentationGraph(object):
