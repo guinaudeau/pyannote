@@ -461,20 +461,30 @@ class Annotation(AnnotationMixin, object):
     def empty(self):
         return self.__class__(uri=self.uri, modality=self.modality)
     
-    def labels(self):
+    def labels(self, unknown=True):
         """List of labels
+        
+        Parameters
+        ----------
+        unknown : bool, optional
+            When False, do not return Unknown instances
+            When True, return any label (even Unknown instances)
         
         Returns
         -------
         labels : list
-            Sorted list of existing labels
+            Sorted list of labels
         
         Remarks
         -------
             Labels are sorted based on their string representation.
         """
         if LABEL in self._df:
-            return sorted(self._df[LABEL].unique(), key=str)
+            labels = sorted(self._df[LABEL].unique(), key=str)
+            if unknown:
+                return labels
+            else:
+                return [l for l in labels if not isinstance(l, Unknown)]
         else:
             return []
     
@@ -920,8 +930,14 @@ class Scores(AnnotationMixin, object):
             raise KeyError('invalid label: %s' % repr(label))
         self._df = self._df.set_value((segment, track), label, value)
     
-    def labels(self):
+    def labels(self, unknown=True):
         """List of labels
+        
+        Parameters
+        ----------
+        unknown : bool, optional
+            When False, do not return Unknown instances
+            When True, return any label (even Unknown instances)
         
         Returns
         -------
@@ -932,7 +948,11 @@ class Scores(AnnotationMixin, object):
         -------
             Labels are sorted based on their string representation.
         """
-        return sorted(self._df.columns, key=str)
+        labels = sorted(self._df.columns, key=str)
+        if unknown:
+            return labels
+        else:
+            return [l for l in labels if not isinstance(l, Unknown)]
     
     def itervalues(self):
         """Iterate over annotation as (segment, track, label, value) tuple"""
