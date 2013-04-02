@@ -376,9 +376,13 @@ msg = "path to source for head clustering. " + clicommon.msgURI()
 hgroup.add_argument('--hh', type=mm_parser, metavar='source.mdtm', 
                     default=SUPPRESS, help=msg)
 
+# msg = 'get rid of face tracks in FILE'
+# hgroup.add_argument('--hh-remove', type=, metavar='FILE', 
+#                     default=SUPPRESS, help=msg)
+
+msg = 'path to trained parameters for head clustering'
 hgroup.add_argument('--hh-param', type=hh_param_parser, metavar='param.pkl',
-                    dest='hhgraph', default=SUPPRESS,
-                    help='path to trained parameters for head clustering')
+                    dest='hhgraph', default=SUPPRESS, help=msg)
 
 msg = "path to precomputed similarity matrices." + clicommon.msgURI()
 hgroup.add_argument('--hh-precomputed', type=hh_precomputed_parser, 
