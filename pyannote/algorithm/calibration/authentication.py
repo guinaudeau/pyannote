@@ -131,7 +131,8 @@ class AuthenticationCalibration(object):
         self.Y = np.vstack(Y)
         
         self.mapping = self.train_mapping(self.X, self.Y, **(self.kwargs))
-    
+        
+        return self
     
     def apply(self, scores):
         """
@@ -160,3 +161,81 @@ class AuthenticationCalibration(object):
         return scores.map(s2p)
 
 
+if __name__ == "__main__":
+    
+    import pickle
+    from argparse import ArgumentParser
+    from pyannote.cli.parent import parentArgumentParser
+    from pyannote.cli.uris import URIHandler
+    from pyannote.cli import InputGetAnnotation, OutputWriteAnnotation
+    from pyannote.cli import InputFileHandle, OutputFileHandle
+    
+    parser = ArgumentParser(description='Calibration of authentication scores')
+    subparsers = parser.add_subparsers(help='mode')
+    
+    # ==============
+    # TRAIN mode
+    # ==============
+    
+    def trainCalibration(args):
+        uris = URIHandler().uris()
+        data = [(args.reference(uri), args.scores(uri)) for uri in uris]
+        calibration = AuthenticationCalibration().fit(data)
+        pickle.dump(calibration, args.output)
+        args.output.close()
+    
+    train_parser = subparsers.add_parser('train', help='Train calibration',
+                                         parents=[parentArgumentParser()])
+    train_parser.set_defaults(func=trainCalibration)
+    
+    description = 'path to input authentication scores.'
+    train_parser.add_argument('scores', help=description, 
+                              type=InputGetAnnotation())
+    
+    description = 'path to input reference annotation.'
+    train_parser.add_argument('reference', help=description, 
+                              type=InputGetAnnotation())
+    
+    description = 'path to output calibration.'
+    train_parser.add_argument('output', help=description,
+                              type=OutputFileHandle())
+    
+    # ==============
+    # APPLY mode
+    # ==============
+    
+    def applyCalibration(args):
+        uris = URIHandler().uris()
+        calibration = pickle.load(args.calibration)
+        for uri in uris:
+            scores = args.scores(uri)
+            args.calibrated(calibration.apply(scores))
+    
+    apply_parser = subparsers.add_parser('apply', help='Apply calibration',
+                                         parents=[parentArgumentParser()])
+    apply_parser.set_defaults(func=applyCalibration)
+    
+    description = 'path to input authentication scores.'
+    apply_parser.add_argument('scores', help=description, 
+                              type=InputGetAnnotation())
+    
+    description = 'path to input calibration.'
+    apply_parser.add_argument('calibration', help=description, 
+                              type=InputFileHandle())
+    
+    description = 'path to output calibrated scores.'
+    apply_parser.add_argument('calibrated', help=description,
+                              type=OutputWriteAnnotation())
+    
+    # =====================
+    # ARGUMENT parsing
+    # =====================
+    
+    try:
+       args = parser.parse_args()
+       args.func(args)
+    except IOError as e:
+       sys.stderr.write('%s' % e)
+       sys.exit(-1)
+    
+    
