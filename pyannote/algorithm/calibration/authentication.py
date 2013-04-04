@@ -134,13 +134,17 @@ class AuthenticationCalibration(object):
         
         return self
     
-    def apply(self, scores):
+    def apply(self, scores, equal_priors=False):
         """
         Apply score calibration
         
         Parameters
         ----------
         scores : `Scores`
+            Uncalibrated scores.
+        equal_priors : bool, optional
+            When True, use p(x|¬H) = p(x|H) = 0.5.
+            Default (False) uses estimated priors.
         
         Returns
         -------
@@ -150,6 +154,8 @@ class AuthenticationCalibration(object):
         """
         
         (a, b), prior = self.mapping
+        if equal_priors:
+            prior = 0.5
         
         def s2p(x):
             # p(x|¬H)/p(x|H)
@@ -209,7 +215,8 @@ if __name__ == "__main__":
         calibration = pickle.load(args.calibration)
         for uri in uris:
             scores = args.scores(uri)
-            args.calibrated(calibration.apply(scores))
+            args.calibrated(calibration.apply(scores,
+                                              equal_priors=args.equal_priors))
     
     apply_parser = subparsers.add_parser('apply', help='Apply calibration',
                                          parents=[parentArgumentParser()])
@@ -226,6 +233,10 @@ if __name__ == "__main__":
     description = 'path to output calibrated scores.'
     apply_parser.add_argument('calibrated', help=description,
                               type=OutputWriteAnnotation())
+    
+    description = 'use equal priors (default is to use estimated priors).'
+    apply_parser.add_argument('--equal-priors', help=description, 
+                              action='store_true')
     
     # =====================
     # ARGUMENT parsing
