@@ -27,6 +27,7 @@ def draw_mpg(g, threshold=0.0, forbidden=True):
     """
     Parameters
     ----------
+    threshold : float, optional
     forbidden : bool, optional
         When False, do not draw red crossed forbidden edges
     
