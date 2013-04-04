@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# --------------------------------------------------------------------------- #
-
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
@@ -19,8 +17,6 @@
 # 
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
-
-# --------------------------------------------------------------------------- #
 
 import pandas
 
@@ -92,7 +88,7 @@ class Diff(object):
         else:
             self.__matcher = DefaultIDMatcher()
         
-    def __call__(self, reference, hypothesis):
+    def __call__(self, reference, hypothesis, df=False):
         
         timeline = (reference.timeline + hypothesis.timeline).segmentation()
         
@@ -119,7 +115,8 @@ class Diff(object):
                 inventory[segment, track] = error
         
         return inventory
-
+    
+    
     def __diff(self, ids1, ids2):
         
         # duplicate because we are going to modify it.
@@ -151,7 +148,7 @@ class Diff(object):
         
         return mapping
     
-    def aggregate(self, inventory):
+    def aggregate(self, inventory, top=None):
         unordered = [(error, inventory.subset(set([error])).timeline.duration())
                       for error in inventory.labels()]
         ordered = sorted(unordered, key=lambda x: x[1], reverse=True)
@@ -162,6 +159,8 @@ class Diff(object):
              'Duration': [d for _,d in ordered],
              '%': [int(100 * d / total) for _,d in ordered]}
         df = pandas.DataFrame(data=data, columns=['Type', 'Reference', 'Hypothesis', 'Duration', '%'])
+        if top:
+            df = df[:top]
         return df
 
 if __name__ == "__main__":
