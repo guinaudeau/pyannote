@@ -21,7 +21,7 @@
 import sys
 import os.path
 import pyannote.cli
-from pyannote.parser import TimelineParser, AnnotationParser, LSTParser
+from pyannote.parser import TimelineParser, AnnotationParser, LSTParser, LabelMatrixParser
 
 
 class InputFileHandle(object):
@@ -124,6 +124,8 @@ class InputGetAnnotation(object):
         
         return getAnnotation
 
+
+
 class InputGetAnnotationAndPath(InputGetAnnotation):
     def __call__(self, path):
         return (path, super(InputGetAnnotationAndPath, self).__call__(path))
@@ -156,18 +158,38 @@ class InputList(object):
 
 class OutputFileHandle(object):
     
-    def __init__(self, ):
+    def __init__(self):
         super(OutputFileHandle, self).__init__()
     
     def __call__(self, path):
         
-        if path == '-':
-            return sys.stdout
+        if pyannote.cli.URI_PLACEHOLDER in path:
+            
+            def getFileHandle(uri=None):
+                
+                # replace placeholder
+                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                
+                # check if we are about to overwrite a file
+                if os.path.isfile(rpath):
+                    raise IOError('File %s already exists.' % rpath)
+                
+                return open(rpath, 'w')
+            
         else:
-            if os.path.isfile(path):
-                raise IOError('File %s already exists.' % path)
-            return open(path, 'w')
-
+            
+            def getFileHandle(uri=None):
+                
+                if path == '-':
+                    return sys.stdout
+                else:
+                    if os.path.isfile(path):
+                        raise IOError('File %s already exists.' % path)
+                    return open(path, 'w')
+        
+        return getFileHandle
+        
+        
 class OutputWriteAnnotation(object):
     
     def __init__(self, initArgs=None):

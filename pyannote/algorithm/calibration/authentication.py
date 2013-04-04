@@ -187,8 +187,8 @@ if __name__ == "__main__":
         uris = URIHandler().uris()
         data = [(args.reference(uri), args.scores(uri)) for uri in uris]
         calibration = AuthenticationCalibration().fit(data)
-        pickle.dump(calibration, args.output)
-        args.output.close()
+        with args.output() as f:
+            pickle.dump(calibration, f)
     
     train_parser = subparsers.add_parser('train', help='Train calibration',
                                          parents=[parentArgumentParser()])

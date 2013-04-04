@@ -156,9 +156,9 @@ def run(args):
     for metricName, metric in metrics.iteritems():
         for h, (path, _) in enumerate(args.hypothesis):
             M = M.set_value((path, '/all'), metricName, abs(metric[h]))
-
-    M.to_csv(args.dump, index_label=['hypothesis', 'uri'], header=True, index=True)
-    args.dump.close()
+    
+    with args.dump() as f:
+        M.to_csv(f, index_label=['hypothesis', 'uri'], header=True, index=True)
 
 
 def view(args):
