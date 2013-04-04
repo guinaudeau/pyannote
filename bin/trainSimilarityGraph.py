@@ -105,7 +105,7 @@ def speaker_diarization(args):
     
     try:
         
-        calibration = TwoClassesCalibration().fit(X, Y)
+        calibration = TwoClassesCalibration().fit(X, Y, equal_priors=args.equal_priors)
         params['__s2p__'] = calibration
         # s2p = LogisticProbabilityMaker().fit(X, Y, prior=args.prior)
         # params['__s2p__'] = s2p
@@ -229,9 +229,8 @@ def output_parser(path):
 sparser.add_argument('output', type=output_parser, metavar='params.pkl',
                      help='path to output file')
 
-# sparser.add_argument('--prior', action='store_const', 
-#                      const=None, default=1.,
-#                      help='do not assume equal priors. estimate them.')
+description = 'force equal priors.'
+sparser.add_argument('--equal-priors', action='store_true', help=description)
 
 # Speech turn similarity
 sparser.add_argument('--similarity', choices=('bic', 'clr', 'ivector'),

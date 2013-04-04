@@ -33,7 +33,7 @@ class TwoClassesCalibration(object):
         # self.P: prior probability of being in the same cluster
         # self.s2llr: 
     
-    def fit(self, X, Y):
+    def fit(self, X, Y, equal_priors=False):
         """Estimate priors and likelihood ratio
         
         Parameters
@@ -48,7 +48,10 @@ class TwoClassesCalibration(object):
         positive = X[np.where(Y == 1)]
         negative = X[np.where(Y == 0)]
         self.s2llr = sc2llr.computeLinearMapping(negative, positive)
-        self.P = 1. * len(positive) / (len(positive) + len(negative))
+        if equal_priors:
+            self.P = 0.5
+        else:
+            self.P = 1. * len(positive) / (len(positive) + len(negative))
         return self
     
     def fit_and_show(self, X, Y, nbins=100, m=None, M=None):
