@@ -25,6 +25,7 @@ from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
 from pyannote.parser import AnnotationParser
 from pyannote.algorithm.mpg.gurobi import GurobiModel, PCenterModel
+from pyannote.algorithm.mpg.util import densify
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Probability Graph Clustering')
@@ -110,6 +111,9 @@ ogroup.add_argument('--pruning', action='store_true', help=msg)
 #                     help='do not try to perform optimization if number of '
 #                          'is higher than N.')
 
+msg = 'Densify graph before optimization.'
+ogroup.add_argument('--densify', action='store_true', help=msg)
+
 fgroup = argparser.add_argument_group('Objective function')
 fgroup.add_argument('--objective', type=int, metavar='N', default=1,
                     help='select objective function:'
@@ -171,6 +175,9 @@ for u, uri in enumerate(args.uris):
         pg.remove_crossmodal_edges('head', 'written')
     
     
+    if args.densify:
+        pg = densify(pg, copy=False)
+
     # process each connected components subgraph separately
     for g in pg.subgraphs_iter(threshold=(1.-args.alpha) if args.pruning else 0.):
         

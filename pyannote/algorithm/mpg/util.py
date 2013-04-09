@@ -171,4 +171,62 @@ def complete_mpg(g):
             G.add_edge(n, m, **{PROBABILITY: 0})
     
     return complete
+
+
+def densify(g, copy=True):
+    """
+    Densify multimodal probability graph
+
+    Add missing "track to identity" edges using maximum probability path
+
+    Parameters
+    ----------
+    g : `MultimodalProbabilityGraph`
+    copy : bool, optional
+        When `True`, returns a densified copy of `g`.
+        When `False`, densify `g` itself (in place).
+    """
     
+    # create dual directed graph
+    # * only outgoing edges for Identity nodes
+    # * weight = -log probability
+    dual = nx.DiGraph()
+    dual.add_nodes_from(g)
+    for e, f, d in g.edges_iter(data=True):
+        weight = -np.log(d[PROBABILITY])
+        if isinstance(e, IdentityNode):
+            if not isinstance(f, IdentityNode):
+                dual.add_edge(e, f, weight=weight)
+        else:
+            dual.add_edge(f, e, weight=weight)
+            if not isinstance(f, IdentityNode):
+                dual.add_edge(e, f, weight=weight)
+    
+    # get list of tracks and identities
+    tnodes = g.tnodes()
+    inodes = g.inodes()
+    
+    # duplicate g if requested
+    if copy:
+        g = g.copy()
+
+    # add missing edges via maximum probability path
+    for inode in inodes:
+        weights = {}
+        for tnode in tnodes:
+            if not g.has_edge(inode, tnode):
+                
+                # compute maximum probability paths from current identity
+                # only if necessary (iff it was not already computed
+                # and there is a missing edge)
+                if not weights:
+                    weights = nx.shortest_path_length(dual, source=inode, weight='weight')
+                
+                # if there exists at least one path from identity to track
+                # use the maximum probability path
+                if tnode in weights:
+                    g.update_edge(inode, tnode, 
+                                  probability=np.exp(-weights[tnode]))
+    
+    return g
+                
