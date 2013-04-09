@@ -56,6 +56,8 @@ def output_parser(path):
 argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                        help='path to where to store the output')
 
+argparser.add_argument('--dump', type=str, default=SUPPRESS,
+                       help="dump model (e.g. /tmp/dump%02d.mps")
 # # OPTIONAL ARGUMENTS: WHICH EDGES TO REMOVE
 # ggroup = argparser.add_argument_group('Probability graph')
 # ggroup.add_argument('--no-ss', action='store_true', dest='ss',
@@ -143,6 +145,8 @@ description = 'describe how weights wij are computed in objective function #2'
 fgroup.add_argument('--weight', choices=('min', 'max', 'gmean', 'mean'),
                     default='gmean', help=description)
 
+
+
 try:
     args = argparser.parse_args()
 except IOError as e:
@@ -203,7 +207,9 @@ for u, uri in enumerate(args.uris):
                                     quiet=quiet)
 
             if hasattr(args, 'dump'):
-                model.model.write(args.dump % i)
+                path = args.dump % i
+                model.model.write(path)
+                print "Dumped graph to %s" % path
 
             # actual optimization
             if args.objective == 1:
