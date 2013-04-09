@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -32,6 +32,8 @@ argparser = ArgumentParser(parents=[clicommon.parser],
 
 # MANDATORY ARGUMENT (INPUT): PATH TO PROBABILITY GRAPH
 # Probability graph is loaded on request
+
+
 def input_parser(path):
     def load_mpg(uri):
         return nx.read_gpickle(clicommon.replaceURI(path, uri))
@@ -41,9 +43,12 @@ argparser.add_argument('input', type=input_parser, metavar='mpg.pkl', help=msg)
 
 # MANDATORY ARGUMENT (OUTPUT): PATH TO FINAL ANNOTATION
 # Returns a writer and file handle (make sure it doesn't exist)
+
+
 def output_parser(path):
     try:
-       with open(path) as f: pass
+        with open(path) as f:
+            pass
     except IOError as e:
         writer, extension = AnnotationParser.guess(path)
         return writer(), open(path, 'w')
@@ -51,31 +56,38 @@ def output_parser(path):
 argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
                        help='path to where to store the output')
 
-# OPTIONAL ARGUMENTS: WHICH EDGES TO REMOVE
-ggroup = argparser.add_argument_group('Probability graph')
-ggroup.add_argument('--no-ss', action='store_true', dest='ss',
-                       help='remove speaker diarization edges')
-ggroup.add_argument('--no-hh', action='store_true', dest='hh',
-                       help='remove face clustering edges')
-ggroup.add_argument('--no-si', action='store_true', dest='si',
-                       help='remove speaker recognition edges')
-ggroup.add_argument('--no-hi', action='store_true', dest='hi',
-                       help='remove face recognition edges')
-ggroup.add_argument('--no-sh', action='store_true', dest='sh',
-                       help='remove speaker/face edges')
-ggroup.add_argument('--no-sw', action='store_true', dest='sw',
-                       help='remove speaker/written edges')
-ggroup.add_argument('--no-hw', action='store_true', dest='hw',
-                       help='remove face/written edges')
+# # OPTIONAL ARGUMENTS: WHICH EDGES TO REMOVE
+# ggroup = argparser.add_argument_group('Probability graph')
+# ggroup.add_argument('--no-ss', action='store_true', dest='ss',
+#                     help='remove speaker diarization edges')
+# ggroup.add_argument('--no-hh', action='store_true', dest='hh',
+#                     help='remove face clustering edges')
+# ggroup.add_argument('--no-si', action='store_true', dest='si',
+#                     help='remove speaker recognition edges')
+# ggroup.add_argument('--no-hi', action='store_true', dest='hi',
+#                     help='remove face recognition edges')
+# ggroup.add_argument('--no-sh', action='store_true', dest='sh',
+#                     help='remove speaker/face edges')
+# ggroup.add_argument('--no-sw', action='store_true', dest='sw',
+#                     help='remove speaker/written edges')
+# ggroup.add_argument('--no-hw', action='store_true', dest='hw',
+#                     help='remove face/written edges')
 
 # OPTIONAL ARGUMENTS: OPTIMIZATION
 ogroup = argparser.add_argument_group('Optimization')
+
+
 def method_parser(name):
-    methods = {'primal':0, 'dual':1, 'barrier':2, 'concurrent':3, 'deterministic':4}
+    methods = {'primal': 0,
+               'dual': 1,
+               'barrier': 2,
+               'concurrent': 3,
+               'deterministic': 4}
     return methods[name]
 
 ogroup.add_argument('--method', default='concurrent', type=str,
-                    choices = ('primal', 'dual', 'barrier', 'concurrent', 'deterministic'),
+                    choices=('primal', 'dual', 'barrier',
+                             'concurrent', 'deterministic'),
                     help="set algorithm used to solve the root node of the MIP "
                          "model: primal simplex, dual simplex, barrier, "
                          "concurrent (default) or deterministic concurrent.")
@@ -96,10 +108,10 @@ ogroup.add_argument('--mip-focus', type=int, metavar='N', default=0,
         'select MIPFocus=2. If the best objective bound is moving very slowly '
         '(or not at all), you may want to try MIPFocus=3 to focus on the '
         'bound.')
-                         
+
 ogroup.add_argument('--time-limit', type=int, metavar='N', default=SUPPRESS,
-                       help='stop optimization after N minutes')
-ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
+                    help='stop optimization after N minutes')
+ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS,
                     help='number of threads to use.')
 
 msg = 'Prune search space by processing each connected component separately in graph where edges with probability < 1-α are removed.'
@@ -136,7 +148,6 @@ try:
 except IOError as e:
     sys.exit(e)
 
-
 if not hasattr(args, 'uris'):
     raise IOError('missing list of resources (--uris)')
 
@@ -158,29 +169,30 @@ for u, uri in enumerate(args.uris):
     # load probability graph
     pg = args.input(uri)
     
-    # selectively remove some edges (as requested by the user)
-    if args.ss:
-        pg.remove_diarization_edges('speaker')
-    if args.hh:
-        pg.remove_diarization_edges('head')
-    if args.si:
-        pg.remove_recognition_edges('speaker')
-    if args.hi:
-        pg.remove_recognition_edges('head')
-    if args.sh:
-        pg.remove_crossmodal_edges('speaker', 'head')
-    if args.sw:
-        pg.remove_crossmodal_edges('speaker', 'written')
-    if args.hw:
-        pg.remove_crossmodal_edges('head', 'written')
+    # # selectively remove some edges (as requested by the user)
+    # if args.ss:
+    #     pg.remove_diarization_edges('speaker')
+    # if args.hh:
+    #     pg.remove_diarization_edges('head')
+    # if args.si:
+    #     pg.remove_recognition_edges('speaker')
+    # if args.hi:
+    #     pg.remove_recognition_edges('head')
+    # if args.sh:
+    #     pg.remove_crossmodal_edges('speaker', 'head')
+    # if args.sw:
+    #     pg.remove_crossmodal_edges('speaker', 'written')
+    # if args.hw:
+    #     pg.remove_crossmodal_edges('head', 'written')
     
     
     if args.densify:
         pg = densify(pg, copy=False)
 
     # process each connected components subgraph separately
-    for g in pg.subgraphs_iter(threshold=(1.-args.alpha) if args.pruning else 0.):
-        
+    threshold = (1.-args.alpha) if args.pruning else 0.
+    for i, g in enumerate(pg.subgraphs_iter(threshold=threshold)):
+
         # create ILP problem
         if args.objective in [1,2,3,4]:
             model = GurobiModel(g, method=method,
@@ -189,6 +201,10 @@ for u, uri in enumerate(args.uris):
                                     threads=threads,
                                     timeLimit=timeLimit,
                                     quiet=quiet)
+
+            if hasattr(args, 'dump'):
+                model.model.write(args.dump % i)
+
             # actual optimization
             if args.objective == 1:
                 annotations = model.probMaximizeIntraMinimizeInter(alpha=args.alpha)
