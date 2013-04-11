@@ -238,11 +238,24 @@ class DupuyConstraintMixin(object):
     """
 
     def set_constraints(self, items, similarity, get_similarity, delta=0.5, **kwargs):
+        """
 
+        Parameters
+        ----------
+        items :
+
+        similarity :
+
+        get_similarity :
+
+        delta : float, optional
+            Prevent items with similarity lower than delta from ending
+            in the same cluster. Must fall in [0, 1] range.
+
+        """
         # Equation 1.3 (in Dupuy et al., JEP'12)
         # every item is associated to exactly one centroid
         for J in items:
-
             constr = grb.quicksum([self.x[C, J] for C in items]) == 1
             self.model.addConstr(constr)
 
@@ -251,7 +264,7 @@ class DupuyConstraintMixin(object):
         for C in items:
             for I in items:
                 sCI = get_similarity(C, I, similarity)
-                constr = sCI * self.x[C, I] >= delta
+                constr = (1-sCI) * self.x[C, I] <= (1-delta)
                 self.model.addConstr(constr)
 
         # Equation 1.5 (missing in Dupuy et al.)
