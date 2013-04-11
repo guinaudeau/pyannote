@@ -237,7 +237,7 @@ class DupuyConstraintMixin(object):
     Dupuy et al. ...
     """
 
-    def set_constrains(self, items, similarity, get_similarity, delta=None, **kwargs):
+    def set_constraints(self, items, similarity, get_similarity, delta=0.5, **kwargs):
 
         # Equation 1.3 (in Dupuy et al., JEP'12)
         # every item is associated to exactly one centroid
@@ -251,7 +251,7 @@ class DupuyConstraintMixin(object):
         for C in items:
             for I in items:
                 sCI = get_similarity(C, I, similarity)
-                constr = sCI * self.x[C, I] >= self.delta
+                constr = sCI * self.x[C, I] >= delta
                 self.model.addConstr(constr)
 
         # Equation 1.5 (missing in Dupuy et al.)
