@@ -70,7 +70,7 @@ class ILPClusteringMixin(object):
 
         # one binary variable per item pair
         self.x = {}
-        for i in enumerate(items):
+        for i in items:
             for j in items:
                 self.x[i, j] = self.model.addVar(vtype=grb.GRB.BINARY)
 
@@ -88,8 +88,6 @@ class ILPClusteringMixin(object):
         # set_objective method is not provided by this base class
         # it must be provided by a ObjectiveMixin
         self.set_objective(items, similarity, get_similarity, **kwargs)
-
-        return self
 
     def solve(self, init=None,
               method=None, mip_focus=None, heuristics=None,
