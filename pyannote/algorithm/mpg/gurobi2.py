@@ -185,12 +185,12 @@ class FinkelConstraintMixin(object):
             constr = self.x[I, I] == 1
             self.model.addConstr(constr)
 
-        # # hard constraints
-        # for i, item in enumerate(items):
-        #     for other_item in items[i+1:]:
-        #         s = get_similarity(item, other_item, similarity)
-        #         if s in [0, 1]:
-        #             self.model.addConstr(self.x[item, other_item] == s)
+        # hard constraints
+        for i, I in enumerate(items):
+            for J in items[i+1:]:
+                s = get_similarity(I, J, similarity)
+                if s in [0, 1]:
+                    self.model.addConstr(self.x[I, J] == s)
 
         # symmetry constraints
         # O(N^2) complexity
