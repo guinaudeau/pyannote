@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -30,6 +30,7 @@ except Exception, e:
     sys.stderr.write('Cannot initialize Gurobi.\n')
 
 import numpy as np
+import networkx as nx
 
 
 class ILPClusteringMixin(object):
@@ -103,7 +104,8 @@ class ILPClusteringMixin(object):
         mip_focus : {}, optional
         heuristics : {}, optional
         mip_gap : float, optional
-        time_limit : int, optional
+        time_limit : float, optional
+            Time limit in seconds.
         threads : int, optional
         verbose : boolean, optional
 
@@ -143,10 +145,28 @@ class ILPClusteringMixin(object):
         for key, variable in self.x.iteritems():
             solution[key] = variable.x
 
-        return solution
+        # convert solution to list of clusters
+        c = nx.Graph()
+        for (I, J), same_cluster in solution.iteritems():
+            c.add_node(I),
+            c.add_node(J)
+            if same_cluster:
+                c.add_edge(I, J)
+        clusters = nx.connected_components(c)
+
+        return clusters
 
     def dump(self, path):
-        self.model.dump(path)
+        """
+        Dump Gurobi model to file (for debugging purpose)
+
+        Parameters
+        ----------
+        path : str
+            Where to dump Gurobi model
+
+        """
+        self.model.write(path)
 
 
 class FinkelConstraintMixin(object):
