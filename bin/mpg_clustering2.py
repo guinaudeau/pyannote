@@ -36,10 +36,10 @@ from pyannote.algorithm.mpg.gurobi2 import ILPClusteringMixin, FinkelConstraintM
 # =============================================================================
 # COMMAND LINE INTERFACE
 # =============================================================================
-argParser = pyannote.cli.initParser('Clustering of Multimodal Probability Graphs')
+argParser = pyannote.cli.initParser('Clustering of Multimodal Probability Graphs', uem=False)
 
 description = 'path to input file (pickled Networkx graph).' + pyannote.cli.URI_SUPPORT
-argParser.add_argument('input', metavar='[URI].nxg', help=description,
+argParser.add_argument('input', help=description,
                        type=pyannote.cli.InputFileHandle())
 
 description = 'path to output annotation.' + pyannote.cli.URI_SUPPORT
@@ -47,8 +47,8 @@ argParser.add_argument('output', help=description,
                        type=pyannote.cli.OutputWriteAnnotation())
 
 description = 'dump Gurobi model to file (one per sub-problem).' + pyannote.cli.URI_SUPPORT
-argParser.add_argument('--dump', metavar='[URI].%02d.mps', help=description,
-                       type=str, default=SUPPRESS)
+argParser.add_argument('--dump', metavar='model.%02d.mps', help=description,
+                       type=str, default=pyannote.cli.SUPPRESS)
 
 description = 'densify graph before optimization.'
 argParser.add_argument('--densify', action='store_true', help=description)
@@ -83,7 +83,7 @@ description = ('set high-level strategy: find feasible solutions (1), '
                'to balance between 1 and 2.')
 argGurobi.add_argument('--mip-focus', type=int, default=0, help=description)
 
-description = ('set the amount of time spent in MIP heuristics. Default is 5%.')
+description = ('set the amount of time spent in MIP heuristics. Default is 5%%.')
 argGurobi.add_argument('--heuristics', type=float, default=0.05, help=description)
 
 description = ('stop optimization when the relative gap between the lower and '
@@ -103,7 +103,7 @@ argGurobi.add_argument('--threads', type=int, default=0, help=description)
 # ARGUMENT PARSING & POST-PROCESSING
 # =============================================================================
 try:
-    args = argParser.parser_args()
+    args = argParser.parse_args()
 except IOError as e:
     sys.stderr.write('%s' % e)
     sys.exit(-1)
