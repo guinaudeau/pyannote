@@ -46,7 +46,8 @@ class ILPClusteringMixin(object):
 
     """
 
-    def __init__(self, items, similarity, get_similarity=None, **kwargs):
+    def __init__(self, items, similarity, get_similarity=None,
+                 debug=False, **kwargs):
         """
         Create MIP clustering problem
 
@@ -71,9 +72,9 @@ class ILPClusteringMixin(object):
 
         # one binary variable per item pair
         self.x = {}
-        for i in items:
-            for j in items:
-                self.x[i, j] = self.model.addVar(vtype=grb.GRB.BINARY)
+        for I in items:
+            for J in items:
+                self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
 
         # Gurobi updates model lazily
         self.model.update()
@@ -84,11 +85,17 @@ class ILPClusteringMixin(object):
 
         # set_constraints method is not provided by this base class
         # it must be provided by a ConstraintMixin
-        self.set_constraints(items, similarity, get_similarity, **kwargs)
+        if debug:
+            sys.stderr.write("DEBUG: set constraints\n")
+        self.set_constraints(items, similarity, get_similarity,
+                             debug=debug, **kwargs)
 
         # set_objective method is not provided by this base class
         # it must be provided by a ObjectiveMixin
-        self.set_objective(items, similarity, get_similarity, **kwargs)
+        if debug:
+            sys.stderr.write("DEBUG: set objective\n")
+        self.set_objective(items, similarity, get_similarity,
+                           debug=debug, **kwargs)
 
     def solve(self, init=None,
               method=None, mip_focus=None, heuristics=None,
@@ -174,18 +181,23 @@ class FinkelConstraintMixin(object):
 
     """
 
-    def set_constraints(self, items, similarity, get_similarity, **kwargs):
+    def set_constraints(self, items, similarity, get_similarity,
+                        debug=False, **kwargs):
 
         # number of items
         N = len(items)
 
         # reflexivity constraints
         # O(N) complexity
+        if debug:
+            sys.stderr.write("DEBUG: add reflexivity constraints\n")
         for I in items:
             constr = self.x[I, I] == 1
             self.model.addConstr(constr)
 
         # hard constraints
+        if debug:
+            sys.stderr.write("DEBUG: add hard constraints\n")
         for i, I in enumerate(items):
             for J in items[i+1:]:
                 s = get_similarity(I, J, similarity)
@@ -194,6 +206,8 @@ class FinkelConstraintMixin(object):
 
         # symmetry constraints
         # O(N^2) complexity
+        if debug:
+            sys.stderr.write("DEBUG: add symmetry constraints\n")
         for i, I in enumerate(items):
             for J in items[i+1:]:
                 constr = self.x[I, J] == self.x[J, I]
@@ -201,6 +215,8 @@ class FinkelConstraintMixin(object):
 
         # transitivity constraints
         # O(N^3) complexity
+        if debug:
+            sys.stderr.write("DEBUG: add transitivity constraints\n")
         for i in range(N):
             I = items[i]
             for j in range(i+1, N):

@@ -130,6 +130,8 @@ def get_similarity(I, J, g):
     else:
         return np.nan
 
+debug = len(verbose) > 2
+
 # =============================================================================
 # PROCESSING ONE RESOURCE AT A TIME
 # =============================================================================
@@ -153,7 +155,7 @@ for u, uri in enumerate(uris):
 
         # initialize ILP problem
         problem = MyILP(g.nodes(), g, get_similarity=get_similarity,
-                        alpha=args.alpha)
+                        alpha=args.alpha, debug=debug)
 
         # dump ILP problem to file
         if hasattr(args, 'dump'):
