@@ -171,10 +171,7 @@ if __name__ == "__main__":
 
     import pickle
     from argparse import ArgumentParser
-    from pyannote.cli.parent import parentArgumentParser
-    from pyannote.cli.uris import URIHandler
-    from pyannote.cli import InputGetAnnotation, OutputWriteAnnotation
-    from pyannote.cli import InputFileHandle, OutputFileHandle
+    import pyannote.cli
 
     parser = ArgumentParser(description='Calibration of authentication scores')
     subparsers = parser.add_subparsers(help='mode')
@@ -184,34 +181,34 @@ if __name__ == "__main__":
     # ==============
 
     def trainCalibration(args):
-        uris = URIHandler().uris()
+        uris = pyannote.cli.get_uris()
         data = [(args.reference(uri), args.scores(uri)) for uri in uris]
         calibration = AuthenticationCalibration().fit(data)
         with args.output() as f:
             pickle.dump(calibration, f)
 
     train_parser = subparsers.add_parser('train', help='Train calibration',
-                                         parents=[parentArgumentParser()])
+                                         parents=[pyannote.cli.parentArgumentParser()])
     train_parser.set_defaults(func=trainCalibration)
 
     description = 'path to input authentication scores.'
     train_parser.add_argument('scores', help=description,
-                              type=InputGetAnnotation())
+                              type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to input reference annotation.'
     train_parser.add_argument('reference', help=description,
-                              type=InputGetAnnotation())
+                              type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to output calibration.'
     train_parser.add_argument('output', help=description,
-                              type=OutputFileHandle())
+                              type=pyannote.cli.OutputFileHandle())
 
     # ==============
     # APPLY mode
     # ==============
 
     def applyCalibration(args):
-        uris = URIHandler().uris()
+        uris = pyannote.cli.get_uris()
         with args.calibration() as f:
             calibration = pickle.load(f)
         for uri in uris:
@@ -220,20 +217,20 @@ if __name__ == "__main__":
                                               equal_priors=args.equal_priors))
 
     apply_parser = subparsers.add_parser('apply', help='Apply calibration',
-                                         parents=[parentArgumentParser()])
+                                         parents=[pyannote.cli.parentArgumentParser()])
     apply_parser.set_defaults(func=applyCalibration)
 
     description = 'path to input authentication scores.'
     apply_parser.add_argument('scores', help=description,
-                              type=InputGetAnnotation())
+                              type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to input calibration.'
     apply_parser.add_argument('calibration', help=description,
-                              type=InputFileHandle())
+                              type=pyannote.cli.InputFileHandle())
 
     description = 'path to output calibrated scores.'
     apply_parser.add_argument('calibrated', help=description,
-                              type=OutputWriteAnnotation())
+                              type=pyannote.cli.OutputWriteAnnotation())
 
     description = 'use equal priors (default is to use estimated priors).'
     apply_parser.add_argument('--equal-priors', help=description,

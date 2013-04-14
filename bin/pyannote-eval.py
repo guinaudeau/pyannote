@@ -26,13 +26,13 @@ import scipy.stats
 import networkx as nx
 import pyannote
 from pyannote.metric.diarization import DiarizationErrorRate, \
-                                        DiarizationPurity, \
-                                        DiarizationCoverage, \
-                                        DiarizationCompleteness, \
-                                        DiarizationHomogeneity
+    DiarizationPurity, \
+    DiarizationCoverage, \
+    DiarizationCompleteness, \
+    DiarizationHomogeneity
 from pyannote.metric.detection import DetectionErrorRate
 from pyannote.metric.identification import IdentificationErrorRate, \
-                                           UnknownIDMatcher
+    UnknownIDMatcher
 
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
@@ -40,6 +40,7 @@ from pyannote.base.annotation import Unknown
 
 import pyannote.cli
 from argparse import ArgumentParser
+
 
 def run(args):
 
@@ -58,23 +59,23 @@ def run(args):
         # instantiate one metric per hypothesis
         if Metric == IdentificationErrorRate:
             metrics[metricName] = {h: Metric(matcher=UnknownIDMatcher())
-                                   for h,(_,_) in enumerate(args.hypothesis)}
+                                   for h, _ in enumerate(args.hypothesis)}
         else:
-            metrics[metricName] = {h: Metric() for h,(_,_) in enumerate(args.hypothesis)}
+            metrics[metricName] = {h: Metric() for h, (_, _) in enumerate(args.hypothesis)}
 
         # add metric name
         columns.append(metricName)
         columns.extend(['%s | %s' % (metricName, componentName)
                         for componentName in Metric.metric_components()])
 
-    index = MultiIndex(levels=[[],[]], labels=[[],[]], names=['hypothesis', 'uri'])
+    index = MultiIndex(levels=[[], []], labels=[[], []], names=['hypothesis', 'uri'])
     M = DataFrame(index=index, columns=columns)
 
     # Obtain final list of URIs to process
     # (either from --uri(s) options or from input files)
-    uris = pyannote.cli.URIHandler().uris()
+    uris = pyannote.cli.get_uris()
 
-    pb = ProgressBar(widgets=[Bar(),' ', ETA()], term_width=80)
+    pb = ProgressBar(widgets=[Bar(), ' ', ETA()], term_width=80)
     pb.maxval = len(uris)*len(args.hypothesis)
     pb.start()
 
@@ -103,7 +104,7 @@ def run(args):
             # overlapping speech regions
             # (ie. timeline made of segments with two tracks or more)
             overlap = pyannote.Timeline([segment for segment in tmp_ref
-                                                 if len(tmp_ref[segment, :]) > 1])
+                                         if len(tmp_ref[segment, :]) > 1])
 
         # focus on UEM if provided
         if uem is not None:
@@ -204,10 +205,10 @@ def view(args):
     runs = [(path, m[path][uris]) for path in hypotheses]
 
     combined = {path: m[path]['/all'] for path in hypotheses}
-    averaged = {path: np.mean(run) for path,run in runs}
-    geometric = {path: scipy.stats.gmean(run) for path,run in runs}
-    harmonic = {path: scipy.stats.hmean(run) for path,run in runs}
-    medianed = {path: np.median(run) for path,run in runs}
+    averaged = {path: np.mean(run) for path, run in runs}
+    geometric = {path: scipy.stats.gmean(run) for path, run in runs}
+    harmonic = {path: scipy.stats.hmean(run) for path, run in runs}
+    medianed = {path: np.median(run) for path, run in runs}
 
     if args.aggregate == 'combine':
         aggregated = combined
@@ -224,12 +225,12 @@ def view(args):
     # create a directed graph with one vertex per hypothesis file
     # directed edges mean source is significantly better than target
     G = nx.DiGraph(name=metricName)
-    for r, (path,run) in enumerate(runs):
+    for r, (path, run) in enumerate(runs):
         value = aggregated[path]
         G.add_node(path, **{metricName: value})
-        for (other_path,other_run) in runs[r+1:]:
+        for (other_path, other_run) in runs[r+1:]:
             other_value = aggregated[other_path]
-            _,p = scipy.stats.wilcoxon(run, other_run)
+            _, p = scipy.stats.wilcoxon(run, other_run)
             if p < 0.05:
                 if value < other_value:
                     G.add_edge(path, other_path, wilcoxon=p)
@@ -240,28 +241,26 @@ def view(args):
 
     # sort runs based on how many times they are significantly better
     # than other runs
-    D = max([d for _,d in G.out_degree_iter()])
-    best = sorted([(p, G.node[p][metricName]) for p,d in G.out_degree_iter()
-                                              if d == D],
-                  key=lambda t:t[1], reverse=True)
+    D = max([d for _, d in G.out_degree_iter()])
+    best = sorted([(p, G.node[p][metricName]) for p, d in G.out_degree_iter()
+                   if d == D],
+                  key=lambda t: t[1], reverse=True)
 
     if args.significance:
         print "Statistically best runs"
         print "======================="
-        for p,v in best:
-            print "%s : %.3f" % (p,v)
+        for p, v in best:
+            print "%s : %.3f" % (p, v)
 
         exit(1)
 
-    ordered = [(p,v) for p,v in aggregated.iteritems()]
-    ordered = sorted(ordered, key=lambda t:t[1])
+    ordered = [(p, v) for p, v in aggregated.iteritems()]
+    ordered = sorted(ordered, key=lambda t: t[1])
     print "%d best runs" % args.best
     print "=============="
-    for k, (p,v) in enumerate(ordered):
+    for k, (p, v) in enumerate(ordered):
         if k < args.best:
-            print "%s : %.3f" % (p,v)
-
-
+            print "%s : %.3f" % (p, v)
 
 
 argparser = ArgumentParser('pyeval.py')
@@ -271,7 +270,7 @@ subparsers = argparser.add_subparsers(title='Switch between "run" and "view" mod
                                            'use "view" mode to visualize results.')
 
 runparser = subparsers.add_parser('run',
-                                  parents=[pyannote.cli.parent.parentArgumentParser()],
+                                  parents=[pyannote.cli.parentArgumentParser()],
                                   description='"run" mode allows to generate evaluation file.')
 runparser.set_defaults(func=run)
 
@@ -303,44 +302,44 @@ runparser.add_argument('--modality', metavar='MODALITY', type=str,
 group = runparser.add_argument_group('Diarization & clustering')
 
 group.add_argument('--diarization', action='append_const', dest='requested',
-                                    const=DiarizationErrorRate, default=[],
-                                    help='compute diarization error rate')
+                   const=DiarizationErrorRate, default=[],
+                   help='compute diarization error rate')
 group.add_argument('--purity', action='append_const', dest='requested',
-                                    const=DiarizationPurity, default=[],
-                                    help='compute diarization purity')
+                   const=DiarizationPurity, default=[],
+                   help='compute diarization purity')
 group.add_argument('--coverage', action='append_const', dest='requested',
-                                    const=DiarizationCoverage, default=[],
-                                    help='compute diarization coverage')
+                   const=DiarizationCoverage, default=[],
+                   help='compute diarization coverage')
 group.add_argument('--homogeneity', action='append_const', dest='requested',
-                                    const=DiarizationHomogeneity, default=[],
-                                    help='compute clustering homogeneity')
+                   const=DiarizationHomogeneity, default=[],
+                   help='compute clustering homogeneity')
 group.add_argument('--completeness', action='append_const', dest='requested',
-                                    const=DiarizationCompleteness, default=[],
-                                    help='compute clustering completeness')
+                   const=DiarizationCompleteness, default=[],
+                   help='compute clustering completeness')
 
 group = runparser.add_argument_group('Detection')
 
 description = 'compute detection error rate'
 group.add_argument('--detection', action='append_const', dest='requested',
-                                    const=DetectionErrorRate, default=[],
-                                    help=description)
+                   const=DetectionErrorRate, default=[],
+                   help=description)
 
 group = runparser.add_argument_group('Identification')
 
 description = 'compute identification error rate'
 group.add_argument('--identification', action='append_const', dest='requested',
-                                       const=IdentificationErrorRate, default=[],
-                                       help=description)
+                   const=IdentificationErrorRate, default=[],
+                   help=description)
 
 viewparser = subparsers.add_parser('view',
-                                  parents=[pyannote.cli.parent.parentArgumentParser(uem=False, uri=False)],
-                                  description='"view" mode allows to visualize evaluation file.')
+                                   parents=[pyannote.cli.parentArgumentParser(uem=False, uri=False)],
+                                   description='"view" mode allows to visualize evaluation file.')
 viewparser.set_defaults(func=view)
 
 description = 'path to evaluation file. Use "-" for stdin.'
 viewparser.add_argument('input', metavar='evaluation.csv',
-                       type=pyannote.cli.InputFileHandle(),
-                       help=description)
+                        type=pyannote.cli.InputFileHandle(),
+                        help=description)
 
 description = 'list file content (M: metrics, H: hypotheses, U: URIs)'
 viewparser.add_argument('--list', action='append', choices=('M', 'H', 'U'),
@@ -367,4 +366,3 @@ except Exception, e:
     sys.exit(e)
 
 args.func(args)
-
