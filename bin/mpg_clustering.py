@@ -165,31 +165,15 @@ quiet = len(args.verbose) < 2
 writer, f = args.output
 
 for u, uri in enumerate(args.uris):
-    
+
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
         sys.stdout.flush()
-    
+
     # load probability graph
     pg = args.input(uri)
-    
-    # # selectively remove some edges (as requested by the user)
-    # if args.ss:
-    #     pg.remove_diarization_edges('speaker')
-    # if args.hh:
-    #     pg.remove_diarization_edges('head')
-    # if args.si:
-    #     pg.remove_recognition_edges('speaker')
-    # if args.hi:
-    #     pg.remove_recognition_edges('head')
-    # if args.sh:
-    #     pg.remove_crossmodal_edges('speaker', 'head')
-    # if args.sw:
-    #     pg.remove_crossmodal_edges('speaker', 'written')
-    # if args.hw:
-    #     pg.remove_crossmodal_edges('head', 'written')
-    
-    
+
+
     if args.densify:
         pg = densify(pg, copy=False)
 
@@ -222,14 +206,14 @@ for u, uri in enumerate(args.uris):
             elif args.objective == 4:
                 annotations = model.logProbMaximizeIntraMinimizeInter(alpha=args.alpha)
         elif args.objective in [5]:
-            model = PCenterModel(g, alpha=args.alpha, 
+            model = PCenterModel(g, alpha=args.alpha,
                                     method=method,
                                     mipGap=mipGap,
                                     threads=threads,
                                     timeLimit=timeLimit,
                                     quiet=quiet)
             annotations = model.optimize()
-    
+
         # save to file
         for uri, modality in annotations:
             writer.write(annotations[uri, modality], f=f)
