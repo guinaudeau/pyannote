@@ -20,7 +20,7 @@
 
 import sys
 import os.path
-import pyannote.cli
+import pyannote.cli.uris
 from pyannote.parser import TimelineParser, AnnotationParser, LSTParser, LabelMatrixParser
 
 
@@ -31,12 +31,12 @@ class InputFileHandle(object):
 
     def __call__(self, path):
 
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def getFileHandle(uri=None):
 
                 # replace placeholder
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
 
                 return open(rpath, 'r')
 
@@ -71,11 +71,11 @@ class InputGetTimeline(object):
         self.parser = TimelineParser(**(self.initArgs))
 
         # there is one timeline file per resource
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def getTimeline(uri):
                 # replace placeholder
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
                 # read file
                 self.parser.read(rpath, uri=uri)
                 # return annotation
@@ -88,7 +88,7 @@ class InputGetTimeline(object):
             self.parser.read(path)
 
             # add uris to global set of available resources
-            pyannote.cli.URIHandler().addFromInput(self.parser.uris)
+            pyannote.cli.uris.add_input_uris(self.parser.uris)
 
             def getTimeline(uri):
                 return self.parser(uri=uri)
@@ -115,11 +115,11 @@ class InputGetAnnotation(object):
         self.parser = AnnotationParser(**(self.initArgs))
 
         # there is one annotation file per resource
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def getAnnotation(uri=None, modality=None):
                 # replace placeholder
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
                 # read file
                 self.parser.read(rpath, uri=uri, modality=modality)
                 # return annotation
@@ -132,7 +132,7 @@ class InputGetAnnotation(object):
             self.parser.read(path)
 
             # add uris to global set of available resources
-            pyannote.cli.URIHandler().addFromInput(self.parser.uris)
+            pyannote.cli.uris.add_input_uris(self.parser.uris)
 
             getAnnotation = self.parser
             # def getAnnotation(uri=None, modality=None):
@@ -144,10 +144,6 @@ class InputGetAnnotation(object):
 class InputGetAnnotationAndPath(InputGetAnnotation):
     def __call__(self, path):
         return (path, super(InputGetAnnotationAndPath, self).__call__(path))
-        #
-        # def getAnnotationAndPath(uri=None, modality=None):
-        #     return (path, getAnnotation(uri=uri, modality=modality))
-        # return getAnnotationAndPath
 
 
 class InputList(object):
@@ -190,11 +186,11 @@ class InputGetMatrix(object):
         self.parser = LabelMatrixParser(**(self.initArgs))
 
         # there is one annotation file per resource
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def getMatrix(uri=None, modality=None):
                 # replace placeholder
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
                 # read file and return matrix
                 return self.parser.read(rpath)
 
@@ -212,12 +208,12 @@ class OutputFileHandle(object):
 
     def __call__(self, path):
 
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def getFileHandle(uri=None):
 
                 # replace placeholder
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
 
                 # check if we are about to overwrite a file
                 if os.path.isfile(rpath):
@@ -247,7 +243,7 @@ class OutputWriteAnnotation(object):
 
     def __call__(self, path):
 
-        if pyannote.cli.URI_PLACEHOLDER in path:
+        if pyannote.cli.uris.contains_uri(path):
 
             def writeAnnotation(annotation):
 
@@ -255,7 +251,7 @@ class OutputWriteAnnotation(object):
                 uri = annotation.uri
                 if not uri:
                     raise IOError('ERROR: no URI available to replace placeholder in path to output file.')
-                rpath = path.replace(pyannote.cli.URI_PLACEHOLDER, uri)
+                rpath = pyannote.cli.uris.replace_uri(path, uri)
 
                 # check if we are about to overwrite a file
                 if os.path.isfile(rpath):
@@ -286,4 +282,3 @@ class OutputWriteAnnotation(object):
                     parser.write(annotation, f=f)
 
         return writeAnnotation
-
