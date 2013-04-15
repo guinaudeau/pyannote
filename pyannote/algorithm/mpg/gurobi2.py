@@ -316,6 +316,8 @@ class DupuyConstraintMixin(object):
         for C in items:
             for I in items:
                 sCI = get_similarity(C, I, similarity)
+                if np.isnan(sCI):
+                    continue
                 constr = (1-sCI) * self.x[C, I] <= (1-delta)
                 self.model.addConstr(constr)
 
