@@ -125,8 +125,9 @@ class ILPClusteringMixin(object):
         """
 
         # initial solution
-        for (I, J), variable in init.iteritems():
-            self.x[I, J].start = variable
+        if init:
+            for (I, J), variable in init.iteritems():
+                self.x[I, J].start = variable
 
         # Gurobi behavior
         if method:
