@@ -109,7 +109,7 @@ except IOError as e:
     sys.exit(-1)
 
 # obtain list of resources
-uris = pyannote.cli.URIHandler().uris()
+uris = pyannote.cli.get_uris()
 
 # Finkel or Dupuy?
 if args.objective == 1:
@@ -130,7 +130,7 @@ def get_similarity(I, J, g):
     else:
         return np.nan
 
-debug = len(verbose) > 2
+debug = len(args.verbose) > 2
 
 # =============================================================================
 # PROCESSING ONE RESOURCE AT A TIME
