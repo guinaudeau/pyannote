@@ -31,7 +31,10 @@ from pyannote.algorithm.mpg.node import IdentityNode, TrackNode
 from pyannote.algorithm.mpg.graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
 
-from pyannote.algorithm.mpg.gurobi2 import ILPClusteringMixin, FinkelConstraintMixin, INTRAinterObjectiveMixin
+from pyannote.algorithm.mpg.gurobi2 import ILPClusteringMixin, \
+    FinkelConstraintMixin, INTRAinterObjectiveMixin, \
+    DupuyConstraintMixin, DupuyObjectiveMixin
+
 
 # =============================================================================
 # COMMAND LINE INTERFACE
@@ -53,14 +56,19 @@ argParser.add_argument('--dump', metavar='model.%02d.mps', help=description,
 description = 'densify graph before optimization.'
 argParser.add_argument('--densify', action='store_true', help=description)
 
+description = 'select clustering model: Finkel (1, default), Dupuy (2). '
+argParser.add_argument('--model', type=int, default=1, help=description)
+
+argFinkel = argParser.add_argument_group('Finkel model parameters')
+
 description = 'set value of alpha (default is 0.5).'
-argParser.add_argument('--alpha', type=float, default=0.5, help=description)
+argFinkel.add_argument('--alpha', type=float, default=0.5, help=description)
 
 description = 'apply connected components pruning before optimization'
-argParser.add_argument('--pruning', action='store_true', help=description)
+argFinkel.add_argument('--pruning', action='store_true', help=description)
 
-description = 'select objective function. Not supported yet.'
-argParser.add_argument('--objective', type=int, default=1, help=description)
+# description = 'select objective function. Not supported yet.'
+# argParser.add_argument('--objective', type=int, default=1, help=description)
 
 # 1 : Maximize ∑ α.xij.pij + (1-α).(1-xij).(1-pij)
 # 2 : Maximize ∑ α.wij.xij.pij + (1-α).wij.(1-xij).(1-pij)
@@ -71,6 +79,11 @@ argParser.add_argument('--objective', type=int, default=1, help=description)
 description = 'set duration-weighting strategy. Not supported yet.'
 argParser.add_argument('--weight', choices=('none', 'min', 'max', 'avg'),
                        default='none', help=description)
+
+argDupuy = argParser.add_argument_group('Dupuy model parameters')
+
+description = 'set value of delta (default is 0.5).'
+argDupuy.add_argument('--delta', type=float, default=0.5, help=description)
 
 argGurobi = argParser.add_argument_group('Gurobi parameters')
 
@@ -112,16 +125,18 @@ except IOError as e:
 uris = pyannote.cli.get_uris()
 
 # Finkel or Dupuy?
-if args.objective == 1:
+if args.model == 1:
     constraintMixin = FinkelConstraintMixin
     objectiveMixin = INTRAinterObjectiveMixin
+    kwargs = {'alpha': args.alpha}
+    pruning_threshold = (1.-args.alpha) if args.pruning else 0.
+elif args.model == 2:
+    constraintMixin = DupuyConstraintMixin
+    objectiveMixin = DupuyObjectiveMixin
+    kwargs = {'delta': args.delta}
+    pruning_threshold = 0.
 else:
-    constraintMixin = FinkelConstraintMixin
-    objectiveMixin = INTRAinterObjectiveMixin
-
-
-class MyILP(ILPClusteringMixin, constraintMixin, objectiveMixin):
-    pass
+    raise NotImplementedError('')
 
 
 def get_similarity(I, J, g):
@@ -131,6 +146,13 @@ def get_similarity(I, J, g):
         return np.nan
 
 debug = len(args.verbose) > 2
+
+
+class MyILP(ILPClusteringMixin, constraintMixin, objectiveMixin):
+    def __init__(self, items, similarity):
+        return super(MyILP, self).__init__(items, similarity,
+                                           get_similarity=get_similarity,
+                                           debug=debug, **kwargs)
 
 # =============================================================================
 # PROCESSING ONE RESOURCE AT A TIME
@@ -150,12 +172,10 @@ for u, uri in enumerate(uris):
         G = densify(G, copy=False)
 
     # process each connected components subgraph separately
-    threshold = (1.-args.alpha) if args.pruning else 0.
-    for i, g in enumerate(G.subgraphs_iter(threshold=threshold)):
+    for i, g in enumerate(G.subgraphs_iter(threshold=pruning_threshold)):
 
         # initialize ILP problem
-        problem = MyILP(g.nodes(), g, get_similarity=get_similarity,
-                        alpha=args.alpha, debug=debug)
+        problem = MyILP(g.nodes(), g)
 
         # dump ILP problem to file
         if hasattr(args, 'dump'):
