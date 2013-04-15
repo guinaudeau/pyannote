@@ -29,6 +29,7 @@ except Exception, e:
     import sys
     sys.stderr.write('Cannot initialize Gurobi.\n')
 
+import sys
 import numpy as np
 import networkx as nx
 
@@ -123,6 +124,10 @@ class ILPClusteringMixin(object):
 
         """
 
+        # initial solution
+        for (I, J), variable in init.iteritems():
+            self.x[I, J].start = variable
+
         # Gurobi behavior
         if method:
             self.model.setParam(grb.GRB.Param.Method, method)
@@ -141,8 +146,6 @@ class ILPClusteringMixin(object):
             self.model.setParam(grb.GRB.Param.Threads, threads)
 
         self.model.setParam(grb.GRB.Param.OutputFlag, verbose)
-
-        # TODO: initial solution
 
         # Gurobi powaaaaa!
         self.model.optimize()
@@ -173,6 +176,11 @@ class ILPClusteringMixin(object):
             Where to dump Gurobi model
 
         """
+
+        # model (lazy) update
+        self.model.update()
+
+        # dump to file
         self.model.write(path)
 
 
@@ -202,7 +210,8 @@ class FinkelConstraintMixin(object):
             for J in items[i+1:]:
                 s = get_similarity(I, J, similarity)
                 if s in [0, 1]:
-                    self.model.addConstr(self.x[I, J] == s)
+                    constr = self.x[I, J] == s
+                    self.model.addConstr(constr)
 
         # symmetry constraints
         # O(N^2) complexity
@@ -230,6 +239,9 @@ class FinkelConstraintMixin(object):
                     constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
                     self.model.addConstr(constr)
 
+        # model (lazy) update
+        self.model.update()
+
         return self
 
 
@@ -256,13 +268,16 @@ class INTRAinterObjectiveMixin(object):
                                  if not np.isnan(get_similarity(I, J, similarity))])
 
         # inter-cluster similarity
-        interSim = grb.quicksum([get_similarity(I, J, similarity)*(1-self.x[I, J])
+        interSim = grb.quicksum([(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
                                  for (I, J) in self.x
                                  if not np.isnan(get_similarity(I, J, similarity))])
 
         # jointly maximize intra-cluster similarity & minimize inter-cluster one
         self.model.setObjective(alpha*intraSim + (1-alpha)*interSim,
                                 grb.GRB.MAXIMIZE)
+
+        # model (lazy) update
+        self.model.update()
 
         return self
 
@@ -310,6 +325,9 @@ class DupuyConstraintMixin(object):
                 constr = self.x[C, C] >= self.x[C, I]
                 self.model.addConstr(constr)
 
+        # model (lazy) update
+        self.model.update()
+
         return self
 
 
@@ -340,5 +358,8 @@ class DupuyObjectiveMixin(object):
 
         # minimize both number of centroids and dispersion
         self.model.setObjective(centroids - 1./N * cohesion, grb.GRB.MINIMIZE)
+
+        # model (lazy) update
+        self.model.update()
 
         return self
