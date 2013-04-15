@@ -77,7 +77,7 @@ argFinkel.add_argument('--pruning', action='store_true', help=description)
 # 5 : Minimize ∑ xii + ∑ ∑ (1-pij).xij')
 
 description = 'set duration-weighting strategy. Not supported yet.'
-argParser.add_argument('--weight', choices=('none', 'min', 'max', 'avg'),
+argFinkel.add_argument('--weight', choices=('none', 'min', 'max', 'avg'),
                        default='none', help=description)
 
 argDupuy = argParser.add_argument_group('Dupuy model parameters')
