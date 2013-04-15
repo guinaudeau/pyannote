@@ -134,7 +134,7 @@ class AuthenticationCalibration(object):
 
         return self
 
-    def apply(self, scores, equal_priors=False):
+    def apply(self, scores, prior=None):
         """
         Apply score calibration
 
@@ -142,9 +142,9 @@ class AuthenticationCalibration(object):
         ----------
         scores : `Scores`
             Uncalibrated scores.
-        equal_priors : bool, optional
-            When True, use p(x|¬H) = p(x|H) = 0.5.
-            Default (False) uses estimated priors.
+        prior : float, optional
+            When provide, set manual prior p(x|H) to `prior`
+            Uses estimated prior by default.
 
         Returns
         -------
@@ -153,9 +153,9 @@ class AuthenticationCalibration(object):
 
         """
 
-        (a, b), prior = self.mapping
-        if equal_priors:
-            prior = 0.5
+        (a, b), estimated_prior = self.mapping
+        if not prior:
+            prior = estimated_prior
 
         def s2p(x):
             # p(x|¬H)/p(x|H)
@@ -211,10 +211,10 @@ if __name__ == "__main__":
         uris = pyannote.cli.get_uris()
         with args.calibration() as f:
             calibration = pickle.load(f)
+        prior = args.prior if hasattr(args, 'prior') else None
         for uri in uris:
             scores = args.scores(uri)
-            args.calibrated(calibration.apply(scores,
-                                              equal_priors=args.equal_priors))
+            args.calibrated(calibration.apply(scores, prior=prior))
 
     apply_parser = subparsers.add_parser('apply', help='Apply calibration',
                                          parents=[pyannote.cli.parentArgumentParser()])
@@ -232,9 +232,9 @@ if __name__ == "__main__":
     apply_parser.add_argument('calibrated', help=description,
                               type=pyannote.cli.OutputWriteAnnotation())
 
-    description = 'use equal priors (default is to use estimated priors).'
-    apply_parser.add_argument('--equal-priors', help=description,
-                              action='store_true')
+    description = 'set prior manually (default is to use estimated priors).'
+    apply_parser.add_argument('--prior', help=description, type=float,
+                              default=pyannote.cli.SUPPRESS)
 
     # =====================
     # ARGUMENT parsing
