@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -28,7 +28,7 @@ def remove_nbest_identity(G, nbest):
     inodes = [node for node in G if isinstance(node, IdentityNode)]
     remove = []
     for n, inode in enumerate(inodes):
-        ranks = set([G[inode][node].get(RANK, np.inf) 
+        ranks = set([G[inode][node].get(RANK, np.inf)
                      for node in G.neighbors_iter(inode)])
         if all([r>nbest for r in ranks]):
             remove.append(inode)
@@ -38,12 +38,12 @@ def remove_nbest_identity(G, nbest):
 
 def meta_mpg(g):
     """Meta Multimodal Probability Graph
-    
+
     Parameters
     ----------
     g : nx.Graph
         Multimodal probability graph
-    
+
     Returns
     -------
     G : nx.Graph
@@ -52,7 +52,7 @@ def meta_mpg(g):
     groups : list of lists
         Groups of nodes
     """
-    
+
     # Group of hard-linked nodes
     # (ie. nodes connected with probability p=1)
     hard = nx.Graph()
@@ -60,56 +60,56 @@ def meta_mpg(g):
     hard.add_edges_from([(e,f) for e,f,d in g.edges_iter(data=True)
                                if d[PROBABILITY] == 1.])
     groups = nx.connected_components(hard)
-    
+
     # meta graph with one node per group
     G = nx.blockmodel(g, groups, multigraph=True)
-    
+
     meta = nx.Graph()
     for n in range(len(groups)):
         meta.add_node(n)
         for m in range(n+1, len(groups)):
-            
+
             # do not do anything in case there is no edge
             # between those two meta-nodes
             if not G.has_edge(n, m):
                 continue
-            
+
             # obtain probabilities of all edges between n & m
             probabilities = [data[PROBABILITY] for data in G[n][m].values()]
-            
+
             # raise an error in case of conflict (p=0 vs. p>0)
             if len(set(probabilities)) > 1 and 0 in probabilities:
                 raise ValueError('conflict in meta-edges between %r and %r:' \
-                                 'probabilities = %r' % (groups[n], 
-                                                         groups[m], 
+                                 'probabilities = %r' % (groups[n],
+                                                         groups[m],
                                                          probabilities))
-            
+
             meta.add_edge(n, m, {PROBABILITY: np.mean(probabilities)})
-    
+
     return meta, groups
 
 
 def log_mpg(g):
     """Make log-probability graph from probability graph
-    
+
     Parameters
     ----------
     g: nx.Graph
         Probability graph
-    
+
     Returns
     -------
     log : nx.Graph
         Input graph where each edge probability P is replaced by -log P
         except when P = 0 (otherwise -log P = +oo and subsequent shortest
         path algorithm fails quietly)
-    
+
     """
-    
+
     # new graph containing nodes from input graph
     log = nx.Graph()
     log.add_nodes_from(g.nodes_iter(data=True))
-    
+
     # convert P to -log P for all input edges
     # do not add edge when P = 0
     for e,f,d in g.edges_iter(data=True):
@@ -122,23 +122,23 @@ def log_mpg(g):
 
 
 def complete_mpg(g):
-    
+
     G = propagate_constraints(g)
-    
+
     log = log_mpg(G)
     complete = nx.Graph()
-    
+
     # all track nodes of interest
     # ie speaker/head node not subtrack
     tnodes = [(n,d) for n,d in G.nodes_iter(data=True) \
                     if isinstance(n, TrackNode) \
                     and n.modality in ['speaker', 'head'] \
                     and not d.get(SUBTRACK, False)]
-    
+
     # all identity nodes
     inodes = [(n,d) for n,d in G.nodes_iter(data=True) \
                     if isinstance(n, IdentityNode)]
-    
+
     # tnode/tnode shortest path (with forbidden identity nodes)
     _log = nx.Graph(log)
     _log.remove_nodes_from(zip(*inodes)[0])
@@ -151,7 +151,7 @@ def complete_mpg(g):
             else:
                 data = {PROBABILITY: np.exp(-_shortest[n][N])}
             complete.add_edge(n, N, **data)
-    
+
     # inode/tnodes shortest path (with forbidden other identity nodes)
     for i, (n, d) in enumerate(inodes):
         complete.add_node(n, **d)
@@ -164,12 +164,12 @@ def complete_mpg(g):
             else:
                 data = {PROBABILITY: np.exp(-_shortest[N])}
             complete.add_edge(n, N, **data)
-    
+
     # inode/inode constraint
     for i, (n, d) in enumerate(inodes):
         for m,_ in inodes[i+1:]:
             G.add_edge(n, m, **{PROBABILITY: 0})
-    
+
     return complete
 
 
@@ -186,7 +186,7 @@ def densify(g, copy=True):
         When `True`, returns a densified copy of `g`.
         When `False`, densify `g` itself (in place).
     """
-    
+
     # create dual directed graph
     # * only outgoing edges for Identity nodes
     # * weight = -log probability
@@ -201,11 +201,11 @@ def densify(g, copy=True):
             dual.add_edge(f, e, weight=weight)
             if not isinstance(f, IdentityNode):
                 dual.add_edge(e, f, weight=weight)
-    
+
     # get list of tracks and identities
     tnodes = g.tnodes()
     inodes = g.inodes()
-    
+
     # duplicate g if requested
     if copy:
         g = g.copy()
@@ -215,18 +215,18 @@ def densify(g, copy=True):
         weights = {}
         for tnode in tnodes:
             if not g.has_edge(inode, tnode):
-                
+
                 # compute maximum probability paths from current identity
                 # only if necessary (iff it was not already computed
                 # and there is a missing edge)
                 if not weights:
                     weights = nx.shortest_path_length(dual, source=inode, weight='weight')
-                
+
                 # if there exists at least one path from identity to track
                 # use the maximum probability path
                 if tnode in weights:
-                    g.update_edge(inode, tnode, 
+                    g.update_edge(inode, tnode,
                                   probability=np.exp(-weights[tnode]))
-    
+
     return g
-                
+
