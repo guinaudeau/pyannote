@@ -208,11 +208,20 @@ if __name__ == "__main__":
     # ==============
 
     def applyCalibration(args):
+
         uris = pyannote.cli.get_uris()
+
         with args.calibration() as f:
             calibration = pickle.load(f)
+
         prior = args.prior if hasattr(args, 'prior') else None
-        for uri in uris:
+
+        for u, uri in enumerate(uris):
+
+            if args.verbose:
+                sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+                sys.stdout.flush()
+
             scores = args.scores(uri)
             args.calibrated(calibration.apply(scores, prior=prior))
 
