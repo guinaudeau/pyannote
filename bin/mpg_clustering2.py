@@ -82,27 +82,38 @@ argFinkel.add_argument('--weight', choices=('none', 'min', 'max', 'avg'),
 
 argDupuy = argParser.add_argument_group('Dupuy model parameters')
 
-description = 'set value of delta (default is 0.5).'
-argDupuy.add_argument('--delta', type=float, default=0.5, help=description)
+DFLT_ARG_DELTA = 0.5
+description = 'set value of delta (default is %g).' % DFLT_ARG_DELTA
+argDupuy.add_argument('--delta', type=float, default=DFLT_ARG_DELTA,
+                      help=description)
 
 argGurobi = argParser.add_argument_group('Gurobi parameters')
 
+DFLT_ARG_METHOD = 3
 description = ('set optimization method: primal (0), dual (1), barrier (2), '
-               'concurrent (3, default) or determinisic (4).')
-argGurobi.add_argument('--method', type=int, default=3, help=description)
+               'concurrent (3) or determinisic (4). '
+               'Default is %g.') % DFLT_ARG_METHOD
+argGurobi.add_argument('--method', type=int, default=DFLT_ARG_METHOD,
+                       help=description)
 
+DFLT_ARG_MIP_FOCUS = 0
 description = ('set high-level strategy: find feasible solutions (1), '
-               'prove optimality (2), focus on the bound (3). Default (0) is '
-               'to balance between 1 and 2.')
-argGurobi.add_argument('--mip-focus', type=int, default=0, help=description)
+               'prove optimality (2), focus on the bound (3) and (0) to '
+               'balance between 1 and 2. Default is %g.') % DFLT_ARG_MIP_FOCUS
+argGurobi.add_argument('--mip-focus', type=int, default=DFLT_ARG_MIP_FOCUS,
+                       help=description)
 
-description = ('set the amount of time spent in MIP heuristics. Default is 5%%.')
-argGurobi.add_argument('--heuristics', type=float, default=0.05, help=description)
+DFLT_ARG_HEURISTICS = 0.05
+description = ('set the amount of time spent in MIP heuristics. '
+               'Default is %g.') % DFLT_ARG_HEURISTICS
+argGurobi.add_argument('--heuristics', type=float, default=DFLT_ARG_HEURISTICS,
+                       help=description)
 
+DFLT_ARG_MIP_GAP = 1e-4
 description = ('stop optimization when the relative gap between the lower and '
                'upper objective bound is less than X times the upper bound. '
-               'Default is 1e-4.')
-argGurobi.add_argument('--mip-gap', type=float, default=1e-4,
+               'Default is %g.') % DFLT_ARG_MIP_GAP
+argGurobi.add_argument('--mip-gap', type=float, default=DFLT_ARG_MIP_GAP,
                        metavar='X', help=description)
 
 description = 'stop optimization after N hours.'
