@@ -107,6 +107,10 @@ uris = pyannote.cli.get_uris()
 # Process every resource, one after the other
 for u, uri in enumerate(uris):
 
+    if args.verbose:
+        sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
+        sys.stdout.flush()
+
     if args.modalities:
 
         for modality in args.modalities:
