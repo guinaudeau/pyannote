@@ -32,7 +32,8 @@ from pyannote.metric.diarization import DiarizationErrorRate, \
     DiarizationHomogeneity
 from pyannote.metric.detection import DetectionErrorRate
 from pyannote.metric.identification import IdentificationErrorRate, \
-    UnknownIDMatcher
+    IdentificationPrecision, \
+    IdentificationRecall
 
 from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
 from pyannote.base.matrix import LabelMatrix
@@ -57,12 +58,7 @@ def run(args):
         # get metric name
         metricName = Metric.metric_name()
         # instantiate one metric per hypothesis
-        if Metric == IdentificationErrorRate:
-            metrics[metricName] = {h: Metric(matcher=UnknownIDMatcher())
-                                   for h, _ in enumerate(args.hypothesis)}
-        else:
-            metrics[metricName] = {h: Metric() for h, (_, _) in enumerate(args.hypothesis)}
-
+        metrics[metricName] = {h: Metric() for h, (_, _) in enumerate(args.hypothesis)}
         # add metric name
         columns.append(metricName)
         columns.extend(['%s | %s' % (metricName, componentName)
@@ -329,6 +325,16 @@ group = runparser.add_argument_group('Identification')
 description = 'compute identification error rate'
 group.add_argument('--identification', action='append_const', dest='requested',
                    const=IdentificationErrorRate, default=[],
+                   help=description)
+
+description = 'compute identification precision'
+group.add_argument('--precision', action='append_const', dest='requested',
+                   const=IdentificationPrecision, default=[],
+                   help=description)
+
+description = 'compute identification recall'
+group.add_argument('--recall', action='append_const', dest='requested',
+                   const=IdentificationRecall, default=[],
                    help=description)
 
 viewparser = subparsers.add_parser('view',
