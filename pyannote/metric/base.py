@@ -24,6 +24,7 @@
 import scipy.stats
 import numpy as np
 
+
 class BaseMetric(object):
     """
     :class:`BaseMetric` is the base class for most PyAnnote evaluation metrics.
@@ -46,7 +47,7 @@ class BaseMetric(object):
     def metric_components(cls):
         raise NotImplementedError("Missing class method 'metric_components'")
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(BaseMetric, self).__init__()
         self.__name = self.__class__.metric_name()
         self.__values = set(self.__class__.metric_components())
@@ -54,12 +55,7 @@ class BaseMetric(object):
 
     def __get_name(self):
         return self.__class__.metric_name()
-    # def __set_name(self, name):
-    #     self.__name = name
-    name = property(fget=__get_name, \
-                     # fset=__set_name, \
-                     # fdel=None, \
-                     doc="Metric name.")
+    name = property(fget=__get_name, doc="Metric name.")
 
     def __accumulate(self, components):
         """Accumulate metric components
@@ -135,8 +131,8 @@ class BaseMetric(object):
         return self.__compute(detail, accumulate=True, detailed=detailed)
 
     def __str__(self):
-        detail = self.__compute(self.__details, \
-                                accumulate=False, \
+        detail = self.__compute(self.__details,
+                                accumulate=False,
                                 detailed=True)
         return self._pretty(detail)
 
