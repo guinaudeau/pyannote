@@ -488,7 +488,7 @@ class Annotation(AnnotationMixin, object):
         else:
             return []
 
-    def get_labels(self, segment, unknown=True):
+    def get_labels(self, segment, unknown=True, unique=True):
         """Local set of labels
 
         Parameters
@@ -498,7 +498,9 @@ class Annotation(AnnotationMixin, object):
         unknown : bool, optional
             When False, do not return Unknown instances
             When True, return any label (even Unknown instances)
-
+        unique : bool, optional
+            When False, return the list of (possibly repeated) labels.
+            When True (default), return the set of labels
         Returns
         -------
         labels : set
@@ -519,13 +521,16 @@ class Annotation(AnnotationMixin, object):
         """
 
         try:
-            labels = self._df.ix[segment][LABEL]
-            if unknown:
-                return set(labels)
-            else:
-                return set([l for l in labels if not isinstance(l, Unknown)])
+            labels = list(self._df.ix[segment][LABEL])
         except Exception, e:
-            return set([])
+            labels = list()
+
+        if not unknown:
+            labels = [l for l in labels if not isinstance(l, Unknown)]
+        if unique:
+            labels = set(labels)
+
+        return labels
 
     def subset(self, labels, invert=False):
         """Annotation subset
