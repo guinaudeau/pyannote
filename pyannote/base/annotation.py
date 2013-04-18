@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -27,6 +27,7 @@ import numpy as np
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
 from pandas import MultiIndex, DataFrame, pivot_table
 from pyannote.util import deprecated
+
 
 class Unknown(object):
     nextID = 0
@@ -59,6 +60,7 @@ class Unknown(object):
             return self.ID == other.ID
         else:
             return False
+
 
 class AnnotationMixin(object):
 
@@ -115,17 +117,17 @@ class AnnotationMixin(object):
             True if track is hashable. False otherwise.
         """
         return isinstance(label, Hashable) and \
-               not isinstance(label, (Segment, Timeline))
+            not isinstance(label, (Segment, Timeline))
 
     def __get_timeline(self):
-        segments = set([s for s,_ in self._df.index])
+        segments = set([s for s, _ in self._df.index])
         return Timeline(segments, uri=self.uri)
     timeline = property(fget=__get_timeline)
     """Timeline of annotated segments"""
 
     def __len__(self):
         """Number of annotated segments"""
-        return len(set([s for s,_ in self._df.index]))
+        return len(set([s for s, _ in self._df.index]))
 
     def __nonzero__(self):
         """False if annotation is empty"""
@@ -151,11 +153,11 @@ class AnnotationMixin(object):
 
     def __iter__(self):
         """Iterate over sorted segments"""
-        return iter(sorted(set([s for s,_ in self._df.index])))
+        return iter(sorted(set([s for s, _ in self._df.index])))
 
     def __reversed__(self):
         """Reverse iterate over sorted segments"""
-        segments = sorted(set([s for s,_ in self._df.index]))
+        segments = sorted(set([s for s, _ in self._df.index]))
         return reversed(segment)
 
     def itersegments(self):
@@ -216,7 +218,7 @@ class AnnotationMixin(object):
                 included = timeline.crop(coverage, mode=mode)
 
                 # boolean array: True if row must be kept, False otherwise
-                keep = [(s in included) for s,_ in self._df.index]
+                keep = [(s in included) for s, _ in self._df.index]
 
                 # crop-crop
                 A = self.__class__(uri=self.uri, modality=self.modality)
@@ -251,7 +253,6 @@ class AnnotationMixin(object):
 
         else:
             raise TypeError('')
-
 
     def tracks(self, segment):
         """Set of tracks for query segment
@@ -321,8 +322,8 @@ class AnnotationMixin(object):
         """
         """
         A = self.copy()
-        reindex = MultiIndex.from_tuples([(s,n)
-                                          for n,(s,_) in enumerate(A._df.index)])
+        reindex = MultiIndex.from_tuples([(s, n)
+                                          for n, (s, _) in enumerate(A._df.index)])
         A._df.index = reindex
         return A
 
@@ -393,9 +394,7 @@ class Annotation(AnnotationMixin, object):
     """
 
     @classmethod
-    def from_df(cls, df, uri=None,
-                         modality=None,
-                         aggfunc=np.mean):
+    def from_df(cls, df, uri=None, modality=None, aggfunc=np.mean):
         """
 
         Parameters
@@ -418,16 +417,14 @@ class Annotation(AnnotationMixin, object):
         A._df = df.set_index([SEGMENT, TRACK])[[LABEL]]
         return A
 
-
     def __init__(self, uri=None, modality=None):
         super(Annotation, self).__init__()
-        index = MultiIndex(levels=[[],[]],
-                           labels=[[],[]],
+        index = MultiIndex(levels=[[], []],
+                           labels=[[], []],
                            names=[SEGMENT, TRACK])
         self._df = DataFrame(index=index)
         self.modality = modality
         self.uri = uri
-
 
     # del annotation[segment]
     # del annotation[segment, :]
@@ -527,6 +524,7 @@ class Annotation(AnnotationMixin, object):
 
         if not unknown:
             labels = [l for l in labels if not isinstance(l, Unknown)]
+
         if unique:
             labels = set(labels)
 
@@ -578,7 +576,7 @@ class Annotation(AnnotationMixin, object):
 
         """
         a = self._df.ix[self._df[LABEL] == label]
-        segments = set([s for s,_ in a.index])
+        segments = set([s for s, _ in a.index])
         return Timeline(segments, uri=self.uri)
 
     def label_coverage(self, label):
@@ -671,7 +669,6 @@ class Annotation(AnnotationMixin, object):
             raise TypeError('direct tagging (>>) only works with timelines.')
         return DirectTagger()(self, timeline)
 
-
     def translate(self, translation):
         """Translate labels
 
@@ -687,8 +684,7 @@ class Annotation(AnnotationMixin, object):
             New annotation with translated labels.
         """
 
-
-        if not (hasattr(translation, '__call__') or \
+        if not (hasattr(translation, '__call__') or
                 isinstance(translation, (dict, Mapping))):
             raise TypeError("unsupported operand types(s) for '\%': "
                             "Annotation and %s" % type(translation).__name__)
@@ -770,8 +766,8 @@ class Annotation(AnnotationMixin, object):
 
         """
         annotation = self.empty()
-        for s,t,_ in self.iterlabels():
-            annotation[s,t] = Unknown()
+        for s, t, _ in self.iterlabels():
+            annotation[s, t] = Unknown()
         return annotation
 
     def iterlabels(self):
@@ -813,18 +809,10 @@ class Annotation(AnnotationMixin, object):
 
         return A
 
-    def __get_label(self, label):
-        """Sub-annotation extraction for one label."""
-
-        A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.ix[self._df[LABEL] == label]
-        return A
-
-
     def to_json(self):
-        annotation = [{SEGMENT:s.to_json(), TRACK:t, LABEL:l}
-                      for s,t,l in self.iterlabels()]
-        return {URI:self.uri, MODALITY:self.modality, 'annotation': annotation}
+        annotation = [{SEGMENT: s.to_json(), TRACK: t, LABEL: l}
+                      for s, t, l in self.iterlabels()]
+        return {URI: self.uri, MODALITY: self.modality, 'annotation': annotation}
 
 
 class Scores(AnnotationMixin, object):
