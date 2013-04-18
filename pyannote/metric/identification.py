@@ -69,33 +69,37 @@ class IDMatcher(object):
         n1 = len(ids1)
         n2 = len(ids2)
 
-        n = max(n1, n2)
-        match = np.zeros((n, n), dtype=bool)
-
-        for i1, id1 in enumerate(ids1):
-            for i2, id2 in enumerate(ids2):
-                match[i1, i2] = self.oneToOneMatch(id1, id2)
-
-        mapping = self.munkres.compute(1-match)
         nCorrect = nConfusion = nMiss = nFalseAlarm = 0
         correct = list()
         confusion = list()
         miss = list()
         falseAlarm = list()
 
-        for i1, i2 in mapping:
-            if i1 >= n1:
-                nFalseAlarm += 1
-                falseAlarm.append(ids2[i2])
-            elif i2 >= n2:
-                nMiss += 1
-                miss.append(ids1[i1])
-            elif match[i1, i2]:
-                nCorrect += 1
-                correct.append((ids1[i1], ids2[i2]))
-            else:
-                nConfusion += 1
-                confusion.append((ids1[i1], ids2[i2]))
+        n = max(n1, n2)
+
+        if n > 0:
+
+            match = np.zeros((n, n), dtype=bool)
+
+            for i1, id1 in enumerate(ids1):
+                for i2, id2 in enumerate(ids2):
+                    match[i1, i2] = self.oneToOneMatch(id1, id2)
+
+            mapping = self.munkres.compute(1-match)
+
+            for i1, i2 in mapping:
+                if i1 >= n1:
+                    nFalseAlarm += 1
+                    falseAlarm.append(ids2[i2])
+                elif i2 >= n2:
+                    nMiss += 1
+                    miss.append(ids1[i1])
+                elif match[i1, i2]:
+                    nCorrect += 1
+                    correct.append((ids1[i1], ids2[i2]))
+                else:
+                    nConfusion += 1
+                    confusion.append((ids1[i1], ids2[i2]))
 
         return ({IER_CORRECT: nCorrect,
                 IER_CONFUSION: nConfusion,
@@ -155,7 +159,7 @@ class IdentificationErrorRate(BaseMetric):
         return [IER_CONFUSION, IER_FALSE_ALARM, IER_MISS,
                 IER_TOTAL, IER_CORRECT]
 
-    def __init__(self, matcher=None, unknown=True):
+    def __init__(self, matcher=None, unknown=True, **kwargs):
 
         super(IdentificationErrorRate, self).__init__()
 
