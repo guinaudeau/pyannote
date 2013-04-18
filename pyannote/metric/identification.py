@@ -22,6 +22,18 @@ from pyannote.base.annotation import Unknown
 from pyannote.metric.base import Precision, Recall, \
     PRECISION_RETRIEVED, PRECISION_RELEVANT_RETRIEVED, \
     RECALL_RELEVANT, RECALL_RELEVANT_RETRIEVED
+from pyannote.util import deprecated
+from munkres import Munkres
+import numpy as np
+
+from base import BaseMetric
+
+IER_TOTAL = 'total'
+IER_CORRECT = 'correct'
+IER_CONFUSION = 'confusion'
+IER_FALSE_ALARM = 'false alarm'
+IER_MISS = 'miss'
+IER_NAME = 'identification error rate'
 
 
 class IDMatcher(object):
@@ -29,53 +41,71 @@ class IDMatcher(object):
     ID matcher base class.
 
     All ID matcher classes must inherit from this class and implement
-    .__call__() -- ie return True if two IDs match and False
+    .oneToOneMatch() -- ie return True if two IDs match and False
     otherwise.
     """
 
     def __init__(self):
         super(IDMatcher, self).__init__()
+        self.munkres = Munkres()
 
+    def oneToOneMatch(self, id1, id2):
+        # Two IDs match if they are equal to each other
+        return id1 == id2
+
+    @deprecated(oneToOneMatch)
     def __call__(self, id1, id2):
         raise NotImplementedError(
             'IDMatcher sub-classes must implement .__call__() method.')
 
-    def ncorrect(self, ids1, ids2):
-
-        # duplicate because we are going to modify it.
-        ids2 = set(ids2)
-        # will contain number of matches
-        count = 0
-
-        # look for a match for each ID in ids1
-        for id1 in ids1:
-            # get list of matching IDs in ids2
-            matched = set([id2 for id2 in ids2 if self(id1, id2)])
-            # if we found at least one match
-            if matched:
-                # increment number of matches
-                count += 1
-                # remove one match for ids2
-                ids2.remove(matched.pop())
-
-        return count
+    def manyToManyMatch(self, ids1, ids2):
+        """
 
 
-class DefaultIDMatcher(IDMatcher):
-    """
-    Default ID matcher: two IDs match if they are equal.
-    """
+        """
+        ids1 = list(ids1)
+        ids2 = list(ids2)
 
-    def __init__(self):
-        super(DefaultIDMatcher, self).__init__()
+        n1 = len(ids1)
+        n2 = len(ids2)
 
-    def __call__(self, id1, id2):
-        # Two IDs match if they are equal to each other
-        return id1 == id2
+        n = max(n1, n2)
+        match = np.zeros((n, n), dtype=bool)
 
-    def ncorrect(self, ids1, ids2):
-        # Slightly faster than inherited .ncorrect() method
-        return len(ids1 & ids2)
+        for i1, id1 in enumerate(ids1):
+            for i2, id2 in enumerate(ids2):
+                match[i1, i2] = self.oneToOneMatch(id1, id2)
+
+        mapping = self.munkres.compute(1-match)
+        nCorrect = nConfusion = nMiss = nFalseAlarm = 0
+        correct = list()
+        confusion = list()
+        miss = list()
+        falseAlarm = list()
+
+        for i1, i2 in mapping:
+            if i1 >= n1:
+                nFalseAlarm += 1
+                falseAlarm.append(ids2[i2])
+            elif i2 >= n2:
+                nMiss += 1
+                miss.append(ids1[i1])
+            elif match[i1, i2]:
+                nCorrect += 1
+                correct.append((ids1[i1], ids2[i2]))
+            else:
+                nConfusion += 1
+                confusion.append((ids1[i1], ids2[i2]))
+
+        return ({IER_CORRECT: nCorrect,
+                IER_CONFUSION: nConfusion,
+                IER_MISS: nMiss,
+                IER_FALSE_ALARM: nFalseAlarm,
+                IER_TOTAL: n1},
+                {IER_CORRECT: correct,
+                 IER_CONFUSION: confusion,
+                 IER_MISS: miss,
+                 IER_FALSE_ALARM: falseAlarm})
 
 
 class UnknownIDMatcher(IDMatcher):
@@ -89,44 +119,8 @@ class UnknownIDMatcher(IDMatcher):
     def __init__(self):
         super(UnknownIDMatcher, self).__init__()
 
-    def __call__(self, identifier1, identifier2):
-        return (self.is_anonymous(identifier1) and self.is_anonymous(identifier2)) \
-            or (identifier1 == identifier2 and
-                self.is_named(identifier1) and
-                self.is_named(identifier2))
-
-    def ncorrect(self, identifiers1, identifiers2):
-        # Slightly faster than inherited .ncorrect() method
-        named1 = self.named_from(identifiers1)
-        named2 = self.named_from(identifiers2)
-        anonymous1 = self.anonymous_from(identifiers1)
-        anonymous2 = self.anonymous_from(identifiers2)
-        return len(named1 & named2) + min(len(anonymous1), len(anonymous2))
-
-    def is_anonymous(self, identifier):
-        return (isinstance(identifier, Unknown) or
-                (isinstance(identifier, str) and
-                (identifier[:8] == 'Inconnu_' or identifier[:7] == 'speaker')))
-
-    def anonymous_from(self, identifiers):
-        return set([identifier for identifier in identifiers
-                    if self.is_anonymous(identifier)])
-
-    def is_named(self, identifier):
-        return not self.is_anonymous(identifier)
-
-    def named_from(self, identifiers):
-        return set([identifier for identifier in identifiers
-                    if self.is_named(identifier)])
-
-from base import BaseMetric
-
-IER_TOTAL = 'total'
-IER_CORRECT = 'correct'
-IER_CONFUSION = 'confusion'
-IER_FALSE_ALARM = 'false alarm'
-IER_MISS = 'miss'
-IER_NAME = 'identification error rate'
+    def oneToOneMatch(self, id1, id2):
+        return (isinstance(id1, Unknown) and isinstance(id2, Unknown)) or id1 == id2
 
 
 class IdentificationErrorRate(BaseMetric):
@@ -141,6 +135,14 @@ class IdentificationErrorRate(BaseMetric):
         - ``miss`` is
         - ``total`` is the total duration of all tracks
 
+    Parameters
+    ----------
+    matcher : `IDMatcher`, optional
+        Defaults to `UnknownIDMatcher` instance
+    unknown : bool, optional
+        Set `unknown` to True (default) to take `Unknown` instances into account.
+        Set it to False to get rid of them before evaluation.
+
 
     """
 
@@ -153,7 +155,7 @@ class IdentificationErrorRate(BaseMetric):
         return [IER_CONFUSION, IER_FALSE_ALARM, IER_MISS,
                 IER_TOTAL, IER_CORRECT]
 
-    def __init__(self, matcher=None):
+    def __init__(self, matcher=None, unknown=True):
 
         super(IdentificationErrorRate, self).__init__()
 
@@ -161,6 +163,7 @@ class IdentificationErrorRate(BaseMetric):
             self.matcher = matcher
         else:
             self.matcher = UnknownIDMatcher()
+        self.unknown = unknown
 
     def _get_details(self, reference, hypothesis, **kwargs):
 
@@ -182,31 +185,19 @@ class IdentificationErrorRate(BaseMetric):
             # segment duration
             duration = segment.duration
 
-            # set of IDs in reference segment
-            r = R.get_labels(segment)
-            Nr = len(r)
-            detail[IER_TOTAL] += duration * Nr
+            # list of IDs in reference segment
+            r = R.get_labels(segment, unknown=self.unknown, unique=False)
 
-            # set of IDs in hypothesis segment
-            h = H.get_labels(segment)
-            Nh = len(h)
+            # list of IDs in hypothesis segment
+            h = H.get_labels(segment, unknown=self.unknown, unique=False)
 
-            # number of correct matches
-            # N_correct = len(r & h)
-            N_correct = self.matcher.ncorrect(r, h)
-            detail[IER_CORRECT] += duration * N_correct
+            counts, _ = self.matcher.manyToManyMatch(r, h)
 
-            # number of incorrect matches
-            N_error = min(Nr, Nh) - N_correct
-            detail[IER_CONFUSION] += duration * N_error
-
-            # number of misses
-            N_miss = max(0, Nr - Nh)
-            detail[IER_MISS] += duration * N_miss
-
-            # number of false alarms
-            N_fa = max(0, Nh - Nr)
-            detail[IER_FALSE_ALARM] += duration * N_fa
+            detail[IER_TOTAL] += duration * counts[IER_TOTAL]
+            detail[IER_CORRECT] += duration * counts[IER_CORRECT]
+            detail[IER_CONFUSION] += duration * counts[IER_CONFUSION]
+            detail[IER_MISS] += duration * counts[IER_MISS]
+            detail[IER_FALSE_ALARM] += duration * counts[IER_FALSE_ALARM]
 
         return detail
 
@@ -244,11 +235,11 @@ class IdentificationPrecision(Precision):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True to take `Unknown` instances into account.
-        Default behavior (False) is to get rid of them before evaluation.
+        Set `unknown` to True (default) to take `Unknown` instances into account.
+        Set it to False to get rid of them before evaluation.
     """
 
-    def __init__(self, matcher=None, unknown=False, **kwargs):
+    def __init__(self, matcher=None, unknown=True, **kwargs):
         super(IdentificationPrecision, self).__init__()
         if matcher:
             self.matcher = matcher
@@ -276,19 +267,16 @@ class IdentificationPrecision(Precision):
             # segment duration
             duration = segment.duration
 
-            # set of IDs in reference segment
-            r = R.get_labels(segment, unknown=self.unknown)
+            # list of IDs in reference segment
+            r = R.get_labels(segment, unknown=self.unknown, unique=False)
 
-            # set of IDs in hypothesis segment
-            h = H.get_labels(segment, unknown=self.unknown)
-            Nh = len(h)
+            # list of IDs in hypothesis segment
+            h = H.get_labels(segment, unknown=self.unknown, unique=False)
 
-            detail[PRECISION_RETRIEVED] += duration * Nh
+            counts, _ = self.matcher.manyToManyMatch(r, h)
 
-            # number of correct matches
-            # N_correct = len(r & h)
-            N_correct = self.matcher.ncorrect(r, h)
-            detail[PRECISION_RELEVANT_RETRIEVED] += duration * N_correct
+            detail[PRECISION_RETRIEVED] += duration * len(h)
+            detail[PRECISION_RELEVANT_RETRIEVED] += duration * counts[IER_CORRECT]
 
         return detail
 
@@ -302,11 +290,11 @@ class IdentificationRecall(Recall):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True to take `Unknown` instances into account.
-        Default behavior (False) is to get rid of them before evaluation.
+        Set `unknown` to True (default) to take `Unknown` instances into account.
+        Set it to False to get rid of them before evaluation.
     """
 
-    def __init__(self, matcher=None, unknown=False, **kwargs):
+    def __init__(self, matcher=None, unknown=True, **kwargs):
         super(IdentificationRecall, self).__init__()
         if matcher:
             self.matcher = matcher
@@ -334,19 +322,16 @@ class IdentificationRecall(Recall):
             # segment duration
             duration = segment.duration
 
-            # set of IDs in reference segment
-            r = R.get_labels(segment, unknown=self.unknown)
-            Nr = len(r)
+            # list of IDs in reference segment
+            r = R.get_labels(segment, unknown=self.unknown, unique=False)
 
-            # set of IDs in hypothesis segment
-            h = H.get_labels(segment, unknown=self.unknown)
+            # list of IDs in hypothesis segment
+            h = H.get_labels(segment, unknown=self.unknown, unique=False)
 
-            detail[RECALL_RELEVANT] += duration * Nr
+            counts, _ = self.matcher.manyToManyMatch(r, h)
 
-            # number of correct matches
-            # N_correct = len(r & h)
-            N_correct = self.matcher.ncorrect(r, h)
-            detail[RECALL_RELEVANT_RETRIEVED] += duration * N_correct
+            detail[RECALL_RELEVANT] += duration * counts[IER_TOTAL]
+            detail[RECALL_RELEVANT_RETRIEVED] += duration * counts[IER_CORRECT]
 
         return detail
 
