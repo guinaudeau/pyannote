@@ -52,13 +52,15 @@ def run(args):
     # - index: (hypothesis file, uri) pairs
     # - columns: names of metrics and their components
 
+    kwargs = {'unknown': args.anonymous}
+
     metrics = {}
     columns = []
     for Metric in args.requested:
         # get metric name
         metricName = Metric.metric_name()
         # instantiate one metric per hypothesis
-        metrics[metricName] = {h: Metric() for h, (_, _) in enumerate(args.hypothesis)}
+        metrics[metricName] = {h: Metric(**kwargs) for h, (_, _) in enumerate(args.hypothesis)}
         # add metric name
         columns.append(metricName)
         columns.extend(['%s | %s' % (metricName, componentName)
@@ -335,6 +337,11 @@ group.add_argument('--precision', action='append_const', dest='requested',
 description = 'compute identification recall'
 group.add_argument('--recall', action='append_const', dest='requested',
                    const=IdentificationRecall, default=[],
+                   help=description)
+
+description = ('remove anonymous tracks from reference and hypothesis '
+               'before evaluation.')
+group.add_argument('--no-anonymous', action='store_false', dest='anonymous',
                    help=description)
 
 viewparser = subparsers.add_parser('view',
