@@ -585,6 +585,32 @@ class Annotation(AnnotationMixin, object):
     def label_duration(self, label):
         return self.label_timeline(label).duration()
 
+    def label_chart(self, percent=False):
+        """
+        Label chart based on their duration
+
+        Parameters
+        ----------
+        percent : bool, optional
+            Return total duration percentage (rather than raw duration)
+
+        Returns
+        -------
+        chart : (label, duration) iterable
+            Sorted from longest to shortest.
+
+        """
+
+        chart = sorted([(label, self.label_duration(label))
+                        for label in self.labels()],
+                       key=lambda x: x[1], reverse=True)
+
+        if percent:
+            total = np.sum([duration for _, duration in chart])
+            chart = [(label, duration/total) for (label, duration) in chart]
+
+        return chart
+
     def argmax(self, segment=None, known_first=False):
         """Get most frequent label
 
