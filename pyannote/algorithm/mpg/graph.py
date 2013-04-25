@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -38,60 +38,61 @@ SUBTRACK = 'subtrack'
 COOCCURRING = 'cooccurring'
 RANK = 'rank'
 
+
 class MultimodalProbabilityGraph(nx.Graph):
-    
+
     def __init__(self, **kwargs):
         super(MultimodalProbabilityGraph, self).__init__(**kwargs)
-    
+
     @classmethod
     def merge_prob(cls, old_prob, new_prob):
-        
+
         if new_prob is None:
             return old_prob
-        
+
         if old_prob is None:
             return new_prob
-        
-        if old_prob in [0,1]:
+
+        if old_prob in [0, 1]:
             if new_prob != old_prob:
                 raise ValueError('Prob conflict: old=%g, new=%g' % (old_prob, new_prob))
             return old_prob
-        
+
         return max(old_prob, new_prob)
-    
+
     @classmethod
     def merge_cooc(cls, old_cooc, new_cooc):
-        
+
         if new_cooc is None:
             return old_cooc
-        
+
         if old_cooc is None:
             return new_cooc
-        
+
         if old_cooc != new_cooc:
             raise ValueError('Cooc conflict: old=%g, new=%g' % (old_cooc, new_cooc))
-        
+
         return new_cooc
-    
+
     @classmethod
     def merge_strk(cls, old_strk, new_strk):
-        
+
         if new_strk is None:
             return old_strk
-        
+
         if old_strk is None:
             return new_strk
-        
+
         if old_strk != new_strk:
             raise ValueError('Strk conflict: old=%g, new=%g' % (old_strk, new_strk))
-        
+
         return new_strk
-    
-    def update_edge(self, node1, node2, 
-                       probability=None, 
-                       cooccurring=None, 
-                       subtrack=None):
-        
+
+    def update_edge(self, node1, node2,
+                    probability=None,
+                    cooccurring=None,
+                    subtrack=None):
+
         if self.has_edge(node1, node2):
             old_attr = dict(self.edge[node1][node2])
             old_prob = old_attr.get(PROBABILITY, None)
@@ -101,11 +102,11 @@ class MultimodalProbabilityGraph(nx.Graph):
             old_prob = None
             old_cooc = None
             old_strk = None
-        
+
         new_prob = self.merge_prob(old_prob, probability)
         new_cooc = self.merge_cooc(old_cooc, cooccurring)
         new_strk = self.merge_strk(old_strk, subtrack)
-        
+
         new_attr = {}
         if new_prob is not None:
             new_attr[PROBABILITY] = new_prob
@@ -113,43 +114,43 @@ class MultimodalProbabilityGraph(nx.Graph):
             new_attr[COOCCURRING] = new_cooc
         if new_strk is not None:
             new_attr[SUBTRACK] = new_strk
-        
+
         self.add_edge(node1, node2, **new_attr)
-    
+
     def add(self, other_mpg):
         """Add nodes and edges from other MPG
         """
-        
+
         for node, data in other_mpg.nodes(data=True):
             self.add_node(node, **data)
-        
-        for e,f,d in other_mpg.edges(data=True):
-            self.update_edge(e,f,**d)
-    
+
+        for e, f, d in other_mpg.edges(data=True):
+            self.update_edge(e, f, **d)
+
     def add_track_constraints(self):
-        """Add p=0 edges between each intra-modality pair of 
+        """Add p=0 edges between each intra-modality pair of
         cooccurring tracks"""
-        
+
         # obtain the list of all modalities in graph
-        modalities = set([n.modality for n in self 
-                                     if isinstance(n, TrackNode)])
-        
+        modalities = set([n.modality for n in self
+                          if isinstance(n, TrackNode)])
+
         for modality in modalities:
             # obtain the list of tracks for this modality
-            # (note that subtracks are not part of this list, 
+            # (note that subtracks are not part of this list,
             # they are hard-linked to their main track anyway)
-            tnodes = [n for n in self if isinstance(n, TrackNode) \
-                                      and n.modality == modality \
-                                      and not self.node[n].get(SUBTRACK, False)]
-            
+            tnodes = [n for n in self if isinstance(n, TrackNode)
+                      and n.modality == modality
+                      and not self.node[n].get(SUBTRACK, False)]
+
             # loop on each pair of tracks and check for overlapping ones
             for n, node in enumerate(tnodes):
                 for other_node in tnodes[n+1:]:
                     # are they overlapping?
                     if node.segment.intersects(other_node.segment):
-                        self.update_edge(node, other_node, 
+                        self.update_edge(node, other_node,
                                          probability=0., cooccurring=True)
-    
+
     def add_identity_constraints(self):
         """Add p=0 edges between each pair of identity nodes
         """
@@ -157,105 +158,103 @@ class MultimodalProbabilityGraph(nx.Graph):
         for n, node in enumerate(inodes):
             for other_node in inodes[n+1:]:
                 self.update_edge(node, other_node, probability=0.)
-    
+
     def propagate_constraints(self):
         """Propagate p=0 and p=1 probabilities edges
         """
-        
+
         # propagated p=1 constraints
         p1 = []
         c = nx.Graph(self)
-        c.remove_edges_from([(e,f) for e,f,d in self.edges_iter(data=True)
-                                   if d[PROBABILITY] != 1])
+        c.remove_edges_from([(e, f) for e, f, d in self.edges_iter(data=True)
+                             if d[PROBABILITY] != 1])
         components = nx.connected_components(c)
         for component in components:
-            for i,n in enumerate(component):
+            for i, n in enumerate(component):
                 for m in component[i+1:]:
-                    p1.append((n,m))
-        
+                    p1.append((n, m))
+
         # propagated p=0 constraints
         p0 = []
         c = nx.Graph(self)
-        c.remove_edges_from([(e,f) for e,f,d in self.edges_iter(data=True)
-                                   if d[PROBABILITY] != 0])
+        c.remove_edges_from([(e, f) for e, f, d in self.edges_iter(data=True)
+                             if d[PROBABILITY] != 0])
         c = nx.blockmodel(c, components, multigraph=True)
-        for e,f in c.edges_iter():
+        for e, f in c.edges_iter():
             for n in components[e]:
                 for m in components[f]:
-                    p0.append((n,m))
-        
-        for n,m in p1:
-            self.update_edge(n,m, probability=1.)
-        for n,m in p0:
-            self.update_edge(n,m, probability=0.)
-        
+                    p0.append((n, m))
+
+        for n, m in p1:
+            self.update_edge(n, m, probability=1.)
+        for n, m in p0:
+            self.update_edge(n, m, probability=0.)
+
         return self
-    
+
     def get_tracks_by_name(self, modality, name):
         tnodes = [n for n in self if isinstance(n, TrackNode)
-                                 and n.track == name
-                                 and n.modality == modality]
+                  and n.track == name
+                  and n.modality == modality]
         return tnodes
-    
+
     def get_tracks_by_time(self, modality, seconds):
         tnodes = [n for n in self if isinstance(n, TrackNode)
-                                 and n.segment.start <= seconds
-                                 and n.segment.end >= seconds]
+                  and n.segment.start <= seconds
+                  and n.segment.end >= seconds]
         return tnodes
-    
+
     def get_label(self, modality, name):
         lnodes = [n for n in self if isinstance(n, LabelNode)
-                                 and n.label == name
-                                 and n.modality == modality]
+                  and n.label == name
+                  and n.modality == modality]
         return lnodes[0]
-        
+
     def get_identity(self, name):
         inodes = [n for n in self if isinstance(n, IdentityNode)
-                                 and n.identifier == name]
+                  and n.identifier == name]
         return inodes[0]
-    
+
     def _log(self):
-        
+
         # new graph containing nodes from input graph
         log = nx.Graph()
         log.add_nodes_from(self.nodes_iter(data=True))
-    
+
         # convert P to -log P for all input edges
         # don't add the edge when P = 0
-        for e,f,d in self.edges_iter(data=True):
+        for e, f, d in self.edges_iter(data=True):
             D = dict(d)
             p = d[PROBABILITY]
             if p > 0:
                 D[PROBABILITY] = -np.log(p)
-                log.add_edge(e,f,D)
-        
+                log.add_edge(e, f, D)
+
         return log
-    
-    
+
     def subgraphs_iter(self, threshold=0.):
-        
-        zeros = [(e,f) for (e,f,d) in self.edges_iter(data=True) if d[PROBABILITY] <= threshold]
-        
+
+        zeros = [(e, f) for (e, f, d) in self.edges_iter(data=True)
+                 if d[PROBABILITY] <= threshold]
+
         G = MultimodalProbabilityGraph()
         G.add(self)
         G.remove_edges_from(zeros)
         components = nx.connected_components(G)
-        
+
         for component in components:
             yield self.subgraph(component)
-    
-    
+
     def shortest_path(self, inode, tnode):
         log = self._log()
-        
+
         # remove all inodes but inode
-        inodes = [n for n in log if isinstance(n, IdentityNode)
-                                and n != inode]
+        inodes = [n for n in log if isinstance(n, IdentityNode) and n != inode]
         log.remove_nodes_from(inodes)
-        
-        path = nx.shortest_path(log, source=inode, target=tnode, 
-                                     weight=PROBABILITY)
-        
+
+        path = nx.shortest_path(log, source=inode, target=tnode,
+                                weight=PROBABILITY)
+
         P = []
         s = path[0]
         for t in path[1:]:
@@ -263,38 +262,38 @@ class MultimodalProbabilityGraph(nx.Graph):
             print "%.2f %s %s" % (p, s, t)
             P.append(p)
             s = t
-        
+
         return path, P
-    
+
     def complete(self, tracks=False):
         """
-        
+
         Parameters
         ----------
         tracks : bool
             If tracks is True, complete graph also contains track2track edges
         """
-        
+
         # propagate constraints (on a copy) and get -log prob graph
         g = MultimodalProbabilityGraph()
         g.add(self)
         g.propagate_constraints()
-        
+
         log = g._log()
-        
+
         c = MultimodalProbabilityGraph()
-        
+
         # all track nodes of interest
         # ie speaker/head node not subtrack
-        tnodes = [(n,d) for n,d in self.nodes_iter(data=True) \
-                        if isinstance(n, TrackNode) \
-                        and n.modality in ['speaker', 'head'] \
-                        and not d.get(SUBTRACK, False)]
-        
+        tnodes = [(n, d) for n, d in self.nodes_iter(data=True)
+                  if isinstance(n, TrackNode)
+                  and n.modality in ['speaker', 'head']
+                  and not d.get(SUBTRACK, False)]
+
         # all identity nodes
-        inodes = [(n,d) for n,d in self.nodes_iter(data=True) \
-                        if isinstance(n, IdentityNode)]
-        
+        inodes = [(n, d) for n, d in self.nodes_iter(data=True)
+                  if isinstance(n, IdentityNode)]
+
         # tnode/tnode shortest path (with forbidden identity nodes)
         _log = nx.Graph(log)
         _log.remove_nodes_from(zip(*inodes)[0])
@@ -311,12 +310,13 @@ class MultimodalProbabilityGraph(nx.Graph):
                         else:
                             data = {PROBABILITY: 0.}
                     c.update_edge(n, N, **data)
-        
+
         # inode/tnodes shortest path (with forbidden other identity nodes)
         for i, (n, d) in enumerate(inodes):
             c.add_node(n, **d)
             _log = nx.Graph(log)
-            _log.remove_nodes_from([m for j,(m,_) in enumerate(inodes) if j != i])
+            _log.remove_nodes_from([m for j, (m, _) in enumerate(inodes)
+                                    if j != i])
             _shortest = nx.shortest_path_length(_log, source=n, weight=PROBABILITY)
             for N, D in tnodes:
                 c.add_node(N, **D)
@@ -327,27 +327,27 @@ class MultimodalProbabilityGraph(nx.Graph):
                 else:
                     data = {PROBABILITY: np.exp(-_shortest[N])}
                 c.update_edge(n, N, **data)
-        
+
         # inode/inode constraint
         c.add_identity_constraints()
-        
+
         return c
-    
+
     def inodes(self):
         return [n for n in self if isinstance(n, IdentityNode)]
-    
+
     def tnodes(self):
         return [n for n in self if isinstance(n, TrackNode)]
-    
+
     def lnodes(self):
         return [n for n in self if isinstance(n, LabelNode)]
-    
+
     def modalities(self):
         return set([n.modality for n in self.tnodes()])
-    
+
     def uris(self):
         return set([n.uri for n in self.tnodes()])
-    
+
     def remove_recognition_edges(self, modality):
         inodes = self.inodes()
         tnodes = [n for n in self.tnodes() if n.modality == modality]
@@ -355,16 +355,16 @@ class MultimodalProbabilityGraph(nx.Graph):
             for i in inodes:
                 if self.has_edge(t, i):
                     self.remove_edge(t, i)
-    
+
     def remove_diarization_edges(self, modality):
         """Remove intra-modality edges, except in case of p=0 constraints"""
         lnodes = [n for n in self.lnodes() if n.modality == modality]
-        for i,l in enumerate(lnodes):
+        for i, l in enumerate(lnodes):
             for L in lnodes[i+1:]:
                 if self.has_edge(l, L):
                     if self[l][L][PROBABILITY] != 0.:
                         self.remove_edge(l, L)
-    
+
     def remove_crossmodal_edges(self, modality1, modality2):
         tnodes = self.tnodes()
         tnodes1 = [n for n in tnodes if n.modality == modality1]
@@ -373,42 +373,40 @@ class MultimodalProbabilityGraph(nx.Graph):
             for t2 in tnodes2:
                 if self.has_edge(t1, t2):
                     self.remove_edge(t1, t2)
-    
+
     def remove_track_nodes(self, modality):
         tnodes = self.tnodes()
         tnodes = [n for n in tnodes if n.modality == modality]
         self.remove_nodes_from(tnodes)
-    
-    
+
     def remove_identity_nodes(self, threshold=0.001):
         """Remove identity nodes with incoming probabilities smaller than threshold
-        
+
         Parameters
         ----------
-        
-        
+
+
         """
         inodes = [inode for inode in self.inodes()
-                        if max([self[inode][n][PROBABILITY] 
-                                for n in self.neighbors(inode)]) < threshold]
+                  if max([self[inode][n][PROBABILITY]
+                  for n in self.neighbors(inode)]) < threshold]
         self.remove_nodes_from(inodes)
-    
-    
+
     def to_annotation(self):
-        
-        tnodes = [n for n,d in self.nodes_iter(data=True) \
-                        if isinstance(n, TrackNode) \
-                        and not d.get(SUBTRACK, False)]
+
+        tnodes = [n for n, d in self.nodes_iter(data=True)
+                  if isinstance(n, TrackNode)
+                  and not d.get(SUBTRACK, False)]
         inodes = [n for n in self if isinstance(n, IdentityNode)]
-        
+
         modalities = self.modalities()
         uris = self.uris()
-        
+
         annotations = {}
         for modality in modalities:
             for uri in uris:
-                _tnodes = [n for n in tnodes 
-                             if n.modality == modality and n.uri == uri]
+                _tnodes = [n for n in tnodes
+                           if n.modality == modality and n.uri == uri]
                 A = Annotation(uri=uri, modality=modality)
                 for tnode in _tnodes:
                     p = 0.
@@ -423,169 +421,166 @@ class MultimodalProbabilityGraph(nx.Graph):
                         A[tnode.segment, tnode.track] = Unknown()
                     else:
                         A[tnode.segment, tnode.track] = n.identifier
-                
+
                 annotations[uri, modality] = A
-        
+
         return annotations
-        
+
     def to_json(self):
-        
+
         nodes = self.nodes()
         N = len(nodes)
-        
+
         nodes_json = [node.to_json() for node in nodes]
-        
+
         links_json = []
         for n, node in enumerate(nodes):
             for m in range(n+1, N):
                 other_node = nodes[m]
                 if not self.has_edge(node, other_node):
                     continue
-                links_json.append({'source': n, 
+                links_json.append({'source': n,
                                    'target': m,
-                                   PROBABILITY: self[node][other_node][PROBABILITY]}) 
-        
+                                   PROBABILITY: self[node][other_node][PROBABILITY]})
+
         return {'nodes': nodes_json, 'links': links_json}
 
 
 class SegmentationGraph(object):
     """Segmentation graph (one node per track, no edge)
-    
+
     [T]
-    
+
     - one node per track
     """
     def __init__(self):
         super(SegmentationGraph, self).__init__()
-    
+
     def __call__(self, annotation):
-        
+
         assert isinstance(annotation, Annotation), \
-               "%r is not an annotation" % annotation
-        
+            "%r is not an annotation" % annotation
+
         G = MultimodalProbabilityGraph()
         u = annotation.uri
         m = annotation.modality
-        
-        # track nodes, track/label and label/ID edges
-        for s,t,l in annotation.iterlabels():
-            tnode = TrackNode(u,m,s,t)
-            G.add_node(tnode, **{SUBTRACK: False})
-        
-        return G
 
+        # track nodes, track/label and label/ID edges
+        for s, t, l in annotation.iterlabels():
+            tnode = TrackNode(u, m, s, t)
+            G.add_node(tnode, **{SUBTRACK: False})
+
+        return G
 
 
 class AnnotationGraph(object):
     """Annotation graph
-    
+
     [T] === [I]
-    
+
     - one node per track (track node, [T])
     - one node per identity (identity node, [I])
     - one hard edge between a track and its known identity (p=1, ===)
     - one hard edge between each pair of tracks with the same label
-    
+
     """
     def __init__(self, **kwargs):
         super(AnnotationGraph, self).__init__()
-    
+
     def __call__(self, annotation):
-        
+
         assert isinstance(annotation, Annotation), \
-               "%r is not an annotation" % annotation
-        
+            "%r is not an annotation" % annotation
+
         G = MultimodalProbabilityGraph()
         u = annotation.uri
         m = annotation.modality
-        
+
         # identity nodes
         inodes = {l: IdentityNode(l) for l in annotation.labels()}
-        
+
         # add edges between tracks and identities
-        for s,t,l in annotation.iterlabels():
-            
-            tnode = TrackNode(u,m,s,t)
+        for s, t, l in annotation.iterlabels():
+
+            tnode = TrackNode(u, m, s, t)
             G.add_node(tnode)
-            
+
             if not isinstance(l, Unknown):
                 G.update_edge(tnode, inodes[l], **{PROBABILITY: 1.})
-        
+
         # add hard edges between tracks with the same identity
-        tnodes = [TrackNode(u,m,s,t) for s,t in annotation.itertracks()]
+        tnodes = [TrackNode(u, m, s, t) for s, t in annotation.itertracks()]
         for i, n in enumerate(tnodes):
-            
+
             s = n.segment
             t = n.track
-            l = annotation[s,t]
-            
+            l = annotation[s, t]
+
             for N in tnodes[i+1:]:
-                
+
                 S = N.segment
                 T = N.track
                 L = annotation[S, T]
-                
+
                 if l == L:
                     G.update_edge(n, N, **{PROBABILITY: 1.})
-        
+
         return G
 
 
 class ScoresGraph(object):
     """Scores graph
-    
+
     [T] --- [I]
-    
+
     - one node per track (track node, [T])
     - one node per identity (identity node, [I])
     - one soft edge between each track and candidate identities (0<p<1, ---)
-    
+
     Parameters
     ----------
     s2p : func, optional
         Score-to-probability function.
         Defaults to identity (p=s)
-    
+
     """
     def __init__(self, s2p=None, **kwargs):
         super(ScoresGraph, self).__init__()
-        
+
         if s2p is None:
             s2p = lambda s: s
         self.s2p = s2p
-    
-    
+
     def __call__(self, scores):
-        
+
         assert isinstance(scores, Scores), \
-               "%r is not a score" % scores
-        
+            "%r is not a score" % scores
+
         G = MultimodalProbabilityGraph()
         u = scores.uri
         m = scores.modality
-        
+
         # identity nodes
         inodes = {i: IdentityNode(i) for i in scores.labels()}
-        
-        # track nodes
-        tnodes = {(s,t): TrackNode(u,m,s,t) for s,t in scores.itertracks()}
-        
-        probabilities = scores.map(self.s2p)
-        
-        for s,t,l,p in probabilities.itervalues():
-            G.update_edge(tnodes[s,t], inodes[l], **{PROBABILITY:p})
-        
-        return G
 
+        # track nodes
+        tnodes = {(s, t): TrackNode(u, m, s, t) for s, t in scores.itertracks()}
+
+        probabilities = scores.map(self.s2p)
+
+        for s, t, l, p in probabilities.itervalues():
+            G.update_edge(tnodes[s, t], inodes[l], **{PROBABILITY: p})
+
+        return G
 
 
 class LabelSimilarityGraph(object):
     """Label similarity graph
-    
+
     [T] === [T] for tracks with the same label
     [T] --- [T] for tracks with different labels
     [T] -x- [T] for tracks with different co-occurring labels
-    
+
     Parameters
     ----------
     s2p : func, optional
@@ -594,11 +589,11 @@ class LabelSimilarityGraph(object):
     """
     def __init__(self, s2p=None, **kwargs):
         super(LabelSimilarityGraph, self).__init__()
-        
+
         if s2p is None:
             s2p = lambda s: s
         self.s2p = s2p
-        
+
         # setup model
         MMx = self.getMx(BaseModelMixin)
         if len(MMx) == 0:
@@ -606,15 +601,15 @@ class LabelSimilarityGraph(object):
         elif len(MMx) > 1:
             raise ValueError('Too many model mixins (MMx): %s' % MMx)
         self.mmx_setup(**kwargs)
-    
+
     def getMx(self, baseMx):
-        
+
         # get all mixins subclass of baseMx
         # but the class itself and the baseMx itself
         cls = self.__class__
-        MX =  [Mx for Mx in cls.mro() 
-                  if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
-            
+        MX = [Mx for Mx in cls.mro()
+              if issubclass(Mx, baseMx) and Mx != cls and Mx != baseMx]
+
         # build the class inheritance directed graph {subclass --> class}
         G = nx.DiGraph()
         for m, Mx in enumerate(MX):
@@ -624,15 +619,15 @@ class LabelSimilarityGraph(object):
                     G.add_edge(Mx, otherMx)
                 elif issubclass(otherMx, Mx):
                     G.add_edge(otherMx, Mx)
-        
+
         # only keep the deeper subclasses in each component
         MX = []
         for components in nx.connected_components(G.to_undirected()):
             g = G.subgraph(components)
             MX.extend([Mx for Mx, degree in g.in_degree_iter() if degree == 0])
-        
+
         return MX
-    
+
     def __call__(self, diarization, feature):
         """
         Parameters
@@ -640,77 +635,77 @@ class LabelSimilarityGraph(object):
         diarization : Annotation
         feature : Feature
         """
-        
+
         assert isinstance(diarization, Annotation), \
-               "%r is not an annotation" % diarization
-        
+            "%r is not an annotation" % diarization
+
         # list of labels in diarization
-        labels = diarization.labels()  
-        
+        labels = diarization.labels()
+
         # label similarity matrix
         P = self.mmx_similarity_matrix(labels, annotation=diarization,
-                                               feature=feature)
+                                       feature=feature)
         # change it into a probability matrix
         P.M = self.s2p(P.M)
-        
+
         # label cooccurrence matrix
         K = Cooccurrence(diarization, diarization)
-        
+
         G = MultimodalProbabilityGraph()
         u = diarization.uri
         m = diarization.modality
-        
-        tnodes = [TrackNode(u,m,s,t) for s,t in diarization.itertracks()]
+
+        tnodes = [TrackNode(u, m, s, t) for s, t in diarization.itertracks()]
         for i, n in enumerate(tnodes):
-            
+
             G.add_node(n)
-            
+
             s = n.segment
             t = n.track
-            l = diarization[s,t]
-            
+            l = diarization[s, t]
+
             for N in tnodes[i+1:]:
-                
+
                 S = N.segment
                 T = N.track
                 L = diarization[S, T]
-                
+
                 # if two tracks have the same label
-                # set probability to 1 
+                # set probability to 1
                 if l == L:
                     p = 1.
                     k = False
                 # if two tracks are cooccurring
                 # set probability to 0
-                elif K[l,L] > 0:
+                elif K[l, L] > 0:
                     p = 0.
                     k = True
                 # otherwise, try and get the probability from probability matrix
                 else:
                     k = False
                     try:
-                        p = P[l,L]
+                        p = P[l, L]
                     except Exception, e:
                         p = None
-                
+
                 # if probability is not available, do not add any edge
                 if p is not None:
                     G.update_edge(n, N, **{PROBABILITY: p, COOCCURRING: k})
-        
+
         return G
 
 
 class TrackCooccurrenceGraph(object):
     """Track cooccurrence graph
-    
+
     [Ta]
      ||
     [ta] --- [tb]
-    
+
     - one node per sub-track in first modality (track node, [T])
     - one node per track in second modality (track node, [t])
     - one soft edge between every two cooccurring tracks [T] and [t]
-    
+
     Parameters
     ----------
     P : DataFrame, optional
@@ -721,80 +716,80 @@ class TrackCooccurrenceGraph(object):
     min_duration : float, optional
         Minimum duration of a track for it to be used in probability estimation
     significant : float, optional
-        Minimum overall duration of cooccurrence for a combination to be 
+        Minimum overall duration of cooccurrence for a combination to be
         considered as significant.
-    
+
     """
     def __init__(self, modalityA=None, modalityB=None,
-                       P=None, min_duration=0., significant=0., **kwargs):
-        
+                 P=None, min_duration=0., significant=0., **kwargs):
+
         super(TrackCooccurrenceGraph, self).__init__()
-        
+
         if P is not None:
             assert isinstance(P, DataFrame), \
-                   "%r is not a DataFrame" % P
+                "%r is not a DataFrame" % P
             self.P = P
-        
+
         assert isinstance(min_duration, float), \
-               "%r is not a float" % min_duration
+            "%r is not a float" % min_duration
         self.min_duration = min_duration
-        
+
         assert isinstance(significant, float), \
-               "%r is not a float" % significant
+            "%r is not a float" % significant
         self.significant = significant
-        
+
         self.modalityA = modalityA
         self.modalityB = modalityB
-    
+
     def _AB2ab(self, A, B):
         """
-        
+
         Parameters
         ----------
         A : Annotation
         B : Annotation
-        
+
         Returns
         -------
         timeline : Timeline
         a : Annotation
         b : Annotation
-        
+
         """
         tl = (A.timeline + B.timeline).segmentation()
-        tl = Timeline([s for s in tl if s.duration > self.min_duration], 
+        tl = Timeline([s for s in tl if s.duration > self.min_duration],
                       uri=tl.uri)
         a = A >> tl
         b = B >> tl
         return tl, a, b
-    
+
     def fit(self, annotations):
         """
-        
+
         Parameters
         ----------
         annotations : (Annotation, Annotation) iterator
-        
+
         Returns
         -------
-        
-        
+
+
         """
-        
+
         # possible_match[n, m] is the total possible match duration
         # when there are n A-tracks & m B-tracks
         possible_match = DataFrame()
-        
+
         # actual_match[n, m] is the total actual match duration
         # when there are n A-tracks & m B-tracks
         actual_match = DataFrame()
-        
-        # overlap[n, m] is the total duration 
+
+        # overlap[n, m] is the total duration
         # when there are n A-tracks & m B-tracks
         overlap = DataFrame()
-        
+
         for n, (A, B) in enumerate(annotations):
-            
+
             assert isinstance(A, Annotation), "%r is not an Annotation" % A
             assert isinstance(B, Annotation), "%r is not an Annotation" % B
             if n == 0:
@@ -802,30 +797,30 @@ class TrackCooccurrenceGraph(object):
                 self.modalityB = B.modality
             else:
                 assert A.modality == self.modalityA, \
-                       "bad modality (%r, %r)" % (self.modalityA, A.modality)
+                    "bad modality (%r, %r)" % (self.modalityA, A.modality)
                 assert B.modality == self.modalityB, \
-                       "bad modality (%r, %r)" % (self.modalityB, B.modality)
+                    "bad modality (%r, %r)" % (self.modalityB, B.modality)
             assert A.uri == B.uri, \
-                   "resource mismatch (%r, %r)" % (A.uri, B.uri)
-            
+                "resource mismatch (%r, %r)" % (A.uri, B.uri)
+
             timeline, a, b = self._AB2ab(A, B)
-            
+
             for segment in timeline:
-                
+
                 duration = segment.duration
-                
-                # number of tracks 
+
+                # number of tracks
                 atracks = a.tracks(segment)
                 Na = len(atracks)
                 btracks = b.tracks(segment)
                 Nb = len(btracks)
-                
+
                 if Na == 0 or Nb == 0:
                     continue
-                
+
                 # number of matching tracks
                 N = len(a.get_labels(segment) & b.get_labels(segment))
-                
+
                 # increment possible_match & actual_match
                 try:
                     p_m = possible_match.get_value(Na, Nb)
@@ -835,28 +830,28 @@ class TrackCooccurrenceGraph(object):
                     p_m = 0.
                     a_m = 0.
                     ovl = 0.
-                
+
                 possible_match = possible_match.set_value(Na, Nb,
-                                                          p_m + min(Na,Nb)*duration)
+                                                          p_m + min(Na, Nb)*duration)
                 actual_match = actual_match.set_value(Na, Nb,
                                                       a_m + N*duration)
                 overlap = overlap.set_value(Na, Nb, ovl + duration)
-        
+
         self.actual_match = actual_match
         self.possible_match = possible_match
         self.raw_P = self.actual_match / self.possible_match
         self.overlap = overlap
-        
+
         # make sure probability is smaller than 1.
         self.P = np.minimum(1-1e-6, self.raw_P)
         # remove statistically insignificant probabilities
         self.P[self.overlap < self.significant] = np.nan
-        
+
         return self
-    
+
     def __call__(self, A, B, only1x1=False):
         """
-        
+
         Parameters
         ----------
         A, B : Annotation
@@ -864,51 +859,50 @@ class TrackCooccurrenceGraph(object):
         only1x1 : bool
             When True, only add cross-modal edges when there is exactly
             one track in modality A and one track in modality B.
-        
+
         """
-        
+
         assert isinstance(A, Annotation), "%r is not an Annotation" % A
         assert isinstance(B, Annotation), "%r is not an Annotation" % B
-        
+
         assert A.uri == B.uri, "resource mismatch (%r, %r)" % (A.uri, B.uri)
-        
+
         ma = A.modality
         mb = B.modality
         assert ma == self.modalityA, \
-               "bad modality (%r, %r)" % (self.modalityA, ma)
+            "bad modality (%r, %r)" % (self.modalityA, ma)
         assert mb == self.modalityB, \
-               "bad modality (%r, %r)" % (self.modalityB, mb)
-        
-        
+            "bad modality (%r, %r)" % (self.modalityB, mb)
+
         G = MultimodalProbabilityGraph()
         u = A.uri
-                
+
         # Sub-tracks graph
         # it contains only [ta] -- [tb] edges for cooccurring subtracks
         # track names are kept unchanged
         timeline, a, b = self._AB2ab(A, B)
-        
+
         for s in timeline:
-            
+
             # do not add edges for very short tracks
             if s.duration < self.min_duration:
                 continue
-            
+
             # Sub-tracks for current sub-segment and their number
             subtracks_a = a.tracks(s)
             Na = len(subtracks_a)
             subtracks_b = b.tracks(s)
             Nb = len(subtracks_b)
-            
+
             # if one modality does not have any track, go to next segment
             if Na == 0 or Nb == 0:
                 continue
-            
+
             # if one modality has more than one coocurring track
             # and option only1x1 is ON, go to next segment
             if only1x1 and (Na != 1 or Nb != 1):
                 continue
-            
+
             # if cross-modal probability is not available for this configuration
             # (either never seen before or not significant), go to next segment
             try:
@@ -916,25 +910,25 @@ class TrackCooccurrenceGraph(object):
                 assert not np.isnan(probability)
             except Exception, e:
                 continue
-            
+
             # get original track corresponding to each subtrack
             tracks_A = set([])
             for t in subtracks_a:
                 for S, T in A.get_track_by_name(t):
                     if s in S:
-                        tracks_A.add((S,T))
+                        tracks_A.add((S, T))
             tracks_B = set([])
             for t in subtracks_b:
                 for S, T in B.get_track_by_name(t):
                     if s in S:
-                        tracks_B.add((S,T))
-            
+                        tracks_B.add((S, T))
+
             # add edges between co-occurring tracks
             for sA, tA in tracks_A:
                 node_A = TrackNode(u, ma, sA, tA)
                 for sB, tB in tracks_B:
                     node_B = TrackNode(u, mb, sB, tB)
                     G.update_edge(node_A, node_B, **{PROBABILITY: probability,
-                                                   COOCCURRING: True})
-        
+                                                     COOCCURRING: True})
+
         return G
