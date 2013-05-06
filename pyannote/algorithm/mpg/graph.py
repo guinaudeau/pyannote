@@ -932,3 +932,75 @@ class TrackCooccurrenceGraph(object):
                                                      COOCCURRING: True})
 
         return G
+
+
+import math
+
+
+class GetProbSpoken2Speaker:
+
+    def __init__(self, fileName='/vol/work1/roy/repere/spk/probs.txt', tmax=500):
+        with open(fileName, 'r') as f:
+            data = f.read()
+        data = [float(val) for val in data[0:-1].split('\n')]
+        self.alpha = data[0]
+        self.delta = data[1]
+        self.prob = data[2:]
+        self.tmax = tmax
+
+    def __call__(self, sA, sB):
+        # First, check if time difference is more than tmax (=500s). If so, return (-1).
+        # to indicate that the probability between these two nodes CANNOT be
+        # estimated robustly, so these two nodes should NOT be linked.
+        ta = sA.start
+        tb = sA.end
+        tc = sB.start
+        td = sB.end
+        if (td-ta) > self.tmax or (tb - tc) > self.tmax:
+            return -1
+        t1 = ta
+        P = 0  # prob.
+        N = 0  # No. of time links from (ta,tb) to (tc,td) with a time step of delta.
+        while (t1 <= tb):
+            tc_ = int(round((tc - t1) / self.delta, 0) - self.alpha)
+            td_ = int(round((td - t1) / self.delta, 0) - self.alpha)
+            P += math.fsum(self.prob[tc_:td_+1])
+            N += (td_ - tc_ + 1)
+            t1 += self.delta
+        P /= N
+        return P
+
+
+class CrossModalGraph(object):
+
+    def __init__(self, fileName='/vol/work1/roy/repere/spk/probs.txt',
+                 modalityA=None, modalityB=None, tmax=500, **kwargs):
+        super(CrossModalGraph, self).__init__()
+        self.modalityA = modalityA
+        self.modalityB = modalityB
+        self.get_prob = GetProbSpoken2Speaker(fileName=fileName, tmax=tmax)
+
+    def __call__(self, A, B, **kwargs):
+        assert isinstance(A, Annotation), "%r is not an Annotation" % A
+        assert isinstance(B, Annotation), "%r is not an Annotation" % B
+        assert A.uri == B.uri, "resource mismatch (%r, %r)" % (A.uri, B.uri)
+
+        mA = A.modality
+        mB = B.modality
+        assert mA == self.modalityA, \
+            "bad modality (%r, %r)" % (self.modalityA, mA)
+        assert mB == self.modalityB, \
+            "bad modality (%r, %r)" % (self.modalityB, mB)
+
+        G = MultimodalProbabilityGraph()
+        u = A.uri
+
+        for sA, tA in A.itertracks():
+            nA = TrackNode(u, mA, sA, tA)
+            for sB, tB in B.itertracks():
+                nB = TrackNode(u, mB, sB, tB)
+                p = self.get_prob(sA, sB)
+                if p != -1:
+                    G.update_edge(nA, nB, **{PROBABILITY: p})
+
+        return G
