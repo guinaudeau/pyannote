@@ -23,7 +23,7 @@ import pickle
 import networkx as nx
 import numpy as np
 from pyannote.algorithm.mpg.graph import MultimodalProbabilityGraph
-from pyannote.algorithm.mpg.graph import SegmentationGraph
+from pyannote.algorithm.mpg.graph import SegmentationGraph, CrossModalGraph
 from pyannote import Annotation, Scores
 
 # New argument parser
@@ -252,7 +252,7 @@ def hh_precomputed_parser(path):
 def hi_parser(path):
     if clicommon.containsURI(path):
         return lambda u: AnnotationParser()\
-        .read(clicommon.replaceURI(path, u), uri=u, modality='head')(u)
+            .read(clicommon.replaceURI(path, u), uri=u, modality='head')(u)
     else:
         return AnnotationParser().read(path)
 
@@ -294,12 +294,19 @@ def wi_param_parser(path):
 
 
 def ni_parser(path):
-    raise NotImplementedError('--ni option is not supported yet.')
+    if clicommon.containsURI(path):
+        return lambda u: AnnotationParser()\
+            .read(clicommon.replaceURI(path, u), uri=u, modality='spoken')(u)
+    else:
+        return AnnotationParser().read(path)
 
 
 def ni_param_parser(path):
-    raise NotImplementedError('--ni-param option is not supported yet.')
-
+    if path is None:
+        graph_generator = AnnotationGraph()
+    else:
+        raise NotImplementedError('--ni-param option is not supported yet.')
+    return graph_generator
 
 from pyannote.algorithm.mpg.graph import TrackCooccurrenceGraph
 
@@ -348,6 +355,10 @@ def x_param_parser(param_pkl):
             raise IOError(msg)
 
     return xgraph
+
+
+def sn_param_parser(prob_txt):
+    return CrossModalGraph(fileName=prob_txt, modalityA='spoken', modalityB='speaker')
 
 
 msg = "path where to store multimodal probability graph." + clicommon.msgURI()
@@ -442,7 +453,7 @@ ngroup.add_argument('--ni', type=ni_parser, metavar='source.mdtm',
 
 msg = 'path to trained parameters for spoken name detection'
 ngroup.add_argument('--ni-param', type=ni_param_parser, metavar='param.pkl',
-                    help=msg)
+                    default=ni_param_parser(None), dest='nigraph', help=msg)
 
 # == Cross-modality ==
 xgroup = argparser.add_argument_group('cross-modality')
@@ -460,7 +471,7 @@ xgroup.add_argument('--sw-param', metavar='param.pkl', type=x_param_parser,
                     help='path to trained parameters for '
                          '[speaker/written] cross-modal clustering.')
 
-xgroup.add_argument('--sn-param', metavar='param.pkl', type=x_param_parser,
+xgroup.add_argument('--sn-param', metavar='prob.txt', type=sn_param_parser,
                     dest='sngraph', default=SUPPRESS,
                     help='path to trained parameters for '
                          '[speaker/spoken] cross-modal clustering.')
@@ -470,15 +481,15 @@ xgroup.add_argument('--hw-param', metavar='param.pkl', type=x_param_parser,
                     help='path to trained parameters for '
                          '[head/written] cross-modal clustering.')
 
-xgroup.add_argument('--hn-param', metavar='param.pkl', type=x_param_parser,
-                    dest='hngraph', default=SUPPRESS,
-                    help='path to trained parameters for '
-                         '[head/spoken] cross-modal clustering.')
+# xgroup.add_argument('--hn-param', metavar='param.pkl', type=nh_param_parser,
+#                     dest='hngraph', default=SUPPRESS,
+#                     help='path to trained parameters for '
+#                          '[head/spoken] cross-modal clustering.')
 
-xgroup.add_argument('--wn-param', metavar='param.pkl', type=x_param_parser,
-                    dest='wngraph', default=SUPPRESS,
-                    help='path to trained parameters for '
-                         '[written/spoken] cross-modal clustering.')
+# xgroup.add_argument('--wn-param', metavar='param.pkl', type=nw_param_parser,
+#                     dest='wngraph', default=SUPPRESS,
+#                     help='path to trained parameters for '
+#                          '[written/spoken] cross-modal clustering.')
 
 try:
     args = argparser.parse_args()
@@ -684,9 +695,25 @@ for u, uri in enumerate(uris):
     # SPOKEN NAMES
     # ============
 
+    if hasattr(args, 'ni'):
+        ni_src = args.ni(uri=uri, modality='spoken')
+        if uem is not None:
+            ni_src = ni_src.crop(uem, mode='loose')
+    else:
+        ni_src = None
+
     # spoken name detection
     if hasattr(args, 'ni'):
-        pass
+
+        if args.verbose:
+            sys.stdout.write('   - [spoken] identity graph\n')
+            sys.stdout.flush()
+
+        # build written identity graph
+        g = args.nigraph(ni_src)
+
+        # add it to the multimodal graph
+        G.add(g)
 
     # speaker/head
     if hasattr(args, 'shgraph'):
@@ -722,7 +749,7 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
 
         # build speaker/spoken graph
-        g = args.sngraph(ss_src, ni_src, args.only1x1)
+        g = args.sngraph(ni_src, ss_src)
 
         # add it to the multimodal graph
         G.add(g)
