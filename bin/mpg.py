@@ -476,6 +476,10 @@ xgroup.add_argument('--sn-param', metavar='prob.txt', type=sn_param_parser,
                     help='path to trained parameters for '
                          '[speaker/spoken] cross-modal clustering.')
 
+msg = 'Temporal difference up to which speaker and spoken nodes should be connected.'
+xgroup.add_argument('--sn-tmax', metavar='SECONDS', type=float,
+                    default=500, help=msg)
+
 xgroup.add_argument('--hw-param', metavar='param.pkl', type=x_param_parser,
                     dest='hwgraph', default=SUPPRESS,
                     help='path to trained parameters for '
@@ -747,6 +751,8 @@ for u, uri in enumerate(uris):
         if args.verbose:
             sys.stdout.write('   - [speaker/spoken] crossmodal graph\n')
             sys.stdout.flush()
+
+        args.sngraph.get_prob.tmax = args.sn_tmax
 
         # build speaker/spoken graph
         g = args.sngraph(ni_src, ss_src)
