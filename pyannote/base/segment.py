@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -18,13 +18,13 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import timedelta
-import numpy as np
+# import numpy as np
+from collections import namedtuple
 
 SEGMENT_PRECISION = 1e-6
 
 
-class Segment(object):
+class Segment(namedtuple('Segment', ['start', 'end'])):
     """
     Temporal interval defined by its `start` and `end` times.
 
@@ -39,8 +39,8 @@ class Segment(object):
 
     Parameters
     ----------
-    start, end : float, optional
-        `start` and `end` times, in seconds (the default is 0).
+    start, end : float
+        `start` and `end` times, in seconds.
 
     Returns
     -------
@@ -112,10 +112,9 @@ class Segment(object):
 
     """
 
-    def __init__(self, start=0., end=0.):
-        super(Segment, self).__init__()
-        self.start = float(start)
-        self.end = float(end)
+    def __new__(cls, start=0., end=0.):
+        # add default values
+        return super(Segment, cls).__new__(cls, start, end)
 
     def __nonzero__(self):
         """Use the expression 'if segment'
@@ -126,7 +125,10 @@ class Segment(object):
             False is segment is empty, True otherwise.
 
         """
-        return self.end - self.start > SEGMENT_PRECISION
+        if (self.end - self.start) > SEGMENT_PRECISION:
+            return True
+        else:
+            return False
 
     def _get_duration(self):
         return self.end-self.start if self else 0.
@@ -141,37 +143,6 @@ class Segment(object):
     def copy(self):
         """Duplicate segment."""
         return Segment(start=self.start, end=self.end)
-
-    def __lt__(self, other):
-        """Use the expression 'segment < other'"""
-        return (self.start < other.start) or \
-               ((self.start == other.start) and (self.end < other.end))
-
-    def __le__(self, other):
-        """Use the expression 'segment <= other'"""
-        return (self.start < other.start) or \
-               ((self.start == other.start) and (self.end <= other.end))
-
-    def __eq__(self, other):
-        """Use the expression 'segment == other'"""
-        return (self.start == other.start) and \
-               (self.end == other.end)
-
-    def __ne__(self, other):
-        """Use the expression 'segment != other'"""
-        return (self.start != other.start) or \
-               (self.end != other.end)
-
-    def __ge__(self, other):
-        """Use the expression 'segment >= other'"""
-        return other.__le__(self)
-
-    def __gt__(self, other):
-        """Use the expression 'segment > other'"""
-        return other.__lt__(self)
-
-    def __hash__(self):
-        return hash(self.start)
 
     # ------------------------------------------------------- #
     # Inclusion (in), intersection (&), union (|) and gap (^) #
@@ -259,143 +230,143 @@ class Segment(object):
         end = max(self.start, other.start)
         return Segment(start=start, end=end)
 
-    # == segment + float
-    # shift the whole segment to the right
-    # [ 0 --> 1 ] + 3 = [ 3 --> 4 ]
-    def __add__(self, shift):
-        """Use the expression 'segment + shift'
+    # # == segment + float
+    # # shift the whole segment to the right
+    # # [ 0 --> 1 ] + 3 = [ 3 --> 4 ]
+    # def __add__(self, shift):
+    #     """Use the expression 'segment + shift'
 
-        Parameters
-        ----------
-        shift : float
-            Temporal shift, in seconds.
+    #     Parameters
+    #     ----------
+    #     shift : float
+    #         Temporal shift, in seconds.
 
-        Returns
-        -------
-        segment : Segment
-            Shifted segment with `shift` seconds.
+    #     Returns
+    #     -------
+    #     segment : Segment
+    #         Shifted segment with `shift` seconds.
 
-        """
+    #     """
 
-        if isinstance(shift, Segment):
-            raise TypeError("unsupported operand type(s) for +:"
-                            "'Segment' and 'Segment'")
-        try:
-            start = self.start + shift
-            end = self.end + shift
-        except TypeError, e:
-            raise TypeError("unsupported operand type(s) for +:"
-                            "'Segment' and '%s'" % type(shift).__name__)
+    #     if isinstance(shift, Segment):
+    #         raise TypeError("unsupported operand type(s) for +:"
+    #                         "'Segment' and 'Segment'")
+    #     try:
+    #         start = self.start + shift
+    #         end = self.end + shift
+    #     except TypeError, e:
+    #         raise TypeError("unsupported operand type(s) for +:"
+    #                         "'Segment' and '%s'" % type(shift).__name__)
 
-        return Segment(start=start, end=end)
+    #     return Segment(start=start, end=end)
 
-    def __radd__(self, shift):
-        """Use the expression 'shift + segment'
+    # def __radd__(self, shift):
+    #     """Use the expression 'shift + segment'
 
-        See Also
-        --------
-        __add__
+    #     See Also
+    #     --------
+    #     __add__
 
-        """
-        return self.__add__(shift)
+    #     """
+    #     return self.__add__(shift)
 
-    def __sub__(self, other):
-        """Use the expression 'segment - other' or 'segment - shift'
+    # def __sub__(self, other):
+    #     """Use the expression 'segment - other' or 'segment - shift'
 
-        Parameters
-        ----------
-        other : float or Segment
-            Temporal shift or other segment
+    #     Parameters
+    #     ----------
+    #     other : float or Segment
+    #         Temporal shift or other segment
 
-        Returns
-        -------
-        segment : Segment
-            if `other` is a float.
-        delta : float
-            start time difference if `other` is a Segment
+    #     Returns
+    #     -------
+    #     segment : Segment
+    #         if `other` is a float.
+    #     delta : float
+    #         start time difference if `other` is a Segment
 
-        """
-        if isinstance(other, Segment):
-            return self.start - other.start
-        else:
-            return self.__add__(-other)
+    #     """
+    #     if isinstance(other, Segment):
+    #         return self.start - other.start
+    #     else:
+    #         return self.__add__(-other)
 
-    def __rshift__(self, shift):
-        """Use the expression 'segment >> shift'
+    # def __rshift__(self, shift):
+    #     """Use the expression 'segment >> shift'
 
-        Parameters
-        ----------
-        shift : float
-            Temporal shift, in seconds.
+    #     Parameters
+    #     ----------
+    #     shift : float
+    #         Temporal shift, in seconds.
 
-        Returns
-        -------
-        segment : Segment
-            Segment with shifted end time by `shift` seconds.
+    #     Returns
+    #     -------
+    #     segment : Segment
+    #         Segment with shifted end time by `shift` seconds.
 
-        """
+    #     """
 
-        if isinstance(shift, Segment):
-            raise TypeError("unsupported operand type(s) for +:"
-                            "'Segment' and 'Segment'")
-        try:
-            start = self.start
-            end = self.end + shift
-        except TypeError, e:
-            raise TypeError("unsupported operand type(s) for >>:"
-                            "'Segment' and '%s'" % type(shift).__name__)
+    #     if isinstance(shift, Segment):
+    #         raise TypeError("unsupported operand type(s) for +:"
+    #                         "'Segment' and 'Segment'")
+    #     try:
+    #         start = self.start
+    #         end = self.end + shift
+    #     except TypeError, e:
+    #         raise TypeError("unsupported operand type(s) for >>:"
+    #                         "'Segment' and '%s'" % type(shift).__name__)
 
-        return Segment(start=start, end=end)
+    #     return Segment(start=start, end=end)
 
-    def __lshift__(self, shift):
-        """Use the expression 'segment << shift'
+    # def __lshift__(self, shift):
+    #     """Use the expression 'segment << shift'
 
-        Equivalent to 'segment >> (-shift)'
+    #     Equivalent to 'segment >> (-shift)'
 
-        See Also
-        --------
-        __rshift__
+    #     See Also
+    #     --------
+    #     __rshift__
 
-        """
-        return self.__rshift__(-shift)
+    #     """
+    #     return self.__rshift__(-shift)
 
-    def __rrshift__(self, shift):
-        """Use the expression 'shift >> segment'
+    # def __rrshift__(self, shift):
+    #     """Use the expression 'shift >> segment'
 
-        Parameters
-        ----------
-        shift : float
-            Temporal shift, in seconds.
+    #     Parameters
+    #     ----------
+    #     shift : float
+    #         Temporal shift, in seconds.
 
-        Returns
-        -------
-        segment : Segment
-            Segment with shifted start time by `shift` seconds.
+    #     Returns
+    #     -------
+    #     segment : Segment
+    #         Segment with shifted start time by `shift` seconds.
 
-        """
-        if isinstance(shift, Segment):
-            raise TypeError("unsupported operand type(s) for +:"
-                            "'Segment' and 'Segment'")
-        try:
-            start = self.start + shift
-            end = self.end
-        except TypeError, e:
-            raise TypeError("unsupported operand type(s) for >>:"
-                            "'Segment' and '%s'" % type(shift).__name__)
+    #     """
+    #     if isinstance(shift, Segment):
+    #         raise TypeError("unsupported operand type(s) for +:"
+    #                         "'Segment' and 'Segment'")
+    #     try:
+    #         start = self.start + shift
+    #         end = self.end
+    #     except TypeError, e:
+    #         raise TypeError("unsupported operand type(s) for >>:"
+    #                         "'Segment' and '%s'" % type(shift).__name__)
 
-        return Segment(start=start, end=end)
+    #     return Segment(start=start, end=end)
 
-    def __rlshift__(self, shift):
-        """Use the expression 'shift << segment'
+    # def __rlshift__(self, shift):
+    #     """Use the expression 'shift << segment'
 
-        Equivalent to '(-shift) >> segment'
+    #     Equivalent to '(-shift) >> segment'
 
-        See Also
-        --------
-        __rrshift__
+    #     See Also
+    #     --------
+    #     __rrshift__
 
-        """
-        return self.__rrshift__(-shift)
+    #     """
+    #     return self.__rrshift__(-shift)
 
     def __str__(self):
         """Use the expression str(segment)"""
@@ -405,6 +376,7 @@ class Segment(object):
             return '∅'
 
     def _pretty(self, seconds):
+        from datetime import timedelta
         td = timedelta(seconds=seconds)
         days = td.days
         seconds = td.seconds
@@ -428,50 +400,6 @@ class Segment(object):
 
     def to_json(self):
         return {'start': self.start, 'end': self.end}
-
-
-class RevSegment(Segment):
-    """Reversed segment.
-    """
-
-    def __init__(self, segment):
-        super(RevSegment, self).__init__(start=segment.start, end=segment.end)
-
-    def __lt__(self, other):
-        return (self.end < other.end) or \
-               ((self.end == other.end) and (self.start > other.start))
-
-    def __le__(self, other):
-        return (self.end < other.end) or \
-               ((self.end == other.end) and (self.start >= other.start))
-
-    def __gt__(self, other):
-        return other.__lt__(self)
-
-    def __ge__(self, other):
-        return other.__le__(self)
-
-    def __eq__(self, other):
-        return (self.start == other.start) and \
-               (self.end == other.end)
-
-    def __ne__(self, other):
-        return (self.start != other.start) or \
-               (self.end != other.end)
-
-    def __sub__(self, other):
-        if isinstance(other, RevSegment):
-            return self.end - other.end
-        return self.__add__(-other)
-
-    def __str__(self):
-        if self:
-            return '[%g --> %g]' % (self.start, self.end)
-        else:
-            return '∅'
-
-    def __repr__(self):
-        return '<%s.RevSegment(%g, %g)>' % (__name__, self.start, self.end)
 
 
 class SlidingWindow(object):
