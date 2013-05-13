@@ -372,7 +372,7 @@ class AnnotationMixin(object):
     def __str__(self):
         """Human-friendly representation"""
         if self:
-            self._df = self._df.sort_index(inplace=True)
+            self._df.sort_index(inplace=True)
             return str(self._df)
         else:
             return ""
