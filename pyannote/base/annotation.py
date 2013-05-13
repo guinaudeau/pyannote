@@ -120,8 +120,7 @@ class AnnotationMixin(object):
             not isinstance(label, (Segment, Timeline))
 
     def __get_timeline(self):
-        segments = set([s for s, _ in self._df.index])
-        return Timeline(segments, uri=self.uri)
+        return Timeline(segments=[s for s, _ in self._df.index], uri=self.uri)
     timeline = property(fget=__get_timeline)
     """Timeline of annotated segments"""
 
@@ -133,27 +132,23 @@ class AnnotationMixin(object):
         """False if annotation is empty"""
         return len(self) > 0
 
-    def __contains__(self, segments):
+    def __contains__(self, included):
         """Check if segments are annotated
 
         Parameters
         ----------
-        segments : `Segment` or `Segment` iterator
+        included : `Segment` or `Timeline`
 
         Returns
         -------
         contains : bool
-            True if every segment in `segments` is annotated. False otherwise.
+            True if every segment in `included` is annotated, False otherwise.
         """
-
-        if isinstance(segments, Segment):
-            segments = [segments]
-
-        return all([segment in self._df.index for segment in segments])
+        return included in self.timeline
 
     def __iter__(self):
         """Iterate over sorted segments"""
-        return iter(sorted(set([s for s, _ in self._df.index])))
+        return iter(self.timeline)
 
     def __reversed__(self):
         """Reverse iterate over sorted segments"""
