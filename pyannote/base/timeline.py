@@ -81,7 +81,7 @@ class Timeline(object):
     Add one segment (+=)
 
         >>> segment = Segment(0, 1)
-        >>> timeline += segment
+        >>> timeline.add(segment)
         >>> if len(timeline) == 1:
         ...    print "Timeline contains only one segment."
         Timeline contains only one segment.
@@ -89,7 +89,7 @@ class Timeline(object):
     Add all segments from another timeline
 
         >>> other_timeline = Timeline([Segment(0.5, 3), Segment(6, 8)])
-        >>> timeline += other_timeline
+        >>> timeline.update(other_timeline)
 
     Get timeline extent, coverage & duration
 
@@ -124,11 +124,6 @@ class Timeline(object):
            [1 --> 3]
            [6 --> 8]
         ]
-        >>> if timeline.is_segmentation():
-        ...    print "Timeline is a segmentation."
-        >>> if segmentation.is_segmentation():
-        ...    print "Timeline is a segmentation."
-        Timeline is a segmentation.
 
     Gaps
 
