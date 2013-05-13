@@ -265,9 +265,11 @@ class Timeline(object):
     def __dfs(self, node):
         """Depth-first search key iterator"""
         if node:
-            self.__dfs(node.left)
+            for key in self.__dfs(node.left):
+                yield key
             yield node.key
-            self.__dfs(node.right)
+            for key in self.__dfs(node.right):
+                yield key
 
     def __crop_loose(self, node, segment):
         """Returns segments overlapping query segment.
