@@ -124,7 +124,8 @@ class UnknownIDMatcher(IDMatcher):
         super(UnknownIDMatcher, self).__init__()
 
     def oneToOneMatch(self, id1, id2):
-        return (isinstance(id1, Unknown) and isinstance(id2, Unknown)) or id1 == id2
+        return (isinstance(id1, Unknown) and isinstance(id2, Unknown)) \
+            or id1 == id2
 
 
 class IdentificationErrorRate(BaseMetric):
@@ -144,8 +145,8 @@ class IdentificationErrorRate(BaseMetric):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True (default) to take `Unknown` instances into account.
-        Set it to False to get rid of them before evaluation.
+        Set `unknown` to True (default) to take `Unknown` instances into
+        account. Set it to False to get rid of them before evaluation.
 
 
     """
@@ -174,7 +175,7 @@ class IdentificationErrorRate(BaseMetric):
         detail = self._init_details()
 
         # common (up-sampled) timeline
-        common_timeline = reference.timeline + hypothesis.timeline
+        common_timeline = reference.timeline.union(hypothesis.timeline)
         common_timeline = common_timeline.segmentation()
 
         # align reference on common timeline
@@ -239,8 +240,8 @@ class IdentificationPrecision(Precision):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True (default) to take `Unknown` instances into account.
-        Set it to False to get rid of them before evaluation.
+        Set `unknown` to True (default) to take `Unknown` instances into
+        account. Set it to False to get rid of them before evaluation.
     """
 
     def __init__(self, matcher=None, unknown=True, **kwargs):
@@ -256,7 +257,7 @@ class IdentificationPrecision(Precision):
         detail = self._init_details()
 
         # common (up-sampled) timeline
-        common_timeline = reference.timeline + hypothesis.timeline
+        common_timeline = reference.timeline.union(hypothesis.timeline)
         common_timeline = common_timeline.segmentation()
 
         # align reference on common timeline
@@ -294,8 +295,8 @@ class IdentificationRecall(Recall):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True (default) to take `Unknown` instances into account.
-        Set it to False to get rid of them before evaluation.
+        Set `unknown` to True (default) to take `Unknown` instances into
+        account. Set it to False to get rid of them before evaluation.
     """
 
     def __init__(self, matcher=None, unknown=True, **kwargs):
@@ -311,7 +312,7 @@ class IdentificationRecall(Recall):
         detail = self._init_details()
 
         # common (up-sampled) timeline
-        common_timeline = reference.timeline + hypothesis.timeline
+        common_timeline = reference.timeline.union(hypothesis.timeline)
         common_timeline = common_timeline.segmentation()
 
         # align reference on common timeline
