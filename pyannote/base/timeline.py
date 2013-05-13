@@ -260,11 +260,17 @@ class Timeline(object):
     def __dfs(self, node):
         """Depth-first search key iterator"""
         if node:
+<<<<<<< HEAD
             for key in self.__dfs(node.left):
                 yield key
             yield node.key
             for key in self.__dfs(node.right):
                 yield key
+=======
+            self.__dfs(node.left)
+            yield node.key
+            self.__dfs(node.right)
+>>>>>>> Timeline == banyan.SortedSet
 
     def __crop_loose(self, node, segment):
         """Returns segments overlapping query segment.
