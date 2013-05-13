@@ -42,7 +42,7 @@ class BaseTimelineParser(object):
     def _add(self, segment, uri):
         if uri not in self._loaded:
             self._loaded[uri] = Timeline(uri=uri)
-        self._loaded[uri] += segment
+        self._loaded[uri].add(segment)
 
     def reset(self):
         self._loaded = {}
