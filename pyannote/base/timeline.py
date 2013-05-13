@@ -522,7 +522,7 @@ class Timeline(object):
 
         Parameters
         ----------
-        included : Segment or Timeline
+        included : `Segment` or `Timeline`
 
         Returns
         -------
