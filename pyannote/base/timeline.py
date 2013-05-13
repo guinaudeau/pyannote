@@ -823,7 +823,7 @@ class Timeline(object):
         for end in timestamps[1:]:
             # only add segments that are covered by original timeline
             segment = Segment(start=start, end=end)
-            if coverage.overlapping(segment.middle):
+            if segment and coverage.overlapping(segment.middle):
                 segments.append(segment)
             start = end
 
