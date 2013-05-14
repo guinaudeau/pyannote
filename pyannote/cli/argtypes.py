@@ -21,7 +21,8 @@
 import sys
 import os.path
 import pyannote.cli.uris
-from pyannote.parser import TimelineParser, AnnotationParser, LSTParser, LabelMatrixParser
+from pyannote.parser import TimelineParser, AnnotationParser, LSTParser, \
+    LabelMatrixParser
 
 
 class InputFileHandle(object):
@@ -253,16 +254,16 @@ class OutputWriteAnnotation(object):
                     raise IOError('ERROR: no URI available to replace placeholder in path to output file.')
                 rpath = pyannote.cli.uris.replace_uri(path, uri)
 
-                # check if we are about to overwrite a file
-                if os.path.isfile(rpath):
-                    raise IOError('File %s already exists.' % rpath)
+                # # check if we are about to overwrite a file
+                # if os.path.isfile(rpath):
+                #     raise IOError('File %s already exists.' % rpath)
 
                 # create parser based on rpath extension
                 Parser, extension = AnnotationParser.guess(rpath)
                 parser = Parser(**(self.initArgs))
 
-                # create file and write annotation
-                with open(rpath, 'w') as f:
+                # open file and append annotation at the end
+                with open(rpath, 'a') as f:
                     parser.write(annotation, f=f)
 
         else:
