@@ -1,13 +1,27 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import os
-import socket
-os.putenv('GRB_LICENSE_FILE',
-          "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
-                                  socket.gethostname()))
+import sys
 
-import gurobipy as grb
+try:
+    # try to rely on the existing GRB_LICENSE_FILE variable first
+    import gurobipy as grb
+
+except:
+
+    # otherwise, try hard-coded license file
+    import os
+    import socket
+
+    pathToLicense = "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
+                                            socket.gethostname())
+    os.putenv('GRB_LICENSE_FILE', pathToLicense)
+
+    try:
+        import gurobipy as grb
+    except:
+        sys.stderr.write('Cannot initialize Gurobi solver.')
+
 from graph import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
 from node import IdentityNode, TrackNode
