@@ -18,20 +18,26 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    import os
-    import socket
-    os.putenv('GRB_LICENSE_FILE',
-              "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
-                                      socket.gethostname()))
-    import gurobipy as grb
-except Exception, e:
-    import sys
-    sys.stderr.write('Cannot initialize Gurobi.\n')
 
 import sys
 import numpy as np
 import networkx as nx
+
+# initialize Gurobi solver
+try:
+    # try to rely on the existing GRB_LICENSE_FILE variable first
+    import gurobipy as grb
+except:
+    # otherwise, try hard-coded license file
+    import os
+    import socket
+    pathToLicense = "%s/licenses/%s.lic" % (os.getenv('GUROBI_HOME'),
+                                            socket.gethostname())
+    os.putenv('GRB_LICENSE_FILE', pathToLicense)
+    try:
+        import gurobipy as grb
+    except:
+        sys.stderr.write('Cannot initialize Gurobi solver.')
 
 
 class ILPClusteringMixin(object):
@@ -46,6 +52,29 @@ class ILPClusteringMixin(object):
         Dictionary containing the variables of the MIP problem `model`
 
     """
+
+    def init_model(self):
+        """"""
+        # create empty Gurobi model (and shut the **** up)
+        self.model = grb.Model()
+        self.model.setParam(grb.GRB.Param.OutputFlag, False)
+
+    def init_variables(self, items):
+        """"""
+
+        # one binary variable per item pair
+        self.x = {}
+
+        for I in items:
+            for J in items:
+                self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
+
+        self.model.update()
+
+    def update_model(self):
+        """"""
+
+        self.model.update()
 
     def __init__(self, items, similarity, get_similarity=None,
                  debug=False, **kwargs):
@@ -67,18 +96,14 @@ class ILPClusteringMixin(object):
 
         super(ILPClusteringMixin, self).__init__()
 
-        # create empty Gurobi model (and shut it up)
-        self.model = grb.Model()
-        self.model.setParam(grb.GRB.Param.OutputFlag, False)
+        # create empty Gurobi model
+        self.init_model()
 
-        # one binary variable per item pair
-        self.x = {}
-        for I in items:
-            for J in items:
-                self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
+        # add variables
+        self.init_variables(items)
 
         # Gurobi updates model lazily
-        self.model.update()
+        self.update_model()
 
         # Default assumes `similarity` is a pandas `DataFrame`
         if not get_similarity:
@@ -97,6 +122,130 @@ class ILPClusteringMixin(object):
             sys.stderr.write("DEBUG: set objective\n")
         self.set_objective(items, similarity, get_similarity,
                            debug=debug, **kwargs)
+
+    def add_reflexivity_constraints(self, items):
+        """Add reflexivity constraints (I~I, for all I)"""
+
+        for I in items:
+            constr = self.x[I, I] == 1
+            self.model.addConstr(constr)
+
+    def add_hard_constraints(self, items, similarity, get_similarity):
+        """Add hard constraints
+
+        If sim(I, J) = 0, then I|J.
+        If sim(I, J) = 1, then I~J.
+        """
+
+        N = len(items)
+        for i in range(N):
+            I = items[i]
+            for j in range(i+1, N):
+                J = items[j]
+                s = get_similarity(I, J, similarity)
+                if s in [0, 1]:
+                    constr = self.x[I, J] == s
+                    self.model.addConstr(constr)
+
+    def add_symmetry_constraints(self, items):
+        """Add symmetry constratins
+
+        For any pair (I, J), I~J implies J~I
+        """
+
+        N = len(items)
+        for i in range(N):
+            I = items[i]
+            for j in range(i+1, N):
+                J = items[j]
+                constr = self.x[I, J] == self.x[J, I]
+                self.model.addConstr(constr)
+
+    def add_transitivity_constraints(self, items):
+        """Add transitivity contraints
+
+        For any triplet (I,J,K), I~J and J~K implies I~K
+        """
+
+        N = len(items)
+        for i in range(N):
+            I = items[i]
+            for j in range(i+1, N):
+                J = items[j]
+                for k in range(j+1, N):
+                    K = items[k]
+                    constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
+                    self.model.addConstr(constr)
+                    constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
+                    self.model.addConstr(constr)
+                    constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
+                    self.model.addConstr(constr)
+
+    def add_asymmetric_transitivity_constraints(self, tracks, identities):
+        """Add asymmetric transitivity constraints
+
+        For any pair of tracks (T, S) and any identity I,
+            T~I and T~S implies S~I
+
+        However, T~I and S~I does not imply T~S
+        """
+
+        Nt = len(tracks)
+        Ni = len(identities)
+
+        for i in range(Ni):
+            I = identities[i]
+            for t in range(Nt):
+                T = tracks[t]
+                for s in range(t+1, Nt):
+                    S = tracks[s]
+                    constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
+                    self.model.addConstr(constr)
+                    constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
+                    self.model.addConstr(constr)
+
+    def get_inter_cluster_dissimilarity(self, items,
+                                        similarity, get_similarity):
+        """Inter-cluster dissimilarity:  ∑ (1-xij).(1-pij)
+                                        i,j
+
+        """
+        values = [(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
+                  for I in items for J in items
+                  if not np.isnan(get_similarity(I, J, similarity))]
+        return grb.quicksum(values)
+
+    def get_intra_cluster_similarity(self, items,
+                                     similarity, get_similarity):
+        """Intra-cluster similarity: ∑  xij.pij
+                                    i,j
+        """
+        values = [get_similarity(I, J, similarity)*self.x[I, J]
+                  for I in items for J in items
+                  if not np.isnan(get_similarity(I, J, similarity))]
+        return grb.quicksum(values)
+
+    def get_identity_similarity(self, tracks, identities,
+                                similarity, get_similarity):
+        """
+         ∑  xti.pti
+        t,i
+        """
+        values = [get_similarity(T, I, similarity)*self.x[T, I]
+                  for T in tracks for I in identities
+                  if not np.isnan(get_similarity(T, I, similarity))]
+        return grb.quicksum(values)
+
+    def get_identity_dissimilarity(self, tracks, identities,
+                                   similarity, get_similarity):
+        """
+         ∑ (1-xti).(1-pti)
+        t,i
+        """
+        values = [(1-get_similarity(T, I, similarity))*(1-self.x[T, I])
+                  for T in tracks for I in identities
+                  if not np.isnan(get_similarity(T, I, similarity))]
+        return grb.quicksum(values)
 
     def solve(self, init=None,
               method=None, mip_focus=None, heuristics=None,
@@ -185,62 +334,29 @@ class ILPClusteringMixin(object):
         self.model.write(path)
 
 
-class FinkelConstraintMixin(object):
+class FinkelConstraintMixin(ILPClusteringMixin):
     """
 
     """
 
-    def set_constraints(self, items, similarity, get_similarity,
-                        debug=False, **kwargs):
+    def set_contraints(self, items, similarity, get_similarity, debug=False):
 
-        # number of items
-        N = len(items)
-
-        # reflexivity constraints
-        # O(N) complexity
         if debug:
             sys.stderr.write("DEBUG: add reflexivity constraints\n")
-        for I in items:
-            constr = self.x[I, I] == 1
-            self.model.addConstr(constr)
+        self.add_reflexivity_constraints(items)
 
-        # hard constraints
         if debug:
             sys.stderr.write("DEBUG: add hard constraints\n")
-        for i, I in enumerate(items):
-            for J in items[i+1:]:
-                s = get_similarity(I, J, similarity)
-                if s in [0, 1]:
-                    constr = self.x[I, J] == s
-                    self.model.addConstr(constr)
+        self.add_hard_constraints(items, similarity, get_similarity)
 
-        # symmetry constraints
-        # O(N^2) complexity
         if debug:
             sys.stderr.write("DEBUG: add symmetry constraints\n")
-        for i, I in enumerate(items):
-            for J in items[i+1:]:
-                constr = self.x[I, J] == self.x[J, I]
-                self.model.addConstr(constr)
+        self.add_symmetry_constraints(items)
 
-        # transitivity constraints
-        # O(N^3) complexity
         if debug:
             sys.stderr.write("DEBUG: add transitivity constraints\n")
-        for i in range(N):
-            I = items[i]
-            for j in range(i+1, N):
-                J = items[j]
-                for k in range(j+1, N):
-                    K = items[k]
-                    constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
-                    self.model.addConstr(constr)
-                    constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
-                    self.model.addConstr(constr)
-                    constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
-                    self.model.addConstr(constr)
+        self.add_transitivity_constraints(items)
 
-        # model (lazy) update
         self.model.update()
 
         return self
@@ -252,7 +368,8 @@ class INTRAinterObjectiveMixin(object):
             i,j
     """
 
-    def set_objective(self, items, similarity, get_similarity, alpha=0.5, **kwargs):
+    def set_objective(self, items, similarity, get_similarity,
+                      alpha=0.5, **kwargs):
         """
         Set objective function
 
@@ -264,16 +381,18 @@ class INTRAinterObjectiveMixin(object):
         """
 
         # intra-cluster similarity
-        intraSim = grb.quicksum([get_similarity(I, J, similarity)*self.x[I, J]
-                                 for (I, J) in self.x
-                                 if not np.isnan(get_similarity(I, J, similarity))])
+        intraSim = grb.quicksum(
+            [get_similarity(I, J, similarity)*self.x[I, J] for (I, J) in self.x
+             if not np.isnan(get_similarity(I, J, similarity))])
 
         # inter-cluster similarity
-        interSim = grb.quicksum([(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
-                                 for (I, J) in self.x
-                                 if not np.isnan(get_similarity(I, J, similarity))])
+        interSim = grb.quicksum(
+            [(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
+             for (I, J) in self.x
+             if not np.isnan(get_similarity(I, J, similarity))])
 
-        # jointly maximize intra-cluster similarity & minimize inter-cluster one
+        # jointly maximize intra-cluster similarity
+        # and minimize inter-cluster one
         self.model.setObjective(alpha*intraSim + (1-alpha)*interSim,
                                 grb.GRB.MAXIMIZE)
 
@@ -289,7 +408,8 @@ class DupuyConstraintMixin(object):
     Dupuy et al. ...
     """
 
-    def set_constraints(self, items, similarity, get_similarity, delta=0.5, **kwargs):
+    def set_constraints(self, items, similarity, get_similarity,
+                        delta=0.5, **kwargs):
         """
 
         Parameters
