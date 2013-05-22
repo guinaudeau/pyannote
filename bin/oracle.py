@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -58,7 +58,7 @@ def model_parser(path):
 
 group = argparser.add_argument_group('Supervised oracle')
 group.add_argument('--models', metavar='models.lst',
-                       type=model_parser, default=[], 
+                       type=model_parser, default=[],
                        action='append', dest='models',
                        help='when provided, the oracle perfectly recognizes '
                             'the persons whose model is in the list.')
@@ -71,7 +71,7 @@ group.add_argument('--at-least', metavar='N', type=int, default=1,
                         'in the training set to be able to recognize it.')
 
 group = argparser.add_argument_group('Unsupervised oracle')
-group.add_argument('--cross', metavar='cross.mdtm', 
+group.add_argument('--cross', metavar='cross.mdtm',
                        type=in_parser, default=[],
                        action='append', dest='cross',
                        help='when provided, the oracle is able to recognize '
@@ -94,7 +94,7 @@ if hasattr(args, 'training'):
     for uri in parser.uris:
         annotation = parser(uri)
         for label in annotation.labels():
-            n = len(annotation.label_timeline(label, copy=False))
+            n = len(annotation.label_timeline(label))
             if label not in noccurrences:
                 noccurrences[label] = 0
             noccurrences[label] += n
@@ -110,16 +110,16 @@ if hasattr(args, 'detection'):
     argMaxDirectTagger = ArgMaxDirectTagger(known_first=True)
 
 for u, uri in enumerate(uris):
-    
+
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
-    
+
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
     else:
         uem = None
-    
+
     # get list of persons recognizable accross modalities
     local_models = set([])
     if args.cross:
@@ -129,30 +129,30 @@ for u, uri in enumerate(uris):
                 annotation = annotation.crop(uem, mode='intersection')
             labels = annotation.labels()
             local_models.update(labels)
-    
+
     reference = args.reference(uri)
-    
+
     if uem is not None:
         reference = reference.crop(uem, mode='intersection')
-    
+
     if hasattr(args, 'detection'):
         detection = args.detection(uri)
-        
+
         if detection.modality != reference.modality:
-            sys.exit('ERROR: reference/detection modality mismatch ' 
+            sys.exit('ERROR: reference/detection modality mismatch '
                      '(%s vs. %s)' % (reference.modality, detection.modality))
-        
+
         if uem is not None:
             detection = detection.crop(uem, mode='intersection')
         timeline = (reference.timeline + detection.timeline).segmentation()
-        reference = argMaxDirectTagger(reference >> timeline, 
+        reference = argMaxDirectTagger(reference >> timeline,
                                        detection >> timeline)
-    
+
     translation = {}
     for label in reference.labels():
         if label not in global_models and label not in local_models:
             translation[label] = Unknown()
-    
+
     MDTMParser().write(reference % translation, f=args.output)
 
 args.output.close()
