@@ -415,7 +415,8 @@ class Dupuy2012(ILPClustering):
 
         # cluster cohesion (ie total similarity to centroids)
         cohesion = grb.quicksum([get_similarity(C, I, similarity)*self.x[C, I]
-                                 for C in items for I in items if C != I])
+                                 for C in items for I in items if C != I
+                                 and not np.isnan(get_similarity(C, I, similarity)) ])
 
         # according to a discussion I had with Mickael Rouvier,
         # F (in Dupuy et al. 2012) is actually the sum over all items
