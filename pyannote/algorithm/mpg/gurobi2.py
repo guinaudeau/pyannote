@@ -334,8 +334,6 @@ class Finkel2008(ILPClustering):
       J.R. Finkel and C.D. Manning
       Annual Meeting of the Association for Computational Linguistics:
       Human Language Technologies (ACL HLT), 2008.
-    * ""
-
     """
 
     def __init__(self, items, similarity, get_similarity, debug=False):
@@ -377,87 +375,56 @@ class Finkel2008(ILPClustering):
         self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
         self.model.update()
 
-# class DupuyConstraintMixin(object):
-#     """
 
-#     Dupuy et al. ...
-#     """
+class Dupuy2012(ILPClustering):
 
-#     def set_constraints(self, items, similarity, get_similarity,
-#                         delta=0.5, **kwargs):
-#         """
+    def __init__(self, items, similarity, get_similarity, delta=0.5, **kwargs):
 
-#         Parameters
-#         ----------
-#         items :
+        super(Dupuy2012, self).__init__()
 
-#         similarity :
+        self.add_pair_variables(items)
 
-#         get_similarity :
+        # Equation 1.3 (in Dupuy et al., JEP'12)
+        # every item is associated to exactly one centroid
+        for J in items:
+            constr = grb.quicksum([self.x[C, J] for C in items]) == 1
+            self.model.addConstr(constr)
 
-#         delta : float, optional
-#             Prevent items with similarity lower than delta from ending
-#             in the same cluster. Must fall in [0, 1] range.
+        # Equation 1.4 (in Dupuy et al., JEP'12)
+        # prevent items from being associated to a dissimilar centroid
+        for C in items:
+            for I in items:
+                sCI = get_similarity(C, I, similarity)
+                if np.isnan(sCI):
+                    continue
+                constr = (1-sCI) * self.x[C, I] <= (1-delta)
+                self.model.addConstr(constr)
 
-#         """
-#         # Equation 1.3 (in Dupuy et al., JEP'12)
-#         # every item is associated to exactly one centroid
-#         for J in items:
-#             constr = grb.quicksum([self.x[C, J] for C in items]) == 1
-#             self.model.addConstr(constr)
+        # Equation 1.5 (missing in Dupuy et al.)
+        # activate a centroid as soon as an item is associated to it
+        for C in items:
+            for I in items:
+                constr = self.x[C, C] >= self.x[C, I]
+                self.model.addConstr(constr)
 
-#         # Equation 1.4 (in Dupuy et al., JEP'12)
-#         # prevent items from being associated to a dissimilar centroid
-#         for C in items:
-#             for I in items:
-#                 sCI = get_similarity(C, I, similarity)
-#                 if np.isnan(sCI):
-#                     continue
-#                 constr = (1-sCI) * self.x[C, I] <= (1-delta)
-#                 self.model.addConstr(constr)
+        # number of items
+        N = len(items)
 
-#         # Equation 1.5 (missing in Dupuy et al.)
-#         # activate a centroid as soon as an item is associated to it
-#         for C in items:
-#             for I in items:
-#                 constr = self.x[C, C] >= self.x[C, I]
-#                 self.model.addConstr(constr)
+        # number of activated centroids
+        centroids = grb.quicksum([self.x[C, C] for C in items])
 
-#         # model (lazy) update
-#         self.model.update()
+        # cluster cohesion (ie total similarity to centroids)
+        cohesion = grb.quicksum([get_similarity(C, I, similarity)*self.x[C, I]
+                                 for C in items for I in items if C != I])
 
-#         return self
+        # according to a discussion I had with Mickael Rouvier,
+        # F (in Dupuy et al. 2012) is actually the sum over all items
+        # of the maximum distance to all other items
+        # in short, F = N
 
+        # minimize both number of centroids and dispersion
+        self.model.setObjective(centroids - 1./N * cohesion, grb.GRB.MINIMIZE)
 
-# class DupuyObjectiveMixin(object):
-#     """
+        # model (lazy) update
+        self.model.update()
 
-#     """
-
-#     def set_objective(self, items, similarity, get_similarity, **kwargs):
-#         """
-
-#         """
-
-#         # number of items
-#         N = len(items)
-
-#         # number of activated centroids
-#         centroids = grb.quicksum([self.x[C, C] for C in items])
-
-#         # cluster cohesion (ie total similarity to centroids)
-#         cohesion = grb.quicksum([get_similarity(C, I, similarity)*self.x[C, I]
-#                                  for C in items for I in items if C != I])
-
-#         # according to a discussion I had with Mickael Rouvier,
-#         # F (in Dupuy et al. 2012) is actually the sum over all items
-#         # of the maximum distance to all other items
-#         # in short, F = N
-
-#         # minimize both number of centroids and dispersion
-#         self.model.setObjective(centroids - 1./N * cohesion, grb.GRB.MINIMIZE)
-
-#         # model (lazy) update
-#         self.model.update()
-
-#         return self
