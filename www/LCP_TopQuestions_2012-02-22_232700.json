@@ -1,0 +1,622 @@
+{
+  "annotation": [
+    {
+      "track": 1630, 
+      "segment": {
+        "start": 595.3430000000001, 
+        "end": 597.8340000000001
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1631, 
+      "segment": {
+        "start": 598.389, 
+        "end": 617.784
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1632, 
+      "segment": {
+        "start": 618.15, 
+        "end": 637.923
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1633, 
+      "segment": {
+        "start": 640.161, 
+        "end": 641.9549999999999
+      }, 
+      "label": "Bernard_ACCOYER"
+    }, 
+    {
+      "track": 1634, 
+      "segment": {
+        "start": 642.398, 
+        "end": 643.9870000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1635, 
+      "segment": {
+        "start": 644.595, 
+        "end": 649.8000000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1636, 
+      "segment": {
+        "start": 650.765, 
+        "end": 651.497
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1637, 
+      "segment": {
+        "start": 651.956, 
+        "end": 655.105
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1638, 
+      "segment": {
+        "start": 655.4689999999999, 
+        "end": 658.51
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1639, 
+      "segment": {
+        "start": 659.063, 
+        "end": 669.446
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1640, 
+      "segment": {
+        "start": 670.332, 
+        "end": 671.747
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1641, 
+      "segment": {
+        "start": 673.051, 
+        "end": 674.7370000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1642, 
+      "segment": {
+        "start": 675.2, 
+        "end": 676.735
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1643, 
+      "segment": {
+        "start": 677.801, 
+        "end": 680.355
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1644, 
+      "segment": {
+        "start": 680.797, 
+        "end": 682.787
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1645, 
+      "segment": {
+        "start": 683.6610000000001, 
+        "end": 685.7610000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1646, 
+      "segment": {
+        "start": 686.209, 
+        "end": 688.9159999999999
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1647, 
+      "segment": {
+        "start": 689.316, 
+        "end": 690.645
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1648, 
+      "segment": {
+        "start": 691.072, 
+        "end": 699.535
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1649, 
+      "segment": {
+        "start": 699.949, 
+        "end": 702.026
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1650, 
+      "segment": {
+        "start": 702.6560000000001, 
+        "end": 703.5480000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1651, 
+      "segment": {
+        "start": 704.1339999999999, 
+        "end": 712.3999999999999
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1652, 
+      "segment": {
+        "start": 712.837, 
+        "end": 720.033
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1653, 
+      "segment": {
+        "start": 720.467, 
+        "end": 721.961
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1654, 
+      "segment": {
+        "start": 722.3789999999999, 
+        "end": 725.7079999999999
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1655, 
+      "segment": {
+        "start": 726.1360000000001, 
+        "end": 727.9660000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1656, 
+      "segment": {
+        "start": 728.303, 
+        "end": 732.983
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1657, 
+      "segment": {
+        "start": 733.3789999999999, 
+        "end": 738.1039999999999
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1658, 
+      "segment": {
+        "start": 738.551, 
+        "end": 740.2370000000001
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1659, 
+      "segment": {
+        "start": 740.592, 
+        "end": 746.404
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1660, 
+      "segment": {
+        "start": 746.832, 
+        "end": 748.879
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1661, 
+      "segment": {
+        "start": 749.4019999999999, 
+        "end": 753.5699999999999
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1662, 
+      "segment": {
+        "start": 753.959, 
+        "end": 757.006
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1663, 
+      "segment": {
+        "start": 757.377, 
+        "end": 762.332
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1664, 
+      "segment": {
+        "start": 762.332, 
+        "end": 762.913
+      }, 
+      "label": "Bernard_ACCOYER"
+    }, 
+    {
+      "track": 1665, 
+      "segment": {
+        "start": 763.135, 
+        "end": 765.938
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1666, 
+      "segment": {
+        "start": 765.938, 
+        "end": 766.74
+      }, 
+      "label": "Bernard_ACCOYER"
+    }, 
+    {
+      "track": 1667, 
+      "segment": {
+        "start": 766.74, 
+        "end": 775.449
+      }, 
+      "label": "Jean-Marc_AYRAULT"
+    }, 
+    {
+      "track": 1668, 
+      "segment": {
+        "start": 775.449, 
+        "end": 777.626
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1669, 
+      "segment": {
+        "start": 778.803, 
+        "end": 779.901
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1670, 
+      "segment": {
+        "start": 780.297, 
+        "end": 811.4970000000001
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1671, 
+      "segment": {
+        "start": 811.841, 
+        "end": 821.926
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1672, 
+      "segment": {
+        "start": 822.212, 
+        "end": 863.256
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1673, 
+      "segment": {
+        "start": 865.6360000000001, 
+        "end": 867.666
+      }, 
+      "label": "Bernard_ACCOYER"
+    }, 
+    {
+      "track": 1674, 
+      "segment": {
+        "start": 868.005, 
+        "end": 870.202
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1675, 
+      "segment": {
+        "start": 871.262, 
+        "end": 874.006
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1676, 
+      "segment": {
+        "start": 874.7639999999999, 
+        "end": 875.2939999999999
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1677, 
+      "segment": {
+        "start": 875.775, 
+        "end": 881.432
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1678, 
+      "segment": {
+        "start": 882.2230000000001, 
+        "end": 883.778
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1679, 
+      "segment": {
+        "start": 884.176, 
+        "end": 888.2650000000001
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1680, 
+      "segment": {
+        "start": 888.683, 
+        "end": 896.3919999999999
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1681, 
+      "segment": {
+        "start": 896.873, 
+        "end": 903.272
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1682, 
+      "segment": {
+        "start": 903.6360000000001, 
+        "end": 909.883
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1683, 
+      "segment": {
+        "start": 910.2660000000001, 
+        "end": 914.4620000000001
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1684, 
+      "segment": {
+        "start": 914.7660000000001, 
+        "end": 924.5670000000001
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1685, 
+      "segment": {
+        "start": 924.997, 
+        "end": 932.247
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1686, 
+      "segment": {
+        "start": 932.799, 
+        "end": 938.707
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1687, 
+      "segment": {
+        "start": 939.1189999999999, 
+        "end": 950.7829999999999
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1688, 
+      "segment": {
+        "start": 951.284, 
+        "end": 964.679
+      }, 
+      "label": "Lionnel_LUCA"
+    }, 
+    {
+      "track": 1689, 
+      "segment": {
+        "start": 964.679, 
+        "end": 968.91
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1690, 
+      "segment": {
+        "start": 969.3639999999999, 
+        "end": 980.5269999999999
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1691, 
+      "segment": {
+        "start": 981.1439999999999, 
+        "end": 982.7959999999999
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1692, 
+      "segment": {
+        "start": 983.3660000000001, 
+        "end": 987.921
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1693, 
+      "segment": {
+        "start": 988.2710000000001, 
+        "end": 994.315
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1694, 
+      "segment": {
+        "start": 994.663, 
+        "end": 995.216
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1695, 
+      "segment": {
+        "start": 995.6460000000001, 
+        "end": 1004.244
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1696, 
+      "segment": {
+        "start": 1004.67, 
+        "end": 1007.271
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1697, 
+      "segment": {
+        "start": 1007.58, 
+        "end": 1018.36
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1698, 
+      "segment": {
+        "start": 1018.85, 
+        "end": 1027.316
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1699, 
+      "segment": {
+        "start": 1027.82, 
+        "end": 1030.9279999999999
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1700, 
+      "segment": {
+        "start": 1031.66, 
+        "end": 1037.201
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1701, 
+      "segment": {
+        "start": 1037.62, 
+        "end": 1055.2489999999998
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1702, 
+      "segment": {
+        "start": 1055.73, 
+        "end": 1061.955
+      }, 
+      "label": "Francois_FILLON"
+    }, 
+    {
+      "track": 1703, 
+      "segment": {
+        "start": 1062.71, 
+        "end": 1068.355
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1704, 
+      "segment": {
+        "start": 1068.81, 
+        "end": 1073.335
+      }, 
+      "label": "Alain_JUPPE"
+    }, 
+    {
+      "track": 1705, 
+      "segment": {
+        "start": 1076.77, 
+        "end": 1082.735
+      }, 
+      "label": "Jean-Baptiste_PREDALI"
+    }, 
+    {
+      "track": 1706, 
+      "segment": {
+        "start": 1083.26, 
+        "end": 1086.434
+      }, 
+      "label": "Jean-Baptiste_PREDALI"
+    }
+  ], 
+  "uri": "LCP_TopQuestions_2012-02-22_232700", 
+  "modality": "speaker"
+}
