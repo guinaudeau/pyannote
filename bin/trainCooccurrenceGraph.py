@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -61,7 +61,7 @@ argparser.add_argument('dump', type=output_parser, metavar='dump_to',
                         help='path where to save parameters of trained '
                              'cross-modal cooccurrence graph')
 
-argparser.add_argument('--min-duration', metavar='in_seconds', 
+argparser.add_argument('--min-duration', metavar='in_seconds',
                        type=float, default=1.,
                        help='Minimum cooccurrence duration for two tracks to '
                             'be considered cooccurring (default is 1 second)')
@@ -77,32 +77,32 @@ except Exception, e:
 # if requested, use provided resources
 if hasattr(args, 'uris'):
     uris = args.uris
-# otherwise, use 
+# otherwise, use
 else:
     uris = args.srcA.uris
 
 def ABiterator():
     for u, uri in enumerate(uris):
-        
+
         if args.verbose:
             sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
             sys.stdout.flush()
-        
+
         srcA = args.srcA(uri)
         if hasattr(args, 'modalityA'):
             srcA.modality = args.modalityA
-        
+
         srcB = args.srcB(uri)
         if hasattr(args, 'modalityB'):
             srcB.modality = args.modalityB
-        
+
         if hasattr(args, 'uem'):
             srcA = srcA.crop(args.uem(uri), mode='loose')
             srcB = srcB.crop(args.uem(uri), mode='loose')
-        
-        cvgA = srcA.timeline.coverage()
-        cvgB = srcB.timeline.coverage()
-        
+
+        cvgA = srcA.get_timeline().coverage()
+        cvgB = srcB.get_timeline().coverage()
+
         yield srcA.crop(cvgB, mode='loose'), srcB.crop(cvgA, mode='loose')
 
 cooccurrenceGraph = TrackCooccurrenceGraph(min_duration=args.min_duration,

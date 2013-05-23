@@ -128,8 +128,8 @@ class DiarizationPurity(BaseMetric):
         detail = self._init_details()
 
         if not self.detection_error:
-            joint_coverage = reference.timeline.coverage() & \
-                hypothesis.timeline.coverage()
+            joint_coverage = reference.get_timeline().coverage() & \
+                hypothesis.get_timeline().coverage()
             reference = reference.crop(joint_coverage, mode='intersection')
             hypothesis = hypothesis.crop(joint_coverage, mode='intersection')
 
