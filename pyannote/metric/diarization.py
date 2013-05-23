@@ -128,10 +128,10 @@ class DiarizationPurity(BaseMetric):
         detail = self._init_details()
 
         if not self.detection_error:
-            joint_coverage = reference.get_timeline().coverage() & \
-                hypothesis.get_timeline().coverage()
-            reference = reference.crop(joint_coverage, mode='intersection')
-            hypothesis = hypothesis.crop(joint_coverage, mode='intersection')
+            reference = reference.crop(hypothesis.get_timeline(),
+                                       mode='intersection')
+            hypothesis = hypothesis.crop(reference.get_timeline(),
+                                         mode='intersection')
 
         matrix = Cooccurrence(reference, hypothesis)
 
