@@ -397,7 +397,7 @@ class Dupuy2012(ILPClustering):
                 sCI = get_similarity(C, I, similarity)
                 if np.isnan(sCI):
                     continue
-                constr = (1-sCI) * self.x[C, I] <= (1-delta)
+                constr = (1-sCI) * self.x[C, I] <= (1.-delta)
                 self.model.addConstr(constr)
 
         # Equation 1.5 (missing in Dupuy et al.)
