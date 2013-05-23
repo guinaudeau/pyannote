@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -18,11 +18,35 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO: Faster implementation of .__contains__() (for use in .__iadd__())
-#       Possibly with an additional internal set of segments?
-#       or with interpolated binary search.
+from segment import Segment
+from banyan import SortedSet
 
-from segment import Segment, RevSegment, SEGMENT_PRECISION
+
+class TimelineUpdator(object):
+
+    class Metadata(object):
+
+        def update(self, key, key_fn, left, right):
+
+            # number of segments in tree
+            self.num = 1
+            if left:
+                self.num += left.num
+            if right:
+                self.num += right.num
+
+            # minimum timestamp in tree
+            self.min = key.start
+            if left:
+                self.min = min(self.min, left.min)
+
+            # maximum timestamp in tree
+            self.max = key.end
+            if right:
+                self.max = max(self.max, right.max)
+
+        def __repr__(self):
+            return 'MIN: %g | MAX %g | NUM %d' % (self.min, self.max, self.num)
 
 
 class Timeline(object):
@@ -57,7 +81,7 @@ class Timeline(object):
     Add one segment (+=)
 
         >>> segment = Segment(0, 1)
-        >>> timeline += segment
+        >>> timeline.add(segment)
         >>> if len(timeline) == 1:
         ...    print "Timeline contains only one segment."
         Timeline contains only one segment.
@@ -65,7 +89,7 @@ class Timeline(object):
     Add all segments from another timeline
 
         >>> other_timeline = Timeline([Segment(0.5, 3), Segment(6, 8)])
-        >>> timeline += other_timeline
+        >>> timeline.update(other_timeline)
 
     Get timeline extent, coverage & duration
 
@@ -100,11 +124,6 @@ class Timeline(object):
            [1 --> 3]
            [6 --> 8]
         ]
-        >>> if timeline.is_segmentation():
-        ...    print "Timeline is a segmentation."
-        >>> if segmentation.is_segmentation():
-        ...    print "Timeline is a segmentation."
-        Timeline is a segmentation.
 
     Gaps
 
@@ -129,596 +148,372 @@ class Timeline(object):
     """
 
     def __init__(self, segments=None, uri=None):
-
         super(Timeline, self).__init__()
 
+        # sorted set of segments (as an augmented red-black tree)
+        segments = [s for s in segments if s] if segments else []
+        self._segments = SortedSet(items=segments,
+                                   key_type=(float, float),
+                                   updator=TimelineUpdator)
+
         # path to (or any identifier of) segmented resource
-        self.__uri = uri
-
-        # this list is meant to store segments (as Segment object).
-        # it is always sorted (using Segment comparison operators,
-        # i.e. more or less sorted by segment start time).
-        self.__segments = []
-
-        # this list is meant to store reversed segments (as RevSegment object)
-        # it is always sorted (using RevSegment comparison operators,
-        # i.e. more or less sorted by segment end time).
-        self.__rsegments = []
-
-        if segments is not None:
-            try:
-                # Add every segment, one after the other
-                for segment in segments:
-                    self += segment
-            except Exception, e:
-                raise ValueError('Timeline must be initialized using a'
-                                 'Segment iterator.')
-
-    def __get_uri(self):
-        return self.__uri
-
-    def __set_uri(self, value):
-        self.__uri = value
-    uri = property(fget=__get_uri, fset=__set_uri)
-    """Path to (or any identifier of) segmented resource
-
-    Examples
-    --------
-
-    >>> timeline = Timeline(uri="MyVideo.avi")
-    >>> timeline.uri = "MyOtherVideo.avi"
-    >>> print timeline.uri
-    MyOtherVideo.avi
-
-    """
-
-    # Recursive binary search helper function
-    def __search_helper(self, element, sorted_list, left, right):
-
-        # Stop recursive search when position is found.
-        if (left+1) >= right:
-            return right
-
-        # Binary search pivot
-        mid = (left+right)/2
-
-        if element < sorted_list[mid]:
-            # Search in left part
-            return self.__search_helper(element, sorted_list, left, mid)
-        else:
-            # Search in right part
-            return self.__search_helper(element, sorted_list, mid, right)
-
-    def __search(self, element, sorted_list):
-        """Search insertion position in sorted list.
-
-        Parameters
-        ----------
-        element : any object with comparison operators
-            Element meant to be inserted into `sorted_list`
-        sorted_list : list of objects of same type as `element`
-            Sorted list into which `element` is to be inserted.
-
-        Returns
-        -------
-        index : int
-            Index of position where to insert `element` into `sorted_list`
-            so that the resulting list is still sorted.
-
-        """
-        # If list is empty, add unique element to the list
-        if len(sorted_list) == 0:
-            return 0
-
-        # If element is smaller than the smallest element of the list,
-        # add it at the beginning of the list
-        if element < sorted_list[0]:
-            return 0
-
-        # If element is greater than the greatest element of the list,
-        # add it at the end of the list
-        if element > sorted_list[-1]:
-            return len(sorted_list)
-
-        # Otherwise, binary search for the correct position
-        return self.__search_helper(element, sorted_list, 0, len(self))
-
-    def __iadd__(self, other):
-        """Use expression 'timeline += other'
-
-        Add new segment(s) to the timeline.
-
-        Parameters
-        ----------
-        other : Segment or Segment iterator
-            Can be a Timeline since it is a Segment iterator.
-
-        Returns
-        -------
-        timeline : Timeline (self)
-            Original timeline with added segments.
-
-        """
-
-        # timeline += segment
-        if isinstance(other, Segment):
-
-            # do nothing if segment is empty of already exists
-            if (not other) or (other in self.__segments):
-                return self
-
-            # position in Segment list
-            index = self.__search(other, self.__segments)
-
-            # position in RevSegment list
-            rehto = RevSegment(other)
-            xedni = self.__search(rehto, self.__rsegments)
-
-            # add segment in both lists
-            self.__segments.insert(index, other)
-            self.__rsegments.insert(xedni, rehto)
-
-            return self
-
-        # timeline += other_timeline
-        if isinstance(other, Timeline):
-            # check for uri conflict
-            if self.uri != other.uri:
-                raise ValueError("URI conflict:"
-                                 "'%s' and '%s" % (self.uri, other.uri))
-
-        # call timeline += segment for each segment in iterator/timeline
-        # will raise a TypeError in case one segment cannot be added
-        try:
-            for segment in other:
-                self += segment
-            return self
-        except Exception, e:
-            raise TypeError("unsupported operand type(s) for +=:"
-                            "must be Segment or Segment iterator.")
-
-    def __add__(self, other):
-        """Use expression 'timeline + other'
-
-        See Also
-        --------
-        __iadd__
-
-        """
-        timeline = self.copy()
-        timeline += other
-        return timeline
+        self.uri = uri
 
     def __len__(self):
-        """Use expression 'len(timeline)'
-
-        Returns
-        -------
-        number : int
-            Number of segments in timeline
-
-        """
-        return len(self.__segments)
-
-    def __nonzero__(self):
-        """Use expression 'if timeline'
-
-        Returns
-        -------
-        valid : bool
-            False if timeline is empty (contains no segment),
-            True otherwise
-
-        """
-        return len(self) > 0
+        root = self._segments.root
+        if root:
+            return root.metadata.num
+        else:
+            return 0
 
     def __iter__(self):
-        """Sorted segment iterator"""
-        return iter(self.__segments)
+        return iter(self._segments)
 
-    def __reversed__(self):
-        """Reverse-sorted segment iterator"""
-        return reversed(self.__segments)
+    def __nonzero__(self):
+        return len(self) > 0
 
-    def __getitem__(self, key):
-        """Use the expressions 'timeline[i]' or 'timeline[i:j]'
+    def add(self, segment):
+        """Add segment"""
+        if segment:
+            self._segments.add(segment)
 
-        Parameters
-        ----------
-        key : int or slice
-
-        Returns
-        -------
-        segment : Segment
-            key.th segment if key is int.
-        segments : list
-            list of segments if key is a slice.
-
-        Raises
-        ------
-        IndexError when requested segment is out of range.
-
-        Examples
-        --------
-
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]
-            >>> timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]
-
-            >>> segment = timeline[3]
-            >>> print segment
-            [2 --> 3]
-            >>> segments = timeline[2:5]
-            >>> print segments
-            [<Segment(1, 8)>, <Segment(2, 3)>, <Segment(2, 4)>]
-            >>> segments = timeline[:3]
-            >>> print segments
-            [<Segment(0, 1)>, <Segment(1, 2)>, <Segment(1, 8)>]
-            >>> segment = timeline[12]
-            Traceback (most recent call last):
-            ...
-            IndexError: list index out of range
-
-        """
-        return self.__segments[key]
-
-    def index(self, segment):
-        """Find position of segment
-
-        Parameters
-        ----------
-        segment : Segment
-            Segment to look for (must exist in timeline).
-
-        Returns
-        -------
-        index : int
-            Position of segment in timeline, such as timeline[index] == segment
-
-        Raises
-        ------
-        TypeError if segment is not a Segment
-        ValueError if segment does not exist in timeline
-
-        Examples
-        --------
-
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]
-            >>> timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]
-
-            >>> segment = Segment(2, 4)
-            >>> position = timeline.index(segment)
-            >>> print "Segment %s is at position #%d." % (segment, position)
-            Segment [2 --> 4] is at position #4.
-            >>> segment = Segment(4, 12)
-            >>> position = timeline.index(segment)
-            Traceback (most recent call last):
-            ...
-            ValueError: timeline does not contain segment [4 --> 12].
-
-        """
-
-        if not isinstance(segment, Segment):
-            raise TypeError("unsupported type: '%s'. "
-                            "Must be Segment." % type(segment).__name__)
-
-        index = self.__search(segment, self.__segments)-1
-        if self[index] == segment:
-            return index
+    def update(self, timeline):
+        """Add `timeline` segments"""
+        if self.uri == timeline.uri:
+            self._segments.update(timeline._segments)
         else:
-            raise ValueError("timeline does not contain segment %s." % segment)
+            raise ValueError('URI mismatch (%s vs. %s)' % (self.uri,
+                                                           timeline.uri))
 
-    # ------------------------------------------------------------------- #
+    def union(self, other):
+        """Create new timeline made of union of segments"""
+        if self.uri == other.uri:
+            segments = self._segments.union(other._segments)
+            return Timeline(segments=segments, uri=self.uri)
 
-    def __intersecting(self, query_segment):
-        """Intersecting segments
+    def __tree(self, node, depth, metadata):
+        if node:
+            self.__tree(node.right, depth+2, metadata)
+            if metadata:
+                print " " * depth + str(node.key) + " " + str(node.metadata)
+            else:
+                print " " * depth + str(node.key)
+            self.__tree(node.left, depth+2, metadata)
 
-        Parameters
-        ----------
-        segment : `Segment`
-            Query segment
+    def tree(self, metadata=False):
+        """Print red-black tree used to store segments"""
+        self.__tree(self._segments.root, 0, metadata)
 
-        Returns
-        -------
-        intersecting : list
-            Sorted list of intersecting segments
-        intersection : list
-            Corresponding list of query-cropped intersecting segments
-        i2i : dict
-            (Cropped segment)-to-(set of original segments) dictionary
+    def __kth(self, node, k):
+        """"""
 
+        if node.left:
+
+            # if there are exactly k elements in left child
+            # then the kth (0-indexed) element is in root node
+            if k == node.left.metadata.num:
+                return node.key
+
+            # if there are more than k elements in left child
+            # then the kth element should be found in left child
+            elif k < node.left.metadata.num:
+                return self.__kth(node.left, k)
+
+            # if there are less than k elements in left child
+            # then the kth element should be found in right child
+            else:
+                return self.__kth(node.right, k-1-node.left.metadata.num)
+        else:
+
+            if k == 0:
+                return node.key
+
+            else:
+                return self.__kth(node.right, k-1)
+
+    def kth(self, k):
+        """Get kth segment"""
+        if 0 <= k and k < self._segments.root.metadata.num:
+            return self.__kth(self._segments.root, k)
+        else:
+            raise IndexError('')
+
+    def __order(self, node, segment, k):
+
+        if node is None:
+            raise ValueError('Timeline does not contain segment.')
+
+        elif segment == node.key:
+            return k + (node.left.metadata.num if node.left else 0)
+
+        elif segment < node.key:
+            return self.__order(node.left, segment, k)
+
+        else:
+            return self.__order(node.right, segment,
+                                k+1+(node.left.metadata.num if node.left
+                                     else 0))
+
+    def order(self, segment):
+        return self.__order(self._segments.root, segment, 0)
+
+    def __dfs(self, node):
+        """Depth-first search key iterator"""
+        if node:
+            for key in self.__dfs(node.left):
+                yield key
+            yield node.key
+            for key in self.__dfs(node.right):
+                yield key
+
+    def __crop_loose(self, node, segment):
+        """Returns segments overlapping query segment.
         """
 
-        # if query segment is empty, it intersects nothing.
-        if not query_segment:
-            return [], [], {}
+        # empty list of segments
+        segments = []
 
-        # any intersecting segment starts before query ends
-        # and ends after it starts
+        # search left child if it exists
+        if node.left:
 
-        # property 1:
-        # every segment in __segments[:index] starts before query ends
-        dummy_end = Segment(query_segment.end-SEGMENT_PRECISION,
-                            query_segment.end-SEGMENT_PRECISION)
-        index = self.__search(dummy_end, self.__segments)
+            # if left child extent may intersect query `segment`
+            # look for intersecting segments in left child
+            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
+            if left_extent.intersects(segment):
 
-        # property 2:
-        # every segment in __rsegments[xedni:] ends after query starts
-        dummy_start = RevSegment(Segment(query_segment.start+SEGMENT_PRECISION,
-                                         query_segment.start+SEGMENT_PRECISION))
-        xedni = self.__search(dummy_start, self.__rsegments)
+                # if left child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if left_extent in segment:
+                    segments.extend([key for key in self.__dfs(node.left)])
 
-        # get segments with both properties (ie. intersecting query segment)
-        both = set(self.__segments[:index]) & set(self.__rsegments[xedni:])
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_loose(node.left, segment))
 
-        # convert every RevSegment to Segment + sort them all
-        # (list of segments intersecting query)
-        intersecting = sorted([rsegment.copy() for rsegment in both])
+        # add root segment if it intersects query `segment`
+        if node.key.intersects(segment):
+            segments.append(node.key)
 
-        # list of actual intersections with query
-        intersection = [(segment & query_segment) for segment in intersecting]
+        # search right child if it exists
+        if node.right:
 
-        # intersection-to-intersecting dictionary
-        i2i = {cropped: set([]) for cropped in intersection}
-        for original, cropped in zip(intersecting, intersection):
-            i2i[cropped].add(original)
+            # if right child extent may intersect query `segment`
+            # look for intersecting segments in right child
+            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
+            if right_extent.intersects(segment):
 
-        return intersecting, intersection, i2i
+                # if right child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if right_extent in segment:
+                    segments.extend([key for key in self.__dfs(node.right)])
 
-    def crop(self, subset, mode='intersection', mapping=False):
-        """Sub-timeline
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_loose(node.right, segment))
 
-        Parameters
-        ----------
-        subset : Segment or Timeline
+        # segments are naturally ordered (depth-first search)
+        return segments
 
-        mode : {'strict', 'loose', 'intersection'}, optional
-            Default `mode` is 'intersection'.
-
-        mapping : bool, optional
-            This parameter has no effect in 'strict' or 'loose' mode.
-            In 'intersection' mode, when `mapping` is True, returns
-            the cropped-to-originals segment mapping. One cropped segments
-            might come from two different original segments.
-
-        Returns
-        -------
-        timeline : Timeline
-            In 'strict' mode, `timeline` only contains segments that are fully
-            included in provided segment or timeline coverage.
-            In 'loose' mode, `timeline` contains every segment intersecting
-            provided segment or timeline.
-            'intersection' mode is similar to 'loose' mode except sub-timeline
-            segments are cropped to be fully included in provided segment or
-            timeline.
-        mapping : dict
-            Cropped-to-(set of originals) segment mapping.
-            (returned only when mode = 'intersection' and mapping = True.)
-
-        Examples
-        --------
-
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(1, 8)]
-            >>> timeline += [Segment(2,3), Segment(2, 4), Segment(6, 7)]
-            >>> print timeline.crop(Segment(1.5, 6.5), mode='loose')
-            [
-               [1 --> 2]
-               [1 --> 8]
-               [2 --> 3]
-               [2 --> 4]
-               [6 --> 7]
-            ]
-            >>> print timeline.crop(Segment(1.5, 3), mode='intersection')
-            [
-               [1.5 --> 2]
-               [1.5 --> 3]
-               [2 --> 3]
-            ]
-            >>> print timeline.crop(Segment(1.5, 4), mode='strict')
-            [
-               [2 --> 3]
-               [2 --> 4]
-            ]
-
+    def __crop_strict(self, node, segment):
+        """Returns segments fully included in query `segment`.
         """
 
-        if not isinstance(subset, (Segment, Timeline)):
-            raise TypeError("unsupported argument type: '%s'. Must be "
-                            "Segment or Timeline." % type(subset).__name__)
+        # empty list of segments
+        segments = []
 
-        if isinstance(subset, Segment):
+        # search left child if it exists
+        if node.left:
 
-            query_segment = subset
+            # if left child extent may intersect query `segment`
+            # look for intersecting segments in left child
+            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
+            if left_extent.intersects(segment):
 
-            # intersecting segments
-            intersecting, intersection, i2i = self.__intersecting(query_segment)
+                # if left child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if left_extent in segment:
+                    segments.extend([key for key in self.__dfs(node.left)])
 
-            # in strict mode, only keep fully included segments
-            # ie. segments whose cropped version is identical to the original
-            if mode == 'strict':
-                segments = [i for i, I in zip(intersecting, intersection)
-                            if i == I]
-                timeline = Timeline(segments=segments, uri=self.uri)
-                return timeline
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_strict(node.left, segment))
 
-            # in loose mode, keep any intersecting segments
-            elif mode == 'loose':
-                timeline = Timeline(segments=intersecting, uri=self.uri)
-                return timeline
+        # add root segment if it is fully included in query `segment`
+        if node.key in segment:
+            segments.append(node.key)
 
-            # in intersection mode,
+        # search right child if it exists
+        if node.right:
+
+            # if right child extent may intersect query `segment`
+            # look for intersecting segments in right child
+            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
+            if right_extent.intersects(segment):
+
+                # if right child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if right_extent in segment:
+                    segments.extend([key for key in self.__dfs(node.right)])
+
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_strict(node.right, segment))
+
+        # segments are naturally ordered (depth-first search)
+        return segments
+
+    def __crop_inter(self, node, segment):
+        """
+        """
+
+        # empty list of segments
+        segments = []
+
+        # search left child if it exists
+        if node.left:
+
+            # if left child extent may intersect query `segment`
+            # look for intersecting segments in left child
+            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
+            if left_extent.intersects(segment):
+
+                # if left child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if left_extent in segment:
+                    segments.extend([(key, key) for key in self.__dfs(node.left)])
+
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_inter(node.left, segment))
+
+        # add root segment if it intersects query `segment`
+        # (along with their actual intersection)
+        if node.key.intersects(segment):
+            segments.append((node.key, node.key & segment))
+
+        # search right child if it exists
+        if node.right:
+
+            # if right child extent may intersect query `segment`
+            # look for intersecting segments in right child
+            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
+            if right_extent.intersects(segment):
+
+                # if right child extent is fully included in query `segment`
+                # then every segment intersects query `segment`
+                if right_extent in segment:
+                    segments.extend([(key, key) for key in self.__dfs(node.right)])
+
+                # otherwise, only some of them intersects it
+                # and we must look for them
+                else:
+                    segments.extend(self.__crop_inter(node.right, segment))
+
+        # segments are naturally ordered (depth-first search)
+        return segments
+
+    def crop(self, extent, mode='intersection', mapping=False):
+
+        if isinstance(extent, Segment):
+
+            # loose mode ==> use __crop_loose helper function
+            if mode == 'loose':
+                segments = self.__crop_loose(self._segments.root, extent)
+                return Timeline(segments=segments, uri=self.uri)
+
+            # strict mode ==> use __crop_strict helper function
+            elif mode == 'strict':
+                segments = self.__crop_strict(self._segments.root, extent)
+                return Timeline(segments=segments, uri=self.uri)
+
+            # intersection mode ==> use __crop_inter helper function
             elif mode == 'intersection':
-                timeline = Timeline(segments=intersection, uri=self.uri)
+
+                inter = self.__crop_inter(self._segments.root, extent)
+                i2o = {}
+                for original, intersection in inter:
+                    i2o[intersection] = i2o.get(intersection, list()) + [original]
                 if mapping:
-                    return timeline, i2i
+                    return Timeline(i2o, uri=self.uri), i2o
                 else:
-                    return timeline
+                    return Timeline(i2o, uri=self.uri)
 
             else:
-                raise ValueError('Unsupported mode (%s).' % mode)
+                raise NotImplementedError()
 
-        elif isinstance(subset, Timeline):
+        elif isinstance(extent, Timeline):
 
-            if subset.uri != self.uri:
-                raise ValueError('URI mismatch')
+            coverage = extent.coverage()
 
-            timeline = Timeline(uri=self.uri)
-            i2i = {}
-            for segment in subset.coverage():
-                if mode == 'intersection' and mapping:
-                    sub_timeline, sub_i2i = self.crop(segment, mode=mode,
-                                                      mapping=mapping)
-                    for cropped, originals in sub_i2i.iteritems():
-                        if cropped not in i2i:
-                            i2i[cropped] = set([])
-                        i2i[cropped].update(originals)
+            if mode == 'loose':
+                segments = []
+                for segment in coverage:
+                    segments.extend(self.__crop_loose(self._segments.root,
+                                                      segment))
+                return Timeline(segments=segments, uri=self.uri)
+
+            elif mode == 'strict':
+                segments = []
+                for segment in coverage:
+                    segments.extend(self.__crop_strict(self._segments.root,
+                                                       segment))
+                return Timeline(segments=segments, uri=self.uri)
+
+            elif mode == 'intersection':
+                i2o = {}
+                for segment in coverage:
+                    inter = self.__crop_inter(self._segments.root, segment)
+                    for o, i in inter:
+                        i2o[i] = i2o.get(i, list()) + [o]
+                if mapping:
+                    return Timeline(i2o, uri=self.uri), i2o
                 else:
-                    sub_timeline = self.crop(segment, mode=mode)
-                timeline += sub_timeline
+                    return Timeline(i2o, uri=self.uri)
 
-            if mode == 'intersection' and mapping:
-                return timeline, i2i
             else:
-                return timeline
+                raise NotImplementedError()
 
-    def __setitem__(self, key, value):
-        raise NotImplementedError("use '+=' operator to add and 'del' operator"
-                                  "to remove segment(s).")
+    def __overlapping(self, node, t):
 
-    def __delitem__(self, key):
-        """Use expression 'del timeline[i]' or 'del timeline[segment]'
+        segments = []
 
-        Remove segment(s) from timeline (corresponding to provided index)
+        if node.left and node.left.metadata.min <= t and node.left.metadata.max >= t:
+            segments.extend(self.__overlapping(node.left, t))
 
-        Parameters
-        ----------
-        key : int, slice or Segment
-            Index of segments or Segment to remove.
+        if node.key.start <= t and node.key.end >= t:
+            segments.append(node.key)
 
-        Raises
-        ------
-        TypeError if key is neither int, slice or Segment
-        ValueError if segment does not exist in timeline
+        if node.right and node.right.metadata.min <= t and node.right.metadata.max >= t:
+            segments.extend(self.__overlapping(node.right, t))
 
-        Examples
-        --------
+        return segments
 
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(2,3)]
-            >>> timeline += [Segment(2, 4), Segment(1, 8), Segment(6, 7)]
-
-            Try to remove unexisting segment
-
-            >>> del timeline[Segment(3, 4)]
-            Traceback (most recent call last):
-            ...
-            ValueError: timeline does not contain segment [3 --> 4].
-
-            Remove segment
-
-            >>> del timeline[Segment(1, 2)]
-            >>> print timeline
-            [
-               [0 --> 1]
-               [1 --> 8]
-               [2 --> 3]
-               [2 --> 4]
-               [6 --> 7]
-            ]
-
-            Remove fourth segment
-
-            >>> del timeline[3]
-            >>> print timeline
-            [
-               [0 --> 1]
-               [1 --> 8]
-               [2 --> 3]
-               [6 --> 7]
-            ]
-
-            Remove second and third segments
-
-            >>> del timeline[1:3]
-            >>> print timeline
-            [
-               [0 --> 1]
-               [6 --> 7]
-            ]
-
-        """
-
-        if not isinstance(key, (int, slice, Segment)):
-            raise KeyError("unsupported type for key: '%s'. Must be int, "
-                           "slice or Segment." % type(key).__name__)
-
-        # del timeline[i]
-        # remove i.th segment
-        if isinstance(key, int):
-            # find segment in reverse sorted list
-            segment = self.__segments[key]
-            yek = self.__search(RevSegment(segment), self.__rsegments)-1
-            # delete segment in both lists
-            del self.__segments[key]
-            del self.__rsegments[yek]
-
-        # del timeline[i:j]
-        # remove i.th to (j-1).th segments
-        elif isinstance(key, slice):
-            segments = self.__segments[key]
-            for segment in segments:
-                # find segment in sorted list
-                index = self.__search(segment, self.__segments)-1
-                # find segment in reverse sorted list
-                xedni = self.__search(RevSegment(segment), self.__rsegments)-1
-                # delete segment in both lists
-                del self.__segments[index]
-                del self.__rsegments[xedni]
-
-        # del timeline[segment]
-        # remove segment (if it exists)
-        elif isinstance(key, Segment):
-            # find position of segment
-            i = self.index(key)
-            # remove segment
-            self.__delitem__(i)
-
-    def clear(self):
-        """Faster 'del timeline[:]'"""
-        del self.__segments[:]
-        del self.__rsegments[:]
+    def overlapping(self, timestamp):
+        """Get list of segments overlapping `timestamp`"""
+        return self.__overlapping(self._segments.root, timestamp)
 
     def __eq__(self, other):
-        """Use expression 'timeline1 == timeline2'
-        """
-        if isinstance(other, Timeline):
-            return (len(self) == len(other)) and \
-                all([segment == other[s] for s, segment in enumerate(self)])
-        else:
-            return False
+        return self.uri == other.uri and self._segments == other._segments
 
     def __ne__(self, other):
-        """Use expression 'timeline1 != timeline2'
-        """
-        if isinstance(other, Timeline):
-            return (len(self) != len(other)) or \
-                any([segment != other[s] for s, segment in enumerate(self)])
-        else:
-            return True
+        return self.uri != other.uri or self._segments != other._segments
 
     def __str__(self):
         """Human-friendly representation"""
 
         string = "[\n"
-        for segment in self:
-            string += "   %s\n" % segment
+        for segment in self._segments:
+            string += "   %s\n" % str(segment)
         string += "]"
         return string
 
     def __repr__(self):
-        return "<Timeline(%s)>" % self.__segments
+        return "<Timeline(%s)>" % list(self._segments)
 
     def __contains__(self, included):
         """Inclusion
@@ -727,7 +522,7 @@ class Timeline(object):
 
         Parameters
         ----------
-        included : Segment or Timeline
+        included : `Segment` or `Timeline`
 
         Returns
         -------
@@ -737,141 +532,14 @@ class Timeline(object):
 
         """
 
-        if not isinstance(included, (Segment, Timeline)):
-            raise TypeError("unsupported type '%s'. Must be"
-                            "Segment or Timeline." % type(included).__name__)
-
-        # True if `included` segment exists in timeline,
-        # False otherwise
         if isinstance(included, Segment):
-            try:
-                i = self.index(included)
-                return True
-            except Exception, e:
-                return False
+            return included in self._segments
 
-        # True if every segment of included timeline
-        # exists in timeline, False otherwise
         elif isinstance(included, Timeline):
-            return all([segment in self for segment in included])
+            return self._segments.issuperset(included._segments)
 
-    def intersects(self, intersected):
-        """Check whether timeline intersected other segment or timeline
-        Parameters
-        ----------
-        intersected : Segment or Timeline
-            Other segment or timeline
-
-        Returns
-        -------
-        intersects : bool
-            True if timeline intersected `intersected`, False otherwise
-        """
-
-        if not isinstance(intersected, (Segment, Timeline)):
-            raise TypeError("unsupported type '%s'. Must be"
-                            "Segment or Timeline." % type(intersected).__name__)
-
-        # when checking for timeline intersection
-        # this is done segment by segment
-        if isinstance(intersected, Timeline):
-            coverage = intersected.coverage()
-            for segment in coverage:
-                if self.intersects(segment):
-                    return True
-            return False
-        # returns True as soon as we found an intersecting segment
-        # False otherwise...
-        elif isinstance(intersected, Segment):
-            for segment in self:
-                if segment.intersects(intersected):
-                    return True
-            return False
-
-    def covers(self, covered, mode='strict'):
-        """Coverage check
-
-        Check whether timeline covers other segment or timeline.
-
-        In 'strict' mode, a segment is covered if at least one segment of
-        the timeline contains it.
-
-        In 'loose' mode, a segment is covered if their exists a set of segments
-        whose coverage fully contains it.
-
-        Parameters
-        ----------
-        covered : Segment or Timeline
-        mode : {'strict', 'loose'}, optional
-            Default is 'strict'
-
-        Returns
-        -------
-        covers : bool
-            True if timeline covers `covered`, False otherwise
-
-        """
-
-        if not isinstance(covered, (Segment, Timeline)):
-            raise TypeError("unsupported type '%s'. Must be"
-                            "Segment or Timeline." % type(covered).__name__)
-
-        if mode not in ['loose', 'strict']:
-            raise NotImplementedError("unsupported mode '%s'." % mode)
-
-        if mode == 'strict':
-
-            # True if other segment is contained
-            # by at least one segment of the timeline
-            if isinstance(covered, Segment):
-                return any([covered in segment
-                            for segment in self.crop(covered, mode='loose')])
-
-            # True if timeline covers all other timeline segment
-            elif isinstance(covered, Timeline):
-                return all([self.covers(segment, mode='strict')
-                            for segment in covered])
-
-        # 'loose' mode is equivalent to 'strict' mode applied on coverage
-        elif mode == 'loose':
-            coverage = self.coverage()
-            return coverage.covers(covered, mode='strict')
-
-    def __and__(self, other):
-        """Intersection of two timelines (or a timeline and a segment)
-
-        Use expression 'timeline & segment' or 'timeline & other_timeline
-
-        Parameters
-        ----------
-        other : Segment or Timeline
-
-        Returns
-        -------
-        intersection : Timeline
-            Coverage of the timeline made of the intersection of the original
-            timeline and the provided segment (or timeline segments).
-
-        """
-        return self.crop(other, mode='intersection').coverage()
-
-    def __or__(self, other):
-        """Union of two timelines (or a timeline and a segment)
-
-        Use expression 'timeline | segment' or 'timeline | other_timeline
-
-        Parameters
-        ----------
-        other : Segment or Timeline
-
-        Returns
-        -------
-        union : Timeline
-            Coverage of the timeline made of segments from both the original
-            timeline and the provided timeline (or segment)
-
-        """
-        return (self + other).coverage()
+        else:
+            raise TypeError()
 
     def empty(self):
         """Empty copy of a timeline.
@@ -920,17 +588,17 @@ class Timeline(object):
             ]
 
         """
-        timeline = self.empty()
 
-        # If segment_func is not provided
-        # make it a pass-through function
+        # if segment_func is not provided
+        # just add every segment
         if segment_func is None:
-            segment_func = lambda segment: segment
+            return Timeline(segments=self._segments, uri=self.uri)
 
-        for segment in self:
-            timeline += segment_func(segment)
-
-        return timeline
+        # if is provided
+        # apply it to each segment before adding them
+        else:
+            return Timeline(segments=[segment_func(s) for s in self._segments],
+                            uri=self.uri)
 
     def extent(self):
         """Timeline extent
@@ -953,15 +621,9 @@ class Timeline(object):
             [0 --> 10]
 
         """
-        if self:
-            # The extent of a timeline ranges from the start time
-            # of the earliest segment to the end time of the latest one.
-            start_time = self.__segments[0].start
-            end_time = self.__rsegments[-1].end
-            return Segment(start=start_time, end=end_time)
-        else:
-            # The extent of an empty timeline is an empty segment
-            return Segment()
+        return Segment() if self._segments.root is None \
+            else Segment(self._segments.root.metadata.min,
+                         self._segments.root.metadata.max)
 
     def coverage(self):
         """Timeline coverage
@@ -978,12 +640,12 @@ class Timeline(object):
 
         """
 
+        # make sure URI attribute is kept.
+        coverage = Timeline(uri=self.uri)
+
         # The coverage of an empty timeline is an empty timeline.
         if not self:
-            return self.copy()
-
-        # Make sure URI attribute is kept.
-        coverage = Timeline(uri=self.uri)
+            return coverage
 
         # Principle:
         #   * gather all segments with no gap between them
@@ -995,9 +657,9 @@ class Timeline(object):
 
         # Initialize new coverage segment
         # as very first segment of the timeline
-        new_segment = self[0]
+        new_segment = self.kth(0)
 
-        for segment in self[1:]:
+        for segment in self:
 
             # If there is no gap between new coverage segment and next segment,
             if not (segment ^ new_segment):
@@ -1007,13 +669,13 @@ class Timeline(object):
             # If there actually is a gap,
             else:
                 # Add new segment to the timeline coverage
-                coverage += new_segment
+                coverage.add(new_segment)
                 # Initialize new coverage segment as next segment
                 # (right after the gap)
                 new_segment = segment
 
         # Add new segment to the timeline coverage
-        coverage += new_segment
+        coverage.add(new_segment)
 
         return coverage
 
@@ -1029,99 +691,71 @@ class Timeline(object):
 
         # The timeline duration is the sum of the durations
         # of the segments in the timeline coverage.
-        return sum([segment.duration for segment in self.coverage()])
+        return sum([s.duration for s in self.coverage()])
 
-    def gaps(self, focus=None):
-        """Timeline gaps
+    # def gaps(self, focus=None):
+    #     """Timeline gaps
 
-        Parameters
-        ----------
-        focus : None, Segment or Timeline
+    #     Parameters
+    #     ----------
+    #     focus : None, Segment or Timeline
 
-        Returns
-        -------
-        gaps : Timeline
-            Timeline made of all gaps from original timeline, and delimited
-            by provided segment or timeline.
+    #     Returns
+    #     -------
+    #     gaps : Timeline
+    #         Timeline made of all gaps from original timeline, and delimited
+    #         by provided segment or timeline.
 
-        Raises
-        ------
-        TypeError when `focus` is neither None, Segment nor Timeline
+    #     Raises
+    #     ------
+    #     TypeError when `focus` is neither None, Segment nor Timeline
 
-        Examples
-        --------
+    #     Examples
+    #     --------
 
-        """
-        if focus is None:
-            focus = self.extent()
+    #     """
+    #     if focus is None:
+    #         focus = self.extent()
 
-        if not isinstance(focus, (Segment, Timeline)):
-            raise TypeError("unsupported operand type(s) for -':"
-                            "%s and Timeline." % type(focus).__name__)
+    #     if not isinstance(focus, (Segment, Timeline)):
+    #         raise TypeError("unsupported operand type(s) for -':"
+    #                         "%s and Timeline." % type(focus).__name__)
 
-        # segment focus
-        if isinstance(focus, Segment):
+    #     # segment focus
+    #     if isinstance(focus, Segment):
 
-            # starts with an empty timeline
-            timeline = self.empty()
+    #         # starts with an empty timeline
+    #         timeline = self.empty()
 
-            # `end` is meant to store the end time of former segment
-            # initialize it with beginning of provided segment `focus`
-            end = focus.start
+    #         # `end` is meant to store the end time of former segment
+    #         # initialize it with beginning of provided segment `focus`
+    #         end = focus.start
 
-            # focus on the intersection of timeline and provided segment
-            for segment in self.crop(focus, mode='intersection').coverage():
+    #         # focus on the intersection of timeline and provided segment
+    #         for segment in self.crop(focus, mode='intersection').coverage():
 
-                # add gap between each pair of consecutive segments
-                # if there is no gap, segment is empty, therefore not added
-                # see .__iadd__ for more information.
-                timeline += Segment(start=end, end=segment.start)
+    #             # add gap between each pair of consecutive segments
+    #             # if there is no gap, segment is empty, therefore not added
+    #             # see .__iadd__ for more information.
+    #             timeline += Segment(start=end, end=segment.start)
 
-                # keep track of the end of former segment
-                end = segment.end
+    #             # keep track of the end of former segment
+    #             end = segment.end
 
-            # add final gap (if not empty)
-            timeline += Segment(start=end, end=focus.end)
+    #         # add final gap (if not empty)
+    #         timeline += Segment(start=end, end=focus.end)
 
-        # other_timeline - timeline
-        elif isinstance(focus, Timeline):
+    #     # other_timeline - timeline
+    #     elif isinstance(focus, Timeline):
 
-            # starts with an empty timeline
-            timeline = self.empty()
+    #         # starts with an empty timeline
+    #         timeline = self.empty()
 
-            # add gaps for every segment in coverage of provided timeline
-            for segment in focus.coverage():
-                timeline += self.gaps(focus=segment)
+    #         # add gaps for every segment in coverage of provided timeline
+    #         for segment in focus.coverage():
+    #             timeline += self.gaps(focus=segment)
 
-        return timeline
-
-    def is_segmentation(self):
-        """Check whether timeline contains overlapping segments
-
-        Examples
-        --------
-
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(2, 3), Segment(2, 4)]
-            >>> if timeline.is_segmentation():
-            ...    print "Timeline has no overlapping segments."
-            ... else:
-            ...    print "Timeline has overlapping segments."
-            Timeline has overlapping segments.
-
-        """
-
-        # Empty timelines have no overlapping segments
-        if not self:
-            return True
-
-        end = self[0].end
-        for s, segment in enumerate(self[1:]):
-            # use Segment.__nonzero__ (for precision-related reasons...)
-            if Segment(start=segment.start, end=end):
-                return False
-            end = segment.end
-        return True
+    #     return timeline
 
     def segmentation(self):
         """Non-overlapping timeline
@@ -1158,25 +792,20 @@ class Timeline(object):
             ]
 
         """
+        # COMPLEXITY: O(n)
+        coverage = self.coverage()
 
-        # return a copy if it has no overlapping segments
-        if self.is_segmentation():
-            return self.copy()
-
+        # COMPLEXITY: O(n.log n)
         # get all boundaries (sorted)
         # |------|    |------|     |----|
         #   |--|    |-----|     |----------|
         # becomes
         # | |  | |  | |   |  |  |  |    |  |
-        boundaries = []
-        for s, segment in enumerate(self):
-            start = segment.start
-            end = segment.end
-            if start not in boundaries:
-                boundaries.append(start)
-            if end not in boundaries:
-                boundaries.append(end)
-        boundaries = sorted(boundaries)
+        timestamps = set([])
+        for (start, end) in self:
+            timestamps.add(start)
+            timestamps.add(end)
+        timestamps = sorted(timestamps)
 
         # create new partition timeline
         # | |  | |  | |   |  |  |  |    |  |
@@ -1184,52 +813,20 @@ class Timeline(object):
         # |-|--|-|  |-|---|--|  |--|----|--|
 
         # start with an empty copy
-        timeline = self.empty()
+        timeline = Timeline(uri=self.uri)
+        segments = []
 
-        start = boundaries[0]
-        for boundary in boundaries[1:]:
-
-            new_segment = Segment(start=start, end=boundary)
-
+        start = timestamps[0]
+        for end in timestamps[1:]:
             # only add segments that are covered by original timeline
-            if self.covers(new_segment, mode='strict'):
-                timeline += Segment(start=start, end=boundary)
+            segment = Segment(start=start, end=end)
+            if segment and coverage.overlapping(segment.middle):
+                segments.append(segment)
+            start = end
 
-            start = boundary
+        timeline._segments.update(segments)
 
         return timeline
-
-    def is_partition(self):
-        """Check for partition
-
-        A partition is a segmentation, covering its extent exactly.
-
-        Returns
-        -------
-        is_seg : bool
-            True if timeline is a partition
-            False otherwise.
-
-
-        Examples
-        ---------
-
-            >>> timeline = Timeline()
-            >>> timeline += [Segment(0, 1), Segment(1, 2), Segment(3, 4)]
-            >>> if timeline.is_partition():
-            ...     print "Timeline is a partition."
-            >>> timeline += Segment(2, 3)
-            >>> if timeline.is_partition():
-            ...     print "Timeline is a partition."
-            Timeline is a partition.
-            >>> timeline += Segment(3.5, 5)
-            >>> if timeline.is_partition():
-            ...     print "Timeline is a partition."
-
-        """
-        return self and \
-            self.is_segmentation() and \
-            Timeline([self.extent()], uri=self.uri) == self.coverage()
 
     def to_json(self):
         return [s.to_json() for s in self]

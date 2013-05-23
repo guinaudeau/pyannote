@@ -98,7 +98,7 @@ def run(args):
         if args.no_overlap:
             # make sure timeline is a segmentation
             # tag each resulting segment by all intersecting labels
-            tmp_ref = ref >> (ref.timeline.segmentation())
+            tmp_ref = ref >> (ref.get_timeline().segmentation())
             # overlapping speech regions
             # (ie. timeline made of segments with two tracks or more)
             overlap = pyannote.Timeline([segment for segment in tmp_ref

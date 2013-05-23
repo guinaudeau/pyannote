@@ -144,7 +144,7 @@ for u, uri in enumerate(uris):
 
         if uem is not None:
             detection = detection.crop(uem, mode='intersection')
-        timeline = (reference.timeline + detection.timeline).segmentation()
+        timeline = (reference.get_timeline() + detection.get_timeline()).segmentation()
         reference = argMaxDirectTagger(reference >> timeline,
                                        detection >> timeline)
 

@@ -593,7 +593,7 @@ for u, uri in enumerate(uris):
         # make sure the tracks are named the same way
         # in speaker diarization and speaker identification
         if ss_src is not None:
-            assert ss_src.timeline == si_src.timeline, \
+            assert ss_src.get_timeline() == si_src.get_timeline(), \
                 "speaker diarization and identification timelines are not the same"
             for s in ss_src:
                 assert ss_src.tracks(s) == si_src.tracks(s), \
@@ -663,7 +663,7 @@ for u, uri in enumerate(uris):
         # # make sure the tracks are named the same way
         # # in head clustering and head recognition
         # if hh_src is not None:
-        #     assert hh_src.timeline == hi_src.timeline and \
+        #     assert hh_src.get_timeline() == hi_src.get_timeline() and \
         #            all([hh_src.tracks(s) == hi_src.track(s) for s in hh_src]), \
         #            "head clustering and recognition tracks are not the same"
 

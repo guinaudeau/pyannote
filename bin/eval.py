@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -42,7 +42,7 @@ argparser = ArgumentParser(parents=[clicommon.parser],
 
 def ref_parser(path):
     return AnnotationParser().read(path)
-argparser.add_argument('groundtruth', metavar='reference', 
+argparser.add_argument('groundtruth', metavar='reference',
                        type=ref_parser, help='path to reference')
 
 def hyp_parser(path):
@@ -59,8 +59,8 @@ argparser.add_argument('--dump', metavar='file.pkl', type=str, default=SUPPRESS,
 argparser.add_argument('--components', action='store_true',
                        help='detail error rate components')
 
-argparser.add_argument('--modality', 
-                       type=str, default=SUPPRESS, metavar="name", 
+argparser.add_argument('--modality',
+                       type=str, default=SUPPRESS, metavar="name",
                        help='indicate which modality to evaluate. '
                             '(mandatory in case reference contains '
                             'multiple modalities)')
@@ -130,7 +130,7 @@ if args.components:
     C = {}
     for m in requested:
         name = m.metric_name()
-        C[name] = {c: LabelMatrix(default=np.inf) 
+        C[name] = {c: LabelMatrix(default=np.inf)
                    for c in m.metric_components()}
 
 # only evaluate selection of uris
@@ -153,26 +153,26 @@ else:
 
 # process each URI, one after the other
 for u, uri in enumerate(uris):
-    
+
     # read reference for current URI
     ref = args.groundtruth(uri=uri, modality=modality)
-    
+
     # read UEM if provided
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
     else:
         uem = None
-    
+
     # get overlapping speech regions if requested
     if args.no_overlap:
         # make sure timeline is a segmentation
         # tag each resulting segment by all intersecting labels
-        tmp_ref = ref >> (ref.timeline.segmentation())
+        tmp_ref = ref >> (ref.get_timeline().segmentation())
         # overlapping speech regions
         # (ie. timeline made of segments with two tracks or more)
-        overlap = pyannote.Timeline([segment for segment in tmp_ref 
+        overlap = pyannote.Timeline([segment for segment in tmp_ref
                                              if len(tmp_ref[segment, :]) > 1])
-    
+
     # focus on UEM if provided
     if uem is not None:
         # update UEM if overlapping speech regions are removed from evaluation
@@ -183,22 +183,22 @@ for u, uri in enumerate(uris):
     else:
         # remove overlapping speech regions if requested
         if args.no_overlap:
-            ref = ref.crop(overlap.gaps(focus=ref.coverage()), 
+            ref = ref.crop(overlap.gaps(focus=ref.coverage()),
                            mode='intersection')
-    
-    
+
+
     # remove unknown if requested
     if hasattr(args, 'unknown') and args.unknown == 'remove':
-        unknows = set([label for label in ref.labels() 
+        unknows = set([label for label in ref.labels()
                              if isinstance(label, Unknown)])
         ref = ref.subset(unknows, invert=True)
-        
+
     # process each hypothesis file, one after the other
     for h, (path, hypothesis) in enumerate(args.hypothesis):
-        
+
         # read hypothesis for current URI
         hyp = hypothesis(uri=uri, modality=ref.modality)
-        
+
         # focus on UEM if provided
         if uem is not None:
             # UEM was already updated to take overlapping speech regions
@@ -207,23 +207,23 @@ for u, uri in enumerate(uris):
         else:
             # remove overlapping speech regions if requested
             if args.no_overlap:
-                hyp = hyp.crop(overlap.gaps(focus=hyp.coverage()), 
+                hyp = hyp.crop(overlap.gaps(focus=hyp.coverage()),
                                mode='intersection')
-        
+
         # remove unknown if requested
         if hasattr(args, 'unknown') and args.unknown == 'remove':
-            unknows = set([label for label in hyp.labels() 
+            unknows = set([label for label in hyp.labels()
                                  if isinstance(label, Unknown)])
             hyp = hyp.subset(unknows, invert=True)
-        
-        # compute 
+
+        # compute
         for name, metric in metrics.iteritems():
             details = metric[h](ref, hyp, detailed=True)
             M[name][uri, path] = details[metric[h].name]
             if args.components:
                 for component in C[name]:
                     C[name][component][uri, path] = details[component]
-        
+
         pb.update(u*len(args.hypothesis)+h+1)
 
 pb.finish()
@@ -246,12 +246,12 @@ for name, metric in metrics.iteritems():
                                 np.median(C[name][component][set(uris), path].M)
                 C[name][component][COMBINED, path] = \
                                 np.sum(C[name][component][set(uris), path].M)
-            
+
 # if there are more than one hypothesis
 # print one table per metric, with one column per hypothesis
 if len(args.hypothesis) > 1:
     for name, metric in metrics.iteritems():
-        print M[name].to_table(title=name, fmt='1.3', 
+        print M[name].to_table(title=name, fmt='1.3',
                                factorize='C')
 
 # if there is only one hypothesis

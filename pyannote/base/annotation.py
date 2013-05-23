@@ -64,104 +64,45 @@ class Unknown(object):
 
 class AnnotationMixin(object):
 
-    def _valid_segment(self, segment):
-        """Check segment validity
-
-        A segment is valid it is a non-empty instance of `Segment`.
-
-        Parameters
-        ----------
-        segment : object
-            Segment candidate
-
-        Returns
-        -------
-        valid : bool
-            True if segment is a non-empty instance of `Segment`.
-            False otherwise.
-
-        """
-        return isinstance(segment, Segment) and segment
-
-    def _valid_track(self, track):
-        """
-        Check track validity
-
-        Any hashable object can be used as a track name.
-
-        Parameters
-        ----------
-        track : object
-            Track candidate
-
-        Returns
-        -------
-        valid : bool
-            True if track is hashable. False otherwise.
-        """
-        return isinstance(track, Hashable)
-
-    def _valid_label(self, label):
-        """Check label validity
-
-        Any hashable object (but segment or timeline) can be used as a label.
-
-        Parameters
-        ----------
-        label : object
-            Label candidate
-
-        Returns
-        -------
-        valid : bool
-            True if track is hashable. False otherwise.
-        """
-        return isinstance(label, Hashable) and \
-            not isinstance(label, (Segment, Timeline))
-
-    def __get_timeline(self):
-        segments = set([s for s, _ in self._df.index])
-        return Timeline(segments, uri=self.uri)
-    timeline = property(fget=__get_timeline)
-    """Timeline of annotated segments"""
+    def get_timeline(self):
+        if self._timelineHasChanged:
+            self._timeline = Timeline(segments=[s for s, _ in self._df.index],
+                                      uri=self.uri)
+            self._timelineHasChanged = False
+        return self._timeline
 
     def __len__(self):
         """Number of annotated segments"""
-        return len(set([s for s, _ in self._df.index]))
+        return len(self.get_timeline())
 
     def __nonzero__(self):
         """False if annotation is empty"""
-        return len(self) > 0
+        return len(self.get_timeline()) > 0
 
-    def __contains__(self, segments):
+    def __contains__(self, included):
         """Check if segments are annotated
 
         Parameters
         ----------
-        segments : `Segment` or `Segment` iterator
+        included : `Segment` or `Timeline`
 
         Returns
         -------
         contains : bool
-            True if every segment in `segments` is annotated. False otherwise.
+            True if every segment in `included` is annotated, False otherwise.
         """
-
-        if isinstance(segments, Segment):
-            segments = [segments]
-
-        return all([segment in self._df.index for segment in segments])
+        return included in self.get_timeline()
 
     def __iter__(self):
         """Iterate over sorted segments"""
-        return iter(sorted(set([s for s, _ in self._df.index])))
+        return iter(self.get_timeline())
 
     def __reversed__(self):
         """Reverse iterate over sorted segments"""
-        segments = sorted(set([s for s, _ in self._df.index]))
-        return reversed(segment)
+        return reversed(self.get_timeline())
 
     def itersegments(self):
-        return iter(self)
+        return iter(self.get_timeline())
 
     def itertracks(self):
         """Iterate over annotation as (segment, track) tuple"""
@@ -201,13 +142,12 @@ class AnnotationMixin(object):
         """
         if isinstance(focus, Segment):
 
-            return self.crop(Timeline([focus], uri=self.uri),
-                             mode=mode)
+            return self.crop(Timeline([focus], uri=self.uri), mode=mode)
 
         elif isinstance(focus, Timeline):
 
             # timeline made of all annotated segments
-            timeline = self.timeline
+            timeline = self.get_timeline()
 
             # focus coverage
             coverage = focus.coverage()
@@ -372,7 +312,7 @@ class AnnotationMixin(object):
     def __str__(self):
         """Human-friendly representation"""
         if self:
-            self._df = self._df.sort_index(inplace=True)
+            self._df.sort_index(inplace=True)
             return str(self._df)
         else:
             return ""
@@ -425,6 +365,7 @@ class Annotation(AnnotationMixin, object):
         self._df = DataFrame(index=index)
         self.modality = modality
         self.uri = uri
+        self._timelineHasChanged = True
 
     # del annotation[segment]
     # del annotation[segment, :]
@@ -433,9 +374,11 @@ class Annotation(AnnotationMixin, object):
         if isinstance(key, Segment):
             segment = key
             self._df = self._df.drop(segment, axis=0)
+            self._timelineHasChanged = True
         elif isinstance(key, tuple) and len(key) == 2:
             segment, track = key
             self._df = self._df.drop((segment, track), axis=0)
+            self._timelineHasChanged = True
         else:
             raise KeyError('')
 
@@ -447,13 +390,8 @@ class Annotation(AnnotationMixin, object):
     # annotation[segment, track] = label
     def __setitem__(self, key, label):
         segment, track = key
-        if not self._valid_segment(segment):
-            raise KeyError('invalid segment.')
-        if not self._valid_track(track):
-            raise KeyError('invalid track name.')
-        if not self._valid_label(label):
-            raise KeyError('invalid label.')
         self._df = self._df.set_value((segment, track), LABEL, label)
+        self._timelineHasChanged = True
 
     def empty(self):
         return self.__class__(uri=self.uri, modality=self.modality)
@@ -576,8 +514,7 @@ class Annotation(AnnotationMixin, object):
 
         """
         a = self._df.ix[self._df[LABEL] == label]
-        segments = set([s for s, _ in a.index])
-        return Timeline(segments, uri=self.uri)
+        return Timeline(segments=[s for s, _ in a.index], uri=self.uri)
 
     def label_coverage(self, label):
         return self.label_timeline(label).coverage()
@@ -651,7 +588,7 @@ class Annotation(AnnotationMixin, object):
         # if segment is not provided, just look for the overall most frequent
         # label (ie. set segment to the extent of the annotation)
         if segment is None:
-            segment = self.timeline.extent()
+            segment = self.get_timeline().extent()
 
         # compute intersection duration for each label
         durations = {lbl: (self.label_timeline(lbl) & segment).duration()
@@ -909,6 +846,7 @@ class Scores(AnnotationMixin, object):
         self._df = DataFrame(index=index, dtype=np.float64)
         self.modality = modality
         self.uri = uri
+        self._timelineHasChanged = True
 
 
     # del scores[segment]
@@ -918,9 +856,11 @@ class Scores(AnnotationMixin, object):
         if isinstance(key, Segment):
             segment = key
             self._df = self._df.drop(segment, axis=0)
+            self._timelineHasChanged = True
         elif isinstance(key, tuple) and len(key) == 2:
             segment, track = key
             self._df = self._df.drop((segment, track), axis=0)
+            self._timelineHasChanged = True
         else:
             raise KeyError('')
 
@@ -948,13 +888,8 @@ class Scores(AnnotationMixin, object):
     # scores[segment, track, label] = value
     def __setitem__(self, key, value):
         segment, track, label = key
-        if not self._valid_segment(segment):
-            raise KeyError('invalid segment: %s' % repr(segment))
-        if not self._valid_track(track):
-            raise KeyError('invalid track name: %s' % repr(track))
-        if not self._valid_label(label):
-            raise KeyError('invalid label: %s' % repr(label))
         self._df = self._df.set_value((segment, track), label, value)
+        self._timelineHasChanged = True
 
     def labels(self, unknown=True):
         """List of labels
@@ -1132,7 +1067,6 @@ class Scores(AnnotationMixin, object):
         A = self.__class__(uri=self.uri, modality=self.modality)
         A._df = func(self._df)
         return A
-
 
 
 if __name__ == "__main__":

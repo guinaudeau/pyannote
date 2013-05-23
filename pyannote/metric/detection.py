@@ -41,7 +41,7 @@ class DetectionErrorRate(BaseMetric):
         detail = self._init_details()
 
         # common (up-sampled) timeline
-        common_timeline = reference.timeline + hypothesis.timeline
+        common_timeline = reference.get_timeline().union(hypothesis.get_timeline())
         common_timeline = common_timeline.segmentation()
 
         # align reference on common timeline
