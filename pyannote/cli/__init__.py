@@ -23,15 +23,19 @@ from argparse import SUPPRESS
 from pyannote.cli.uris import get_uris, URI_SUPPORT
 from pyannote.cli.parent import initParser, parentArgumentParser
 
-from pyannote.cli.argtypes import InputFileHandle, OutputFileHandle
-from pyannote.cli.argtypes import InputList
-from pyannote.cli.argtypes import InputGetTimeline
-from pyannote.cli.argtypes import InputGetAnnotation, InputGetAnnotationAndPath, OutputWriteAnnotation
+from pyannote.cli.argtypes import *
 
-__all__ = ['get_uris', 'URI_SUPPORT',
-           'initParser', 'parentArgumentParser',
-           'SUPPRESS',
-           'InputFileHandle', 'OutputFileHandle',
-           'InputList',
-           'InputGetTimeline',
-           'InputGetAnnotation', 'InputGetAnnotationAndPath', 'OutputWriteAnnotation']
+__all__ = [
+    'SUPPRESS',
+    'get_uris',
+    'URI_SUPPORT',
+    'initParser',
+    'parentArgumentParser',
+    'InputFileHandle',
+    'OutputFileHandle',
+    'InputList',
+    'InputGetTimeline',
+    'InputGetAnnotation',
+    'InputGetAnnotationAndPath',
+    'OutputWriteAnnotation',
+]
