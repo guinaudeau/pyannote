@@ -1,6 +1,6 @@
 [
   {
-    "annotation": [
+    "tracks": [
       {
         "track": 1630,
         "segment": {
@@ -622,7 +622,7 @@
     "modality": "speaker"
   },
   {
-    "annotation": [
+    "tracks": [
       {
         "label": "Charles_DE_GAULLE",
         "segment": {
@@ -716,7 +716,7 @@
     "uri": "LCP_TopQuestions_2012-02-22_232700"
   },
   {
-    "annotation": [
+    "tracks": [
       {
         "label": "Francois_FILLON",
         "segment": {
@@ -994,7 +994,7 @@
     "uri": "LCP_TopQuestions_2012-02-22_232700"
   },
   {
-    "annotation": [
+    "tracks": [
       {
         "label": "Jean-Baptiste_PREDALI",
         "segment": {
