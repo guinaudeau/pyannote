@@ -22,6 +22,33 @@ from segment import Segment
 from banyan import SortedSet
 
 
+def _kth(node, k):
+    """"""
+    if node.left:
+
+        # if there are exactly k elements in left child
+        # then the kth (0-indexed) element is in root node
+        if k == node.left.metadata.num:
+            return node.key
+
+        # if there are more than k elements in left child
+        # then the kth element should be found in left child
+        elif k < node.left.metadata.num:
+            return _kth(node.left, k)
+
+        # if there are less than k elements in left child
+        # then the kth element should be found in right child
+        else:
+            return _kth(node.right, k-1-node.left.metadata.num)
+    else:
+
+        if k == 0:
+            return node.key
+
+        else:
+            return _kth(node.right, k-1)
+
+
 class TimelineUpdator(object):
 
     class Metadata(object):
@@ -47,6 +74,14 @@ class TimelineUpdator(object):
 
         def __repr__(self):
             return 'MIN: %g | MAX %g | NUM %d' % (self.min, self.max, self.num)
+
+    def kth(self, k):
+        """Get kth segment"""
+        if 0 <= k and k < self.root.metadata.num:
+            return _kth(self.root, k)
+        else:
+            raise IndexError('')
+
 
 
 class Timeline(object):
@@ -204,39 +239,40 @@ class Timeline(object):
         """Print red-black tree used to store segments"""
         self.__tree(self._segments.root, 0, metadata)
 
-    def __kth(self, node, k):
-        """"""
+    # def __kth(self, node, k):
+    #     """"""
 
-        if node.left:
+    #     if node.left:
 
-            # if there are exactly k elements in left child
-            # then the kth (0-indexed) element is in root node
-            if k == node.left.metadata.num:
-                return node.key
+    #         # if there are exactly k elements in left child
+    #         # then the kth (0-indexed) element is in root node
+    #         if k == node.left.metadata.num:
+    #             return node.key
 
-            # if there are more than k elements in left child
-            # then the kth element should be found in left child
-            elif k < node.left.metadata.num:
-                return self.__kth(node.left, k)
+    #         # if there are more than k elements in left child
+    #         # then the kth element should be found in left child
+    #         elif k < node.left.metadata.num:
+    #             return self.__kth(node.left, k)
 
-            # if there are less than k elements in left child
-            # then the kth element should be found in right child
-            else:
-                return self.__kth(node.right, k-1-node.left.metadata.num)
-        else:
+    #         # if there are less than k elements in left child
+    #         # then the kth element should be found in right child
+    #         else:
+    #             return self.__kth(node.right, k-1-node.left.metadata.num)
+    #     else:
 
-            if k == 0:
-                return node.key
+    #         if k == 0:
+    #             return node.key
 
-            else:
-                return self.__kth(node.right, k-1)
+    #         else:
+    #             return self.__kth(node.right, k-1)
 
     def kth(self, k):
         """Get kth segment"""
-        if 0 <= k and k < self._segments.root.metadata.num:
-            return self.__kth(self._segments.root, k)
-        else:
-            raise IndexError('')
+        return self._segments.kth(k)
+        # if 0 <= k and k < self._segments.root.metadata.num:
+        #     return self.__kth(self._segments.root, k)
+        # else:
+        #     raise IndexError('')
 
     def __order(self, node, segment, k):
 
@@ -265,6 +301,87 @@ class Timeline(object):
             yield node.key
             for key in self.__dfs(node.right):
                 yield key
+
+    def __extent(self, node):
+        return Segment(node.metadata.min, node.metadata.max)
+
+    def __iter_inter(self, node1, node2):
+
+        # stop as soon as one tree is empty
+        if not node1 or not node2:
+            return
+
+        # stop as as soon as trees do not overlap
+        extent1 = self.__extent(node1)
+        extent2 = self.__extent(node2)
+        if not extent1.intersects(extent2):
+            return
+
+        # ----
+        # if left tree #1 is not empty, process it
+        # ----
+        if node1.left:
+
+            # find overlapping segments in left tree #1 and left tree #2
+            for (segment1, segment2) in self.__iter_inter(node1.left,
+                                                          node2.left):
+                yield segment1, segment2
+
+            # find segments of left tree #1 overlapping current segment #2
+            segment2 = node2.key
+            for segment1 in self.__crop_loose(node1.left, segment2):
+                yield segment1, segment2
+
+            # find overlapping segments in left tree #1 and right tree #2
+            for (segment1, segment2) in self.__iter_inter(node1.left,
+                                                          node2.right):
+                yield segment1, segment2
+
+        # ----
+        # find segments of tree #2 intersecting current segment #1
+        # ----
+        segment1 = node1.key
+
+        # find segments of left tree #2 overlapping current segment #1
+        if node2.left:
+            for segment2 in self.__crop_loose(node2.left, segment1):
+                yield segment1, segment2
+
+        # check if current segments #1 and #2 intersects
+        segment2 = node2.key
+        if segment1.intersects(segment2):
+            yield segment1, segment2
+
+        # find segments of right tree #2 overlapping current segment #1
+        if node2.right:
+            for segment2 in self.__crop_loose(node2.right, segment1):
+                yield segment1, segment2
+
+        # ----
+        # if right tree #1 is not empty, process it
+        # ----
+        if node1.right:
+
+            for (segment1, segment2) in self.__iter_inter(node1.right,
+                                                          node2.left):
+                yield segment1, segment2
+
+            segment2 = node2.key
+            for segment1 in self.__crop_loose(node1.right, segment2):
+                yield segment1, segment2
+
+            for (segment1, segment2) in self.__iter_inter(node1.right,
+                                                          node2.right):
+                yield segment1, segment2
+
+    def joint_iter(self, other):
+        for s1, s2 in self.__iter_inter(self._segments.root,
+                                        other._segments.root):
+            yield s1, s2
+
+    def new_crop_loose(self, other):
+        segments = [s for (s, _) in self.joint_iter(other)]
+        return Timeline(segments=segments, uri=self.uri)
 
     def __crop_loose(self, node, segment):
         """Returns segments overlapping query segment.
@@ -300,7 +417,8 @@ class Timeline(object):
 
             # if right child extent may intersect query `segment`
             # look for intersecting segments in right child
-            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
+            right_extent = Segment(node.right.metadata.min,
+                                   node.right.metadata.max)
             if right_extent.intersects(segment):
 
                 # if right child extent is fully included in query `segment`
