@@ -32,7 +32,7 @@ def dtw(source, target, window, distance):
 
     for i in range(1, n):
         for j in range(max(1, i-window), min(m, i+window)):
-            cost = distance(source[i], target[j])
+            cost = distance(i, j)
             D[i, j] = cost + min(D[i-1, j], D[i, j-1], D[i-1, j-1])
 
     i = n-1
@@ -62,16 +62,3 @@ def dtw(source, target, window, distance):
         j = new_j
 
     return D, path[::-1]
-
-
-def align(source, target, step=1.):
-    """
-
-    Parameters
-    ----------
-    source, target : Timeline
-
-    step : float
-
-    """
-    pass
