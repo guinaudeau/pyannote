@@ -166,28 +166,6 @@ class ILPClustering(object):
     # OBJECTIVE FUNCTIONS
     # =================================================================
 
-    def get_inter_cluster_dissimilarity(self, items,
-                                        similarity, get_similarity):
-        """Inter-cluster dissimilarity:  ∑ (1-xij).(1-pij)
-                                        i∈I
-                                        j∈I
-        """
-        values = [(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
-                  for I in items for J in items
-                  if not np.isnan(get_similarity(I, J, similarity))]
-        return grb.quicksum(values)
-
-    def get_intra_cluster_similarity(self, items,
-                                     similarity, get_similarity):
-        """Intra-cluster similarity: ∑  xij.pij
-                                    i∈I
-                                    j∈I
-        """
-        values = [get_similarity(I, J, similarity)*self.x[I, J]
-                  for I in items for J in items
-                  if not np.isnan(get_similarity(I, J, similarity))]
-        return grb.quicksum(values)
-
     def get_bipartite_similarity(self, items, otherItems,
                                  similarity, get_similarity):
         """Bi-partite similarity: ∑  xij.pij
@@ -197,7 +175,8 @@ class ILPClustering(object):
         values = [get_similarity(I, J, similarity)*self.x[I, J]
                   for I in items for J in otherItems
                   if not np.isnan(get_similarity(I, J, similarity))]
-        return grb.quicksum(values)
+
+        return grb.quicksum(values), len(values)
 
     def get_bipartite_dissimilarity(self, items, otherItems,
                                     similarity, get_similarity):
@@ -208,7 +187,27 @@ class ILPClustering(object):
         values = [(1-get_similarity(I, J, similarity))*(1-self.x[I, J])
                   for I in items for J in otherItems
                   if not np.isnan(get_similarity(I, J, similarity))]
-        return grb.quicksum(values)
+
+        return grb.quicksum(values), len(values)
+
+    def get_inter_cluster_dissimilarity(self, items,
+                                        similarity, get_similarity):
+        """Inter-cluster dissimilarity:  ∑ (1-xij).(1-pij)
+                                        i∈I
+                                        j∈I
+        """
+        return self.get_bipartite_dissimilarity(
+            items, items, similarity, get_similarity)
+
+    def get_intra_cluster_similarity(self, items,
+                                     similarity, get_similarity):
+        """Intra-cluster similarity: ∑  xij.pij
+                                    i∈I
+                                    j∈I
+        """
+        return self.get_bipartite_similarity(
+            items, items, similarity, get_similarity)
+
 
     def solve(self, init=None,
               method=None, mip_focus=None, heuristics=None,
@@ -367,12 +366,54 @@ class Finkel2008(ILPClustering):
 
         """
 
-        intra = self.get_intra_cluster_similarity(self.items, self.similarity,
-                                                  self.get_similarity)
-        inter = self.get_inter_cluster_dissimilarity(self.items,
-                                                     self.similarity,
-                                                     self.get_similarity)
-        self.model.setObjective(alpha*intra+(1-alpha)*inter, grb.GRB.MAXIMIZE)
+        intra, N = self.get_intra_cluster_similarity(
+            self.items, self.similarity, self.get_similarity)
+
+        inter, N = self.get_inter_cluster_dissimilarity(
+            self.items, self.similarity, self.get_similarity)
+
+        objective = 1./N*(alpha*intra+(1-alpha)*inter)
+
+        self.model.setObjective(objective, grb.GRB.MAXIMIZE)
+        self.model.update()
+
+
+class Bredin2013(Finkel2008):
+
+    def set_objective(self, weights, **kwargs):
+        """
+        weights['speaker', 'speaker'] = {'alpha': 0.5, 'beta': 0.5}
+        weights['speaker', 'spoken'] = {'alpha': 1.,  'beta': 0.1}
+        weights['speaker', 'written'] = {'alpha': 1., 'beta': 0.4}
+        """
+
+        objective = None
+
+        for (modality1, modality2), weight in weights.iteritems():
+
+            items1 = [i for i in self.items
+                      if isinstance(i, TrackNode)
+                      and i.modality == modality1]
+
+            items2 = [i for i in self.items
+                      if isinstance(i, TrackNode)
+                      and i.modality == modality2]
+
+            intra, N = self.get_bipartite_similarity(
+                items1, items2, self.similarity, self.get_similarity)
+
+            inter, N = self.get_bipartite_dissimilarity(
+                items1, items2, self.similarity, self.get_similarity)
+
+            alpha = weight['alpha']
+            beta = weight['beta']
+
+            if objective:
+                objective += beta/N * (alpha*intra + (1-alpha)*inter)
+            else:
+                objective = beta/N * (alpha*intra + (1-alpha)*inter)
+
+        self.model.setObjective(objective, grb.GRB.MAXIMIZE)
         self.model.update()
 
 
@@ -428,4 +469,3 @@ class Dupuy2012(ILPClustering):
 
         # model (lazy) update
         self.model.update()
-
