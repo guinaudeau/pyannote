@@ -756,7 +756,7 @@ class TrackCooccurrenceGraph(object):
         b : Annotation
 
         """
-        tl = (A.get_timeline() + B.get_timeline()).segmentation()
+        tl = (A.get_timeline().union(B.get_timeline())).segmentation()
         tl = Timeline([s for s in tl if s.duration > self.min_duration],
                       uri=tl.uri)
         a = A >> tl
