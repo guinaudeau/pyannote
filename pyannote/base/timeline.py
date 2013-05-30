@@ -22,6 +22,222 @@ from segment import Segment
 from banyan import SortedSet
 
 
+# =====================================================================
+# Helper functions
+# =====================================================================
+
+def _kth(node, k):
+    """Look for kth element of tree rooted at node"""
+
+    if not node:
+        raise IndexError("index out of range")
+
+    elif node.left:
+
+        # if there are more than k elements in left child
+        # then the kth element should be found in left child
+        if k < node.left.metadata.num:
+            return _kth(node.left, k)
+
+        # if there are less than k elements in left child
+        # then the kth element should be found in right child
+        elif k > node.left.metadata.num:
+            return _kth(node.right, k-1-node.left.metadata.num)
+
+        # if there are exactly k elements in left child
+        # then the kth (0-indexed) element is in root node
+        else:
+            return node.key
+
+    elif k == 0:
+        return node.key
+
+    else:
+        return _kth(node.right, k-1)
+
+
+def _index(node, segment, k):
+    """Look for segment in tree rooted at node"""
+
+    if not node:
+        raise ValueError("%s is not in timeline" % repr(segment))
+
+    elif segment < node.key:
+        return _index(node.left, segment, k)
+
+    elif segment > node.key:
+        return _index(node.right,
+                      segment,
+                      k+1+(node.left.metadata.num if node.left else 0))
+
+    else:
+        return k + (node.left.metadata.num if node.left else 0)
+
+
+def _debug(node, depth):
+    """Print debug"""
+
+    if node:
+        _debug(node.right, depth+4)
+        print " " * depth + repr(node.key) + " " + repr(node.metadata)
+        _debug(node.left, depth+4)
+
+
+def _dfs(node):
+    """Depth-first search key iterator"""
+
+    if not node:
+        return
+
+    for key in _dfs(node.left):
+        yield key
+
+    yield node.key
+
+    for key in _dfs(node.right):
+        yield key
+
+
+def _overlapping(node, t):
+
+    segments = []
+
+    if not node:
+        return segments
+
+    if node.left:
+        if node.left.metadata.extent.overlaps(t):
+            segments.extend(_overlapping(node.left, t))
+
+    if node.key.overlaps(t):
+        segments.append(node.key)
+
+    if node.right:
+        if node.right.metadata.extent.overlaps(t):
+            segments.extend(_overlapping(node.right, t))
+
+    return segments
+
+
+def _intersecting(node, segment):
+    """Returns segments intersecting query segment."""
+
+    # empty list of segments
+    segments = []
+
+    # search left child if it exists
+    if node.left:
+
+        # if left child extent may intersect query `segment`
+        # look for intersecting segments in left child
+        left_extent = node.left.metadata.extent
+        if left_extent.intersects(segment):
+
+            # if left child extent is fully included in query `segment`
+            # then every segment intersects query `segment`
+            if left_extent in segment:
+                segments.extend([key for key in _dfs(node.left)])
+
+            # otherwise, only some of them intersects it
+            # and we must look for them
+            else:
+                segments.extend(_intersecting(node.left, segment))
+
+    # add root segment if it intersects query `segment`
+    if node.key.intersects(segment):
+        segments.append(node.key)
+
+    # search right child if it exists
+    if node.right:
+
+        # if right child extent may intersect query `segment`
+        # look for intersecting segments in right child
+        right_extent = node.right.metadata.extent
+        if right_extent.intersects(segment):
+
+            # if right child extent is fully included in query `segment`
+            # then every segment intersects query `segment`
+            if right_extent in segment:
+                segments.extend([key for key in _dfs(node.right)])
+
+            # otherwise, only some of them intersects it
+            # and we must look for them
+            else:
+                segments.extend(_intersecting(node.right, segment))
+
+    # segments are naturally ordered (depth-first search)
+    return segments
+
+
+def _co_iter(node1, node2):
+    """Generator of all pairs of intersecting segments"""
+
+    # stop as soon as one tree is empty
+    if not node1 or not node2:
+        return
+
+    # stop as as soon as trees do not overlap
+    if not node1.metadata.extent.intersects(node2.metadata.extent):
+        return
+
+    # ----
+    # if left tree #1 is not empty, process it
+    # ----
+    if node1.left:
+
+        # find overlapping segments in left tree #1 and left tree #2
+        for (segment1, segment2) in _co_iter(node1.left, node2.left):
+            yield segment1, segment2
+
+        # find segments of left tree #1 overlapping current segment #2
+        segment2 = node2.key
+        for segment1 in _intersecting(node1.left, segment2):
+            yield segment1, segment2
+
+        # find overlapping segments in left tree #1 and right tree #2
+        for (segment1, segment2) in _co_iter(node1.left, node2.right):
+            yield segment1, segment2
+
+    # ----
+    # find segments of tree #2 intersecting current segment #1
+    # ----
+    segment1 = node1.key
+
+    # find segments of left tree #2 overlapping current segment #1
+    if node2.left:
+        for segment2 in _intersecting(node2.left, segment1):
+            yield segment1, segment2
+
+    # check if current segments #1 and #2 intersects
+    segment2 = node2.key
+    if segment1.intersects(segment2):
+        yield segment1, segment2
+
+    # find segments of right tree #2 overlapping current segment #1
+    if node2.right:
+        for segment2 in _intersecting(node2.right, segment1):
+            yield segment1, segment2
+
+    # ----
+    # if right tree #1 is not empty, process it
+    # ----
+    if node1.right:
+
+        for (segment1, segment2) in _co_iter(node1.right, node2.left):
+            yield segment1, segment2
+
+        segment2 = node2.key
+        for segment1 in _intersecting(node1.right, segment2):
+            yield segment1, segment2
+
+        for (segment1, segment2) in _co_iter(node1.right, node2.right):
+            yield segment1, segment2
+
+
+# =====================================================================
+# Banyan SortedSet updator
+# =====================================================================
+
 class TimelineUpdator(object):
 
     class Metadata(object):
@@ -35,19 +251,53 @@ class TimelineUpdator(object):
             if right:
                 self.num += right.num
 
-            # minimum timestamp in tree
-            self.min = key.start
+            # extent of tree
+            self.extent = key
             if left:
-                self.min = min(self.min, left.min)
-
-            # maximum timestamp in tree
-            self.max = key.end
+                self.extent = self.extent | left.extent
             if right:
-                self.max = max(self.max, right.max)
+                self.extent = self.extent | right.extent
 
         def __repr__(self):
-            return 'MIN: %g | MAX %g | NUM %d' % (self.min, self.max, self.num)
+            return '{extent: %s, num: %d}' % (repr(self.extent), self.num)
 
+    def length(self):
+        if self.root:
+            return self.root.metadata.num
+        else:
+            return 0
+
+    def kth(self, k):
+        """Get kth segment"""
+        if k < 0:
+            return _kth(self.root, self.root.num+k)
+        else:
+            return _kth(self.root, k)
+
+    def index(self, segment):
+        return _index(self.root, segment, 0)
+
+    def extent(self):
+        return self.root.metadata.extent
+
+    def debug(self):
+        _debug(self.root, 0)
+
+    def overlapping(self, t):
+        """Get list of segments overlapping time t"""
+        return _overlapping(self.root, t)
+
+    def intersecting(self, segment):
+        return _intersecting(self.root, segment)
+
+    def co_iter(self, other):
+        for segment, other_segment in _co_iter(self.root, other.root):
+            yield segment, other_segment
+
+
+# =====================================================================
+# Timeline class
+# =====================================================================
 
 class Timeline(object):
     """
@@ -148,6 +398,7 @@ class Timeline(object):
     """
 
     def __init__(self, segments=None, uri=None):
+
         super(Timeline, self).__init__()
 
         # sorted set of segments (as an augmented red-black tree)
@@ -160,17 +411,36 @@ class Timeline(object):
         self.uri = uri
 
     def __len__(self):
-        root = self._segments.root
-        if root:
-            return root.metadata.num
-        else:
-            return 0
+        return self._segments.length()
+
+    def __nonzero__(self):
+        return self._segments.length() > 0
 
     def __iter__(self):
         return iter(self._segments)
 
-    def __nonzero__(self):
-        return len(self) > 0
+    def __getitem__(self, k):
+        """Returns kth segment"""
+        return self._segments.kth(k)
+
+    def __eq__(self, other):
+        return self._segments == other._segments
+
+    def __ne__(self, other):
+        return self._segments != other._segments
+
+    def index(self, segment):
+        """Index of segment
+
+        Parameter
+        ---------
+        segment : Segment
+
+        Raises
+        ------
+        ValueError if the segment is not present
+        """
+        return self._segments.index(segment)
 
     def add(self, segment):
         """Add segment"""
@@ -179,329 +449,53 @@ class Timeline(object):
 
     def update(self, timeline):
         """Add `timeline` segments"""
-        if self.uri == timeline.uri:
-            self._segments.update(timeline._segments)
-        else:
-            raise ValueError('URI mismatch (%s vs. %s)' % (self.uri,
-                                                           timeline.uri))
+        self._segments.update(timeline._segments)
 
     def union(self, other):
         """Create new timeline made of union of segments"""
-        if self.uri == other.uri:
-            segments = self._segments.union(other._segments)
-            return Timeline(segments=segments, uri=self.uri)
+        segments = self._segments.union(other._segments)
+        return Timeline(segments=segments, uri=self.uri)
 
-    def __tree(self, node, depth, metadata):
-        if node:
-            self.__tree(node.right, depth+2, metadata)
-            if metadata:
-                print " " * depth + str(node.key) + " " + str(node.metadata)
-            else:
-                print " " * depth + str(node.key)
-            self.__tree(node.left, depth+2, metadata)
+    def co_iter(self, other):
+        for segment, other_segment in self._segments.co_iter(other._segments):
+            yield segment, other_segment
 
-    def tree(self, metadata=False):
-        """Print red-black tree used to store segments"""
-        self.__tree(self._segments.root, 0, metadata)
+    def crop(self, other, mode='intersection', mapping=False):
 
-    def __kth(self, node, k):
-        """"""
+        if isinstance(other, Segment):
+            other = Timeline(segments=[other], uri=self.uri)
+            return self.crop(other, mode=mode, mapping=mapping)
 
-        if node.left:
-
-            # if there are exactly k elements in left child
-            # then the kth (0-indexed) element is in root node
-            if k == node.left.metadata.num:
-                return node.key
-
-            # if there are more than k elements in left child
-            # then the kth element should be found in left child
-            elif k < node.left.metadata.num:
-                return self.__kth(node.left, k)
-
-            # if there are less than k elements in left child
-            # then the kth element should be found in right child
-            else:
-                return self.__kth(node.right, k-1-node.left.metadata.num)
-        else:
-
-            if k == 0:
-                return node.key
-
-            else:
-                return self.__kth(node.right, k-1)
-
-    def kth(self, k):
-        """Get kth segment"""
-        if 0 <= k and k < self._segments.root.metadata.num:
-            return self.__kth(self._segments.root, k)
-        else:
-            raise IndexError('')
-
-    def __order(self, node, segment, k):
-
-        if node is None:
-            raise ValueError('Timeline does not contain segment.')
-
-        elif segment == node.key:
-            return k + (node.left.metadata.num if node.left else 0)
-
-        elif segment < node.key:
-            return self.__order(node.left, segment, k)
-
-        else:
-            return self.__order(node.right, segment,
-                                k+1+(node.left.metadata.num if node.left
-                                     else 0))
-
-    def order(self, segment):
-        return self.__order(self._segments.root, segment, 0)
-
-    def __dfs(self, node):
-        """Depth-first search key iterator"""
-        if node:
-            for key in self.__dfs(node.left):
-                yield key
-            yield node.key
-            for key in self.__dfs(node.right):
-                yield key
-
-    def __crop_loose(self, node, segment):
-        """Returns segments overlapping query segment.
-        """
-
-        # empty list of segments
-        segments = []
-
-        # search left child if it exists
-        if node.left:
-
-            # if left child extent may intersect query `segment`
-            # look for intersecting segments in left child
-            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
-            if left_extent.intersects(segment):
-
-                # if left child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if left_extent in segment:
-                    segments.extend([key for key in self.__dfs(node.left)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_loose(node.left, segment))
-
-        # add root segment if it intersects query `segment`
-        if node.key.intersects(segment):
-            segments.append(node.key)
-
-        # search right child if it exists
-        if node.right:
-
-            # if right child extent may intersect query `segment`
-            # look for intersecting segments in right child
-            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
-            if right_extent.intersects(segment):
-
-                # if right child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if right_extent in segment:
-                    segments.extend([key for key in self.__dfs(node.right)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_loose(node.right, segment))
-
-        # segments are naturally ordered (depth-first search)
-        return segments
-
-    def __crop_strict(self, node, segment):
-        """Returns segments fully included in query `segment`.
-        """
-
-        # empty list of segments
-        segments = []
-
-        # search left child if it exists
-        if node.left:
-
-            # if left child extent may intersect query `segment`
-            # look for intersecting segments in left child
-            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
-            if left_extent.intersects(segment):
-
-                # if left child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if left_extent in segment:
-                    segments.extend([key for key in self.__dfs(node.left)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_strict(node.left, segment))
-
-        # add root segment if it is fully included in query `segment`
-        if node.key in segment:
-            segments.append(node.key)
-
-        # search right child if it exists
-        if node.right:
-
-            # if right child extent may intersect query `segment`
-            # look for intersecting segments in right child
-            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
-            if right_extent.intersects(segment):
-
-                # if right child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if right_extent in segment:
-                    segments.extend([key for key in self.__dfs(node.right)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_strict(node.right, segment))
-
-        # segments are naturally ordered (depth-first search)
-        return segments
-
-    def __crop_inter(self, node, segment):
-        """
-        """
-
-        # empty list of segments
-        segments = []
-
-        # search left child if it exists
-        if node.left:
-
-            # if left child extent may intersect query `segment`
-            # look for intersecting segments in left child
-            left_extent = Segment(node.left.metadata.min, node.left.metadata.max)
-            if left_extent.intersects(segment):
-
-                # if left child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if left_extent in segment:
-                    segments.extend([(key, key) for key in self.__dfs(node.left)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_inter(node.left, segment))
-
-        # add root segment if it intersects query `segment`
-        # (along with their actual intersection)
-        if node.key.intersects(segment):
-            segments.append((node.key, node.key & segment))
-
-        # search right child if it exists
-        if node.right:
-
-            # if right child extent may intersect query `segment`
-            # look for intersecting segments in right child
-            right_extent = Segment(node.right.metadata.min, node.right.metadata.max)
-            if right_extent.intersects(segment):
-
-                # if right child extent is fully included in query `segment`
-                # then every segment intersects query `segment`
-                if right_extent in segment:
-                    segments.extend([(key, key) for key in self.__dfs(node.right)])
-
-                # otherwise, only some of them intersects it
-                # and we must look for them
-                else:
-                    segments.extend(self.__crop_inter(node.right, segment))
-
-        # segments are naturally ordered (depth-first search)
-        return segments
-
-    def crop(self, extent, mode='intersection', mapping=False):
-
-        if isinstance(extent, Segment):
-
-            # loose mode ==> use __crop_loose helper function
-            if mode == 'loose':
-                segments = self.__crop_loose(self._segments.root, extent)
-                return Timeline(segments=segments, uri=self.uri)
-
-            # strict mode ==> use __crop_strict helper function
-            elif mode == 'strict':
-                segments = self.__crop_strict(self._segments.root, extent)
-                return Timeline(segments=segments, uri=self.uri)
-
-            # intersection mode ==> use __crop_inter helper function
-            elif mode == 'intersection':
-
-                inter = self.__crop_inter(self._segments.root, extent)
-                i2o = {}
-                for original, intersection in inter:
-                    i2o[intersection] = i2o.get(intersection, list()) + [original]
-                if mapping:
-                    return Timeline(i2o, uri=self.uri), i2o
-                else:
-                    return Timeline(i2o, uri=self.uri)
-
-            else:
-                raise NotImplementedError()
-
-        elif isinstance(extent, Timeline):
-
-            coverage = extent.coverage()
+        elif isinstance(other, Timeline):
 
             if mode == 'loose':
-                segments = []
-                for segment in coverage:
-                    segments.extend(self.__crop_loose(self._segments.root,
-                                                      segment))
+                segments = [segment for segment, _ in self.co_iter(other)]
                 return Timeline(segments=segments, uri=self.uri)
 
             elif mode == 'strict':
-                segments = []
-                for segment in coverage:
-                    segments.extend(self.__crop_strict(self._segments.root,
-                                                       segment))
+                segments = [segment
+                            for segment, other_segment in self.co_iter(other)
+                            if segment in other_segment]
                 return Timeline(segments=segments, uri=self.uri)
 
             elif mode == 'intersection':
-                i2o = {}
-                for segment in coverage:
-                    inter = self.__crop_inter(self._segments.root, segment)
-                    for o, i in inter:
-                        i2o[i] = i2o.get(i, list()) + [o]
                 if mapping:
-                    return Timeline(i2o, uri=self.uri), i2o
+                    mapping = {}
+                    for segment, other_segment in self.co_iter(other):
+                        inter = segment & other_segment
+                        mapping[inter] = mapping.get(inter, list()) + [segment]
+                    return Timeline(segments=mapping, uri=self.uri), mapping
                 else:
-                    return Timeline(i2o, uri=self.uri)
+                    segments = [segment & other_segment
+                                for segment, other_segment in self.co_iter(other)]
+                    return Timeline(segments=segments, uri=self.uri)
 
             else:
-                raise NotImplementedError()
-
-    def __overlapping(self, node, t):
-
-        segments = []
-
-        if node.left and node.left.metadata.min <= t and node.left.metadata.max >= t:
-            segments.extend(self.__overlapping(node.left, t))
-
-        if node.key.start <= t and node.key.end >= t:
-            segments.append(node.key)
-
-        if node.right and node.right.metadata.min <= t and node.right.metadata.max >= t:
-            segments.extend(self.__overlapping(node.right, t))
-
-        return segments
+                raise NotImplementedError("unsupported mode: '%s'" % mode)
 
     def overlapping(self, timestamp):
         """Get list of segments overlapping `timestamp`"""
-        return self.__overlapping(self._segments.root, timestamp)
-
-    def __eq__(self, other):
-        return self.uri == other.uri and self._segments == other._segments
-
-    def __ne__(self, other):
-        return self.uri != other.uri or self._segments != other._segments
+        return self._segments.overlapping(timestamp)
 
     def __str__(self):
         """Human-friendly representation"""
@@ -513,7 +507,8 @@ class Timeline(object):
         return string
 
     def __repr__(self):
-        return "<Timeline(%s)>" % list(self._segments)
+        return "<Timeline(uri=%s, segments=%s)>" % (self.uri,
+                                                    list(self._segments))
 
     def __contains__(self, included):
         """Inclusion
@@ -621,9 +616,7 @@ class Timeline(object):
             [0 --> 10]
 
         """
-        return Segment() if self._segments.root is None \
-            else Segment(self._segments.root.metadata.min,
-                         self._segments.root.metadata.max)
+        return self._segments.extent()
 
     def coverage(self):
         """Timeline coverage
@@ -657,7 +650,7 @@ class Timeline(object):
 
         # Initialize new coverage segment
         # as very first segment of the timeline
-        new_segment = self.kth(0)
+        new_segment = self._segments.kth(0)
 
         for segment in self:
 

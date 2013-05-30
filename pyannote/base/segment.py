@@ -125,10 +125,7 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
             False is segment is empty, True otherwise.
 
         """
-        if (self.end - self.start) > SEGMENT_PRECISION:
-            return True
-        else:
-            return False
+        return bool((self.end - self.start) > SEGMENT_PRECISION)
 
     def _get_duration(self):
         return self.end-self.start if self else 0.
@@ -191,6 +188,9 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
         return (self.start == other.start) or \
                (self.start < other.start and other.start < self.end-SEGMENT_PRECISION) or \
                (self.start > other.start and self.start < other.end-SEGMENT_PRECISION)
+
+    def overlaps(self, t):
+        return self.start <= t and self.end >= t
 
     def __or__(self, other):
         """Use the expression 'segment | other'
