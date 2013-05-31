@@ -372,7 +372,10 @@ class Finkel2008(ILPClustering):
         inter, N = self.get_inter_cluster_dissimilarity(
             self.items, self.similarity, self.get_similarity)
 
-        objective = 1./N*(alpha*intra+(1-alpha)*inter)
+        if N:
+            objective = 1./N*(alpha*intra+(1-alpha)*inter)
+        else:
+            objective = alpha*intra+(1-alpha)*inter
 
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
         self.model.update()
@@ -409,9 +412,11 @@ class Bredin2013(Finkel2008):
             beta = weight['beta']
 
             if objective:
-                objective += beta/N * (alpha*intra + (1-alpha)*inter)
+                if N:
+                    objective += beta/N * (alpha*intra + (1-alpha)*inter)
             else:
-                objective = beta/N * (alpha*intra + (1-alpha)*inter)
+                if N:
+                    objective = beta/N * (alpha*intra + (1-alpha)*inter)
 
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
         self.model.update()
