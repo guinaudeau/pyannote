@@ -62,25 +62,108 @@ class Unknown(object):
             return False
 
 
-class AnnotationMixin(object):
+class Annotation(object):
+    """
+    Parameters
+    ----------
+    uri : string, optional
+        uniform resource identifier of annotated document
+    modality : string, optional
+        name of annotated modality
+
+    Returns
+    -------
+    annotation : BaseAnnotation
+        New empty annotation
+    """
+
+    @classmethod
+    def from_df(cls, df, uri=None, modality=None, aggfunc=np.mean):
+        """
+
+        Parameters
+        ----------
+        df : DataFrame
+            Must contain the following columns: 'segment', 'track' and 'label'
+        uri : str, optional
+            Resource identifier
+        modality : str, optional
+            Modality
+        aggfunc : func
+            Value aggregation function in case of duplicate (segment, track,
+            label) tuples
+
+        Returns
+        -------
+
+        """
+        raise NotImplementedError('')
+        # TODO: support for aggfunc parameter
+        # annotation = cls(uri=uri, modality=modality)
+        # for segment, track, label in df.????:
+        #     annotation[segment, track] = label
+
+        # WAS:
+        # A = cls(uri=uri, modality=modality)
+        # A._df = df.set_index([SEGMENT, TRACK])[[LABEL]]
+        # return A
+
+    def __init__(self, uri=None, modality=None):
+        super(Annotation, self).__init__()
+
+        self.uri = uri
+        self.modality = modality
+
+        self._tracks = SortedDict(key_type=(float, float),
+                                  updator=TimelineUpdator)
+        self._labels = {}
+
+        self._hasChanged = True
+        self._labelHasChanged = True
+
+        self._timelineHasChanged = True
+
+    def __len__(self):
+        """Number of segments"""
+        return self._tracks.length()
+
+    def __nonzero__(self):
+        return self._stracks.length() > 0
+
+    def __iter__(self):
+        """Segment iterator"""
+        return iter(self._tracks)
+
+    def itersegments(self):
+        return iter(self._tracks)
+
+    def itertracks(self):
+        for segment, tracks in self._tracks.items():
+            for track, label in tracks.iteritems():
+                yield segment, track
+
+    def iterlabels(self):
+        for segment, tracks in self._tracks.items():
+            for track, label in tracks.iteritems():
+                yield segment, track, label
 
     def get_timeline(self):
+        """Get timeline made of annotated segments"""
         if self._timelineHasChanged:
-            self._timeline = Timeline(segments=[s for s, _ in self._df.index],
-                                      uri=self.uri)
+            self._timeline = Timeline(segments=self._tracks, uri=self.uri)
             self._timelineHasChanged = False
         return self._timeline
 
-    def __len__(self):
-        """Number of annotated segments"""
-        return len(self.get_timeline())
+    def __eq__(self, other):
+        return self._tracks == other._tracks
 
-    def __nonzero__(self):
-        """False if annotation is empty"""
-        return len(self.get_timeline()) > 0
+    def __ne__(self, other):
+        return self._tracks != other._tracks
 
     def __contains__(self, included):
-        """Check if segments are annotated
+        """Inclusion
+
+        Use expression 'segment in annotation' or 'timeline in annotation'
 
         Parameters
         ----------
@@ -89,48 +172,28 @@ class AnnotationMixin(object):
         Returns
         -------
         contains : bool
-            True if every segment in `included` is annotated, False otherwise.
+            True if every segment in `included` exists in annotation
+            False otherwise
+
         """
         return included in self.get_timeline()
 
-    def __iter__(self):
-        """Iterate over sorted segments"""
-        return iter(self.get_timeline())
-
-    def __reversed__(self):
-        """Reverse iterate over sorted segments"""
-        return reversed(self.get_timeline())
-
-    def itersegments(self):
-        return iter(self.get_timeline())
-
-    def itertracks(self):
-        """Iterate over annotation as (segment, track) tuple"""
-
-        # make sure segment/track pairs are sorted
-        self._df = self._df.sort_index()
-
-        for (segment, track), _ in self._df.iterrows():
-            yield segment, track
-
-    def crop(self, focus, mode='strict'):
-        """Crop on focus
+    def crop(self, other, mode='intersection'):
+        """Crop annotation
 
         Parameters
         ----------
-        focus : `Segment` or `Timeline`
+        other : `Segment` or `Timeline`
 
         mode : {'strict', 'loose', 'intersection'}
-            In 'strict' mode, only segments fully included in focus coverage are
-            kept. In 'loose' mode, any intersecting segment is kept unchanged.
-            In 'intersection' mode, only intersecting segments are kept and
-            replaced by their actual intersection with the focus.
+            In 'strict' mode, only segments fully included in focus coverage
+            are kept. In 'loose' mode, any intersecting segment is kept
+            unchanged. In 'intersection' mode, only intersecting segments are
+            kept and replaced by their actual intersection with the focus.
 
         Returns
         -------
-        cropped : same type as caller
-            Cropped version of the caller containing only tracks matching
-            the provided focus and mode.
+        cropped : Annotation
 
         Remarks
         -------
@@ -138,61 +201,47 @@ class AnnotationMixin(object):
         unchanged. However, in some cases where two original segments are
         cropped into the same resulting segments, conflicting track names are
         modified to make sure no track is lost.
-
         """
-        if isinstance(focus, Segment):
 
-            return self.crop(Timeline([focus], uri=self.uri), mode=mode)
+        if isinstance(other, Segment):
+            other = Timeline(segments=[other], uri=self.uri)
+            cropped = self.crop(other, mode=mode)
 
-        elif isinstance(focus, Timeline):
+        elif isinstance(other, Timeline):
 
-            # timeline made of all annotated segments
-            timeline = self.get_timeline()
+            cropped = self.__class__(uri=self.uri, modality=self.modality)
 
-            # focus coverage
-            coverage = focus.coverage()
+            if mode == 'loose':
+                # TODO
+                # update co_iter to yield (segment, tracks), (segment, tracks)
+                # instead of segment, segment
+                # This would avoid calling ._tracks.get(segment)
+                for segment, _ in self.co_iter(other):
+                    for track, label in self._tracks[segment]:
+                        cropped[segment, track] = label
 
-            if mode in ['strict', 'loose']:
-
-                # segments (strictly or loosely) included in requested coverage
-                included = timeline.crop(coverage, mode=mode)
-
-                # boolean array: True if row must be kept, False otherwise
-                keep = [(s in included) for s, _ in self._df.index]
-
-                # crop-crop
-                A = self.__class__(uri=self.uri, modality=self.modality)
-                A._df = self._df[keep]
-
-                return A
+            elif mode == 'strict':
+                # TODO
+                # see above
+                for segment, other_segment in self.co_iter(other):
+                    if segment in other_segment:
+                        for track, label in self._tracks[segment]:
+                            cropped[segment, track] = label
 
             elif mode == 'intersection':
+                # TODO
+                # see above
+                for segment, other_segment in self.co_iter(other):
+                    intersection = segment & other_segment
+                    for track, label in self._tracks[segment]:
+                        track = cropped.new_track(intersection,
+                                                  candidate=track)
+                        cropped[intersection, track] = label
 
-                # two original segments might be cropped into the same resulting
-                # segment -- therefore, we keep track of the mapping
-                intersection, mapping = timeline.crop(coverage,
-                                                      mode=mode, mapping=True)
+            else:
+                raise NotImplementedError("unsupported mode: '%s'" % mode)
 
-                # create new empty annotation
-                A = self.__class__(uri=self.uri, modality=self.modality)
-
-                for cropped in intersection:
-                    for original in mapping[cropped]:
-                        for track in self.tracks(original):
-                            # try to use original track name (candidate)
-                            # if it already exists, create a brand new one
-                            new_track = A.new_track(cropped, candidate=track)
-                            # copy each value, column by column
-                            for label in self._df.columns:
-                                value = self._df.get_value((original, track),
-                                                           label)
-                                A._df = A._df.set_value((cropped, new_track),
-                                                        label, value)
-
-                return A
-
-        else:
-            raise TypeError('')
+        return cropped
 
     def tracks(self, segment):
         """Set of tracks for query segment
@@ -207,15 +256,7 @@ class AnnotationMixin(object):
         tracks : set
             Set of tracks for query segment
         """
-
-        try:
-            df = self._df.xs(segment)
-            existing_tracks = set(df.index)
-
-        except Exception, e:
-            existing_tracks = set([])
-
-        return existing_tracks
+        return set(self._tracks.get(segment, []))
 
     def has_track(self, segment, track):
         """Check whether a given track exists
@@ -232,7 +273,7 @@ class AnnotationMixin(object):
         exists : bool
             True if track exists for segment
         """
-        return (segment, track) in self._df.index
+        return track in self.tracks(segment)
 
     def get_track_by_name(self, track):
         """Get all tracks with given name
@@ -247,25 +288,22 @@ class AnnotationMixin(object):
         tracks : list
             List of (segment, track) tuples
         """
-        try:
-            segments = list(self._df.xs(track, level=1).index)
-        except Exception, e:
-            segments = []
-        return [(s, track) for s in segments]
+        raise NotImplementedError('')
 
     def copy(self):
-        A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.copy()
-        return A
+        copied = self.__class__(uri=self.uri, modality=self.modality)
+        copied._tracks = SortedDict(items=self._tracks,
+                                    key_type=(float, float),
+                                    updator=TimelineUpdator)
+        return copied
 
     def retrack(self):
         """
         """
-        A = self.copy()
-        reindex = MultiIndex.from_tuples([(s, n)
-                                          for n, (s, _) in enumerate(A._df.index)])
-        A._df.index = reindex
-        return A
+        retracked = self.__class__(uri=self.uri, modality=self.modality)
+        for n, (segment, track, label) in enumerate(self.iterlabels()):
+            retracked[segment, track] = label
+        return retracked
 
     def new_track(self, segment, candidate=None, prefix=None):
         """Track name generator
@@ -311,87 +349,49 @@ class AnnotationMixin(object):
 
     def __str__(self):
         """Human-friendly representation"""
-        if self:
-            self._df.sort_index(inplace=True)
-            return str(self._df)
-        else:
-            return ""
-
-
-class Annotation(AnnotationMixin, object):
-    """
-    Parameters
-    ----------
-    uri : string, optional
-        uniform resource identifier of annotated document
-    modality : string, optional
-        name of annotated modality
-
-    Returns
-    -------
-    annotation : BaseAnnotation
-        New empty annotation
-    """
-
-    @classmethod
-    def from_df(cls, df, uri=None, modality=None, aggfunc=np.mean):
-        """
-
-        Parameters
-        ----------
-        df : DataFrame
-            Must contain the following columns: 'segment', 'track' and 'label'
-        uri : str, optional
-            Resource identifier
-        modality : str, optional
-            Modality
-        aggfunc : func
-            Value aggregation function in case of duplicate (segment, track,
-            label) tuples
-
-        Returns
-        -------
-
-        """
-        A = cls(uri=uri, modality=modality)
-        A._df = df.set_index([SEGMENT, TRACK])[[LABEL]]
-        return A
-
-    def __init__(self, uri=None, modality=None):
-        super(Annotation, self).__init__()
-        index = MultiIndex(levels=[[], []],
-                           labels=[[], []],
-                           names=[SEGMENT, TRACK])
-        self._df = DataFrame(index=index)
-        self.modality = modality
-        self.uri = uri
-        self._timelineHasChanged = True
+        # TODO: use pretty table
+        return str(self._tracks)
 
     # del annotation[segment]
     # del annotation[segment, :]
     # del annotation[segment, track]
     def __delitem__(self, key):
+
         if isinstance(key, Segment):
             segment = key
-            self._df = self._df.drop(segment, axis=0)
-            self._timelineHasChanged = True
+            tracks = self._tracks.pop(segment)
+            self._hasChanged = True
+            # timelineHasChanged = True
+
         elif isinstance(key, tuple) and len(key) == 2:
+
             segment, track = key
-            self._df = self._df.drop((segment, track), axis=0)
-            self._timelineHasChanged = True
+            tracks = self._tracks.get(segment, dict())
+            label = tracks.pop(track, None)
+            # labelHasChanged[label] = True
+
+            if not tracks:
+                self._tracks.pop(segment)
+                # timelineHasChanged = True
+
+            self._hasChanged = True
+
         else:
             raise KeyError('')
 
     # label = annotation[segment, track]
+
     def __getitem__(self, key):
         segment, track, = key
-        return self._df.get_value((segment, track), LABEL)
+        return self._tracks.get(segment, dict()).get(track, None)
 
     # annotation[segment, track] = label
     def __setitem__(self, key, label):
         segment, track = key
-        self._df = self._df.set_value((segment, track), LABEL, label)
-        self._timelineHasChanged = True
+        self._tracks[segment][track] = label
+        self._hasChanged = True
+        # timelineHasChanged
+        # labelHasChanged
 
     def empty(self):
         return self.__class__(uri=self.uri, modality=self.modality)
