@@ -24,8 +24,13 @@ The ``pyannote.base`` module contains the foundation object of ``PyAnnote``.
 
 """
 
-__all__ = ['Segment', 'Timeline', 'Annotation', 'Scores', 'Unknown',
-           'LabelMatrix']
+__all__ = [
+    'Segment',
+    'Timeline',
+    'Annotation',
+    'Unknown',
+    'LabelMatrix',
+    'Scores']
 
 URI = 'uri'
 MODALITY = 'modality'
@@ -36,7 +41,8 @@ SCORE = 'score'
 
 from segment import Segment
 from timeline import Timeline
-from annotation import Annotation, Scores, Unknown
+from annotation import Annotation, Unknown
+from scores import Scores
 from matrix import LabelMatrix
 
 if __name__ == "__main__":
