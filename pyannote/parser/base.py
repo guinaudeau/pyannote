@@ -23,7 +23,8 @@ import pandas
 import numpy as np
 from pyannote.base.segment import Segment
 from pyannote.base.timeline import Timeline
-from pyannote.base.annotation import Annotation, Unknown, Scores
+from pyannote.base.annotation import Annotation, Unknown
+from pyannote.base.scores import Scores
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
 
 
