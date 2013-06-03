@@ -18,14 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.segment import Segment
-from pyannote.base.timeline import Timeline
-from pyannote.base.annotation import Unknown, Annotation, Scores
-from pyannote.base.matrix import Cooccurrence
-from pyannote.algorithm.clustering.model.base import BaseModelMixin
-from pyannote.base.segment import Segment
-from pyannote.base.timeline import Timeline
-from pyannote.base.annotation import Unknown, Annotation, Scores
+from pyannote.base import Segment, Timeline, Annotation, Unknown, Scores
 from pyannote.base.matrix import Cooccurrence
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
 from pyannote.algorithm.mpg.node import IdentityNode, LabelNode, TrackNode

@@ -23,7 +23,8 @@ from argparse import ArgumentParser, SUPPRESS
 import numpy as np
 import pickle
 from pyannote import clicommon
-from pyannote.base.annotation import Annotation, Scores, Unknown
+from pyannote.base.annotation import Annotation, Unknown
+from pyannote.base.scores import Scores
 from pyannote.parser import AnnotationParser, LSTParser
 from pyannote.algorithm.util.calibration import IDScoreCalibration
 from pyannote.algorithm.tagging import ArgMaxDirectTagger
