@@ -62,17 +62,18 @@ pyannote = function() {
 
     pyannote.formatSeconds = function(seconds) {
 
+        var minFigures = d3.format("d");
         var twoFigures = d3.format("02d");
         var threeFigures = d3.format("03d");
 
-        // h = Math.floor(seconds / 3600);
-        // seconds = seconds - 3600*h;
+        h = Math.floor(seconds / 3600);
+        seconds = seconds - 3600*h;
         m = Math.floor(seconds / 60);
         seconds = seconds - 60*m;
         s = Math.floor(seconds);
         ms = Math.floor((seconds - s) * 1000);
 
-        return twoFigures(m) + ":" + twoFigures(s) + "." + threeFigures(ms);
+        return minFigures(h) + "'" + twoFigures(m) + "\"" + twoFigures(s) + "." + threeFigures(ms);
     };
 
     pyannote.draw = function(annotations, whole, detail) {
