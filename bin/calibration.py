@@ -25,9 +25,11 @@ import pickle
 from pyannote import clicommon
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.base.scores import Scores
-from pyannote.parser import AnnotationParser, LSTParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.lst import LSTParser
 from pyannote.algorithm.util.calibration import IDScoreCalibration
 from pyannote.algorithm.tagging import ArgMaxDirectTagger
+
 
 def train_speaker_calibration(args):
 
@@ -57,11 +59,11 @@ def train_speaker_calibration(args):
                 targets = set(s.labels())
         else:
             new_s = Scores(uri=s.uri, modality=s.modality)
-            for s,t,l,v in s.itervalues():
+            for s, t, l, v in s.itervalues():
                 if np.isnan(v):
                     continue
                 if l in targets:
-                    new_s[s,t,l] = v
+                    new_s[s, t, l] = v
             s = new_s
 
         if hasattr(args, 'uem'):
@@ -107,13 +109,13 @@ def train_head_calibration(args):
         new_r = Annotation(uri=reference.uri, modality=reference.modality)
         new_s = Scores(uri=score.uri, modality=score.modality)
 
-        for s,t,l in reference.iterlabels():
+        for s, t, l in reference.iterlabels():
             if isinstance(l, Unknown):
                 continue
             s_t = score.get_track_by_name(t)
             if not s_t:
                 continue
-            for L,v in score.get_track_scores(*(s_t[0])).iteritems():
+            for L, v in score.get_track_scores(*(s_t[0])).iteritems():
                 new_r[s, t] = l
                 new_s[s, t, L] = v
 
@@ -131,7 +133,6 @@ def train_head_calibration(args):
 
     with open(args.output, 'w') as f:
         pickle.dump(calibration, f)
-
 
 
 def apply_calibration(args):
@@ -156,13 +157,13 @@ def apply_calibration(args):
 
         # only keep tracks with scores for targets
         new_s = Scores(uri=s.uri, modality=s.modality)
-        for s,t,l,v in s.itervalues():
+        for s, t, l, v in s.itervalues():
             if not s:
                 continue
             if np.isnan(v):
                 continue
             if l in targets:
-                new_s[s,t,l] = v
+                new_s[s, t, l] = v
         s = new_s
 
         # focus on uem if requested
@@ -252,7 +253,8 @@ apply_parser.add_argument('calibration', metavar='calibration.pkl',
 
 def output_parser(path):
     try:
-        with open(path) as f: pass
+        with open(path) as f:
+            pass
     except IOError as e:
         writer, extension = AnnotationParser.guess(path)
         return writer(), open(path, 'w')

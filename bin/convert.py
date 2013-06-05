@@ -4,30 +4,31 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 
 from pyannote import clicommon
-argparser = ArgumentParser(parents=[clicommon.parser], 
+argparser = ArgumentParser(parents=[clicommon.parser],
                            description='A tool for annotation file conversion')
 
 
 srcContainsURI = False
+
 
 def src_parser(path):
     if clicommon.containsURI(path):
@@ -41,6 +42,7 @@ def src_parser(path):
 msg = 'path to source annotation. ' + clicommon.msgURI()
 argparser.add_argument('src', type=src_parser, metavar='source', help=msg)
 
+
 def out_parser(path):
     try:
        with open(path) as f: pass
@@ -53,7 +55,7 @@ argparser.add_argument('tgt', type=out_parser, metavar='target',
                        help='path to target annotation')
 
 group = argparser.add_argument_group('Modality conversion')
-group.add_argument('-mi', type=str, metavar='old', 
+group.add_argument('-mi', type=str, metavar='old',
                    action='append', dest='modality_old', default=[],
                    help='input modality name')
 group.add_argument('-mo', type=str, metavar='new',
@@ -79,8 +81,8 @@ def threshold_parser(value):
     else:
         return float(value)
 
-group.add_argument('--to-annotation', type=threshold_parser, metavar='THETA', 
-                   nargs='?', default=SUPPRESS, const=threshold_parser('-oo'), 
+group.add_argument('--to-annotation', type=threshold_parser, metavar='THETA',
+                   nargs='?', default=SUPPRESS, const=threshold_parser('-oo'),
                    help='convert scores to annotation. '
                         'if the score of the top-score label is higher than '
                         'THETA, then choose this label. otherwise, set label '
@@ -150,18 +152,18 @@ for u, uri in enumerate(uris):
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
         sys.stdout.flush()
-    
+
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
     else:
         uem = None
-    
+
     if srcContainsURI:
         src = args.src(uri)
-        
+
         if uem is not None:
             src = src.crop(uem, mode='intersection')
-        
+
         if src.modality in convert_modality:
             src.modality = convert_modality[src.modality]
         writer.write(structural_transforms(src), f=f)
@@ -169,13 +171,13 @@ for u, uri in enumerate(uris):
         # Modality name conversion
         for modality in src_modalities:
             src = args.src(uri=uri, modality=modality)
-            
+
             if uem is not None:
                 src = src.crop(uem, mode='intersection')
-            
+
             if modality in convert_modality:
                 src.modality = convert_modality[modality]
             writer.write(structural_transforms(src), f=f)
 
 f.close()
-    
+

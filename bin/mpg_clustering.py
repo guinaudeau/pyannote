@@ -23,7 +23,7 @@ import networkx as nx
 
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 from pyannote.algorithm.mpg.gurobi import GurobiModel, PCenterModel
 from pyannote.algorithm.mpg.util import densify
 

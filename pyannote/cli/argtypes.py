@@ -21,9 +21,10 @@
 import sys
 import os.path
 import pyannote.cli.uris
-from pyannote.parser import TimelineParser, AnnotationParser, LSTParser, \
-    LabelMatrixParser
-
+from pyannote.parser.timeline import TimelineParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.lst import LSTParser
+from pyannote.parser.matrix import LabelMatrixParser
 
 class InputFileHandle(object):
 

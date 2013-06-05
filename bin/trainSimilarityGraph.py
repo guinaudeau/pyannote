@@ -22,14 +22,14 @@
 import sys
 import pickle
 import numpy as np
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 # from pyannote.algorithm.clustering.util import LogisticProbabilityMaker
 from pyannote.algorithm.util.calibration import TwoClassesCalibration
 
 
 def speaker_diarization(args):
 
-    from pyannote.parser import PLPParser
+    from pyannote.parser.plp import PLPParser
     from pyannote.algorithm.clustering.model.base import SimilarityMatrix
     from pyannote.algorithm.clustering.model import BICMMx
     from pyannote.algorithm.clustering.util import label_clustering_groundtruth
@@ -120,7 +120,7 @@ def speaker_diarization(args):
 
 def face_clustering(args):
 
-    from pyannote.parser import LabelMatrixParser
+    from pyannote.parser.matrix import LabelMatrixParser
     from pyannote.base.annotation import Unknown
     from pyannote.algorithm.clustering.model import PrecomputedMMx
 

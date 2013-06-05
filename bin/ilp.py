@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,18 +24,18 @@ import networkx as nx
 
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Prob Graph ILP clustering')
 
 def input_parser(path):
-    
+
     def load_mpg(uri):
         return nx.read_gpickle(clicommon.replaceURI(path, uri))
-    
+
     return load_mpg
-    
+
 msg = 'path to input Multimodal Probability Graph. ' + clicommon.msgURI()
 argparser.add_argument('input', type=input_parser, metavar='mpg.pkl', help=msg)
 
@@ -53,13 +53,13 @@ argparser.add_argument('output', type=output_parser, metavar='output.mdtm',
 
 group = argparser.add_argument_group('Objective function')
 
-group.add_argument('--complete', action='store_true', 
+group.add_argument('--complete', action='store_true',
                    help='complete multimodal probability graph')
-group.add_argument('--objective', choices = ('finkel', 'norm_finkel', ), 
+group.add_argument('--objective', choices = ('finkel', 'norm_finkel', ),
                    default='finkel', help='choose objective function.')
 group.add_argument('--alpha', type=float, metavar='ALPHA', default=0.5,
                    help='set α value to ALPHA in objective function.')
-group.add_argument('--log-prob', action='store_true', 
+group.add_argument('--log-prob', action='store_true',
                    help='use log probability instead of probability.')
 
 ogroup = argparser.add_argument_group('Optimization')
@@ -83,7 +83,7 @@ ogroup.add_argument('--stop-after', type=int, metavar='N', default=SUPPRESS,
 # ogroup.add_argument('--maxnodes', type=int, metavar='N', default=SUPPRESS,
 #                     help='do not try to perform optimization if number of '
 #                          'is higher than N.')
-ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS, 
+ogroup.add_argument('--threads', type=int, metavar='N', default=SUPPRESS,
                     help='number of threads to use.')
 
 # ogroup.add_argument('--prune-mm', type=float, metavar='P', default=0.0,
@@ -118,68 +118,68 @@ if not hasattr(args, 'uris'):
 from pyannote.algorithm.mpg.node import IdentityNode, TrackNode
 from pyannote.algorithm.mpg.util import meta_mpg, complete_mpg
 from pyannote.algorithm.clustering.optimization.gurobi import GurobiModel
-from pyannote.parser import MDTMParser
+from pyannote.parser.mdtm import MDTMParser
 from pyannote.base.annotation import Annotation, Unknown
 import time
 
 def reconstruct(clusters, uri, modality):
-    
+
     A = Annotation(uri=uri, modality=modality)
-    
+
     for cluster in clusters:
-        
+
         # obtain cluster identity
         inodes = set([n for n in cluster if isinstance(n, IdentityNode)])
         if len(inodes) == 1:
             label = inodes.pop().identifier
         else:
             label = Unknown()
-        
-        tnodes = set([n for n in cluster 
+
+        tnodes = set([n for n in cluster
                         if isinstance(n, TrackNode) and n.modality == modality])
-        
+
         tracks = {}
         for n in tnodes:
             if n.track not in tracks:
                 tracks[n.track] = n.segment
             else:
-                tracks[n.track] = tracks[n.track] | n.segment 
-        
+                tracks[n.track] = tracks[n.track] | n.segment
+
         for track in tracks:
             A[tracks[track], track] = label
-    
+
     return A
 
 writer, f = args.output
 
 for u, uri in enumerate(args.uris):
-    
+
     if args.verbose:
         sys.stdout.write('[%d/%d] %s\n' % (u+1, len(args.uris), uri))
         sys.stdout.flush()
-    
+
     # load Multimodal Probability Graph
     mpg = args.input(uri)
-    
+
     # obtain list of modalities contained in the MPG
-    modalities = set([n.modality 
+    modalities = set([n.modality
                       for n in mpg if not isinstance(n, IdentityNode)])
-    
-    
+
+
     if args.complete:
         mpg = complete_mpg(mpg)
-    
+
     # get meta-MPG (create one meta-node for nodes connected with prob=1)
     mmpg, meta_nodes = meta_mpg(mpg)
-    
-    
+
+
     # # complete meta-MPG if requested
     # if args.complete:
     #     mmpg = complete_mpg(mmpg)
-    
+
     # # pruning
     # for e,f,data in G.edges(data=True):
-    #     
+    #
     #     # label/label pruning
     #     if isinstance(e, LabelNode) and isinstance(f, LabelNode):
     #         # mono-modal label/label pruning
@@ -193,46 +193,46 @@ for u, uri in enumerate(args.uris):
     #         # cross-modal label/label pruning
     #         else:
     #             pass
-    
+
     if hasattr(args, 'maxnodes') and len(mmpg) > args.maxnodes:
-        
+
         status_msg = 'Too many nodes (%d > %d).' % (len(mmpg), args.maxnodes)
         model_time = 0
         optimization_time = 0
-        
+
         # reconstruct from existing meta_nodes
         clusters = meta_nodes
-    
+
     else:
-        
+
         # actual optimization
         if hasattr(args, 'stop_after'):
             stopAfter = args.stop_after * 60
         else:
             stopAfter = None
-        
+
         if hasattr(args, 'threads'):
             threads = args.threads
         else:
             threads = None
-        
+
         # create Gurobi model
         start_time = time.time()
         model = GurobiModel(mmpg, method=method_parser(args.method),
                                       mipGap=args.mip_gap,
                                       threads=threads,
-                                      timeLimit=stopAfter, 
+                                      timeLimit=stopAfter,
                                       quiet=len(args.verbose) < 2)
         model_time = time.time() - start_time
-        
+
         model.setObjective(type=args.objective,
                            alpha=args.alpha,
                            log_prob=args.log_prob)
-        
+
         # dump model
         if hasattr(args, 'dump_model'):
             args.dump_model(model, uri)
-        
+
         # optimization
         start_time = time.time()
         CC, status_num, status_msg = model.optimize()
@@ -243,17 +243,17 @@ for u, uri in enumerate(args.uris):
         for c, cc in enumerate(CC):
             for meta_node in cc:
                 clusters[c].extend(meta_nodes[meta_node])
-        
+
         del model
 
     annotations = {modality: reconstruct(clusters, uri=uri, modality=modality) for modality in modalities}
-    
+
     writer.comment(uri, f=f)
     writer.comment(status_msg, f=f)
     msg = 'Model took %ds to create and %ds to optimize.' % \
                                     (int(model_time), int(optimization_time))
     writer.comment(msg, f=f)
-    
+
     for modality in annotations:
         writer.write(annotations[modality], f=f)
 

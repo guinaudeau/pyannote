@@ -19,11 +19,11 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import pickle
-import networkx as nx
 from argparse import ArgumentParser, SUPPRESS
 from pyannote import clicommon
-from pyannote.parser import AnnotationParser, LSTParser, MDTMParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.lst import LSTParser
+from pyannote.parser.mdtm import MDTMParser
 from pyannote.base.annotation import Unknown
 from pyannote.algorithm.tagging import ArgMaxDirectTagger
 

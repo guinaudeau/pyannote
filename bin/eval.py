@@ -23,16 +23,20 @@ from argparse import ArgumentParser, SUPPRESS
 from progressbar import ProgressBar, Bar, ETA
 import numpy as np
 import pyannote
-from pyannote.metric.diarization import DiarizationErrorRate, \
-                                        DiarizationPurity, \
-                                        DiarizationCoverage, \
-                                        DiarizationCompleteness, \
-                                        DiarizationHomogeneity
+from pyannote.metric.diarization import \
+    DiarizationErrorRate, \
+    DiarizationPurity, \
+    DiarizationCoverage, \
+    DiarizationCompleteness, \
+    DiarizationHomogeneity
 from pyannote.metric.detection import DetectionErrorRate
-from pyannote.metric.identification import IdentificationErrorRate, \
-                                           UnknownIDMatcher
+from pyannote.metric.identification import \
+    IdentificationErrorRate, \
+    UnknownIDMatcher
 
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.timeline import TimelineParser
+from pyannote.parser.lst import LSTParser
 from pyannote.base.matrix import LabelMatrix
 from pyannote.base.annotation import Unknown
 
@@ -40,10 +44,12 @@ from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='A tool for evaluation')
 
+
 def ref_parser(path):
     return AnnotationParser().read(path)
 argparser.add_argument('groundtruth', metavar='reference',
                        type=ref_parser, help='path to reference')
+
 
 def hyp_parser(path):
     return (path, AnnotationParser().read(path))

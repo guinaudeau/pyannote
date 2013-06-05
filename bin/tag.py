@@ -4,33 +4,28 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 #!/usr/bin/env python
 # encoding: utf-8
 
-import sys
-import pyannote
-import numpy as np
-from argparse import ArgumentParser, SUPPRESS
-from progressbar import ProgressBar, Bar, ETA
+from argparse import ArgumentParser
 
-from pyannote.parser import AnnotationParser, TimelineParser
-from pyannote.parser import LSTParser, MDTMParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.mdtm import MDTMParser
 
-from pyannote.base.matrix import Cooccurrence
 from pyannote.algorithm.tagging import HungarianTagger, ArgMaxTagger
 
 from pyannote import clicommon
@@ -79,21 +74,21 @@ else:
 
 # process each URI, one after the other
 for u, uri in enumerate(uris):
-    
+
     # read input for current URI
     original = args.input(uri).anonymize()
-    
+
     # read names for current URI
     names = args.names(uri)
-    
+
     # focus on UEM if provided
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
         names = names.crop(uem, mode='intersection')
-    
+
     tagged = tagger(names, original)
-    
+
     MDTMParser().write(tagged, f=args.output)
 
 args.output.close()
-    
+

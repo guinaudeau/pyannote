@@ -22,7 +22,7 @@ from argparse import ArgumentParser, SUPPRESS
 import pyannote.cli
 from pyannote.cli.argtypes import InputGetTimeline
 from pyannote.cli import URI_SUPPORT
-from pyannote.parser import LSTParser
+from pyannote.parser.lst import LSTParser
 import pyannote
 
 

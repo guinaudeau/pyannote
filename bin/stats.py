@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -26,9 +26,9 @@ from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Statistics on annotations')
 
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 
-argparser.add_argument('--modality', default=SUPPRESS, type=str, 
+argparser.add_argument('--modality', default=SUPPRESS, type=str,
                        help='modality to get stats from.')
 def ann_parser(path):
     return (path, AnnotationParser().read(path))
@@ -66,25 +66,25 @@ else:
 
 
 for u, uri in enumerate(uris):
-    
+
     if hasattr(args, 'uem'):
         uem = args.uem(uri)
     else:
         uem = None
-    
+
     for h, (path, annotation) in enumerate(args.annotation):
-        
+
         ann = annotation(uri, modality=modality)
-        
+
         if uem is not None:
             ann = ann.crop(uem, mode='intersection')
-        
+
         nlabels[uri, path] = len(ann.labels())
-        
+
         pb.update(u*len(args.annotation)+h+1)
 
 pb.finish()
-        
+
 # compute min, max, average
 MINIMUM = '__ minimum __'
 MAXIMUM = '__ maximum __'
@@ -99,4 +99,4 @@ for h, (path, _) in enumerate(args.annotation):
     nlabels[ARIMEAN, path] = np.mean(nlabels[set(uris), path].M)
 print nlabels.to_table(title='# labels', factorize='C')
 
-        
+

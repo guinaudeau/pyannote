@@ -1,10 +1,11 @@
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import LSTParser, TimelineParser
+from pyannote.parser.lst import LSTParser
+from pyannote.parser.timeline import TimelineParser
 import pyannote
 
 parser = ArgumentParser(add_help=False)
 
-parser.add_argument('--version', action='version', 
+parser.add_argument('--version', action='version',
                        version=('PyAnnote %s' % pyannote.__version__))
 
 parser.add_argument('--verbose', action='append_const', dest='verbose',
@@ -26,12 +27,12 @@ uris.add_argument('--uri', type=uri_parser, metavar='URI',
 def uris_parser(path):
     return LSTParser().read(path)
 uris.add_argument('--uris', type=uris_parser, metavar='uri.lst',
-                  dest='uris', default=SUPPRESS, 
+                  dest='uris', default=SUPPRESS,
                        help='list of resources to process')
 
 def uem_parser(path):
     return TimelineParser().read(path)
-parser.add_argument('--uem', type=uem_parser, metavar='file.uem', 
+parser.add_argument('--uem', type=uem_parser, metavar='file.uem',
                        default=SUPPRESS,
                        help='part of resources to process')
 
@@ -41,19 +42,19 @@ def msgURI():
 def replaceURI(path, uri):
     """
     Replace [URI] placeholder
-    
+
     Parameters
     ----------
     path : str
         Path with [URI] placeholder
     uri : str
         URI
-    
+
     Returns
     -------
     new_path : str
         `path` with [URI] placeholder replaced by `uri`
-    
+
     """
     new_path = str(path)
     new_path = new_path.replace('[URI]', uri)
@@ -62,17 +63,17 @@ def replaceURI(path, uri):
 def containsURI(path):
     """
     Check if path contains [URI] placeholder
-    
+
     Parameters
     ----------
     path : str
         Path
-        
+
     Returns
     -------
     contains : bool
         True if `path` contains one (or more) [URI] placeholders
         False otherwise
-    
+
     """
     return path.find('[URI]') > -1

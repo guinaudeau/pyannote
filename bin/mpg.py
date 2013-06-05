@@ -32,7 +32,7 @@ from pyannote import clicommon
 argparser = ArgumentParser(parents=[clicommon.parser],
                            description='Multimodal Probability Graph')
 
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 
 
 def mm_parser(path):
@@ -95,7 +95,7 @@ def ss_param_parser(param_pkl):
     return ssGraph
 
 
-from pyannote.parser import PLPParser
+from pyannote.parser.plp import PLPParser
 
 
 def ss_plp_parser(path):
@@ -225,7 +225,7 @@ def hh_param_parser(param_pkl):
 
     return hhGraph
 
-from pyannote.parser import LabelMatrixParser
+from pyannote.parser.matrix import LabelMatrixParser
 
 
 def hh_precomputed_parser(path):

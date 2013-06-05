@@ -35,7 +35,9 @@ from pyannote.metric.identification import IdentificationErrorRate, \
     IdentificationPrecision, \
     IdentificationRecall
 
-from pyannote.parser import AnnotationParser, TimelineParser, LSTParser
+from pyannote.parser.annotation import AnnotationParser
+from pyannote.parser.timeline import TimelineParser
+from pyannote.parser.lst import LSTParser
 from pyannote.base.matrix import LabelMatrix
 from pyannote.base.annotation import Unknown
 

@@ -22,7 +22,7 @@ import sys
 import pickle
 import pyannote
 from argparse import ArgumentParser, SUPPRESS
-from pyannote.parser import AnnotationParser
+from pyannote.parser.annotation import AnnotationParser
 from pyannote.algorithm.mpg.graph import TrackCooccurrenceGraph
 
 from pyannote import clicommon
