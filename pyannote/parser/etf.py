@@ -18,19 +18,22 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+ETF (Event Tracking File) is a file format used to specify detected events
+(and associated scores) within a recorded waveform.
+"""
 
-from pyannote.base.segment import Segment
-from pyannote.parser.base import BaseTextualAnnotationParser, BaseTextualFormat
-from pyannote.base import URI, MODALITY, LABEL
+import numpy as np
+from pyannote import Segment
+from pyannote.base import URI, MODALITY, TRACK, LABEL, SCORE
+from base import BaseTextualFormat, BaseTextualScoresParser
 
 
-class MDTMMixin(BaseTextualFormat):
+class ETF0Mixin(BaseTextualFormat):
 
     CHANNEL = 'channel'
     START = 'start'
     DURATION = 'duration'
-    CONFIDENCE = 'confidence'
-    GENDER = 'gender'
 
     def get_comment(self):
         return ';'
@@ -44,26 +47,30 @@ class MDTMMixin(BaseTextualFormat):
                 self.START,
                 self.DURATION,
                 MODALITY,
-                self.CONFIDENCE,
-                self.GENDER,
-                LABEL]
+                TRACK,
+                LABEL,
+                SCORE,
+                'X']
 
     def get_segment(self, row):
         return Segment(row[self.START], row[self.START]+row[self.DURATION])
 
-    def _append(self, annotation, f, uri, modality):
+    def _append(self, scores, f, uri, modality):
+
+        # create new annotation with top-score label
+        annotation = scores.to_annotation(threshold=-np.inf)
 
         try:
-            format = '%s 1 %%g %%g %s NA %%s %%s\n' % (uri, modality)
-            for segment, track, label in annotation.iterlabels():
-                f.write(format % (segment.start, segment.duration,
-                                  track, label))
+            format = '%s 1 %%g %%g %s %%s %%s %%g %%s\n' % (uri, modality)
+            for s, t, l, v in scores.itervalues():
+                status = 'top_score' if annotation[s, t] == l else '-'
+                f.write(format % (s.start, s.duration, t, l, v, status))
         except Exception, e:
-            print "Error @ %s%s %s %s" % (uri, segment, track, label)
+            print "Error @ %s %s %s %s" % (uri, s, t, l)
             raise e
 
 
-class MDTMParser(BaseTextualAnnotationParser, MDTMMixin):
+class ETF0Parser(BaseTextualScoresParser, ETF0Mixin):
     pass
 
 

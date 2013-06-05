@@ -18,9 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.parser.base import BaseAnnotationParser
-from pyannote.base.segment import Segment
 from lxml import objectify
+from pyannote.base.segment import Segment
+from base import BaseAnnotationParser
 
 
 class TTAFParser(BaseAnnotationParser):
@@ -54,4 +54,3 @@ class TTAFParser(BaseAnnotationParser):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

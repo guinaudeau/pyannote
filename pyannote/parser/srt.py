@@ -18,9 +18,18 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.parser.base import BaseTimelineParser
-from pyannote.base.segment import Segment
+"""
+SRT (SubRip Text) is a file format to specify subtitles for a recorded video.
+
+References
+----------
+http://en.wikipedia.org/wiki/SubRip
+"""
+
+
 import pysrt
+from pyannote.base.segment import Segment
+from base import BaseTimelineParser
 
 
 class SRTParser(BaseTimelineParser):

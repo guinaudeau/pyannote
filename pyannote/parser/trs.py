@@ -18,10 +18,18 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.parser.base import BaseAnnotationParser
-from pyannote.base.segment import Segment, SEGMENT_PRECISION
-from lxml import objectify
+"""
+TRS (TRanScriber) is a file format used by TranScriber audio annotation tool.
+
+References
+----------
+http://transag.sourceforge.net/
+"""
+
 import re
+from lxml import objectify
+from pyannote.base.segment import Segment, SEGMENT_PRECISION
+from base import BaseAnnotationParser
 
 
 class TRSParser(BaseAnnotationParser):
@@ -112,8 +120,9 @@ class TRSParser(BaseAnnotationParser):
                         self._sync = float(element.get('time'))
                         self._complete()
 
-                    element_segment = Segment(start=self._sync,
-                                              end=self._sync+2*SEGMENT_PRECISION)
+                    element_segment = Segment(
+                        start=self._sync,
+                        end=self._sync+2*SEGMENT_PRECISION)
                     self._incomplete.append(element_segment)
                     labels = self._parse_spoken(element)
                     for label in labels:
@@ -130,4 +139,3 @@ class TRSParser(BaseAnnotationParser):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

@@ -25,6 +25,7 @@ from pyannote.base.segment import Segment
 from pyannote.base.timeline import Timeline
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.base.scores import Scores
+from pyannote.base.feature import PeriodicPrecomputedFeature
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
 
 
@@ -652,7 +653,127 @@ class BaseTextualScoresParser(BaseTextualParser):
         return Scores(uri=uri, modality=modality)
 
 
+class BasePeriodicFeatureParser(object):
+
+    def __init__(self):
+        super(BasePeriodicFeatureParser, self).__init__()
+
+    def _read_header(self, fp):
+        """
+        Read the header of a binary file.
+
+        Parameters
+        ----------
+        fp : file
+
+        Returns
+        -------
+        dtype :
+            Feature vector type
+        sliding_window : :class:`pyannote.base.segment.SlidingWindow`
+
+        count :
+            Number of feature vectors
+
+        """
+        raise NotImplementedError('')
+
+    def _read_data(self, fp, dtype, count=-1):
+        """
+        Construct an array from data in a binary file.
+
+        Parameters
+        ----------
+        file : file
+            Open file object
+        dtype : data-type
+            Data type of the returned array.
+            Used to determine the size and byte-order of the items in the file.
+        count : int
+            Number of items to read. ``-1`` means all items (i.e., the complete
+            file).
+
+        Returns
+        -------
+
+        """
+        raise NotImplementedError('')
+
+    def read(self, path, uri=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        path : str
+            path to binary feature file
+        uri : str, optional
+
+        Returns
+        -------
+        feature : :class:`pyannote.base.feature.PeriodicPrecomputedFeature`
+
+
+        """
+
+        # open binary file
+        fp = open(path, 'rb')
+        # read header
+        dtype, sliding_window, count = self._read_header(fp)
+        # read data
+        data = self._read_data(fp, dtype, count=count)
+
+        # if `uri` is not provided, use `path` instead
+        if uri is None:
+            uri = str(path)
+
+        # create feature object
+        feature = PeriodicPrecomputedFeature(data, sliding_window,
+                                             uri=uri)
+        # close binary file
+        fp.close()
+
+        return feature
+
+
+class BaseBinaryPeriodicFeatureParser(BasePeriodicFeatureParser):
+
+    """
+    Base class for periodic feature stored in binary format.
+    """
+
+    def __init__(self):
+        super(BaseBinaryPeriodicFeatureParser, self).__init__()
+
+    def _read_data(self, fp, dtype, count=-1):
+        """
+        Construct an array from data in a binary file.
+
+        Parameters
+        ----------
+        file : file
+            Open file object
+        dtype : data-type
+            Data type of the returned array.
+            Used to determine the size and byte-order of the items in the file.
+        count : int
+            Number of items to read. ``-1`` means all items (i.e., the complete
+            file).
+
+        Returns
+        -------
+
+        """
+        return np.fromfile(fp, dtype=dtype, sep='', count=count)
+
+
+class BaseTextualPeriodicFeatureParser(BasePeriodicFeatureParser):
+
+    def __init__(self):
+        super(BaseTextualPeriodicFeatureParser, self).__init__()
+
+    def _read_data(self, fp, dtype, count=-1):
+        raise NotImplementedError('')
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

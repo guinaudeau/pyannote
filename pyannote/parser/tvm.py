@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2013 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -18,48 +18,50 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from pyannote.base.segment import Segment
-from pyannote.parser.base import BaseTextualAnnotationParser, BaseTextualFormat
-from pyannote.base import URI, MODALITY, LABEL
+from pyannote.base import URI, TRACK, LABEL, SCORE
+from base import BaseTextualScoresParser, BaseTextualFormat
 
 
-class REFMixin(BaseTextualFormat):
+class TVMMixin(BaseTextualFormat):
 
     START = 'start'
-    END = 'end'
+    DURATION = 'duration'
 
     def get_comment(self):
-        return ';'
+        return None
 
     def get_separator(self):
-        return ' '
+        return '[ \t]+'
 
     def get_fields(self):
         return [URI,
                 self.START,
-                self.END,
-                MODALITY,
-                LABEL]
+                self.DURATION,
+                TRACK,
+                LABEL,
+                SCORE]
+
+    def get_default_modality(self):
+        return "head"
 
     def get_segment(self, row):
-        return Segment(row[self.START], row[self.END])
+        return Segment(row[self.START], row[self.START]+row[self.DURATION])
 
-    def _append(self, annotation, f, uri, modality):
+    def get_converters(self):
+        # 'head_52' ==> '52'
+        return {TRACK: lambda x: x.split('_')[1]}
 
+    def _append(self, scores, f, uri, modality):
         try:
-            format = '%s %%g %%g %s %%s\n' % (uri, modality)
-            for segment, track, label in annotation.iterlabels():
-                f.write(format % (segment.start, segment.end, label))
+            format = '%s %%g %%g %s %%s %%g\n' % (uri, modality)
+            for segment, track, label, value in scores.itervalues():
+                f.write(format % (segment.start, segment.end,
+                                  label, value))
         except Exception, e:
-            print "Error @ %s%s %s" % (uri, segment, label)
+            print "Error @ %s%s %s %s" % (uri, segment, track, label)
             raise e
 
 
-class REFParser(BaseTextualAnnotationParser, REFMixin):
+class TVMParser(BaseTextualScoresParser, TVMMixin):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()

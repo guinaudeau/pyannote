@@ -18,12 +18,20 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+XGTF () is a file format used by ViPER video annotation tool.
 
-from pyannote.parser.base import BaseAnnotationParser
-from pyannote.parser.repere.idx import IDXParser
-from pyannote.base.segment import Segment, SEGMENT_PRECISION
-from lxml import objectify
+References
+----------
+http://viper-toolkit.sourceforge.net/
+"""
+
 import re
+from lxml import objectify
+from pyannote.base.segment import Segment
+from base import BaseAnnotationParser
+from idx import IDXParser
+
 
 class XGTFParser(BaseAnnotationParser):
 
@@ -139,10 +147,14 @@ class XGTFParser(BaseAnnotationParser):
                 element_segment = Segment(start=element_start, end=element_end)
 
                 try:
-                    for modality, new_lbls in {'written (alone)': written_alone,
-                                               'written (intro)': written_intro,
-                                               'written': written,
-                                               'head': head}.iteritems():
+                    modalities = {
+                        'written (alone)': written_alone,
+                        'written (intro)': written_intro,
+                        'written': written,
+                        'head': head}
+
+                    for modality, new_lbls in modalities.iteritems():
+
                         for lbl in new_lbls:
                             lbls = self(uri,
                                         modality).get_labels(element_segment)
@@ -156,7 +168,6 @@ class XGTFParser(BaseAnnotationParser):
 
         return self
 
-
     def _get_transcription(self, vpr):
         string = vpr.getchildren()[0].get('value')
         if not string:
@@ -165,7 +176,6 @@ class XGTFParser(BaseAnnotationParser):
 
     def print_raw_text(self, path_xgtf):
 
-        import sys
         string = ""
         # objectify xml file and get root
         root = objectify.parse(path_xgtf).getroot().data.sourcefile
@@ -195,4 +205,3 @@ class XGTFParser(BaseAnnotationParser):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
