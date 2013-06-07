@@ -422,6 +422,75 @@ class Bredin2013(Finkel2008):
         self.model.update()
 
 
+class OverBredin2013(ILPClustering):
+
+    def __init__(self, items, similarity, get_similarity, debug=False):
+
+        super(OverBredin2013, self).__init__()
+
+        self.items = items
+        self.similarity = similarity
+        self.get_similarity = get_similarity
+
+        # Variables
+        self.add_pair_variables(self.items)
+
+        # Reflexivity constraints
+        self.add_reflexivity_constraints(self.items)
+
+        # Hard constraints
+        self.add_hard_constraints(self.items, self.similarity,
+                                  self.get_similarity)
+
+        # Symmetry constraints
+        self.add_symmetry_constraints(self.items)
+
+        identities = [i for i in self.items if isinstance(i, IdentityNode)]
+        tracks = [t for t in self.items if isinstance(t, TrackNode)]
+        self.add_asymmetric_transitivity_constraints(tracks, identities)
+
+        self.model.update()
+
+    def set_objective(self, weights, **kwargs):
+        """
+        weights['speaker', 'speaker'] = {'alpha': 0.5, 'beta': 0.5}
+        weights['speaker', 'spoken'] = {'alpha': 1.,  'beta': 0.1}
+        weights['speaker', 'written'] = {'alpha': 1., 'beta': 0.4}
+        """
+
+        objective = None
+
+        for (modality1, modality2), weight in weights.iteritems():
+
+            items1 = [i for i in self.items
+                      if isinstance(i, TrackNode)
+                      and i.modality == modality1]
+
+            items2 = [i for i in self.items
+                      if isinstance(i, TrackNode)
+                      and i.modality == modality2]
+
+            intra, N = self.get_bipartite_similarity(
+                items1, items2, self.similarity, self.get_similarity)
+
+            inter, N = self.get_bipartite_dissimilarity(
+                items1, items2, self.similarity, self.get_similarity)
+
+            alpha = weight['alpha']
+            beta = weight['beta']
+
+            if objective:
+                if N:
+                    objective += beta/N * (alpha*intra + (1-alpha)*inter)
+            else:
+                if N:
+                    objective = beta/N * (alpha*intra + (1-alpha)*inter)
+
+        self.model.setObjective(objective, grb.GRB.MAXIMIZE)
+        self.model.update()
+
+
+
 class Dupuy2012(ILPClustering):
 
     def __init__(self, items, similarity, get_similarity, delta=0.5, **kwargs):
