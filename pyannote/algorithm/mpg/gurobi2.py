@@ -157,10 +157,10 @@ class ILPClustering(object):
 
         For any track T, T is connected to at most one identity I
         """
-
-        for T in tracks:
-            constr = grb.quicksum([self.x[T, I] for I in identities]) <= 1
-            self.model.addConstr(constr)
+        if identities:
+            for T in tracks:
+                constr = grb.quicksum([self.x[T, I] for I in identities]) <= 1
+                self.model.addConstr(constr)
 
     # =================================================================
     # OBJECTIVE FUNCTIONS
