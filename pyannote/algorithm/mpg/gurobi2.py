@@ -448,6 +448,7 @@ class OverBredin2013(ILPClustering):
         identities = [i for i in self.items if isinstance(i, IdentityNode)]
         tracks = [t for t in self.items if isinstance(t, TrackNode)]
         self.add_asymmetric_transitivity_constraints(tracks, identities)
+        self.add_unique_identity_constraints(tracks, identities)
 
         self.model.update()
 
