@@ -373,7 +373,8 @@ class Annotation(object):
     def __str__(self):
         """Human-friendly representation"""
         # TODO: use pretty table
-        return str(self._tracks)
+        return "\n".join(["%s %s %s" % (s, t, l)
+                          for s, t, l in self.iterlabels()])
 
     def __delitem__(self, key):
 
