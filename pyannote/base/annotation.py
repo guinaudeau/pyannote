@@ -315,8 +315,12 @@ class Annotation(object):
         raise NotImplementedError('')
 
     def copy(self):
+        # create new empty annotation
         copied = self.__class__(uri=self.uri, modality=self.modality)
-        copied._tracks = SortedDict(items=self._tracks,
+
+        # deep copy internal dictionary
+        tracks = [(key, dict(value)) for (key, value) in self._tracks.items()]
+        copied._tracks = SortedDict(items=tracks,
                                     key_type=(float, float),
                                     updator=TimelineUpdator)
         return copied
