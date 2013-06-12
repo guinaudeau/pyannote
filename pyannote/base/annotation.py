@@ -318,11 +318,22 @@ class Annotation(object):
         # create new empty annotation
         copied = self.__class__(uri=self.uri, modality=self.modality)
 
-        # deep copy internal dictionary
-        tracks = [(key, dict(value)) for (key, value) in self._tracks.items()]
-        copied._tracks = SortedDict(items=tracks,
+        # deep copy internal track dictionary
+        _tracks = [(key, dict(value)) for (key, value) in self._tracks.items()]
+        copied._tracks = SortedDict(items=_tracks,
                                     key_type=(float, float),
                                     updator=TimelineUpdator)
+
+        # deep copy internal label timelines
+        _labels = {key: timeline.copy()
+                   for (key, timeline) in self._labels.iteritems()}
+        copied._labels = _labels
+
+        # deep copy need-update indicator
+        copied._labelNeedsUpdate = dict(self._labelNeedsUpdate)
+
+        copied._timelineNeedsUpdate = self._timelineNeedsUpdate
+
         return copied
 
     def retrack(self):
