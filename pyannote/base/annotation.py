@@ -657,7 +657,7 @@ class Annotation(object):
             segment = self.get_timeline().extent()
 
         # compute intersection duration for each label
-        durations = {lbl: (self.label_timeline(lbl) & segment).duration()
+        durations = {lbl: self.label_timeline(lbl).crop(segment, mode='intersection').duration()
                      for lbl in self.labels()}
 
         # artifically reduce intersection duration of Unknown labels
