@@ -181,9 +181,18 @@ if __name__ == "__main__":
     # ==============
 
     def trainCalibration(args):
+
+        import pyannote.cli
         uris = pyannote.cli.get_uris()
         data = [(args.reference(uri), args.scores(uri)) for uri in uris]
-        calibration = AuthenticationCalibration().fit(data)
+        if args.argmax:
+            import pyannote.algorithm.tagging.segment
+            tagger = pyannote.algorithm.tagging.segment.ArgMaxDirectTagger()
+        else:
+            tagger = None
+        calibration = AuthenticationCalibration(tagger=tagger)
+
+        calibration.fit(data)
         with args.output() as f:
             pickle.dump(calibration, f)
 
@@ -202,6 +211,10 @@ if __name__ == "__main__":
     description = 'path to output calibration.'
     train_parser.add_argument('output', help=description,
                               type=pyannote.cli.OutputFileHandle())
+
+    description = 'use argmax tagger instead of conservative one.'
+    train_parser.add_argument('--argmax', help=description,
+                              action='store_true')
 
     # ==============
     # APPLY mode
@@ -225,6 +238,7 @@ if __name__ == "__main__":
 
             scores = args.scores(uri)
             args.calibrated(calibration.apply(scores, prior=prior))
+
 
     apply_parser = subparsers.add_parser('apply', help='Apply calibration',
                                          parents=[pyannote.cli.parentArgumentParser()])
