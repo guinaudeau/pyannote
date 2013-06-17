@@ -19,7 +19,6 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from pyannote.algorithm.tagging import ConservativeDirectTagger
 from pyannote.base.annotation import Unknown
 import sc2llr
 
@@ -29,7 +28,8 @@ class AuthenticationCalibration(object):
     def __init__(self, tagger=None):
         super(AuthenticationCalibration, self).__init__()
         if tagger is None:
-            self.tagger = ConservativeDirectTagger()
+            import pyannote.algorithm.tagging
+            self.tagger = pyannote.algorithm.tagging.ConservativeDirectTagger()
         else:
             self.tagger = tagger
 
@@ -113,7 +113,7 @@ class AuthenticationCalibration(object):
         training_data : list
             List of (annotation, scores) tuples where each tuple is made of
             - groundtruth `annotation` for a given resource
-            - identification `scores` for the same resource
+            - authentication `scores` for the same resource
         kwargs : dict
             See .xy() method
         """
@@ -219,6 +219,7 @@ if __name__ == "__main__":
         for u, uri in enumerate(uris):
 
             if args.verbose:
+                import sys
                 sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
                 sys.stdout.flush()
 
