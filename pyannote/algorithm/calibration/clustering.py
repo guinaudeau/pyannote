@@ -19,7 +19,6 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from pyannote.algorithm.tagging import ConservativeDirectTagger
 from pyannote.base.annotation import Unknown
 from pyannote.base.matrix import LabelMatrix
 import sc2llr
@@ -32,7 +31,8 @@ class ClusteringCalibration(object):
     def __init__(self, tagger=None):
         super(ClusteringCalibration, self).__init__()
         if tagger is None:
-            self.tagger = ConservativeDirectTagger()
+            import pyannote.algorithm.tagging
+            self.tagger = pyannote.algorithm.tagging.ConservativeDirectTagger()
         else:
             self.tagger = tagger
 
