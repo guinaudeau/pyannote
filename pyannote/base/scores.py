@@ -439,6 +439,34 @@ class Scores(AnnotationMixin, object):
                 else:
                     yield segment, track, label, value
 
+    def _rank(self, invert):
+
+        if invert:
+            direction = 1.
+
+        else:
+            direction = -1.
+
+        def nan_rank(data):
+
+            # replace NaN by -inf or +inf depending on the requested direction
+            finite = np.isfinite(data)
+            fixed = np.where(finite, direction*data, -direction*np.inf)
+
+            # do the actual argsort
+            indices = np.argsort(fixed)
+            # get rank from argsort
+            rank = np.argsort(indices)
+
+            # special treatment for inverted NaN scores
+            # (we want ranks to start at 0 even in case of NaN)
+            if invert:
+                rank = np.where(finite, rank-(len(data)-np.sum(finite)), np.nan)
+            else:
+                rank = np.where(finite, rank, np.nan)
+            return rank
+
+        return self._df.apply(nan_rank, axis=1)
 
     def rank(self, invert=False):
         """
@@ -454,18 +482,9 @@ class Scores(AnnotationMixin, object):
         rank : `Scores`
 
         """
-        if invert:
-            direction = 1.
-        else:
-            direction = -1.
-
-        rank = (direction*self._df).apply(np.argsort, axis=1)\
-                                    .apply(np.argsort, axis=1)
         A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = rank
-
+        A._df = self._rank(invert)
         return A
-
 
     def nbest(self, n, invert=False):
         """
@@ -484,20 +503,14 @@ class Scores(AnnotationMixin, object):
             New scores where only n-best are kept.
 
         """
+        df = self._df.copy()
+        nbest = self._rank(invert) < n
+        df[~nbest] = np.nan
 
-        if invert:
-            direction = 1.
-        else:
-            direction = -1.
-
-        nbest = (direction*self._df).apply(np.argsort, axis=1)\
-                                    .apply(np.argsort, axis=1) < n
         A = self.__class__(uri=self.uri, modality=self.modality)
-        A._df = self._df.copy()
-        A._df[~nbest] = np.nan
+        A._df = df
 
         return A
-
 
     def subset(self, labels, invert=False):
         """Scores subset
