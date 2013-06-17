@@ -20,6 +20,7 @@
 
 from segment import Segment
 from timeline import Timeline
+from annotation import Annotation, Unknown
 from mapping import Mapping, ManyToOneMapping
 from collections import Hashable
 import operator
