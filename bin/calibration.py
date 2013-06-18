@@ -67,9 +67,11 @@ def train_speaker_calibration(args):
             s = new_s
 
         if hasattr(args, 'uem'):
-            coverage = (args.uem(uri) & r.get_timeline() & s.get_timeline()).coverage()
+            coverage = args.uem(uri).crop(r.get_timeline(), mode='intersection').crop(s.get_timeline(), mode='intersection').coverage()
+            # coverage = (args.uem(uri) & r.get_timeline() & s.get_timeline()).coverage()
         else:
-            coverage = (r.get_timeline() & s.get_timeline()).coverage()
+            coverage = r.get_timeline().crop(s.get_timeline(), mode='intersection').coverage()
+            # coverage = (r.get_timeline() & s.get_timeline()).coverage()
 
         s = s.crop(coverage, mode='intersection')
         r = tagger(r, s.to_annotation(threshold=np.inf))
