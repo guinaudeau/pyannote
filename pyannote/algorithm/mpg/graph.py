@@ -72,7 +72,7 @@ class MultimodalProbabilityGraph(nx.Graph):
 
         for modality in modalities:
             # obtain the list of tracks for this modality
-            _tnodes = [n for n in tnodes and n.modality == modality]
+            _tnodes = [n for n in tnodes if n.modality == modality]
 
             # loop on each pair of tracks and check for overlapping ones
             for n, node in enumerate(_tnodes):
