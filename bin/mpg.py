@@ -601,7 +601,10 @@ for u, uri in enumerate(uris):
                     "%r: %r vs. %r" % (s, ss_src.tracks(s), si_src.tracks(s))
 
         # build speaker identity graph
-        g = args.sigraph(si_src)
+        if hasattr(args, 'nbest'):
+            g = args.sigraph(si_src.nbest(args.nbest))
+        else:
+            g = args.sigraph(si_src)
 
         # add it to the multimodal graph
         G.update(g)
@@ -799,8 +802,6 @@ for u, uri in enumerate(uris):
         # add it to the multimodal graph
         G.update(g)
 
-    # if hasattr(args, 'nbest'):
-    #     G = remove_nbest_identity(G, args.nbest)
     G.add_identity_constraints()
     G.add_track_constraints()
 
