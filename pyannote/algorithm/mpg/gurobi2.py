@@ -45,15 +45,25 @@ except:
 class ILPClustering(object):
     """
     """
-    def __init__(self):
+    def __init__(self, items, get_similarity, similarity):
+
         super(ILPClustering, self).__init__()
+
+        # items to be clustered
+        self.items = items
+        # (used in conjunction with get_similarity)
+        self.similarity = similarity
+        # function (item1, item2, similarity) --> s(item1, item2)
+        self.get_similarity = get_similarity
 
         # empty (silent) model
         self.model = grb.Model()
         self.model.setParam(grb.GRB.Param.OutputFlag, False)
 
-        # empty set of variables
+        # variables
         self.x = {}
+        self.add_pair_variables(self.items)
+        self.model.update()
 
     # =================================================================
     # VARIABLES
@@ -320,40 +330,11 @@ class ILPClustering(object):
         # dump to file
         self.model.write(path)
 
+# =====================================================================
+# Objective functions
+# =====================================================================
 
-class Finkel2008(ILPClustering):
-    """
-
-    Maximize ∑  α.xij.pij + (1-α).(1-xij).(1-pij)
-            i,j
-
-    References
-    ----------
-    * "Enforcing Transitivity in Coreference Resolution"
-      J.R. Finkel and C.D. Manning
-      Annual Meeting of the Association for Computational Linguistics:
-      Human Language Technologies (ACL HLT), 2008.
-    """
-
-    def __init__(self, items, similarity, get_similarity, debug=False):
-
-        super(Finkel2008, self).__init__()
-
-        self.items = items
-        self.similarity = similarity
-        self.get_similarity = get_similarity
-
-        # Variables
-        self.add_pair_variables(self.items)
-
-        # Constraints
-        self.add_reflexivity_constraints(self.items)
-        self.add_hard_constraints(self.items, self.similarity,
-                                  self.get_similarity)
-        self.add_symmetry_constraints(self.items)
-        self.add_transitivity_constraints(self.items)
-
-        self.model.update()
+class InOutObjectiveMixin(object):
 
     def set_objective(self, alpha=0.5, **kwargs):
         """
@@ -380,11 +361,13 @@ class Finkel2008(ILPClustering):
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
         self.model.update()
 
+class WeightedInOutObjectiveMixin(object):
 
-class Bredin2013(Finkel2008):
-
-    def set_objective(self, weights, **kwargs):
+    def set_objective(self, **kwargs):
         """
+
+        problem.set_objective(**{('speaker', 'speaker')})
+
         weights['speaker', 'speaker'] = {'alpha': 0.5, 'beta': 0.5}
         weights['speaker', 'spoken'] = {'alpha': 1.,  'beta': 0.1}
         weights['speaker', 'written'] = {'alpha': 1., 'beta': 0.4}
@@ -392,15 +375,10 @@ class Bredin2013(Finkel2008):
 
         objective = None
 
-        for (modality1, modality2), weight in weights.iteritems():
+        for (modality1, modality2), weight in (**kwargs).iteritems():
 
-            items1 = [i for i in self.items
-                      if isinstance(i, TrackNode)
-                      and i.modality == modality1]
-
-            items2 = [i for i in self.items
-                      if isinstance(i, TrackNode)
-                      and i.modality == modality2]
+            items1 = [i for i in self.items if i.modality == modality1]
+            items2 = [i for i in self.items if i.modality == modality2]
 
             intra, N = self.get_bipartite_similarity(
                 items1, items2, self.similarity, self.get_similarity)
@@ -422,18 +400,13 @@ class Bredin2013(Finkel2008):
         self.model.update()
 
 
-class OverBredin2013(ILPClustering):
+# =====================================================================
+# Constraints
+# =====================================================================
 
-    def __init__(self, items, similarity, get_similarity, debug=False):
+class FullConstraintsMixin(object):
 
-        super(OverBredin2013, self).__init__()
-
-        self.items = items
-        self.similarity = similarity
-        self.get_similarity = get_similarity
-
-        # Variables
-        self.add_pair_variables(self.items)
+    def set_constraints(self):
 
         # Reflexivity constraints
         self.add_reflexivity_constraints(self.items)
@@ -445,102 +418,117 @@ class OverBredin2013(ILPClustering):
         # Symmetry constraints
         self.add_symmetry_constraints(self.items)
 
+        # Full transitivity constraints
+        self.add_transitivity_constraints(self.items)
+
+        # Identity unicity constraints
+        # TODO: check if it's actually faster with this constraint
+        identities = [i for i in self.items if isinstance(i, IdentityNode)]
+        tracks = [t for t in self.items if isinstance(t, TrackNode)]
+        self.add_unique_identity_constraints(tracks, identities)
+
+        # (Gurobi lazy update)
+        self.model.update()
+
+
+class PartialConstraintsMixin(object):
+
+    def set_constraints(self):
+
+        # Reflexivity constraints
+        self.add_reflexivity_constraints(self.items)
+
+        # Hard constraints
+        self.add_hard_constraints(self.items, self.similarity,
+                                  self.get_similarity)
+
+        # Symmetry constraints
+        self.add_symmetry_constraints(self.items)
+
+        # Asymmetric transitivity constraints
         identities = [i for i in self.items if isinstance(i, IdentityNode)]
         tracks = [t for t in self.items if isinstance(t, TrackNode)]
         self.add_asymmetric_transitivity_constraints(tracks, identities)
+
+        # Identity unicity constraints
         self.add_unique_identity_constraints(tracks, identities)
 
-        self.model.update()
-
-    def set_objective(self, weights, **kwargs):
-        """
-        weights['speaker', 'speaker'] = {'alpha': 0.5, 'beta': 0.5}
-        weights['speaker', 'spoken'] = {'alpha': 1.,  'beta': 0.1}
-        weights['speaker', 'written'] = {'alpha': 1., 'beta': 0.4}
-        """
-
-        objective = None
-
-        for (modality1, modality2), weight in weights.iteritems():
-
-            items1 = [i for i in self.items
-                      if isinstance(i, TrackNode)
-                      and i.modality == modality1]
-
-            items2 = [i for i in self.items
-                      if isinstance(i, TrackNode)
-                      and i.modality == modality2]
-
-            intra, N = self.get_bipartite_similarity(
-                items1, items2, self.similarity, self.get_similarity)
-
-            inter, N = self.get_bipartite_dissimilarity(
-                items1, items2, self.similarity, self.get_similarity)
-
-            alpha = weight['alpha']
-            beta = weight['beta']
-
-            if objective:
-                if N:
-                    objective += beta/N * (alpha*intra + (1-alpha)*inter)
-            else:
-                if N:
-                    objective = beta/N * (alpha*intra + (1-alpha)*inter)
-
-        self.model.setObjective(objective, grb.GRB.MAXIMIZE)
+        # (Gurobi lazy update)
         self.model.update()
 
 
 
-class Dupuy2012(ILPClustering):
+class Finkel2008(ILPClustering, FullConstraintsMixin, InOutObjectiveMixin):
+    """
 
-    def __init__(self, items, similarity, get_similarity, delta=0.5, **kwargs):
+    Maximize ∑  α.xij.pij + (1-α).(1-xij).(1-pij)
+            i,j
 
-        super(Dupuy2012, self).__init__()
+    References
+    ----------
+    * "Enforcing Transitivity in Coreference Resolution"
+      J.R. Finkel and C.D. Manning
+      Annual Meeting of the Association for Computational Linguistics:
+      Human Language Technologies (ACL HLT), 2008.
+    """
+    pass
 
-        self.add_pair_variables(items)
 
-        # Equation 1.3 (in Dupuy et al., JEP'12)
-        # every item is associated to exactly one centroid
-        for J in items:
-            constr = grb.quicksum([self.x[C, J] for C in items]) == 1
-            self.model.addConstr(constr)
+class Bredin2013(ILPClustering, FullConstraintsMixin, WeightedInOutObjectiveMixin):
+    pass
 
-        # Equation 1.4 (in Dupuy et al., JEP'12)
-        # prevent items from being associated to a dissimilar centroid
-        for C in items:
-            for I in items:
-                sCI = get_similarity(C, I, similarity)
-                if np.isnan(sCI):
-                    continue
-                constr = (1-sCI) * self.x[C, I] <= (1.-delta)
-                self.model.addConstr(constr)
+class OverBredin2013(ILPClustering, PartialConstraintsMixin, WeightedInOutObjectiveMixin):
+    pass
 
-        # Equation 1.5 (missing in Dupuy et al.)
-        # activate a centroid as soon as an item is associated to it
-        for C in items:
-            for I in items:
-                constr = self.x[C, C] >= self.x[C, I]
-                self.model.addConstr(constr)
+# class Dupuy2012(ILPClustering):
 
-        # number of items
-        N = len(items)
+#     def __init__(self, items, similarity, get_similarity, delta=0.5, **kwargs):
 
-        # number of activated centroids
-        centroids = grb.quicksum([self.x[C, C] for C in items])
+#         super(Dupuy2012, self).__init__()
 
-        # cluster cohesion (ie total similarity to centroids)
-        cohesion = grb.quicksum([get_similarity(C, I, similarity)*self.x[C, I]
-                                 for C in items for I in items if C != I
-                                 and not np.isnan(get_similarity(C, I, similarity)) ])
+#         self.add_pair_variables(items)
 
-        # according to a discussion I had with Mickael Rouvier,
-        # F (in Dupuy et al. 2012) is actually the sum over all items
-        # of the maximum distance to all other items
-        # in short, F = N
+#         # Equation 1.3 (in Dupuy et al., JEP'12)
+#         # every item is associated to exactly one centroid
+#         for J in items:
+#             constr = grb.quicksum([self.x[C, J] for C in items]) == 1
+#             self.model.addConstr(constr)
 
-        # minimize both number of centroids and dispersion
-        self.model.setObjective(centroids - 1./N * cohesion, grb.GRB.MINIMIZE)
+#         # Equation 1.4 (in Dupuy et al., JEP'12)
+#         # prevent items from being associated to a dissimilar centroid
+#         for C in items:
+#             for I in items:
+#                 sCI = get_similarity(C, I, similarity)
+#                 if np.isnan(sCI):
+#                     continue
+#                 constr = (1-sCI) * self.x[C, I] <= (1.-delta)
+#                 self.model.addConstr(constr)
 
-        # model (lazy) update
-        self.model.update()
+#         # Equation 1.5 (missing in Dupuy et al.)
+#         # activate a centroid as soon as an item is associated to it
+#         for C in items:
+#             for I in items:
+#                 constr = self.x[C, C] >= self.x[C, I]
+#                 self.model.addConstr(constr)
+
+#         # number of items
+#         N = len(items)
+
+#         # number of activated centroids
+#         centroids = grb.quicksum([self.x[C, C] for C in items])
+
+#         # cluster cohesion (ie total similarity to centroids)
+#         cohesion = grb.quicksum([get_similarity(C, I, similarity)*self.x[C, I]
+#                                  for C in items for I in items if C != I
+#                                  and not np.isnan(get_similarity(C, I, similarity)) ])
+
+#         # according to a discussion I had with Mickael Rouvier,
+#         # F (in Dupuy et al. 2012) is actually the sum over all items
+#         # of the maximum distance to all other items
+#         # in short, F = N
+
+#         # minimize both number of centroids and dispersion
+#         self.model.setObjective(centroids - 1./N * cohesion, grb.GRB.MINIMIZE)
+
+#         # model (lazy) update
+#         self.model.update()
