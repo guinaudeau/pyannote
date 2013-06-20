@@ -375,7 +375,7 @@ class WeightedInOutObjectiveMixin(object):
 
         objective = None
 
-        for (modality1, modality2), weight in (**kwargs).iteritems():
+        for (modality1, modality2), weight in kwargs.iteritems():
 
             items1 = [i for i in self.items if i.modality == modality1]
             items2 = [i for i in self.items if i.modality == modality2]
