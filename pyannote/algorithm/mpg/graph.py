@@ -785,10 +785,6 @@ class TrackCooccurrenceGraph(object):
 
         for s in timeline:
 
-            # do not add edges for very short tracks
-            if s.duration < self.min_duration:
-                continue
-
             # Sub-tracks for current sub-segment and their number
             subtracks_a = a.tracks(s)
             Na = len(subtracks_a)
@@ -812,22 +808,9 @@ class TrackCooccurrenceGraph(object):
             except Exception, e:
                 continue
 
-            # get original track corresponding to each subtrack
-            tracks_A = set([])
-            for t in subtracks_a:
-                for S, T in A.get_track_by_name(t):
-                    if s in S:
-                        tracks_A.add((S, T))
-            tracks_B = set([])
-            for t in subtracks_b:
-                for S, T in B.get_track_by_name(t):
-                    if s in S:
-                        tracks_B.add((S, T))
-
-            # add edges between co-occurring tracks
-            for sA, tA in tracks_A:
+            for sA, tA in A.crop(s, mode='loose').itertracks():
                 node_A = TrackNode(u, ma, sA, tA)
-                for sB, tB in tracks_B:
+                for sB, tB in B.crop(s, mode='loose').itertracks():
                     node_B = TrackNode(u, mb, sB, tB)
                     G.add_edge(node_A, node_B, **{PROBABILITY: probability})
 
