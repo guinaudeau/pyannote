@@ -361,9 +361,10 @@ class InOutObjectiveMixin(object):
         self.model.setObjective(objective, grb.GRB.MAXIMIZE)
         self.model.update()
 
+
 class WeightedInOutObjectiveMixin(object):
 
-    def set_objective(self, **kwargs):
+    def set_objective(self, weights=None, **kwargs):
         """
 
         problem.set_objective(**{('speaker', 'speaker')})
@@ -375,7 +376,7 @@ class WeightedInOutObjectiveMixin(object):
 
         objective = None
 
-        for (modality1, modality2), weight in kwargs.iteritems():
+        for (modality1, modality2), weight in weights.iteritems():
 
             items1 = [i for i in self.items if i.modality == modality1]
             items2 = [i for i in self.items if i.modality == modality2]
