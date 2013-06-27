@@ -535,17 +535,18 @@ class Timeline(object):
 
         # start with an empty copy
         timeline = Timeline(uri=self.uri)
-        segments = []
 
-        start = timestamps[0]
-        for end in timestamps[1:]:
-            # only add segments that are covered by original timeline
-            segment = Segment(start=start, end=end)
-            if segment and coverage.overlapping(segment.middle):
-                segments.append(segment)
-            start = end
+        if len(timestamps) > 0:
+            segments = []
+            start = timestamps[0]
+            for end in timestamps[1:]:
+                # only add segments that are covered by original timeline
+                segment = Segment(start=start, end=end)
+                if segment and coverage.overlapping(segment.middle):
+                    segments.append(segment)
+                start = end
 
-        timeline._segments.update(segments)
+            timeline._segments.update(segments)
 
         return timeline
 
