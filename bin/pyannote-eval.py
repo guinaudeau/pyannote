@@ -53,7 +53,8 @@ def run(args):
     # - index: (hypothesis file, uri) pairs
     # - columns: names of metrics and their components
 
-    kwargs = {'unknown': args.anonymous}
+    kwargs = {}
+    # kwargs = {'unknown': args.anonymous}
 
     metrics = {}
     columns = []
@@ -340,10 +341,10 @@ group.add_argument('--recall', action='append_const', dest='requested',
                    const=IdentificationRecall, default=[],
                    help=description)
 
-description = ('remove anonymous tracks from reference and hypothesis '
-               'before evaluation.')
-group.add_argument('--no-anonymous', action='store_false', dest='anonymous',
-                   help=description)
+# description = ('remove anonymous tracks from reference and hypothesis '
+#                'before evaluation.')
+# group.add_argument('--no-anonymous', action='store_false', dest='anonymous',
+#                    help=description)
 
 viewparser = subparsers.add_parser('view',
                                    parents=[pyannote.cli.parentArgumentParser(uem=False, uri=False)],

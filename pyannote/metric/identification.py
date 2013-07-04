@@ -244,7 +244,7 @@ class IdentificationPrecision(Precision):
         account. Set it to False to get rid of them before evaluation.
     """
 
-    def __init__(self, matcher=None, unknown=True, **kwargs):
+    def __init__(self, matcher=None, unknown=False, **kwargs):
         super(IdentificationPrecision, self).__init__()
         if matcher:
             self.matcher = matcher
@@ -299,7 +299,7 @@ class IdentificationRecall(Recall):
         account. Set it to False to get rid of them before evaluation.
     """
 
-    def __init__(self, matcher=None, unknown=True, **kwargs):
+    def __init__(self, matcher=None, unknown=False, **kwargs):
         super(IdentificationRecall, self).__init__()
         if matcher:
             self.matcher = matcher
