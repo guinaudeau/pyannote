@@ -213,6 +213,10 @@ class IDScoreCalibration(object):
         # (target-independent) score to log-likelihood ratio
         self.s2llr = self._s2llr_mapping(X, Y)
 
+        self.X = X
+        self.Y = Y
+
+
         return self
 
 
