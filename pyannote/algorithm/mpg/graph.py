@@ -855,13 +855,23 @@ class GetProbSpoken2Speaker:
 
 
 class CrossModalGraph(object):
+    """
 
+    Parameters
+    ----------
+    future : bool, optional
+        When True, only keep sA--sB edges where sA < sB
+
+
+    """
     def __init__(self, fileName='/vol/work1/roy/repere/spk/probs.txt',
-                 modalityA=None, modalityB=None, tmax=500, **kwargs):
+                 modalityA=None, modalityB=None, tmax=500, future=False, **kwargs):
+
         super(CrossModalGraph, self).__init__()
         self.modalityA = modalityA
         self.modalityB = modalityB
         self.get_prob = GetProbSpoken2Speaker(fileName=fileName, tmax=tmax)
+        self.future = future
 
     def __call__(self, A, B, **kwargs):
         assert isinstance(A, Annotation), "%r is not an Annotation" % A
@@ -881,6 +891,11 @@ class CrossModalGraph(object):
         for sA, tA in A.itertracks():
             nA = TrackNode(u, mA, sA, tA)
             for sB, tB in B.itertracks():
+
+                # filter out to-the-past edges if needed
+                if self.future and sA > sB:
+                    continue
+
                 nB = TrackNode(u, mB, sB, tB)
                 p = self.get_prob(sA, sB)
                 if p != -1:

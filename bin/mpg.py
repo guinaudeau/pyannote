@@ -480,6 +480,9 @@ msg = 'Temporal difference up to which speaker and spoken nodes should be connec
 xgroup.add_argument('--sn-tmax', metavar='SECONDS', type=float,
                     default=500, help=msg)
 
+msg = 'Only add edges between spoken name and future speech turn.'
+xgroup.add_argument('--sn-future', action='store_true', help=msg)
+
 xgroup.add_argument('--hw-param', metavar='param.pkl', type=x_param_parser,
                     dest='hwgraph', default=SUPPRESS,
                     help='path to trained parameters for '
@@ -756,6 +759,7 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
 
         args.sngraph.get_prob.tmax = args.sn_tmax
+        args.sngraph.future = args.sn_future
 
         # build speaker/spoken graph
         g = args.sngraph(ni_src, ss_src)
