@@ -18,6 +18,13 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+# Ignore Banyan warning
+import warnings
+warnings.filterwarnings("ignore",
+    "Key-type optimization unimplemented with callback metadata.",
+    Warning, "pyannote.base.annotation")
+
+
 from segment import Segment
 from timeline import Timeline
 from banyan import SortedDict

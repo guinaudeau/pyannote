@@ -18,6 +18,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+# Ignore Banyan warning
+import warnings
+warnings.filterwarnings("ignore",
+    "Key-type optimization unimplemented with callback metadata.",
+    Warning, "pyannote.base.timeline")
+
 from segment import Segment
 from banyan import SortedSet
 from interval_tree import TimelineUpdator
@@ -414,69 +420,68 @@ class Timeline(object):
         # of the segments in the timeline coverage.
         return sum([s.duration for s in self.coverage()])
 
-    # def gaps(self, focus=None):
-    #     """Timeline gaps
+    def gaps(self, focus=None):
+        """Timeline gaps
 
-    #     Parameters
-    #     ----------
-    #     focus : None, Segment or Timeline
+        Parameters
+        ----------
+        focus : None, Segment or Timeline
 
-    #     Returns
-    #     -------
-    #     gaps : Timeline
-    #         Timeline made of all gaps from original timeline, and delimited
-    #         by provided segment or timeline.
+        Returns
+        -------
+        gaps : Timeline
+            Timeline made of all gaps from original timeline, and delimited
+            by provided segment or timeline.
 
-    #     Raises
-    #     ------
-    #     TypeError when `focus` is neither None, Segment nor Timeline
+        Raises
+        ------
+        TypeError when `focus` is neither None, Segment nor Timeline
 
-    #     Examples
-    #     --------
+        Examples
+        --------
 
-    #     """
-    #     if focus is None:
-    #         focus = self.extent()
+        """
+        if focus is None:
+            focus = self.extent()
 
-    #     if not isinstance(focus, (Segment, Timeline)):
-    #         raise TypeError("unsupported operand type(s) for -':"
-    #                         "%s and Timeline." % type(focus).__name__)
+        if not isinstance(focus, (Segment, Timeline)):
+            raise TypeError("unsupported operand type(s) for -':"
+                            "%s and Timeline." % type(focus).__name__)
 
-    #     # segment focus
-    #     if isinstance(focus, Segment):
+        # segment focus
+        if isinstance(focus, Segment):
 
-    #         # starts with an empty timeline
-    #         timeline = self.empty()
+            # starts with an empty timeline
+            timeline = self.empty()
 
-    #         # `end` is meant to store the end time of former segment
-    #         # initialize it with beginning of provided segment `focus`
-    #         end = focus.start
+            # `end` is meant to store the end time of former segment
+            # initialize it with beginning of provided segment `focus`
+            end = focus.start
 
-    #         # focus on the intersection of timeline and provided segment
-    #         for segment in self.crop(focus, mode='intersection').coverage():
+            # focus on the intersection of timeline and provided segment
+            for segment in self.crop(focus, mode='intersection').coverage():
 
-    #             # add gap between each pair of consecutive segments
-    #             # if there is no gap, segment is empty, therefore not added
-    #             # see .__iadd__ for more information.
-    #             timeline += Segment(start=end, end=segment.start)
+                # add gap between each pair of consecutive segments
+                # if there is no gap, segment is empty, therefore not added
+                timeline.add(Segment(start=end, end=segment.start))
 
-    #             # keep track of the end of former segment
-    #             end = segment.end
+                # keep track of the end of former segment
+                end = segment.end
 
-    #         # add final gap (if not empty)
-    #         timeline += Segment(start=end, end=focus.end)
+            # add final gap (if not empty)
+            timeline.add(Segment(start=end, end=focus.end))
 
-    #     # other_timeline - timeline
-    #     elif isinstance(focus, Timeline):
+        # other_timeline - timeline
+        elif isinstance(focus, Timeline):
 
-    #         # starts with an empty timeline
-    #         timeline = self.empty()
+            # starts with an empty timeline
+            timeline = self.empty()
 
-    #         # add gaps for every segment in coverage of provided timeline
-    #         for segment in focus.coverage():
-    #             timeline += self.gaps(focus=segment)
+            # add gaps for every segment in coverage of provided timeline
+            for segment in focus.coverage():
+                timeline.update(self.gaps(focus=segment))
 
-    #     return timeline
+        return timeline
 
     def segmentation(self):
         """Non-overlapping timeline
