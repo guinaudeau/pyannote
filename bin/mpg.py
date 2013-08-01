@@ -480,6 +480,9 @@ msg = 'Temporal difference up to which speaker and spoken nodes should be connec
 xgroup.add_argument('--sn-tmax', metavar='SECONDS', type=float,
                     default=500, help=msg)
 
+msg = 'Only add edges between spoken name and future speech turn.'
+xgroup.add_argument('--sn-future', action='store_true', help=msg)
+
 xgroup.add_argument('--hw-param', metavar='param.pkl', type=x_param_parser,
                     dest='hwgraph', default=SUPPRESS,
                     help='path to trained parameters for '
@@ -503,7 +506,7 @@ except IOError as e:
 if hasattr(args, 'uris'):
     uris = args.uris
 
-from pyannote.algorithm.mpg.util import *
+# from pyannote.algorithm.mpg.util import *
 
 
 for u, uri in enumerate(uris):
@@ -563,7 +566,7 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
 
         g = SegmentationGraph()(ss_src)
-        G.add(g)
+        G.update(g)
 
     # speaker diarization
     if hasattr(args, 'ssgraph'):
@@ -581,7 +584,7 @@ for u, uri in enumerate(uris):
         else:
             g = args.ssgraph(ss_src, plp)
         # add it the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # speaker identification
     if hasattr(args, 'sigraph'):
@@ -594,17 +597,20 @@ for u, uri in enumerate(uris):
         # in speaker diarization and speaker identification
         if ss_src is not None:
             assert ss_src.get_timeline() == si_src.get_timeline(), \
-                "speaker diarization and identification timelines are not the same"
+                "speaker diarization and identification timelines are not the same\n%s\n%s" % (ss_src.get_timeline(), si_src.get_timeline())
             for s in ss_src:
                 assert ss_src.tracks(s) == si_src.tracks(s), \
                     "ss and si tracks are not the same " \
                     "%r: %r vs. %r" % (s, ss_src.tracks(s), si_src.tracks(s))
 
         # build speaker identity graph
-        g = args.sigraph(si_src)
+        if hasattr(args, 'nbest'):
+            g = args.sigraph(si_src.nbest(args.nbest))
+        else:
+            g = args.sigraph(si_src)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # HEAD CLUSTERING & RECOGNITION
     # =============================
@@ -635,7 +641,7 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
 
         g = SegmentationGraph()(hh_src)
-        G.add(g)
+        G.update(g)
 
     # face clustering
     if hasattr(args, 'hhgraph'):
@@ -651,7 +657,7 @@ for u, uri in enumerate(uris):
         g = args.hhgraph(hh_src, precomputed)
 
         # add it the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # face recognition
     if hasattr(args, 'higraph'):
@@ -671,7 +677,7 @@ for u, uri in enumerate(uris):
         g = args.higraph(hi_src)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # WRITTEN NAMES
     # =============
@@ -694,7 +700,7 @@ for u, uri in enumerate(uris):
         g = args.wigraph(wi_src)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # SPOKEN NAMES
     # ============
@@ -717,7 +723,7 @@ for u, uri in enumerate(uris):
         g = args.nigraph(ni_src)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # speaker/head
     if hasattr(args, 'shgraph'):
@@ -730,7 +736,7 @@ for u, uri in enumerate(uris):
         g = args.shgraph(ss_src, hh_src, args.only1x1)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # speaker/written
     if hasattr(args, 'swgraph'):
@@ -743,7 +749,7 @@ for u, uri in enumerate(uris):
         g = args.swgraph(ss_src, wi_src, args.only1x1)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # speaker/spoken
     if hasattr(args, 'sngraph'):
@@ -753,12 +759,13 @@ for u, uri in enumerate(uris):
             sys.stdout.flush()
 
         args.sngraph.get_prob.tmax = args.sn_tmax
+        args.sngraph.future = args.sn_future
 
         # build speaker/spoken graph
         g = args.sngraph(ni_src, ss_src)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # head/written
     if hasattr(args, 'hwgraph'):
@@ -771,7 +778,7 @@ for u, uri in enumerate(uris):
         g = args.hwgraph(hh_src, wi_src, args.only1x1)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # head/spoken
     if hasattr(args, 'hngraph'):
@@ -784,7 +791,7 @@ for u, uri in enumerate(uris):
         g = args.sngraph(hh_src, ni_src, args.only1x1)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
     # written/spoken
     if hasattr(args, 'wngraph'):
@@ -797,10 +804,8 @@ for u, uri in enumerate(uris):
         g = args.wngraph(wi_src, ni_src, args.only1x1)
 
         # add it to the multimodal graph
-        G.add(g)
+        G.update(g)
 
-    # if hasattr(args, 'nbest'):
-    #     G = remove_nbest_identity(G, args.nbest)
     G.add_identity_constraints()
     G.add_track_constraints()
 

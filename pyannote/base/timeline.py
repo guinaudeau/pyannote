@@ -537,9 +537,7 @@ class Timeline(object):
         timeline = Timeline(uri=self.uri)
 
         if len(timestamps) > 0:
-
             segments = []
-
             start = timestamps[0]
             for end in timestamps[1:]:
 

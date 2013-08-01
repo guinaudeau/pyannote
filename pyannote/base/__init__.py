@@ -38,6 +38,7 @@ SEGMENT = 'segment'
 TRACK = 'track'
 LABEL = 'label'
 SCORE = 'score'
+IDENTITY = 'identity'
 
 from segment import Segment
 from timeline import Timeline
