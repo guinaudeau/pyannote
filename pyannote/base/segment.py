@@ -53,7 +53,7 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
 
         >>> segment = Segment(start=13., end=37)
         >>> print segment
-        [13 --> 37]
+        [13.000 --> 37.000]
 
     Inclusion, intersection, union & gap
 
@@ -61,34 +61,22 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
         >>> s2 = Segment(0, 3)
         >>> if s1 in s2:
         ...    print "Segment %s is included in segment %s." % (s1, s2)
-        Segment [1 --> 2] is included in segment [0 --> 3].
+        Segment [1.000 --> 2.000] is included in segment [0.000 --> 3.000].
         >>> s3 = Segment(2, 5)
         >>> print s1 & s3
         ∅
         >>> print s2 & s3
-        [2 --> 3]
+        [2.000 --> 3.000]
         >>> print s2 | s3
-        [0 --> 5]
+        [0.000 --> 5.000]
         >>> print s1 ^ Segment(5, 7)
-        [2 --> 5]
+        [2.000 --> 5.000]
 
     Test whether segment is empty or not.
 
         >>> if not Segment(10, 10):
         ...    print "Segment is empty."
         Segment is empty.
-
-    Start & end time shifting
-
-        >>> s = Segment(3, 4)
-        >>> print s + 3
-        [6 --> 7]
-        >>> print s >> 3
-        [3 --> 7]
-        >>> print s << 0.5
-        [3 --> 3.5]
-        >>> print 2 << s >> 0.5
-        [1 --> 4.5]
 
     Comparison
 
@@ -98,17 +86,10 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
         >>> s4 = Segment(1, 2)
         >>> for s in sorted([s1, s2, s3, s4]):
         ...    print s
-        [1 --> 2]
-        [1 --> 3]
-        [1 --> 3]
-        [2 --> 6]
-
-    Start time difference
-
-        >>> s1 = Segment(1, 3)
-        >>> s2 = Segment(10, 23)
-        >>> print s2 - s1
-        9.0
+        [1.000 --> 2.000]
+        [1.000 --> 3.000]
+        [1.000 --> 3.000]
+        [2.000 --> 6.000]
 
     """
 
@@ -229,144 +210,6 @@ class Segment(namedtuple('Segment', ['start', 'end'])):
         start = min(self.end, other.end)
         end = max(self.start, other.start)
         return Segment(start=start, end=end)
-
-    # # == segment + float
-    # # shift the whole segment to the right
-    # # [ 0 --> 1 ] + 3 = [ 3 --> 4 ]
-    # def __add__(self, shift):
-    #     """Use the expression 'segment + shift'
-
-    #     Parameters
-    #     ----------
-    #     shift : float
-    #         Temporal shift, in seconds.
-
-    #     Returns
-    #     -------
-    #     segment : Segment
-    #         Shifted segment with `shift` seconds.
-
-    #     """
-
-    #     if isinstance(shift, Segment):
-    #         raise TypeError("unsupported operand type(s) for +:"
-    #                         "'Segment' and 'Segment'")
-    #     try:
-    #         start = self.start + shift
-    #         end = self.end + shift
-    #     except TypeError, e:
-    #         raise TypeError("unsupported operand type(s) for +:"
-    #                         "'Segment' and '%s'" % type(shift).__name__)
-
-    #     return Segment(start=start, end=end)
-
-    # def __radd__(self, shift):
-    #     """Use the expression 'shift + segment'
-
-    #     See Also
-    #     --------
-    #     __add__
-
-    #     """
-    #     return self.__add__(shift)
-
-    # def __sub__(self, other):
-    #     """Use the expression 'segment - other' or 'segment - shift'
-
-    #     Parameters
-    #     ----------
-    #     other : float or Segment
-    #         Temporal shift or other segment
-
-    #     Returns
-    #     -------
-    #     segment : Segment
-    #         if `other` is a float.
-    #     delta : float
-    #         start time difference if `other` is a Segment
-
-    #     """
-    #     if isinstance(other, Segment):
-    #         return self.start - other.start
-    #     else:
-    #         return self.__add__(-other)
-
-    # def __rshift__(self, shift):
-    #     """Use the expression 'segment >> shift'
-
-    #     Parameters
-    #     ----------
-    #     shift : float
-    #         Temporal shift, in seconds.
-
-    #     Returns
-    #     -------
-    #     segment : Segment
-    #         Segment with shifted end time by `shift` seconds.
-
-    #     """
-
-    #     if isinstance(shift, Segment):
-    #         raise TypeError("unsupported operand type(s) for +:"
-    #                         "'Segment' and 'Segment'")
-    #     try:
-    #         start = self.start
-    #         end = self.end + shift
-    #     except TypeError, e:
-    #         raise TypeError("unsupported operand type(s) for >>:"
-    #                         "'Segment' and '%s'" % type(shift).__name__)
-
-    #     return Segment(start=start, end=end)
-
-    # def __lshift__(self, shift):
-    #     """Use the expression 'segment << shift'
-
-    #     Equivalent to 'segment >> (-shift)'
-
-    #     See Also
-    #     --------
-    #     __rshift__
-
-    #     """
-    #     return self.__rshift__(-shift)
-
-    # def __rrshift__(self, shift):
-    #     """Use the expression 'shift >> segment'
-
-    #     Parameters
-    #     ----------
-    #     shift : float
-    #         Temporal shift, in seconds.
-
-    #     Returns
-    #     -------
-    #     segment : Segment
-    #         Segment with shifted start time by `shift` seconds.
-
-    #     """
-    #     if isinstance(shift, Segment):
-    #         raise TypeError("unsupported operand type(s) for +:"
-    #                         "'Segment' and 'Segment'")
-    #     try:
-    #         start = self.start + shift
-    #         end = self.end
-    #     except TypeError, e:
-    #         raise TypeError("unsupported operand type(s) for >>:"
-    #                         "'Segment' and '%s'" % type(shift).__name__)
-
-    #     return Segment(start=start, end=end)
-
-    # def __rlshift__(self, shift):
-    #     """Use the expression 'shift << segment'
-
-    #     Equivalent to '(-shift) >> segment'
-
-    #     See Also
-    #     --------
-    #     __rrshift__
-
-    #     """
-    #     return self.__rrshift__(-shift)
 
     def __str__(self):
         """Use the expression str(segment)"""
@@ -633,16 +476,16 @@ class SlidingWindow(object):
             >>> window = SlidingWindow(end=0.1)
             >>> for segment in window:
             ...     print segment
-            [0 --> 0.03]
-            [0.01 --> 0.04]
-            [0.02 --> 0.05]
-            [0.03 --> 0.06]
-            [0.04 --> 0.07]
-            [0.05 --> 0.08]
-            [0.06 --> 0.09]
-            [0.07 --> 0.1]
-            [0.08 --> 0.1]
-            [0.09 --> 0.1]
+            [0.000 --> 0.030]
+            [0.010 --> 0.040]
+            [0.020 --> 0.050]
+            [0.030 --> 0.060]
+            [0.040 --> 0.070]
+            [0.050 --> 0.080]
+            [0.060 --> 0.090]
+            [0.070 --> 0.100]
+            [0.080 --> 0.100]
+            [0.090 --> 0.100]
 
         """
 
