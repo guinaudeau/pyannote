@@ -10,6 +10,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install git gfortran g++
   - sudo apt-get install libatlas-base-dev libblas-dev liblapack-dev
+  - sudo apt-get install python-numpy
 
 install:
    - "pip install . --use-mirrors"
