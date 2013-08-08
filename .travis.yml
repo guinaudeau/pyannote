@@ -15,4 +15,5 @@ before_install:
 install:
    - "pip install . --use-mirrors"
 
-# script: nosetests
+script:
+   - nosetests
