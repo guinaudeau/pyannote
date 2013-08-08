@@ -21,7 +21,10 @@
 from pyannote.base.segment import Segment
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.parser.base import BaseAnnotationParser
-import cvhcistandards
+try:
+    import cvhcistandards
+except Exception, e:
+    pass
 from pyannote.base import SEGMENT, TRACK, LABEL
 from pandas import DataFrame
 
