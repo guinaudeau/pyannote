@@ -19,7 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyannote.base.mapping import ManyToOneMapping
-from pyannote.base.matrix import Cooccurrence
+from pyannote.base.matrix import get_cooccurrence_matrix
 from base import BaseMapper
 import numpy as np
 
@@ -34,13 +34,17 @@ class ConservativeDirectMapper(BaseMapper):
         # TODO : make it much simpler
 
         # Cooccurrence matrix
-        matrix = Cooccurrence(A, B)
+        matrix = get_cooccurrence_matrix(A, B)
+
+        print matrix
 
         # For each row, find the most frequent cooccurring column
         pairs = matrix.argmax(axis=1)
+
+
         # and keep this pair only if there is no ambiguity
-        pairs = {a : b for a, b in pairs.iteritems()
-                       if (matrix.df > 0).sum(axis=1)[a] == 1}
+        pairs = {a: b for a, b in pairs.iteritems()
+                        if (matrix > 0).sum(axis=1)[a] == 1}
 
         # Reverse dict and group alabels by argmax
         sriap = {}
@@ -53,10 +57,14 @@ class ConservativeDirectMapper(BaseMapper):
 
         for b, a_s in sriap.iteritems():
             M += (a_s, [b])
-        alabels, blabels = matrix.labels
-        for a in set(alabels)-M.left_set:
+
+        rows = matrix.get_rows()
+        cols = matrix.get_columns()
+
+        for a in set(rows)-M.left_set:
             M += ([a], None)
-        for b in set(blabels)-M.right_set:
+
+        for b in set(cols)-M.right_set:
             M += (None, [b])
 
         return M
@@ -74,9 +82,9 @@ class ArgMaxMapper(BaseMapper):
 
     Parameters
     ----------
-    cost : type
-        This parameter controls how function K is computed.
-        Defaults to :class:`pyannote.base.matrix.Cooccurrence`,
+    cost : func
+        This parameter controls how K is computed.
+        Defaults to :class:`pyannote.base.matrix.get_cooccurrence_matrix`,
         i.e. total cooccurence duration
 
     Examples
@@ -102,15 +110,16 @@ class ArgMaxMapper(BaseMapper):
 
     See Also
     --------
-    pyannote.base.matrix.Cooccurrence, pyannote.base.matrix.CoTFIDF, pyannote.base.matrix
+    pyannote.base.matrix.get_cooccurrence_matrix
+    pyannote.base.matrix.get_tfidf_matrix
+    pyannote.base.matrix.LabelMatrix
 
     """
     def __init__(self, cost=None):
         super(ArgMaxMapper, self).__init__()
         if cost is None:
-            self.__cost = Cooccurrence
-        else:
-            self.__cost = cost
+            cost = get_cooccurrence_matrix
+        self.__cost = cost
 
     def _associate(self, A, B):
 
@@ -119,7 +128,7 @@ class ArgMaxMapper(BaseMapper):
 
         # argmax
         pairs = matrix.argmax(axis=1)
-        pairs = {a : b for a, b in pairs.iteritems() if matrix[a, b] > 0}
+        pairs = {a : b for a, b in pairs.iteritems() if matrix.loc[a, b] > 0}
 
         # Reverse dict and group alabels by argmax
         sriap = {}
@@ -132,10 +141,12 @@ class ArgMaxMapper(BaseMapper):
 
         for b, a_s in sriap.iteritems():
             M += (a_s, [b])
-        alabels, blabels = matrix.labels
-        for a in set(alabels)-M.left_set:
+
+        rows = matrix.get_rows()
+        cols = matrix.get_columns()
+        for a in set(rows)-M.left_set:
             M += ([a], None)
-        for b in set(blabels)-M.right_set:
+        for b in set(cols)-M.right_set:
             M += (None, [b])
 
         return M

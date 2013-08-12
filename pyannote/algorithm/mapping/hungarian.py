@@ -22,7 +22,7 @@ import numpy as np
 from munkres import Munkres
 from base import BaseMapper
 from pyannote.base.mapping import OneToOneMapping
-from pyannote.base.matrix import Cooccurrence
+from pyannote.base.matrix import get_cooccurrence_matrix
 
 class HungarianMapper(BaseMapper):
     """One-to-one label mapping based on the Hungarian algorithm
@@ -34,9 +34,9 @@ class HungarianMapper(BaseMapper):
 
     Parameters
     ----------
-    cost : type
-        This parameter controls how function K is computed.
-        Defaults to :class:`pyannote.base.matrix.Cooccurrence`,
+    cost : func
+        This parameter controls how K is computed.
+        Defaults to :class:`pyannote.base.matrix.get_cooccurrence_matrix`,
         i.e. total cooccurence duration
 
     Examples
@@ -73,7 +73,9 @@ class HungarianMapper(BaseMapper):
 
     See Also
     --------
-    pyannote.base.matrix.Cooccurrence, pyannote.base.matrix.CoTFIDF, pyannote.base.matrix
+    pyannote.base.matrix.get_cooccurrence_matrix
+    pyannote.base.matrix.get_tfidf_matrix
+    pyannote.base.matrix.LabelMatrix
 
     """
     def __init__(self, cost=None):
@@ -84,9 +86,8 @@ class HungarianMapper(BaseMapper):
 
         # By default, uses label cooccurrence duration
         if cost is None:
-            self.__cost = Cooccurrence
-        else:
-            self.__cost = cost
+            cost = get_cooccurrence_matrix
+        self.__cost = cost
 
     def _associate(self, A, B):
 
@@ -95,20 +96,21 @@ class HungarianMapper(BaseMapper):
         M = OneToOneMapping(A.modality, B.modality)
 
         # Shape and labels
-        Na, Nb = matrix.shape
-        rows, cols = matrix.labels
+        nRows, nCols = matrix.shape
+        rows = matrix.get_rows()
+        cols = matrix.get_columns()
 
         # Cost matrix
-        N = max(Nb, Na)
+        N = max(nCols, nRows)
         C = np.zeros((N, N))
-        C[:Nb, :Na] = (np.max(matrix.df.values) - matrix.df.values).T
+        C[:nCols, :nRows] = (np.max(matrix.values) - matrix.values).T
 
         # Optimal one-to-one mapping
         mapping = self.__munkres.compute(C)
 
         for b, a in mapping:
-            if (b < Nb) and (a < Na):
-                if matrix[rows[a], cols[b]] > 0:
+            if (b < nCols) and (a < nRows):
+                if matrix.loc[rows[a], cols[b]] > 0:
                     M += ([rows[a]], [cols[b]])
 
         # A --> NoMatch

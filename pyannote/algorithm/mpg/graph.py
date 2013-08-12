@@ -18,9 +18,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, IDENTITY
-from pyannote.base import Segment, Timeline, Annotation, Unknown, Scores
-from pyannote.base.matrix import Cooccurrence
+from pyannote.base import URI, MODALITY, SEGMENT, TRACK
+from pyannote.base import Timeline, Annotation, Unknown
+from pyannote.base.matrix import get_cooccurrence_matrix
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
 from pyannote.algorithm.mpg.node import IdentityNode, TrackNode
 from pandas import DataFrame
@@ -28,9 +28,6 @@ import networkx as nx
 import numpy as np
 
 PROBABILITY = 'probability'
-# SUBTRACK = 'subtrack'
-# COOCCURRING = 'cooccurring'
-# RANK = 'rank'
 
 
 class MultimodalProbabilityGraph(nx.Graph):
@@ -548,7 +545,7 @@ class LabelSimilarityGraph(object):
         P.M = self.s2p(P.M)
 
         # label cooccurrence matrix
-        K = Cooccurrence(diarization, diarization)
+        K = get_cooccurrence_matrix(diarization, diarization)
 
         G = MultimodalProbabilityGraph()
         u = diarization.uri
@@ -581,7 +578,8 @@ class LabelSimilarityGraph(object):
                 elif K[l, L] > 0:
                     p = 0.
                     k = True
-                # otherwise, try and get the probability from probability matrix
+                # otherwise,
+                # try and get the probability from probability matrix
                 else:
                     k = False
                     try:
