@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -19,25 +19,54 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import pandas
-from pyannote.base.matrix import LabelMatrix
+from pyannote import LabelMatrix
+from pyannote import Segment
 
 
-def get_number(head_number):
-    return head_number.split('_')[1]
+# convert head_XXX to XXX
+def _get_track(field):
+    return field.split('_')[1]
 
 
 class TVTParser(object):
+    """
+
+    File format
+    -----------
+    uri start_time duration track_name other_track_name distance
+    """
+
     def __init__(self):
         super(TVTParser, self).__init__()
 
     def read(self, path):
+
+        # load text file at `path`
+        # uri start_time duration track other_track distance
         names = ['u', 'start', 'duration', 't1', 't2', 'distance']
-        converters = {'t1': get_number, 't2': get_number}
-        data = pandas.read_table(path, sep='[\t ]+', header=None,
-                                 names=names, converters=converters)
-        matrix = pandas.pivot_table(data, values='distance',
-                                    rows=['t1'], cols=['t2'])
-        ilabels = list(matrix.index)
-        jlabels = list(matrix.columns)
-        M = matrix.values
-        return LabelMatrix(ilabels=ilabels, jlabels=jlabels, Mij=M)
+        converters = {
+            't1': _get_track,
+            't2': _get_track
+        }
+        table = pandas.read_table(
+            path, sep='[\t ]+', header=None,
+            names=names, converters=converters)
+
+        # create pivot table with row `track, start_time, duration`,
+        # column `other_track` and value `distance`
+        pivot = pandas.pivot_table(
+            table, values='distance',
+            rows=['t1', 'start', 'duration'],
+            cols=['t2'])
+
+        # build dictionary to translate unique `track` name
+        # to `segment, track` tuple
+        T = {t: (Segment(start=s, end=s+d), t) for (t, s, d) in pivot.index}
+
+        # get (segment, track) rows & columns ready
+        rows = [T[_t] for (_t, _, _) in pivot.index]
+        cols = [T[_t] for _t in pivot.columns]
+        data = pivot.values
+
+        # return (segment, track) similarity matrix
+        return LabelMatrix(data=data, rows=rows, columns=cols)
