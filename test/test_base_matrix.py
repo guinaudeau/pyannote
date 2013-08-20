@@ -37,11 +37,20 @@ class test_base_matrix(object):
         )
         self.m = LabelMatrix(
             data=data, dtype=np.float,
-            index=rows, columns=columns
+            rows=rows, columns=columns
         )
 
     def teardown(self):
         pass
+
+    def test_get(self):
+        assert self.m[1, 'B'] == 4
+        assert self.m[3, 'D'] == 3
+
+    def test_set(self):
+        copied = self.m.copy()
+        copied[1, 'C'] = 5
+        assert copied[1, 'C'] == 5
 
     def test_shape(self):
         assert self.m.shape == (3, 4)
@@ -51,15 +60,6 @@ class test_base_matrix(object):
 
     def test_get_columns(self):
         assert self.m.get_columns() == ['A', 'B', 'C', 'D']
-
-    def test_getitem(self):
-        assert self.m[2, 'C'] == 1
-
-    def test_setitem(self):
-        copied = self.m.copy()
-        copied[1, 'D'] = 10
-        print copied
-        assert copied[1, 'D'] == 10
 
     def test_iter_values(self):
         V = set([(r, c, v) for (r, c, v) in self.m.iter_values()])
@@ -72,7 +72,7 @@ class test_base_matrix(object):
 
     def test_neg(self):
         negated = -self.m
-        assert negated.loc[2, 'C'] == -1
+        assert negated[2, 'C'] == -1
 
     def test_argmin(self):
         assert self.m.argmin(axis=0) == {'A': 1, 'B': 3, 'C': 2, 'D': 1}
@@ -86,4 +86,43 @@ class test_base_matrix(object):
 
     def test_copy(self):
         copied = self.m.copy()
-        assert copied.loc[2, 'C'] == 1
+        assert copied[2, 'C'] == 1
+
+    def test_remove_row(self):
+        copied = self.m.copy().remove_row(2)
+        assert np.all(copied.df.values == np.array(
+            [
+                [1, 4, 3, 2],
+                [3, 1, 4, 3]
+            ]
+        ))
+
+    def test_remove_column(self):
+        copied = self.m.copy().remove_column('A')
+        assert np.all(copied.df.values == np.array(
+            [
+                [4, 3, 2],
+                [3, 1, 4],
+                [1, 4, 3]
+            ]
+        ))
+
+    def test_subset(self):
+
+        rows = [2, 3]
+        columns = ['A', 'C', 'D']
+        subset = self.m.subset(rows=set(rows), columns=set(columns))
+
+        data = np.array(
+            [
+                [2, 1, 4],
+                [3, 4, 3]
+            ]
+        )
+
+        s = LabelMatrix(
+            data=data, dtype=np.float,
+            rows=rows, columns=columns
+        )
+
+        assert np.all((subset.df == s.df).values)
