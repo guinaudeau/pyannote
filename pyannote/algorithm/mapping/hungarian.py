@@ -103,14 +103,14 @@ class HungarianMapper(BaseMapper):
         # Cost matrix
         N = max(nCols, nRows)
         C = np.zeros((N, N))
-        C[:nCols, :nRows] = (np.max(matrix.values) - matrix.values).T
+        C[:nCols, :nRows] = (np.max(matrix.df.values) - matrix.df.values).T
 
         # Optimal one-to-one mapping
         mapping = self.__munkres.compute(C)
 
         for b, a in mapping:
             if (b < nCols) and (a < nRows):
-                if matrix.loc[rows[a], cols[b]] > 0:
+                if matrix[rows[a], cols[b]] > 0:
                     M += ([rows[a]], [cols[b]])
 
         # A --> NoMatch

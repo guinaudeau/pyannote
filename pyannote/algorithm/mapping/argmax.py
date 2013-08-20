@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -23,6 +23,7 @@ from pyannote.base.matrix import get_cooccurrence_matrix
 from base import BaseMapper
 import numpy as np
 
+
 class ConservativeDirectMapper(BaseMapper):
     """
     Maps left label a to right label b if b is the only one cooccurring with a.
@@ -36,15 +37,12 @@ class ConservativeDirectMapper(BaseMapper):
         # Cooccurrence matrix
         matrix = get_cooccurrence_matrix(A, B)
 
-        print matrix
-
         # For each row, find the most frequent cooccurring column
         pairs = matrix.argmax(axis=1)
 
-
         # and keep this pair only if there is no ambiguity
         pairs = {a: b for a, b in pairs.iteritems()
-                        if (matrix > 0).sum(axis=1)[a] == 1}
+                 if np.sum((matrix.subset(rows=set([a])) > 0).df.values) == 1}
 
         # Reverse dict and group alabels by argmax
         sriap = {}
@@ -84,7 +82,7 @@ class ArgMaxMapper(BaseMapper):
     ----------
     cost : func
         This parameter controls how K is computed.
-        Defaults to :class:`pyannote.base.matrix.get_cooccurrence_matrix`,
+        Defaults to `pyannote.base.matrix.get_cooccurrence_matrix`,
         i.e. total cooccurence duration
 
     Examples
@@ -128,7 +126,7 @@ class ArgMaxMapper(BaseMapper):
 
         # argmax
         pairs = matrix.argmax(axis=1)
-        pairs = {a : b for a, b in pairs.iteritems() if matrix.loc[a, b] > 0}
+        pairs = {a: b for a, b in pairs.iteritems() if matrix[a, b] > 0}
 
         # Reverse dict and group alabels by argmax
         sriap = {}
