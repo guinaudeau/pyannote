@@ -22,34 +22,40 @@ import numpy as np
 import pandas
 
 
-class LabelMatrix(pandas.DataFrame):
+class LabelMatrix(object):
+
+    def __init__(self, data=None, dtype=None, rows=None, columns=None):
+        super(LabelMatrix, self).__init__()
+        if data is None and dtype is None:
+            dtype = np.float
+        self.df = pandas.DataFrame(
+            data=data, dtype=dtype, index=rows, columns=columns)
+
+    def __setitem__(self, (row, col), value):
+        self.df = self.df.set_value(row, col, value)
+        return self
+
+    def __getitem__(self, (row, col)):
+        return self.df.at[row, col]
 
     def get_rows(self):
-        return list(self.index)
+        return list(self.df.index)
 
     def get_columns(self):
-        return list(self.columns)
+        return list(self.df.columns)
+
+    def __get_shape(self):
+        return self.df.shape
+    shape = property(fget=__get_shape)
 
     def __nonzero__(self):
-        n, m = self.shape
-        return n*m != 0
-
-    def __getitem__(self, key):
-        row = key[0]
-        col = key[1]
-        return self.at[row, col]
-
-    def __setitem__(self, key, value):
-        row = key[0]
-        col = key[1]
-        self = self.set_value(row, col, value)
+        N, M = self.df.shape
+        return N*M != 0
 
     def iter_values(self):
-        """
-        """
         for row in self.get_rows():
             for col in self.get_columns():
-                val = self.at[row, col]
+                val = self.df.at[row, col]
                 if not np.isnan(val):
                     yield row, col, val
 
@@ -74,19 +80,24 @@ class LabelMatrix(pandas.DataFrame):
 
         if axis == 0:
             return {c: r
-                    for (c, r) in self.idxmax(axis=axis).iteritems()}
+                    for (c, r) in self.df.idxmax(axis=axis).iteritems()}
 
         elif axis == 1:
             return {r: c
-                    for (r, c) in self.idxmax(axis=axis).iteritems()}
+                    for (r, c) in self.df.idxmax(axis=axis).iteritems()}
 
         else:
             values = [
-                (_r, _c, self.loc[_r, _c])
-                for (_c, _r) in self.idxmax(axis=0).iteritems()
+                (_r, _c, self.df.loc[_r, _c])
+                for (_c, _r) in self.df.idxmax(axis=0).iteritems()
             ]
             r, c, _ = sorted(values, key=lambda v: v[2])[-1]
             return {r: c}
+
+    def __neg__(self):
+        negated = LabelMatrix()
+        negated.df = -self.df
+        return negated
 
     def argmin(self, axis=None):
         """
@@ -109,6 +120,172 @@ class LabelMatrix(pandas.DataFrame):
 
         return (-self).argmax(axis=axis)
 
+    def __get_T(self):
+        transposed = LabelMatrix()
+        transposed.df = self.df.T
+        return transposed
+    T = property(fget=__get_T)
+
+    def remove_column(self, col):
+        del self.df[col]
+        return self
+
+    def remove_row(self, row):
+        df = self.df.T
+        del df[row]
+        self.df = df.T
+        return self
+
+    def copy(self):
+        copied = LabelMatrix()
+        copied.df = self.df.copy()
+        return copied
+
+    def subset(self, rows=None, columns=None):
+
+        if rows is None:
+            rows = set(self.get_rows())
+
+        if columns is None:
+            columns = set(self.get_columns())
+
+        remove_rows = set(self.get_rows()) - rows
+        remove_columns = set(self.get_columns()) - columns
+
+        copied = self.copy()
+        for row in remove_rows:
+            copied = copied.remove_row(row)
+        for col in remove_columns:
+            copied = copied.remove_column(col)
+
+        return copied
+
+    def __gt__(self, value):
+        compared = LabelMatrix()
+        compared.df = self.df > value
+        return compared
+
+    # def sum(self, axis=None):
+    #     summed = LabelMatrix()
+    #     summed.df = self.df.sum(axis=axis)
+    #     return summed
+
+    def __str__(self):
+        return str(self.df)
+
+
+# class LabelMatrix2(pandas.DataFrame):
+
+#     def get_rows(self):
+#         return list(self.index)
+
+#     def get_columns(self):
+#         return list(self.columns)
+
+#     def __nonzero__(self):
+#         n, m = self.shape
+#         return n*m != 0
+
+#     # def __getitem__(self, key):
+#     #     row = key[0]
+#     #     col = key[1]
+#     #     return self.at[row, col]
+
+#     # def __setitem__(self, key, value):
+#     #     row = key[0]
+#     #     col = key[1]
+#     #     self = self.set_value(row, col, value)
+
+#     def iter_values(self):
+#         """
+#         """
+#         for row in self.get_rows():
+#             for col in self.get_columns():
+#                 val = self.at[row, col]
+#                 if not np.isnan(val):
+#                     yield row, col, val
+
+#     def argmax(self, axis=None):
+#         """
+#         Labels of the maximum values along an axis.
+
+#         Parameters
+#         ----------
+#         axis : int, optional
+#             By default, labels are into the whole matrix, otherwise
+#             along the specified axis (rows or columns)
+
+#         Returns
+#         -------
+#         label_dict : dictionary of labels
+#             Dictionary of labels into the matrix.
+#             {col_label : max_row_label} if axis == 0
+#             {row_label : max_col_label} if axis == 1
+#             {max_row_label : max_col_label} if axis == None
+#         """
+
+#         if axis == 0:
+#             return {c: r
+#                     for (c, r) in self.idxmax(axis=axis).iteritems()}
+
+#         elif axis == 1:
+#             return {r: c
+#                     for (r, c) in self.idxmax(axis=axis).iteritems()}
+
+#         else:
+#             values = [
+#                 (_r, _c, self.loc[_r, _c])
+#                 for (_c, _r) in self.idxmax(axis=0).iteritems()
+#             ]
+#             r, c, _ = sorted(values, key=lambda v: v[2])[-1]
+#             return {r: c}
+
+#     def argmin(self, axis=None):
+#         """
+#         Labels of the minimum values along an axis.
+
+#         Parameters
+#         ----------
+#         axis : int, optional
+#             By default, labels are into the whole matrix, otherwise
+#             along the specified axis (rows or columns)
+
+#         Returns
+#         -------
+#         label_dict : dictionary of labels
+#             Dictionary of labels into the matrix.
+#             {col_label : max_row_label} if axis == 0
+#             {row_label : max_col_label} if axis == 1
+#             {max_row_label : max_col_label} if axis == None
+#         """
+
+#         return (-self).argmax(axis=axis)
+
+#     def remove_column(self, col):
+#         del self[col]
+#         return self
+
+#     def remove_row(self, row):
+#         return self.T.remove_column(row).T
+
+#     def subset(self, rows=None, columns=None):
+
+#         if rows is None:
+#             rows = set(self.get_rows())
+
+#         if columns is None:
+#             columns = set(self.get_columns())
+
+#         remove_rows = set(self.get_rows()) - rows
+#         remove_columns = set(self.get_columns()) - columns
+
+#         copied = self.copy()
+#         for row in remove_rows:
+#             copied = copied.remove_row(row)
+#         for col in remove_columns:
+#             copied = copied.remove_column(col)
+
+#         return copied
 
 def get_cooccurrence_matrix(R, C):
 
@@ -125,7 +302,7 @@ def get_cooccurrence_matrix(R, C):
             coverage = row_coverage.crop(col_coverage, mode='intersection')
             K[r, c] = coverage.duration()
 
-    return LabelMatrix(data=K, index=rows, columns=cols)
+    return LabelMatrix(data=K, rows=rows, columns=cols)
 
 
 from pyannote.base.segment import SEGMENT_PRECISION
@@ -199,7 +376,7 @@ def get_tfidf_matrix(words, documents, idf=True, log=False):
     else:
         idf = 1.
 
-    return LabelMatrix(data=tf * idf, index=rows, columns=cols)
+    return LabelMatrix(data=tf * idf, rows=rows, columns=cols)
 
 # class AutoCooccurrence(Cooccurrence):
 #     """
