@@ -5,3 +5,5 @@ MANIFEST
 _debug_.py
 wip/
 *.DS_Store
+*.sublime-project
+*.sublime-workspace
