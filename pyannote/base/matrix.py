@@ -346,7 +346,7 @@ def get_tfidf_matrix(words, documents, idf=True, log=False):
     if Nd == 0:
         return M
 
-    K = M.values
+    K = M.df.values
     rows = M.get_rows()
     cols = M.get_columns()
 
