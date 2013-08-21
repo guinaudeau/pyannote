@@ -27,6 +27,8 @@ warnings.filterwarnings(
     "pyannote.base.annotation"
 )
 
+from pyannote.util import deprecated
+
 
 from segment import Segment
 from timeline import Timeline
@@ -159,18 +161,23 @@ class Annotation(object):
     def __nonzero__(self):
         return self._tracks.length() > 0
 
-    def __iter__(self):
+    def itersegments(self):
         """Segment iterator"""
         return iter(self._tracks)
 
-    def itersegments(self):
+    @deprecated(itersegments)
+    def __iter__(self):
         return iter(self._tracks)
 
-    def itertracks(self):
+    def itertracks(self, label=False):
         for segment, tracks in self._tracks.items():
-            for track, label in tracks.iteritems():
-                yield segment, track
+            for track, lbl in tracks.iteritems():
+                if label:
+                    yield segment, track, lbl
+                else:
+                    yield segment, track
 
+    @deprecated(itertracks)
     def iterlabels(self):
         for segment, tracks in self._tracks.items():
             for track, label in tracks.iteritems():
@@ -274,6 +281,22 @@ class Annotation(object):
 
         return cropped
 
+    def get_tracks(self, segment):
+        """Set of tracks for query segment
+
+        Parameters
+        ----------
+        segment : `Segment`
+            Query segment
+
+        Returns
+        -------
+        tracks : set
+            Set of tracks for query segment
+        """
+        return set(self._tracks.get(segment, {}))
+
+    @deprecated(get_tracks)
     def tracks(self, segment):
         """Set of tracks for query segment
 
@@ -288,6 +311,7 @@ class Annotation(object):
             Set of tracks for query segment
         """
         return set(self._tracks.get(segment, {}))
+
 
     def has_track(self, segment, track):
         """Check whether a given track exists
@@ -361,7 +385,6 @@ class Annotation(object):
         prefix : str, optional
         candidate : any valid track name
 
-
         Returns
         -------
         track : str
@@ -395,7 +418,7 @@ class Annotation(object):
 
     def __str__(self):
         """Human-friendly representation"""
-        # TODO: use pretty table
+        # TODO: use pandas.DataFrame
         return "\n".join(["%s %s %s" % (s, t, l)
                           for s, t, l in self.iterlabels()])
 
