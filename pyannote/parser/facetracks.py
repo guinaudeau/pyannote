@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -18,8 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyannote.base.segment import Segment
-from pyannote.base.annotation import Annotation, Unknown
+from pyannote import Segment
+from pyannote import Annotation, Unknown
 from pyannote.parser.base import BaseAnnotationParser
 try:
     import cvhcistandards
@@ -48,8 +48,8 @@ class FACETRACKSParser(BaseAnnotationParser):
     def read(self, path, uri=None, **kwargs):
 
         modality = 'head'
-        facetracks, _, _ = cvhcistandards.read_tracks(path,
-                                                      load_ids=self.load_ids)
+        facetracks, _, _ = cvhcistandards.read_tracks(
+            path, load_ids=self.load_ids)
 
         segments = []
         tracks = []

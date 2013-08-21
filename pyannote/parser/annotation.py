@@ -25,6 +25,7 @@ import trs
 import xgtf
 import etf
 import tvm
+import facetracks
 
 
 class AnnotationParser(object):
@@ -35,7 +36,7 @@ class AnnotationParser(object):
         '.repere': repere.REPEREParser,
         '.trs': trs.TRSParser,
         '.xgtf': xgtf.XGTFParser,
-        # '.facetracks': pyannote.parser.FACETRACKSParser,
+        '.facetracks': facetracks.FACETRACKSParser,
         '.etf0': etf.ETF0Parser,
         '.tvm': tvm.TVMParser,
     }
