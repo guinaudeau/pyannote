@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -25,14 +25,12 @@ Model mixins defines the necessary methods to obtain similarity between labels.
 """
 
 __all__ = [
-	'BICMMx',
-	# 'LevenshteinMMx',
-	'SameStringMMx',
-	'PrecomputedMMx', 'AverageLinkMMx', 'CompleteLinkMMx', 'SingleLinkMMx'
- ]
+    'BICMMx',
+    'SameStringMMx',
+    'PrecomputedMMx', 'AverageLinkMMx', 'CompleteLinkMMx', 'SingleLinkMMx'
+]
 
 from gaussian import BICMMx
-# from string import LevenshteinMMx
 from string import SameStringMMx
 from base import PrecomputedMMx, AverageLinkMMx, CompleteLinkMMx, SingleLinkMMx
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -41,10 +41,7 @@ class CooccurringCMx(object):
 
         # compute labels cooccurrence matrix
         M = get_cooccurrence_matrix(self.annotation, self.annotation)
-        ilabels, jlabels = M.labels
-        self.cmx_cooccurring = LabelMatrix(ilabels=ilabels, jlabels=jlabels,
-                                           Mij = (M.M > 0.), dtype=bool,
-                                           default=False)
+        self.cmx_cooccurring = M > 0.
 
     def cmx_update(self, new_label, merged_labels):
 
@@ -52,11 +49,14 @@ class CooccurringCMx(object):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self.cmx_cooccurring[label, :]
-            del self.cmx_cooccurring[:, label]
+            self.cmx_cooccurring.remove_row(label)
+            self.cmx_cooccurring.remove_column(label)
 
         # compute cooccurrence matrix with new_label
-        M = get_cooccurrence_matrix(self.annotation(new_label), self.annotation)
+        M = get_cooccurrence_matrix(
+            self.annotation.subset(set([new_label])),
+            self.annotation
+        )
 
         # update cooccurring matrix accordingly
         labels = self.annotation.labels()
@@ -72,7 +72,6 @@ class CooccurringCMx(object):
                 if self.cmx_cooccurring[label, other_label]:
                     return False
         return True
-
 
 
 class ContiguousCMx(BaseConstraintMixin):
@@ -111,8 +110,8 @@ class ContiguousCMx(BaseConstraintMixin):
         for label in merged_labels:
             if label == new_label:
                 continue
-            del self.cmx_contiguous[label, :]
-            del self.cmx_contiguous[:, label]
+            self.cmx_contiguous.remove_row(label)
+            self.cmx_contiguous.remove_column(label)
 
         # compute cooccurrence matrix with new_label
         M = get_cooccurrence_matrix(self.cmx_xann(new_label), self.cmx_xann)
