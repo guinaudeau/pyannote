@@ -4,17 +4,17 @@
 # Copyright 2012 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,12 +24,12 @@ from pyannote.algorithm.util.modularity import Modularity
 from pyannote.algorithm.clustering.agglomerative.constraint.base import BaseConstraintMixin
 
 class IncreaseModularityCMx(BaseConstraintMixin):
-    
+
     def cmx_setup(self, edge_threshold=0.5, **kwargs):
         if not isinstance(self, MatrixIMx):
             raise ValueError('IncreaseModularityCMx requires MatrixIMx.')
         self.cmx_edge_threshold = edge_threshold
-    
+
     def cmx_init(self):
         g = nx.DiGraph()
         for i, j, s in self.imx_matrix:
@@ -39,12 +39,12 @@ class IncreaseModularityCMx(BaseConstraintMixin):
         self.cmx_modularity = Modularity(g, weight='weight')
         self.cmx_partition = {i:i for i in self.imx_matrix.iter_ilabels()}
         self.cmx_q = [self.cmx_modularity(self.cmx_partition)]
-        
+
     def cmx_update(self, new_label, merged_labels):
         for label in merged_labels:
             self.cmx_partition[label] = new_label
         self.cmx_q.append(self.cmx_modularity(self.cmx_partition))
-    
+
     def cmx_meet(self, labels):
         partition = dict(self.cmx_partition)
         for label in labels:

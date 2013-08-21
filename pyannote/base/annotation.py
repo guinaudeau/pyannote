@@ -20,20 +20,22 @@
 
 # Ignore Banyan warning
 import warnings
-warnings.filterwarnings("ignore",
+warnings.filterwarnings(
+    "ignore",
     "Key-type optimization unimplemented with callback metadata.",
-    Warning, "pyannote.base.annotation")
+    Warning,
+    "pyannote.base.annotation"
+)
 
 
 from segment import Segment
 from timeline import Timeline
 from banyan import SortedDict
 from interval_tree import TimelineUpdator
-from segment import Segment
 from mapping import Mapping, ManyToOneMapping
 import operator
 import numpy as np
-from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
+from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL
 
 
 class Unknown(object):
@@ -150,7 +152,6 @@ class Annotation(object):
                 self._labels.pop(l)
                 self._labelNeedsUpdate.pop(l)
 
-
     def __len__(self):
         """Number of segments"""
         return self._tracks.length()
@@ -260,7 +261,6 @@ class Annotation(object):
                             cropped[segment, track] = label
 
             elif mode == 'intersection':
-                # TODO
                 # see above
                 for segment, other_segment in self.get_timeline().co_iter(other):
                     intersection = segment & other_segment
@@ -322,6 +322,7 @@ class Annotation(object):
         raise NotImplementedError('')
 
     def copy(self):
+
         # create new empty annotation
         copied = self.__class__(uri=self.uri, modality=self.modality)
 
@@ -737,7 +738,7 @@ class Annotation(object):
 
             try:
                 translation = ManyToOneMapping.fromMapping(translation)
-            except Exception, e:
+            except Exception:
                 raise ValueError('expected N-to-1 mapping.')
 
             # only transform labels that actually have a mapping

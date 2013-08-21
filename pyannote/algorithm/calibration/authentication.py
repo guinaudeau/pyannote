@@ -196,8 +196,9 @@ if __name__ == "__main__":
         with args.output() as f:
             pickle.dump(calibration, f)
 
-    train_parser = subparsers.add_parser('train', help='Train calibration',
-                                         parents=[pyannote.cli.parentArgumentParser()])
+    train_parser = subparsers.add_parser(
+        'train', help='Train calibration',
+        parents=[pyannote.cli.parentArgumentParser()])
     train_parser.set_defaults(func=trainCalibration)
 
     description = 'path to input authentication scores.'
@@ -205,16 +206,18 @@ if __name__ == "__main__":
                               type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to input reference annotation.'
-    train_parser.add_argument('reference', help=description,
-                              type=pyannote.cli.InputGetAnnotation())
+    train_parser.add_argument(
+        'reference', help=description,
+        type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to output calibration.'
-    train_parser.add_argument('output', help=description,
-                              type=pyannote.cli.OutputFileHandle())
+    train_parser.add_argument(
+        'output', help=description,
+        type=pyannote.cli.OutputFileHandle())
 
     description = 'use argmax tagger instead of conservative one.'
-    train_parser.add_argument('--argmax', help=description,
-                              action='store_true')
+    train_parser.add_argument(
+        '--argmax', help=description, action='store_true')
 
     # ==============
     # APPLY mode
@@ -239,26 +242,31 @@ if __name__ == "__main__":
             scores = args.scores(uri)
             args.calibrated(calibration.apply(scores, prior=prior))
 
+    apply_parser = subparsers.add_parser(
+        'apply', help='Apply calibration',
+        parents=[pyannote.cli.parentArgumentParser()])
 
-    apply_parser = subparsers.add_parser('apply', help='Apply calibration',
-                                         parents=[pyannote.cli.parentArgumentParser()])
     apply_parser.set_defaults(func=applyCalibration)
 
     description = 'path to input authentication scores.'
-    apply_parser.add_argument('scores', help=description,
-                              type=pyannote.cli.InputGetAnnotation())
+    apply_parser.add_argument(
+        'scores', help=description,
+        type=pyannote.cli.InputGetAnnotation())
 
     description = 'path to input calibration.'
-    apply_parser.add_argument('calibration', help=description,
-                              type=pyannote.cli.InputFileHandle())
+    apply_parser.add_argument(
+        'calibration', help=description,
+        type=pyannote.cli.InputFileHandle())
 
     description = 'path to output calibrated scores.'
-    apply_parser.add_argument('calibrated', help=description,
-                              type=pyannote.cli.OutputWriteAnnotation())
+    apply_parser.add_argument(
+        'calibrated', help=description,
+        type=pyannote.cli.OutputWriteAnnotation())
 
     description = 'set prior manually (default is to use estimated priors).'
-    apply_parser.add_argument('--prior', help=description, type=float,
-                              default=pyannote.cli.SUPPRESS)
+    apply_parser.add_argument(
+        '--prior', help=description, type=float,
+        default=pyannote.cli.SUPPRESS)
 
     # =====================
     # ARGUMENT parsing

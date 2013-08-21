@@ -4,17 +4,17 @@
 # Copyright 2012-2013 Claude BARRAS (barras@limsi.fr)
 
 # This file is part of PyAnnote.
-# 
+#
 #     PyAnnote is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     PyAnnote is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -42,12 +42,13 @@ if np.__version__ < '1.6':
 from scipy import stats
 from scipy.stats import norm
 
+
 def scores2llr(scores, negative, positive, nb=15, mapFile=''):
     """
     Convert scores to calibrated log-likelihood ratios,
     using a linear interpolation function trained with negative
     and positive sample scores
-    
+
     Parameters:
     ----------
     scores : ndarray of scores for unknown samples
@@ -55,7 +56,7 @@ def scores2llr(scores, negative, positive, nb=15, mapFile=''):
     positive : ndarray of scores for positive samples
     nb : number of points for the linear interpolation function (def. 15)
     mapFile : file name for storing the mapping function
-    
+
     Returns:
     -------
     ndarray of scores converted to log-likelihood ratios
@@ -63,7 +64,8 @@ def scores2llr(scores, negative, positive, nb=15, mapFile=''):
     map = computeLinearMapping(negative, positive, nb)
     if mapFile != '':
         np.savetxt(mapFile, map, '%g')
-    return applyLinearMapping(scores, map)    
+    return applyLinearMapping(scores, map)
+
 
 def computeMapping(negative, positive, nb=15):
     """
@@ -72,7 +74,7 @@ def computeMapping(negative, positive, nb=15):
     negative : ndarray of scores for negative samples
     positive : ndarray of scores for positive samples
     nb : number of points for the linear interpolation function (def. 15)
-    
+
     Returns:
     -------
     ndarray (2,nb) of interpolation function
@@ -86,7 +88,7 @@ def computeMapping(negative, positive, nb=15):
     # empirical pdf estimation with histogram then convert to log domain
     (y0, x0) = np.histogram(negative, bins, density=True)
     (y1, x1) = np.histogram(positive, bins, density=True)
-    # throw away boundaries 
+    # throw away boundaries
     x = (bins[1:-2] + bins[2:-1]) / 2
     y0 = y0[1:-1]
     y1 = y1[1:-1]
@@ -97,7 +99,7 @@ def computeMapping(negative, positive, nb=15):
     y1 = y1[good]
     # convert to log likelihood ratio
     y = np.log(y1) - np.log(y0)
-    
+
     return np.vstack((x,y))
 
 def applyMapping(scores, map):
@@ -119,7 +121,7 @@ def computeLinearMapping(negative, positive, nb=15):
 def applyLinearMapping(scores, map):
     (a, b) = map
     return a * scores + b
-    
+
 # direct script execution
 if __name__ == "__main__":
     import sys
@@ -135,4 +137,3 @@ if __name__ == "__main__":
     else:
         nb = 15
     np.savetxt(sys.stdout, scores2llr(scores, negative, positive, nb, mapfile))
-    

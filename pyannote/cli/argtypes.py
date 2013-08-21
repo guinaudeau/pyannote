@@ -26,6 +26,7 @@ from pyannote.parser.annotation import AnnotationParser
 from pyannote.parser.lst import LSTParser
 from pyannote.parser.matrix import LabelMatrixParser
 
+
 class InputFileHandle(object):
 
     def __init__(self):
@@ -252,7 +253,10 @@ class OutputWriteAnnotation(object):
                 # replace placeholder
                 uri = annotation.uri
                 if not uri:
-                    raise IOError('ERROR: no URI available to replace placeholder in path to output file.')
+                    raise IOError(
+                        'ERROR: no URI available to replace placeholder '
+                        'in path to output file.'
+                    )
                 rpath = pyannote.cli.uris.replace_uri(path, uri)
 
                 # # check if we are about to overwrite a file
