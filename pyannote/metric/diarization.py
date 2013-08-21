@@ -85,7 +85,7 @@ class DiarizationErrorRate(IdentificationErrorRate):
             ._get_details(reference, hypothesis % mapping)
 
 from base import BaseMetric
-from pyannote.base.matrix import Cooccurrence
+from pyannote.base.matrix import get_cooccurrence_matrix
 import numpy as np
 
 PURITY_NAME = 'purity'
@@ -133,7 +133,7 @@ class DiarizationPurity(BaseMetric):
             hypothesis = hypothesis.crop(reference.get_timeline(),
                                          mode='intersection')
 
-        matrix = Cooccurrence(reference, hypothesis)
+        matrix = get_cooccurrence_matrix(reference, hypothesis)
 
         if self.per_cluster:
             # biggest class in each cluster
@@ -234,7 +234,7 @@ class DiarizationHomogeneity(BaseMetric):
     def _get_details(self, reference, hypothesis, **kwargs):
         detail = self._init_details()
 
-        matrix = Cooccurrence(reference, hypothesis)
+        matrix = get_cooccurrence_matrix(reference, hypothesis)
 
         duration = np.sum(matrix.M)
         rduration = np.sum(matrix.M, axis=1)
