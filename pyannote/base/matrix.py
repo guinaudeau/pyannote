@@ -20,6 +20,7 @@
 
 import numpy as np
 import pandas
+from pyannote.util import deprecated
 
 
 class LabelMatrix(object):
@@ -52,6 +53,14 @@ class LabelMatrix(object):
         N, M = self.df.shape
         return N*M != 0
 
+    def itervalues(self):
+        for row in self.get_rows():
+            for col in self.get_columns():
+                val = self.df.at[row, col]
+                if not np.isnan(val):
+                    yield row, col, val
+
+    @deprecated(itervalues)
     def iter_values(self):
         for row in self.get_rows():
             for col in self.get_columns():
