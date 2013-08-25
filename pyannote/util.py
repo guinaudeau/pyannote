@@ -19,16 +19,19 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import warnings
+import traceback
 from decorator import decorator
 
 
 def deprecated(replacedByFunc):
 
     def _d(f, *args, **kwargs):
+
         warnings.warn(
             '"%s" is deprecated. use "%s" instead.' % (
                 f.func_name, replacedByFunc.__name__)
         )
+        traceback.print_stack(limit=3)
         return f(*args, **kwargs)
 
     return decorator(_d)
