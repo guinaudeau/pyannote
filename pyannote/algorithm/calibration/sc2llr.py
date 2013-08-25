@@ -3,27 +3,12 @@
 
 # Copyright 2012-2013 Claude BARRAS (barras@limsi.fr)
 
-# This file is part of PyAnnote.
-#
-#     PyAnnote is free software: you can redistribute it and/or modify
-#     it under the terms of the GNU General Public License as published by
-#     the Free Software Foundation, either version 3 of the License, or
-#     (at your option) any later version.
-#
-#     PyAnnote is distributed in the hope that it will be useful,
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#     GNU General Public License for more details.
-#
-#     You should have received a copy of the GNU General Public License
-#     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
-
 
 """
 
 Convert scores to calibrated log-likelihood ratios,
 using negative and positive samples with linear :
-	from llr import scores2llr
+    from llr import scores2llr
     llr = scores2llr(scores, negative, positive)
 
 Direct call to the script outputs the calibrated llh ratios to stdout:
@@ -79,44 +64,58 @@ def computeMapping(negative, positive, nb=15):
     -------
     ndarray (2,nb) of interpolation function
     """
-    # center analysis around means and std dev. of positive and negative samples
+    # center analysis around means and std deviation
+    # of positive and negative samples
     m = (np.mean(negative) + np.mean(positive)) / 2
     s = np.max((np.std(negative), np.std(positive)))
+
     # bins are equally spaced into normal ppf of resulting normal distribution
-    # keep -inf and +inf at bins boundaries so that the density is correctly normalized
+    # keep -inf and +inf at bins boundaries
+    # so that the density is correctly normalized
     bins = norm.ppf(np.hstack((np.arange(0, 1, 1.0 / (nb + 2)), 1)), m, s)
+
     # empirical pdf estimation with histogram then convert to log domain
     (y0, x0) = np.histogram(negative, bins, density=True)
     (y1, x1) = np.histogram(positive, bins, density=True)
+
     # throw away boundaries
     x = (bins[1:-2] + bins[2:-1]) / 2
     y0 = y0[1:-1]
     y1 = y1[1:-1]
+
     # check and remove remaining undefined values
     good = (y0 > 0) & (y1 > 0)
     x = x[good]
     y0 = y0[good]
     y1 = y1[good]
+
     # convert to log likelihood ratio
     y = np.log(y1) - np.log(y0)
 
-    return np.vstack((x,y))
+    return np.vstack((x, y))
+
 
 def applyMapping(scores, map):
-    x,y = map
+
+    x, y = map
+
     # perform linear interpolation for converting scores to log likelihoods
     i = np.digitize(scores, x)
+
     # check out-of-boundaries
     i[i == 0] = 1
     i[i == len(x)] = len(x) - 1
     dx = x[i] - x[i - 1]
     dy = y[i] - y[i - 1]
+
     return y[i] + (scores - x[i]) * dy / dx
+
 
 def computeLinearMapping(negative, positive, nb=15):
     x, y = computeMapping(negative, positive, nb)
-    slope, intercept, r_value, p_value, slope_std_error = stats.linregress(x, y)
+    slope, intercept, _, _, _ = stats.linregress(x, y)
     return (slope, intercept)
+
 
 def applyLinearMapping(scores, map):
     (a, b) = map
