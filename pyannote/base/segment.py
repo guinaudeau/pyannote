@@ -507,6 +507,34 @@ class SlidingWindow(object):
         return sliding_window
 
 
+class YaafeFrame(SlidingWindow):
+    """Yaafe frames
+
+    Parameters
+    ----------
+    blockSize : int, optional
+        Window size (in number of samples). Default is 512.
+    stepSize : int, optional
+        Step size (in number of samples). Default is 256.
+    sampleRate : int, optional
+        Sample rate (number of samples per second). Default is 16000.
+
+    References
+    ----------
+    http://yaafe.sourceforge.net/manual/quickstart.html
+
+    """
+    def __init__(self, blockSize=512, stepSize=256, sampleRate=16000):
+
+        duration = 1. * blockSize / sampleRate
+        step = 1. * stepSize / sampleRate
+        start = -0.5 * duration
+
+        super(YaafeFrame, self).__init__(
+            duration=duration, step=step, start=start
+        )
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
