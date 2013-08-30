@@ -61,8 +61,8 @@ class test_base_matrix(object):
     def test_get_columns(self):
         assert self.m.get_columns() == ['A', 'B', 'C', 'D']
 
-    def test_iter_values(self):
-        V = set([(r, c, v) for (r, c, v) in self.m.iter_values()])
+    def test_itervalues(self):
+        V = set([(r, c, v) for (r, c, v) in self.m.itervalues()])
         W = set([
             (1, 'A', 1), (1, 'B', 4), (1, 'C', 3), (1, 'D', 2),
             (2, 'A', 2), (2, 'B', 3), (2, 'C', 1), (2, 'D', 4),
