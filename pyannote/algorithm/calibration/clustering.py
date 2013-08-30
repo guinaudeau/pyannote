@@ -20,12 +20,8 @@
 
 import itertools
 import numpy as np
-from pyannote.base.annotation import Unknown
 from pyannote.base.matrix import LabelMatrix
-import sc2llr
-import pandas
-from scipy.spatial.distance import squareform
-
+from likelihood_ratio import LogLikelihoodRatioLinearRegression
 
 # Helper function for speaker diarization (i.e. speech turns clustering)
 def get_groundtruth_from_annotation(annotation):
@@ -49,16 +45,72 @@ def get_groundtruth_from_annotation(annotation):
 
 
 class ClusteringCalibration(object):
+    """
 
-    CLUSTERING_CALIBRATION_METHOD_NONE = 0
+    Parameters
+    ----------
+    method : {'LinReg'}, optional
+        Default is linear regression of log-likelihood ratio
+    """
 
-    def __init__(self, method=None):
+    def __init__(self, method=None, **kwargs):
         super(ClusteringCalibration, self).__init__()
 
         if method is None:
-            self.method = CLUSTERING_CALIBRATION_METHOD_NONE
+            self.method = 'LinReg'
 
-    def fit(self, groundtruth_iterator, similarity_iterator):
+        if self.method == 'LinReg':
+            self.calibration = LogLikelihoodRatioLinearRegression(**kwargs)
+
+    def get_training_data(self, groundtruth_iterator, similarity_iterator):
+        """
+
+        Parameters
+        ----------
+        groundtruth_iterator, similarity_iterator : `LabelMatrix` iterators
+
+        Returns
+        -------
+        x, y : numpy array
+
+        Notes
+        -----
+        `groundtruth_iterator` should yield G matrices such that for each row r
+        and each column c, G[r, c] = {0, 1, np.NaN}:
+         - '1' indicates that elements r and c are in the same cluster
+           according to the groundtruth.
+         - '0' indicates that they are in two different clusters.
+         - 'np.NaN' is used when no information is available
+
+        `similarity_iterator` should yield S matrices with same rows and
+        columns as G matrices, such that S[r, c] provides a number describing
+        how similar (or dissimilar) elements r and c are to each other.
+        Use np.NaN in case similarity is not available.
+
+        """
+        x = []
+        y = []
+
+        for groundtruth, similarity in itertools.izip(
+            groundtruth_iterator, similarity_iterator
+        ):
+
+            for row, column, gt in groundtruth.itervalues():
+                sim = similarity[row, column]
+
+                # skip self similarity
+                if row == column:
+                    continue
+
+                x.append(sim)
+                y.append(gt)
+
+        x = np.array(x)
+        y = np.array(y)
+
+        return x, y
+
+    def fit(self, groundtruth_iterator, similarity_iterator, **kwargs):
         """
 
         Parameters
@@ -81,36 +133,32 @@ class ClusteringCalibration(object):
 
         """
 
-        x = []
-        y = []
-
-        for groundtruth, similarity in itertools.izip(
+        x, y = self.get_training_data(
             groundtruth_iterator, similarity_iterator
-        ):
+        )
 
-            for row, column, gt in groundtruth.itervalues():
-                sim = similarity[row, column]
+        ok = np.where(~np.isnan(x))
+        x = x[ok]
+        y = y[ok]
 
-                # skip self similarity
-                if row == column:
-                    continue
+        positive = x[np.where(y == 1)]
+        negative = x[np.where(y == 0)]
 
-                # if gt not in [True, False] or np.isnan(sim):
-                #     continue
-
-                x.append(sim)
-                y.append(gt)
-
-        if self.method == CLUSTERING_CALIBRATION_METHOD_NONE:
-            self.get_probability = lambda s: s
+        self.calibration.fit(positive, negative, **kwargs)
 
         return self
 
-    def apply(self, similarity):
-        # TODO
-        # return similarity.map(self.get_probability)
+    def apply(self, similarity, **kwargs):
+        """
+        Parameters
+        ----------
+        similarity : LabelMatrix
+            Similarity matrix
+        """
         return LabelMatrix(
-            data=self.get_probability(similarity.df.values),
+            data=self.calibration.toPosteriorProbability(
+                similarity.df.values, **kwargs
+            ),
             rows=similarity.get_rows(),
             columns=similarity.get_columns())
 
