@@ -4,39 +4,39 @@
       it under the terms of the GNU General Public License as published by
       the Free Software Foundation, either version 3 of the License, or
       (at your option) any later version.
-  
+
       PyAnnote is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
       GNU General Public License for more details.
-  
+
       You should have received a copy of the GNU General Public License
       along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 Tutorial
 ========
 
-This tutorial will walk you through the main concepts of ``PyAnnote`` in a 
+This tutorial will walk you through the main concepts of ``PyAnnote`` in a
 matter of minutes. Let's get started::
 
 	>>> from pyannote import Segment, Timeline, Annotation
-	
-The main ``PyAnnote`` objects are segments, timelines and annotations. 
+
+The main ``PyAnnote`` objects are segments, timelines and annotations.
 
 Segments
 ********
 
-Segments are meant to store temporal intervals. 
+Segments are meant to store temporal intervals.
 
 	>>> start_time_in_seconds = 10
 	>>> end_time_in_seconds = 20
 	>>> segment = Segment(start=start_time_in_seconds, end=end_time_in_seconds)
 	>>> print "Segment %s starts at %g seconds and ends at %g seconds." % \
 	... (segment, segment.start, segment.stop)
-	Segment [10 --> 20] starts at 10 seconds and ends at 20 seconds.	
+	Segment [10 --> 20] starts at 10 seconds and ends at 20 seconds.
 
 Intersection of two segments is obtained via the operator &.
-	
+
 	>>> other_segment = Segment(15, 25)
 	>>> if segment & other_segment:
 	...      print "Intersection of %s and %s is %s." % \
@@ -51,8 +51,8 @@ A segment can be reduced or extended using operators >> and <<.
 	[7 --> 20]
 	>>> print 1 >> segment << 2
 	[11 --> 18]
-	
-This is only a very short description of what you can do with segments. 
+
+This is only a very short description of what you can do with segments.
 There are **many** more possibilities. Use ``>>> help(Segment)`` for a complete description.
 
 Timelines
@@ -74,7 +74,7 @@ A timeline can be seen as a set of ordered segments, describing a given (audio o
 	    [3 --> 5]
 	    [4 --> 6]
 	 ]
-	 
+
 Getting or deleting a segment is easy as well.
 
 	>>> print "Third segment is %s." % timeline[2]
@@ -86,7 +86,7 @@ Getting or deleting a segment is easy as well.
 	[1 --> 3]
 	[4 --> 6]
 
-``PyAnnote`` also allows to compute a timeline extent, coverage, duration or 
+``PyAnnote`` also allows to compute a timeline extent, coverage, duration or
 gaps. See ``>>> help(Timeline)`` for their detailed definition.
 
 	>>> print "The extent is segment %s." % timeline.extent()
@@ -113,9 +113,9 @@ Finally, one can extract a subset of a timeline.
 	   [1 --> 3]
 	   [4 --> 5]
 	]
-	
+
 In *loose* mode, any intersecting segments are kept unmodified.
-	
+
 	>>> print timeline(segment, mode='loose')
 	[
 	   [1 --> 3]
@@ -123,7 +123,7 @@ In *loose* mode, any intersecting segments are kept unmodified.
 	]
 
 In *strict* mode, only fully included segments are kept.
-	
+
 	>>> print timeline(segment, mode='strict')
 	[
 	   [1 --> 3]
@@ -137,10 +137,10 @@ Annotations
 ***********
 
 Annotations are probably the objects you will manipulate the most when using
-``PyAnnote``. 
+``PyAnnote``.
 
 For instance, let us create an annotation meant to store the output of a speaker
-identification algorithms for video *MyVideo.avi*. 
+identification algorithms for video *MyVideo.avi*.
 We can easily do so using the following commands:
 
 	>>> speaker = Annotation(multitrack=False, \
@@ -149,7 +149,7 @@ We can easily do so using the following commands:
 	>>> speaker[Segment(10, 15)] = 'Bob'
 	>>> speaker[Segment(14, 20)] = 'Alice'
 	>>> speaker[Segment(23, 30)] = 'Bob'
-	>>> for segment, label in speaker.iterlabels():
+	>>> for segment, label in speaker.itertracks(label=True):
 	...    print "%s speaks during %s." % (label, segment)
 	Alice speaks during [0 --> 10].
 	Bob speaks during [10 --> 15].
@@ -210,7 +210,7 @@ Why not try to recognize faces based on audio data only?, based on the co-occurr
 	(
 	   person2 <--> Bob
 	   person1 <--> Alice
-	   person3 <--> 
+	   person3 <-->
 	)
 	>>> print face % mapping
 	[
@@ -222,4 +222,4 @@ Why not try to recognize faces based on audio data only?, based on the co-occurr
 	   [17 --> 25] face1 : Alice
 	   [23 --> 30] face1 : Bob
 	]
-	
+

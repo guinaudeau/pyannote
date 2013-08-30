@@ -141,7 +141,7 @@ class Annotation(object):
                 self._labels[l] = Timeline(uri=self.uri)
 
         # fill changed label timeline
-        for segment, track, l in self.iterlabels():
+        for segment, track, l in self.itertracks(label=True):
             if self._labelNeedsUpdate[l]:
                 self._labels[l].add(segment)
 
@@ -372,8 +372,8 @@ class Annotation(object):
         """
         """
         retracked = self.__class__(uri=self.uri, modality=self.modality)
-        for n, (segment, track, label) in enumerate(self.iterlabels()):
-            retracked[segment, n] = label
+        for n, (s, _, label) in enumerate(self.itertracks(label=True)):
+            retracked[s, n] = label
         return retracked
 
     def new_track(self, segment, candidate=None, prefix=None):
@@ -420,7 +420,7 @@ class Annotation(object):
         """Human-friendly representation"""
         # TODO: use pandas.DataFrame
         return "\n".join(["%s %s %s" % (s, t, l)
-                          for s, t, l in self.iterlabels()])
+                          for s, t, l in self.itertracks(label=True)])
 
     def __delitem__(self, key):
 
@@ -579,7 +579,7 @@ class Annotation(object):
             labels = labels & set(self.labels())
 
         sub = self.__class__(uri=self.uri, modality=self.modality)
-        for segment, track, label in self.iterlabels():
+        for segment, track, label in self.itertracks(label=True):
             if label in labels:
                 sub[segment, track] = label
 
@@ -605,7 +605,7 @@ class Annotation(object):
                 if hasChanged:
                     self._labels[l] = Timeline(uri=self.uri)
 
-            for segment, track, l in self.iterlabels():
+            for segment, track, l in self.itertracks(label=True):
                 if self._labelNeedsUpdate[l]:
                     self._labels[l].add(segment)
 
@@ -773,7 +773,7 @@ class Annotation(object):
 
         # create copy
         translated = self.empty()
-        for segment, track, label in self.iterlabels():
+        for segment, track, label in self.itertracks(label=True):
             translated[segment, track] = translate(label)
 
         return translated
@@ -810,7 +810,7 @@ class Annotation(object):
 
         """
         anonymized = self.empty()
-        for s, t, _ in self.iterlabels():
+        for s, t, _ in self.itertracks(label=True):
             anonymized[s, t] = Unknown()
         return anonymized
 
@@ -845,7 +845,7 @@ class Annotation(object):
 
     def to_json(self):
         annotation = [{SEGMENT: s.to_json(), TRACK: t, LABEL: l}
-                      for s, t, l in self.iterlabels()]
+                      for s, t, l in self.itertracks(label=True)]
         return {URI: self.uri, MODALITY: self.modality, 'tracks': annotation}
 
 

@@ -101,7 +101,7 @@ class REPEREMixin(BaseTextualFormat):
     def _append(self, annotation, f, uri, modality):
         try:
             format = '%s %%g %%g %s %%s\n' % (uri, modality)
-            for segment, track, label in annotation.iterlabels():
+            for segment, track, label in annotation.itertracks(label=True):
                 f.write(format % (segment.start, segment.end, label))
         except Exception, e:
             print "Error @ %s%s %s %s" % (uri, segment, track, label)

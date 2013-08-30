@@ -183,7 +183,7 @@ def face_clustering(args):
 
         # add remaining annotations back to the original output
         unavailable = annotation(labels, invert=True)
-        for s, t, l in unavailable.iterlabels():
+        for s, t, l in unavailable.itertracks(label=True):
             output[s, t] = l
 
         # save to file

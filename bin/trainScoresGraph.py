@@ -73,7 +73,7 @@ def speaker_identification(args):
         models = scores.labels()
 
         # loop on every track in `scores`
-        for segment, track, label in T.iterlabels():
+        for segment, track, label in T.itertracks(label=True):
 
             # if label is Unknown, it means that no label was propagated
             # from reference --> skip this track
@@ -144,7 +144,7 @@ def face_recognition(args):
         annotation = annotation.subset(set(labels))
 
         # loop on tracks for which scores were computed
-        for s,t,l in annotation.iterlabels():
+        for s,t,l in annotation.itertracks(label=True):
 
             if not scores.has_track(s,t):
                 continue

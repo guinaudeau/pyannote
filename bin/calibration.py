@@ -111,7 +111,7 @@ def train_head_calibration(args):
         new_r = Annotation(uri=reference.uri, modality=reference.modality)
         new_s = Scores(uri=score.uri, modality=score.modality)
 
-        for s, t, l in reference.iterlabels():
+        for s, t, l in reference.itertracks(label=True):
             if isinstance(l, Unknown):
                 continue
             s_t = score.get_track_by_name(t)

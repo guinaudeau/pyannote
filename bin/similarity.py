@@ -120,8 +120,8 @@ def face_clustering(args):
         for l, label in enumerate(labels):
             t = annotation(label)
             other_t = annotation(label, invert=True)
-            for _, track, _ in t.iterlabels():
-                for _, other_track, _ in t.iterlabels():
+            for _, track, _ in t.itertracks(label=True):
+                for _, other_track, _ in t.itertracks(label=True):
                     if track == other_track:
                         continue
                     try:
@@ -129,7 +129,7 @@ def face_clustering(args):
                         y.append(1)
                     except Exception, e:
                         pass
-                for _, other_track, _ in other_t.iterlabels():
+                for _, other_track, _ in other_t.itertracks(label=True):
                     try:
                         X.append(M[track, other_track])
                         y.append(0)

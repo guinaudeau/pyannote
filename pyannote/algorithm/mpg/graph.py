@@ -399,7 +399,7 @@ class AnnotationGraph(object):
         inodes = {l: IdentityNode(l) for l in annotation.labels()}
 
         # add edges between tracks and identities
-        for s, t, l in annotation.iterlabels():
+        for s, t, l in annotation.itertracks(label=True):
 
             tnode = TrackNode(**{URI: u, MODALITY: m, SEGMENT: s, TRACK: t})
             G.add_node(tnode)

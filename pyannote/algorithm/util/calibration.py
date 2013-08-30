@@ -148,17 +148,17 @@ class IDScoreCalibration(object):
         Y = []
         Yi = {L: [] for L in target}
 
-        for s,t,l in reference.iterlabels():
+        for s, t, l in reference.itertracks(label=True):
 
             if isinstance(l, Unknown):
                 continue
 
             for L in target:
-                v = score[s,t,L]
+                v = score[s, t, L]
                 X.append(v)
-                Y.append(L==l)
+                Y.append(L == l)
                 Xi[L].append(v)
-                Yi[L].append(L==l)
+                Yi[L].append(L == l)
 
         return X, Y, Xi, Yi
 

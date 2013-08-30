@@ -60,7 +60,7 @@ class MDTMMixin(BaseTextualFormat):
 
         try:
             format = '%s 1 %%g %%g %s NA %%s %%s\n' % (uri, modality)
-            for segment, track, label in annotation.iterlabels():
+            for segment, track, label in annotation.itertracks(label=True):
                 f.write(format % (segment.start, segment.duration,
                                   track, label))
         except Exception, e:

@@ -67,7 +67,7 @@ class DirectTagger(BaseTagger):
             # intersecting current target segment
             t = source.crop(segment, mode='loose')
 
-            for _, track, label in t.iterlabels():
+            for _, track, label in t.itertracks(label=True):
                 T[segment, T.new_track(segment, candidate=track)] = label
 
         return T
