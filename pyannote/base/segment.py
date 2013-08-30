@@ -258,8 +258,6 @@ class SlidingWindow(object):
         First start position of window, in seconds. Default is 0.
     end : float > `start`, optional
         Default is infinity (ie. window keeps sliding forever)
-    end_mode : {'strict', 'loose', 'intersection'}, optional
-        Has no effect when `end` is infinity.
 
     Examples
     --------
@@ -274,8 +272,8 @@ class SlidingWindow(object):
     >>> abs(segment) - abs(segment & new_segment) < .5 * sw.step
 
     """
-    def __init__(self, duration=0.030, step=0.010, start=0.000, end=None,
-                 end_mode='intersection'):
+
+    def __init__(self, duration=0.030, step=0.010, start=0.000, end=None):
         super(SlidingWindow, self).__init__()
 
         # duration must be a float > 0
@@ -300,11 +298,6 @@ class SlidingWindow(object):
                 raise ValueError("'end' must be greater than 'start'.")
             self.__end = end
 
-        # allowed end modes are 'intersection', 'strict' or 'loose'
-        if not end_mode in ['intersection', 'strict', 'loose']:
-            raise ValueError("unsupported 'end_mode'.")
-        self.__end_mode = end_mode
-
     def __get_start(self):
         return self.__start
     start = property(fget=__get_start)
@@ -314,11 +307,6 @@ class SlidingWindow(object):
         return self.__end
     end = property(fget=__get_end)
     """Sliding window end time in seconds."""
-
-    def __get_end_mode(self):
-        return self.__end_mode
-    end_mode = property(fget=__get_end_mode)
-    """Sliding window end mode."""
 
     def __get_step(self):
         return self.__step
@@ -344,8 +332,7 @@ class SlidingWindow(object):
             Index of frame whose middle is the closest to `timestamp`
 
         """
-        frame = np.rint(.5+(t-self.__start-.5*self.__duration)/self.__step)
-        return int(frame)
+        return int(np.rint((t-self.__start-.5*self.__duration)/self.__step))
 
     def segmentToRange(self, segment):
         """Convert segment to 0-indexed frame range
@@ -433,7 +420,7 @@ class SlidingWindow(object):
         Returns
         -------
         segment : :class:`Segment`
-            Sliding window at ith position.
+            Sliding window at ith position
 
         """
 
@@ -443,27 +430,9 @@ class SlidingWindow(object):
         # in case segment starts after the end,
         # return an empty segment
         if start >= self.__end:
-            return Segment(start, start)
+            return None
 
-        # window end time at ith position
-        end = start + self.__duration
-
-        # in case segment ends after the end,
-        if end > self.__end:
-
-            # return a trimmed segment in 'intersection' mode
-            if self.__end_mode == 'intersection':
-                end = self.__end
-
-            # return an empty segment in 'strict' mode
-            elif self.__end_mode == 'strict':
-                start = end
-
-            # return the full segment in 'loose' mode
-            # elif self.__end_mode == 'loose':
-            #     pass
-
-        return Segment(start, end)
+        return Segment(start=start, end=start+self.__duration)
 
     def __iter__(self):
         """Sliding window iterator
@@ -520,17 +489,9 @@ class SlidingWindow(object):
         # based on frame closest to the end
         i = self.__closest_frame(self.__end)
 
-        # in 'strict' mode, look into previous frames
-        if self.__end_mode == 'strict':
-            while(not self[i]):
-                i -= 1
-            length = i+1
-
-        # in 'loose' or 'intersection' mode, look into next frames
-        else:
-            while(self[i]):
-                i += 1
-            length = i
+        while(self[i]):
+            i += 1
+        length = i
 
         return length
 
@@ -540,11 +501,11 @@ class SlidingWindow(object):
         step = self.step
         start = self.start
         end = self.end
-        end_mode = self.end_mode
-        sliding_window = SlidingWindow(duration=duration, step=step,
-                                       start=start, end=end,
-                                       end_mode=end_mode)
+        sliding_window = SlidingWindow(
+            duration=duration, step=step, start=start, end=end
+        )
         return sliding_window
+
 
 if __name__ == "__main__":
     import doctest
