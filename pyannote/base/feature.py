@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2013 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -295,7 +295,7 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
         return first_segment | last_segment
 
 
-class FrameFeature(object):
+class SlidingWindowFeature(object):
 
     """Periodic feature vectors
 
@@ -303,14 +303,14 @@ class FrameFeature(object):
     ----------
     data : (nSamples, nFeatures) numpy array
 
-    frame : SlidingWindow
+    sliding_window : SlidingWindow
 
 
     """
 
-    def __init__(self, data, frame):
-        super(FrameFeature, self).__init__()
-        self.frame = frame
+    def __init__(self, data, sliding_window):
+        super(SlidingWindowFeature, self).__init__()
+        self.sliding_window = sliding_window
         self.data = data
 
     def getNumber(self):
@@ -325,20 +325,20 @@ class FrameFeature(object):
         """Get ith feature vector"""
         return self.data[i]
 
-    def iterfeatures(self, frame=False):
+    def iterfeatures(self, window=False):
         """Feature vector iterator
 
         Parameters
         ----------
-        frame : bool, optional
-            When True, yield both feature vector and corresponding frame.
+        window : bool, optional
+            When True, yield both feature vector and corresponding window.
             Default is to only yield feature vector
 
         """
         nSamples = self.data.shape[0]
         for i in xrange(nSamples):
-            if frame:
-                yield self.data[i], self.frame[i]
+            if window:
+                yield self.data[i], self.sliding_window[i]
             else:
                 yield self.data[i]
 
@@ -354,7 +354,7 @@ class FrameFeature(object):
         data : numpy array
             (nSamples, nFeatures) numpy array
         """
-        firstFrame, frameNumber = self.frame.segmentToRange(segment)
+        firstFrame, frameNumber = self.sliding_window.segmentToRange(segment)
         return self.data[firstFrame:firstFrame + frameNumber]
 
 
