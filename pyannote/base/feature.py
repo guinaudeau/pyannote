@@ -28,16 +28,20 @@ import numpy as np
 from pyannote.base.segment import Segment, SlidingWindow
 from pyannote.base.timeline import Timeline
 
+
 class BaseSegmentFeature(object):
+
     """
     Base class for any segment/feature iterator.
     """
+
     def __init__(self, uri=None):
         super(BaseSegmentFeature, self).__init__()
         self.__uri = uri
 
     def __get_uri(self):
         return self.__uri
+
     def __set_uri(self, value):
         self.__uri = value
     uri = property(fget=__get_uri, fset=__set_uri)
@@ -53,7 +57,9 @@ class BaseSegmentFeature(object):
         """
         raise NotImplementedError('Missing method "__iter__".')
 
+
 class BasePrecomputedSegmentFeature(BaseSegmentFeature):
+
     """'Segment iterator'-driven precomputed feature iterator.
 
     Parameters
@@ -67,6 +73,7 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
         name of (audio or video) described resource
 
     """
+
     def __init__(self, data, segment_iterator, uri=None):
         # make sure data does not contain NaN nor inf
         data = np.asarray_chkfinite(data)
@@ -79,7 +86,7 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
         # make sure it iterates the correct number of segments
         try:
             N = len(segment_iterator)
-        except Exception, e:
+        except Exception:
             # an exception is raised by `len(sliding_window)`
             # in case sliding window has infinite end.
             # this is acceptable, no worry...
@@ -164,17 +171,19 @@ class BasePrecomputedSegmentFeature(BaseSegmentFeature):
 
         if isinstance(subset, Segment):
             i, n = self._segmentToRange(subset)
-            indices = range(i, i+n)
+            indices = range(i, i + n)
 
         elif isinstance(subset, Timeline):
             indices = []
             for segment in subset.coverage():
                 i, n = self._segmentToRange(segment)
-                indices += range(i, i+n)
+                indices += range(i, i + n)
 
         return np.take(self.__data, indices, axis=0, out=None, mode='clip')
 
+
 class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
+
     """'Sliding window'-driven precomputed feature iterator.
 
     Parameters
@@ -199,13 +208,13 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
 
     def __init__(self, data, sliding_window, uri=None):
 
-        super(PeriodicPrecomputedFeature, self).__init__(data, sliding_window, \
-                                                         uri=uri)
+        super(PeriodicPrecomputedFeature, self).__init__(
+            data, sliding_window, uri=uri
+        )
 
     def __get_sliding_window(self):
         return self._segment_iterator
     sliding_window = property(fget=__get_sliding_window)
-
 
     def _segmentToRange(self, segment):
         """
@@ -233,7 +242,9 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
         """
         return self.sliding_window.rangeToSegment(i, n)
 
+
 class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
+
     """Timeline-driven precomputed feature iterator.
 
     Parameters
@@ -257,7 +268,7 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
     """
 
     def __init__(self, data, timeline, uri=None):
-        super(TimelinePrecomputedFeature, self).__init__(data, timeline, \
+        super(TimelinePrecomputedFeature, self).__init__(data, timeline,
                                                          uri=uri)
 
     def __get_timeline(self):
@@ -280,8 +291,72 @@ class TimelinePrecomputedFeature(BasePrecomputedSegmentFeature):
 
     def _rangeToSegment(self, i, n):
         first_segment = self.timeline[i]
-        last_segment = self.timeline[i+n]
+        last_segment = self.timeline[i + n]
         return first_segment | last_segment
+
+
+class FrameFeature(object):
+
+    """Periodic feature vectors
+
+    Parameters
+    ----------
+    data : (nSamples, nFeatures) numpy array
+
+    frame : SlidingWindow
+
+
+    """
+
+    def __init__(self, data, frame):
+        super(FrameFeature, self).__init__()
+        self.frame = frame
+        self.data = data
+
+    def getNumber(self):
+        """Number of feature vectors"""
+        return self.data.shape[0]
+
+    def getDimension(self):
+        """Dimension of feature vectors"""
+        return self.data.shape[1]
+
+    def __getitem__(self, i):
+        """Get ith feature vector"""
+        return self.data[i]
+
+    def iterfeatures(self, frame=False):
+        """Feature vector iterator
+
+        Parameters
+        ----------
+        frame : bool, optional
+            When True, yield both feature vector and corresponding frame.
+            Default is to only yield feature vector
+
+        """
+        nSamples = self.data.shape[0]
+        for i in xrange(nSamples):
+            if frame:
+                yield self.data[i], self.frame[i]
+            else:
+                yield self.data[i]
+
+    def crop(self, segment):
+        """Get set of feature vector for given segment
+
+        Parameters
+        ----------
+        segment : Segment
+
+        Returns
+        -------
+        data : numpy array
+            (nSamples, nFeatures) numpy array
+        """
+        firstFrame, frameNumber = self.frame.segmentToRange(segment)
+        return self.data[firstFrame:firstFrame + frameNumber]
+
 
 if __name__ == "__main__":
     import doctest
