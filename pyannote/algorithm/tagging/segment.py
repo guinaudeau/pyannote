@@ -106,7 +106,7 @@ class ConservativeDirectTagger(BaseTagger):
         tagged = annotation.copy()
 
         # tag each segment of target annotation, one after the other
-        for segment in tagged:
+        for segment in tagged.itersegments():
 
             # extract the part of source annotation
             # intersecting current target segment
@@ -122,7 +122,7 @@ class ConservativeDirectTagger(BaseTagger):
             # co-occurring label
 
             # don't do anything if target has more than one track
-            tracks = tagged.tracks(segment)
+            tracks = tagged.get_tracks(segment)
             if len(tracks) > 1:
                 continue
             else:
