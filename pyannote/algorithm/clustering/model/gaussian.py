@@ -20,7 +20,7 @@
 
 
 from pyannote.algorithm.clustering.model.base import BaseModelMixin
-from pyannote.algorithm.util.gaussian import Gaussian
+from pyannote.stats.gaussian import Gaussian
 
 
 class GaussianMMx(BaseModelMixin):
@@ -57,7 +57,7 @@ class GaussianMMx(BaseModelMixin):
 
         Returns
         -------
-        g : :class:`pyannote.algorithm.util.gaussian.Gaussian`
+        g : :class:`pyannote.stats.gaussian.Gaussian`
             A Gaussian fitted to label features
 
         """
@@ -137,7 +137,7 @@ class BICMMx(GaussianMMx):
 
         See also
         --------
-        :meth:`pyannote.algorithm.util.gaussian.Gaussian.bic`
+        :meth:`pyannote.stats.gaussian.Gaussian.bic`
 
         """
         if models is None:
