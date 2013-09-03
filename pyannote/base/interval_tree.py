@@ -290,4 +290,3 @@ class TimelineUpdator(object):
     def co_iter(self, other):
         for segment, other_segment in _co_iter(self.root, other.root):
             yield segment, other_segment
-
