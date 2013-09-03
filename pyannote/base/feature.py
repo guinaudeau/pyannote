@@ -342,20 +342,31 @@ class SlidingWindowFeature(object):
             else:
                 yield self.data[i]
 
-    def crop(self, segment):
+    def crop(self, focus):
         """Get set of feature vector for given segment
 
         Parameters
         ----------
-        segment : Segment
+        focus : Segment or Timeline
 
         Returns
         -------
         data : numpy array
             (nSamples, nFeatures) numpy array
         """
-        firstFrame, frameNumber = self.sliding_window.segmentToRange(segment)
-        return self.data[firstFrame:firstFrame + frameNumber]
+
+        if isinstance(focus, Segment):
+            firstFrame, frameNumber = self.sliding_window.segmentToRange(focus)
+            indices = range(firstFrame, firstFrame + frameNumber)
+
+        if isinstance(focus, Timeline):
+            indices = []
+            for segment in focus.coverage():
+                firstFrame, frameNumber = self.sliding_window.segmentToRange(
+                    segment)
+                indices += range(firstFrame, firstFrame + frameNumber)
+
+        return np.take(self.data, indices, axis=0, out=None, mode='clip')
 
 
 if __name__ == "__main__":
