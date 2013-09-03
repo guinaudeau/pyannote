@@ -179,6 +179,18 @@ class YaafeMFCC(object):
         assert self.engine.load(data_flow)
 
     def extract(self, wav):
+        """Extract MFCCs
+
+        Parameters
+        ----------
+        wav : string
+            Path to wav file.
+
+        Returns
+        -------
+        features : SlidingWindowFeature
+
+        """
 
         sample_rate, raw_audio = scipy.io.wavfile.read(wav)
         assert sample_rate == self.sample_rate, "sample rate mismatch"
@@ -187,8 +199,6 @@ class YaafeMFCC(object):
 
         features = self.engine.processAudio(audio)
         data = np.hstack([features[name] for name in self.stack])
-
-        print data.shape
 
         sliding_window = YaafeFrame(
             blockSize=self.block_size, stepSize=self.step_size,
