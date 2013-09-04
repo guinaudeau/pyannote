@@ -69,7 +69,7 @@ class GaussianMMx(BaseModelMixin):
             feature = self.feature
 
         # extract features for this label
-        data = feature(annotation.label_timeline(label))
+        data = feature.crop(annotation.label_timeline(label))
         # fit gaussian and return it
         return Gaussian(covariance_type=self.mmx_covariance_type).fit(data)
 
