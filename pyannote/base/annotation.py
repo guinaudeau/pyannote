@@ -74,7 +74,8 @@ class Unknown(object):
 
 
 class Annotation(object):
-    """
+    """Annotation
+
     Parameters
     ----------
     uri : string, optional
@@ -82,10 +83,6 @@ class Annotation(object):
     modality : string, optional
         name of annotated modality
 
-    Returns
-    -------
-    annotation : BaseAnnotation
-        New empty annotation
     """
 
     @classmethod
