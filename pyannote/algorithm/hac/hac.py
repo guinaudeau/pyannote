@@ -19,12 +19,11 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from pyannote.base.matrix import LabelMatrix
 import sys
 
 from model import HACModel
 from stop import HACStop
-from history import HACHistory, HACIteration
+from history import HACHistory
 
 
 class HierarchicalAgglomerativeClustering(object):
@@ -36,11 +35,13 @@ class HierarchicalAgglomerativeClustering(object):
         Model
     stop : HACStop, optional
         Stopping criterion
+    constraint : HACConstraint, optional
+        Constraint (not yet implemented)
     debug : bool, optional
 
     """
 
-    def __init__(self, model, stop=None, debug=False):
+    def __init__(self, model, stop=None, constraint=None, debug=False):
 
         super(HierarchicalAgglomerativeClustering, self).__init__()
 
@@ -49,6 +50,9 @@ class HierarchicalAgglomerativeClustering(object):
 
         assert isinstance(stop, HACStop)
         self.hacStop = stop
+
+        # assert isinstance(constraint, HACConstraint)
+        # self.hacConstraint = constraint
 
         self.debug = debug
 
@@ -84,10 +88,14 @@ class HierarchicalAgglomerativeClustering(object):
             annotation=self.annotation, feature=feature)
 
         # make sure diagonals are set to -np.inf
+        # -np.inf means "do not merge"
         for c in clusters:
             self.matrix[c, c] = -np.inf
 
         # TODO: initialize constraints
+        # self.hacConstraint.initialize(
+        #     annotation=self.annotation, models=self.models,
+        #     matrix=self.matrix, history=self.history, feature=feature)
 
         # initialize stopping criterion
         self.hacStop.initialize(
@@ -106,6 +114,9 @@ class HierarchicalAgglomerativeClustering(object):
             while True:
 
                 # find two most similar clusters
+                # TODO: make this block overridable
+                #       (e.g. one might want to merge more than 2 clusters at
+                #        each iteration)
                 cluster1, cluster2 = self.matrix.argmax().popitem()
                 similarity = self.matrix[cluster1, cluster2]
 
@@ -129,13 +140,13 @@ class HierarchicalAgglomerativeClustering(object):
                 # if self.debug:
                 #     msg = "DEBUG > Constraints prevented merging of %s and %s.\n"
                 #     sys.stderr.write(msg % (cluster1, cluster2))
+                break
 
             if similarity == -np.inf:
                 if self.debug:
                     msg = "DEBUG > Nothing left to merge.\n"
                     sys.stderr.write(msg)
                 break
-
             # == update models
 
             # (cluster1+cluster2 ==> cluster1)
@@ -184,14 +195,14 @@ class HierarchicalAgglomerativeClustering(object):
                     )
                 self.matrix[cluster, cluster1] = s
 
-            # TODO: 
+            # TODO:
             # == update constraints
 
             #  == update stopping criterion
             # (most of the time, this does nothing)
             self.hacStop.update(
                 [cluster1, cluster2], cluster1,
-                history=self.history, annotation=self.annotation, 
+                history=self.history, annotation=self.annotation,
                 models=self.models, matrix=self.matrix, feature=feature
             )
 
@@ -211,12 +222,12 @@ class HierarchicalAgglomerativeClustering(object):
             yield self.annotation
 
     def finalize(self, feature=None):
-        self.annotation = self.hacStop(
-            history=self.history, annotation=self.annotation, 
+
+        self.annotation = self.hacStop.finalize(
+            history=self.history, annotation=self.annotation,
             models=self.models, matrix=self.matrix, feature=feature
         )
         return self.annotation
-
 
     def __call__(self, annotation, feature=None):
 
@@ -235,4 +246,3 @@ class HierarchicalAgglomerativeClustering(object):
             pass
 
         return self.finalize(feature=feature)
-
