@@ -144,7 +144,7 @@ class DiarizationPurity(BaseMetric):
             detail[PURITY_TOTAL] = float(matrix.shape[1])
         else:
             if np.prod(matrix.shape):
-                detail[PURITY_CORRECT] = np.sum(np.max(matrix.M, axis=0))
+                detail[PURITY_CORRECT] = np.sum(np.max(matrix.df.values, axis=0))
             else:
                 detail[PURITY_CORRECT] = 0.
             # total duration of clusters (with overlap)
