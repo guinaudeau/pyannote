@@ -393,7 +393,7 @@ class Annotation(object):
 
         # if candidate is provided, check whether it already exists
         # in case it does not, use it
-        if candidate and (candidate not in existing_tracks):
+        if (candidate is not None) and (candidate not in existing_tracks):
             return candidate
 
         # no candidate was provided or the provided candidate already exists
