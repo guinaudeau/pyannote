@@ -64,6 +64,9 @@ class HACHistory(object):
         else:
             self.iterations = iterations
 
+    def __len__(self):
+        return len(self.iterations)
+
     def add_iteration(self, merged_clusters, similarity, new_cluster):
         """Add new iteration
 
