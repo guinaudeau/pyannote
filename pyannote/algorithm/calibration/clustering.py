@@ -21,14 +21,16 @@
 import itertools
 import numpy as np
 from pyannote.base.matrix import LabelMatrix
-from likelihood_ratio import LogLikelihoodRatioLinearRegression
+from pyannote.base.annotation import Unknown
+from pyannote.stats.likelihood_ratio import LogLikelihoodRatioLinearRegression
+
 
 # Helper function for speaker diarization (i.e. speech turns clustering)
 def get_groundtruth_from_annotation(annotation):
 
     # Initialize tracks similarity matrix
     tracks = [(s, t) for (s, t) in annotation.itertracks()]
-    G = LabelMatrix(rows=tracks, columns=tracks, dtype=np.int8)
+    G = LabelMatrix(rows=tracks, columns=tracks, dtype=np.float)
 
     for s, t, label in annotation.itertracks(label=True):
 
@@ -161,188 +163,6 @@ class ClusteringCalibration(object):
             ),
             rows=similarity.get_rows(),
             columns=similarity.get_columns())
-
-
-# class ClusteringCalibration(object):
-
-#     def __init__(self, tagger=None):
-#         super(ClusteringCalibration, self).__init__()
-#         if tagger is None:
-#             import pyannote.algorithm.tagging
-#             self.tagger = pyannote.algorithm.tagging.ConservativeDirectTagger()
-#         else:
-#             self.tagger = tagger
-
-#     def xy(self, reference, tracks, similarity, **kwargs):
-#         """
-
-#         Parameters
-#         ----------
-#         tracks : `Annotation`
-#             Hypothesis segmentation
-#         similarity : `LabelMatrix`
-#             Similarity between tracks.
-#         reference : `Annotation`
-#             Groundtruth annotation used to tag `tracks`
-#             In case `reference` is None, we suppose `tracks` are already tagged
-
-#         Returns
-#         -------
-#         x,y : (nTracks, nTracks)-shaped numpy arrays
-#             `nTracks` is the number of tracks in `tracks`.
-#             x[t1,t2] contains the similarity of tracks #t1 #t2
-#             y[t1,t2] contains the groundtruth (i.e. 1 if tracks #t1 and #t2
-#             share the same label, 0 if they have two different labels
-#             and -1 if it is unsure.
-#         kw : dict
-
-#         """
-
-#         # get number of tracks
-#         allTracks = [(s, t) for s, t in tracks.itertracks()]
-#         nTracks = len(allTracks)
-
-#         # tag tracks than can be tagged
-#         if reference:
-#             tagged = self.tagger(reference, tracks.anonymize_tracks())
-#         else:
-#             tagged = tracks
-
-#         # y contains
-#         y = np.zeros((nTracks, nTracks), dtype=int)
-#         for t, (segment, track) in enumerate(allTracks):
-#             label = tagged[segment, track]
-
-#             # if track is unknown, fill the corresponding line and row with -1
-#             # and go to next track
-#             if isinstance(label, Unknown):
-#                 y[t, :] = -1
-#                 y[:, t] = -1
-#                 y[t, t] = 1
-#                 continue
-
-#             for T, (other_segment, other_track) in enumerate(allTracks):
-#                 # if we reached the diagonal of the matrix
-#                 # go to next track
-#                 if t == T:
-#                     y[t, t] = 1
-#                     break
-
-#                 other_label = tagged[other_segment, other_track]
-
-#                 # if other_track is unknown, it was already taken care of
-#                 # in the outter loop, so go to next other track
-#                 if isinstance(other_label, Unknown):
-#                     continue
-
-#                 # set value to 1 if tracks have the same label, 0 otherwise
-#                 # make sure the matrix is symmetric
-#                 y[t, T] = (label == other_label)
-#                 y[T, t] = y[t, T]
-
-#         x = np.zeros((nTracks, nTracks), dtype=float)
-#         for t, (segment, track) in enumerate(allTracks):
-#             for T, (other_segment, other_track) in enumerate(allTracks):
-#                 try:
-#                     x[t, T] = similarity[
-#                         (segment, track),
-#                         (other_segment, other_track)
-#                     ]
-#                 except KeyError:
-#                     x[t, T] = np.nan
-
-#         # using squareform: we assume similarity is symmetric
-#         # also allows to get rid of self-similarity values (matrix diagonal)
-#         return squareform(x, checks=False).reshape((-1, 1)), \
-#             squareform(y, checks=False).reshape((-1, 1)), kwargs
-
-#     def train_mapping(self, X, Y, **kwargs):
-
-#         # remove NaNs
-#         ok = np.where(~np.isnan(X))
-#         x = X[ok]
-#         y = Y[ok]
-
-#         # positive & negative samples
-#         positive = x[np.where(y == 1)]
-#         negative = x[np.where(y == 0)]
-
-#         # score-to-log-likelihood-ratio mapping
-#         s2llr = sc2llr.computeLinearMapping(negative, positive)
-#         prior = 1. * len(positive) / (len(positive) + len(negative))
-
-#         return (s2llr, prior)
-
-#     def fit(self, training_data, **kwargs):
-#         """
-#         Fit calibration to training data
-
-#         Parameters
-#         ----------
-#         training_data : list
-#             List of (reference, tracks, similarity) tuples where each tuple
-#             is made of
-#             - `reference` annotation that can be None in case `tracks` are already labelled.
-#             - hypothesis `tracks` for the same resource
-#             - track-to-track `similarity` metric matrix
-#         kwargs : dict
-#             See .xy() method
-#         """
-
-#         X = []
-#         Y = []
-
-#         for data in training_data:
-#             # DEBUG
-#             print data[1].uri
-#             x, y, kwargs = self.xy(*data, **kwargs)
-#             X.append(x)
-#             Y.append(y)
-
-#         self.kwargs = kwargs
-#         self.X = np.vstack(X)
-#         self.Y = np.vstack(Y)
-
-#         self.mapping = self.train_mapping(self.X, self.Y, **(self.kwargs))
-
-#         return self
-
-#     def apply(self, similarity, tracks=None, prior=None):
-#         """
-#         Apply metric calibration
-
-#         Parameters
-#         ----------
-#         similarity : `pandas.DataFrame`
-#             Uncalibrated similarity metric matrix
-#         tracks : `Annotation`, optional
-#             Used in case `similarity` is a `LabelMatrix`
-#         prior : float, optional
-#             When provide, set manual prior p(x|H) to `prior`
-#             Uses estimated prior by default.
-
-#         Returns
-#         -------
-#         calibrated : `pandas.DataFrame`
-#             Calibrated similarity metric matrix
-
-#         """
-
-#         if isinstance(similarity, LabelMatrix):
-#             similarity = labelMatrix_to_dataFrame(similarity, tracks)
-
-#         (a, b), estimated_prior = self.mapping
-#         if not prior:
-#             prior = estimated_prior
-
-#         def s2p(x):
-#             # p(x|¬H)/p(x|H)
-#             lr = 1./np.exp(a*x+b)
-#             # p(¬H)/p(H)
-#             rho = (1.-prior)/prior
-#             return 1./(1.+rho*lr)
-
-#         return similarity.map(s2p)
 
 
 # if __name__ == "__main__":
