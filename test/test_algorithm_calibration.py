@@ -18,19 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-import pyannote.algorithm.calibration.likelihood_ratio
 
 class test_algorithm_calibration(object):
 
     def setup(self):
         pass
-
-    def test_logLikelihoodRatioLinearRegression(self):
-        n = 100000
-        positive = np.random.randn(n) + 1
-        negative = np.random.randn(n) - 1
-        llrlr = pyannote.algorithm.calibration.likelihood_ratio.LogLikelihoodRatioLinearRegression()
-        llrlr.fit(positive, negative)
-        assert abs(llrlr.a - 2.) < 0.1
-        assert abs(llrlr.b - 0.) < 0.1
