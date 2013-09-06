@@ -91,8 +91,13 @@ class HACModel(object):
             {cluster: model} dictionary for all cluster in `clusters`
         """
 
-        return {c: self.get_model(c, annotation=annotation, models=models, matrix=matrix, history=history, feature=feature)
-                for c in clusters}
+        return {
+            c: self.get_model(
+                c, annotation=annotation, models=models, matrix=matrix,
+                history=history, feature=feature
+            )
+            for c in clusters
+        }
 
     def merge_models(
         self, clusters,
@@ -197,10 +202,16 @@ class HACModel(object):
             Clusters similarity matrix
         """
 
+        if models is None:
+            models = {}
+
         # compute missing models
-        models = {c: models.get(c, self.get_model(c,
-                                                  annotation=annotation, models=models, matrix=matrix, history=history, feature=feature))
-                  for c in clusters}
+        models = {
+            c: models.get(c, self.get_model(
+                c, annotation=annotation, models=models, matrix=matrix,
+                history=history, feature=feature))
+            for c in clusters
+        }
 
         # cluster similarity matrix
         M = LabelMatrix(
@@ -224,3 +235,20 @@ class HACModel(object):
                     M[cluster2, cluster1] = M[cluster1, cluster2]
 
         return M
+
+    def get_track_similarity_matrix(self, annotation, feature):
+
+        # one cluster per track
+        tracks = annotation.anonymize_tracks()
+        clusters = tracks.labels()
+
+        clusterMatrix = self.get_similarity_matrix(
+            clusters, annotation=tracks, feature=feature)
+
+        trackMatrix = LabelMatrix()
+        for s1, t1, c1 in tracks.itertracks(label=True):
+            for s2, t2, c2 in tracks.itertracks(label=True):
+                trackMatrix[(s1, t1), (s2, t2)] = clusterMatrix[c1, c2]
+
+        return trackMatrix
+
