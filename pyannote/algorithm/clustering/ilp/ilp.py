@@ -20,10 +20,15 @@
 
 
 import numpy as np
-from pyannote.algorithm.pig.vertex import IdentityVertex, InstanceVertex
 import networkx as nx
-from pyannote.base.annotation import Annotation, Unknown
-
+try:
+    import gurobipy as grb
+except:
+    pass
+try:
+    import pulp
+except:
+    pass
 
 class ILPClustering(object):
 
@@ -42,12 +47,6 @@ class ILPClustering(object):
         super(ILPClustering, self).__init__()
 
         self.solver = solver
-
-        if self.solver == 'gurobi':
-            import gurobipy as grb
-
-        if self.solver == 'pulp':
-            import pulp
 
     # =================================================================
     # VARIABLES & PROBLEM
@@ -469,7 +468,7 @@ class ILPClustering(object):
         return objective, N
 
     def _pulp_get_bipartite_similarity(
-        self, items, otherItems, similarity, get_similarity
+        self, items, otherItems, get_similarity
     ):
 
         """Bi-partite similarity: ∑  xij.pij
@@ -483,7 +482,7 @@ class ILPClustering(object):
         return sum(values), len(values)
 
     def _gurobi_get_bipartite_similarity(
-        self, items, otherItems, similarity, get_similarity
+        self, items, otherItems, get_similarity
     ):
 
         """Bi-partite similarity: ∑  xij.pij
