@@ -25,7 +25,14 @@ from pyannote.algorithm.pig.vertex import IdentityVertex, InstanceVertex
 import networkx as nx
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.algorithm.pig.pig import PROBABILITY
-
+try:
+    import gurobipy as grb
+except:
+    pass
+try:
+    import pulp
+except:
+    pass
 
 class PIGMining(ILPClustering):
 
@@ -125,9 +132,9 @@ class InOutObjectiveMixin(object):
 
         get_similarity = self.get_get_similarity(pig)
 
-        intra, N = self.get_intra_cluster_similarity(pig, get_similarity)
+        intra, N = self.get_intra_cluster_similarity(pig.nodes(), get_similarity)
 
-        inter, N = self.get_inter_cluster_dissimilarity(pig, get_similarity)
+        inter, N = self.get_inter_cluster_dissimilarity(pig.nodes(), get_similarity)
 
         if N:
             objective = 1./N*(alpha*intra+(1-alpha)*inter)
@@ -194,16 +201,16 @@ class StrictConstraintsMixin(object):
         get_similarity = self.get_get_similarity(pig)
 
         # Reflexivity constraints
-        self.add_reflexivity_constraints(pig)
+        self.add_reflexivity_constraints(pig.nodes())
 
         # Hard constraints
-        self.add_hard_constraints(pig, get_similarity)
+        self.add_hard_constraints(pig.nodes(), get_similarity)
 
         # Symmetry constraints
-        self.add_symmetry_constraints(pig)
+        self.add_symmetry_constraints(pig.nodes())
 
         # Strict transitivity constraints
-        self.add_transitivity_constraints(pig)
+        self.add_transitivity_constraints(pig.nodes())
 
         # Identity unicity constraints
         self.add_unique_identity_constraints(pig)
@@ -222,13 +229,13 @@ class RelaxedConstraintsMixin(object):
         get_similarity = self.get_get_similarity(pig)
 
         # Reflexivity constraints
-        self.add_reflexivity_constraints(pig)
+        self.add_reflexivity_constraints(pig.nodes())
 
         # Hard constraints
-        self.add_hard_constraints(pig, get_similarity)
+        self.add_hard_constraints(pig.nodes(), get_similarity)
 
         # Symmetry constraints
-        self.add_symmetry_constraints(pig)
+        self.add_symmetry_constraints(pig.nodes())
 
         # Relaxed transitivity constraints
         identities = pig.get_identity_vertices()
