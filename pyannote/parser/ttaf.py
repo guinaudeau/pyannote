@@ -18,7 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from lxml import objectify
+try:
+    from lxml import objectify
+except:
+    pass
 from pyannote.base.segment import Segment
 from base import BaseAnnotationParser
 

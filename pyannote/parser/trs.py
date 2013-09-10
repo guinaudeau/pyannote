@@ -27,7 +27,12 @@ http://transag.sourceforge.net/
 """
 
 import re
-from lxml import objectify
+
+try:
+    from lxml import objectify
+except:
+    pass
+
 from pyannote.base.segment import Segment, SEGMENT_PRECISION
 from base import BaseAnnotationParser
 
