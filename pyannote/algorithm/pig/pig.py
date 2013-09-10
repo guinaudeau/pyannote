@@ -32,6 +32,18 @@ class PersonInstanceGraph(nx.Graph):
     def __init__(self):
         super(PersonInstanceGraph, self).__init__()
 
+    def get_instance_vertices(self):
+        return [v for v in self if isinstance(v, InstanceVertex)]
+
+    def get_identity_vertices(self):
+        return [v for v in self if isinstance(v, IdentityVertex)]
+
+    def get_uris(self):
+        return set([v.uri for v in self if isinstance(v, InstanceVertex)])
+
+    def get_modalities(self):
+        return set([v.modality for v in self if isinstance(v, InstanceVertex)])
+
     def add_annotation(self, annotation,
                        instance_vertex=False, identity_vertex=False,
                        identification_edge=False, cooccurrence_edge=False):
