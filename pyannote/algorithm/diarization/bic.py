@@ -18,9 +18,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-from model import HACModel
-from stop import HACStop
-from hac import HierarchicalAgglomerativeClustering
+from pyannote.algorithm.clustering.hac.hac import HierarchicalAgglomerativeClustering
+from pyannote.algorithm.clustering.hac.model import HACModel
+from pyannote.algorithm.clustering.hac.stop import HACStop
+from pyannote.algorithm.clustering.hac.constraint import HACConstraint
 from pyannote.stats.gaussian import Gaussian
 
 
@@ -119,3 +120,45 @@ class BICClustering(HierarchicalAgglomerativeClustering):
             covariance_type=covariance_type, penalty_coef=penalty_coef
         )
         super(BICClustering, self).__init__(model=model, stop=stop, **kwargs)
+
+
+# class ContiguousConstraint(HACConstraint):
+
+#     def __init__(self, gap=0.0):
+#         super(ContiguousConstraint, self).__init__()
+#         self.gap = gap
+
+#     def initialize(
+#         self,
+#         annotation=None, models=None, matrix=None, history=None, feature=None
+#     ):
+#         pass
+
+#     def update(
+#         self, merged_clusters, new_cluster,
+#         annotation=None, models=None, matrix=None, history=None, feature=None
+#     ):
+#         pass
+
+#     def met(
+#         self, clusters,
+#         annotation=None, models=None, matrix=None, history=None, feature=None
+#     ):
+#         pass
+
+
+# class BICLinearClustering(HierarchicalAgglomerativeClustering):
+
+#     def __init__(
+#         self, covariance_type='diag', penalty_coef=1.0, gap=0.0
+#     ):
+
+#         stop = BICStop()
+#         model = BICModel(
+#             covariance_type=covariance_type, penalty_coef=penalty_coef
+#         )
+
+#         constraint = ContiguousConstraint(gap=gap)
+
+#         super(BICLinearClustering, self).__init__(
+#             model=model, stop=stop, constraint=constraint)

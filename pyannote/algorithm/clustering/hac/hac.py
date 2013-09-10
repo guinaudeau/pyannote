@@ -23,6 +23,7 @@ import sys
 
 from model import HACModel
 from stop import HACStop
+from constraint import HACConstraint
 from history import HACHistory
 
 
