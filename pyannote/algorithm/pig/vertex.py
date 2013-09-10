@@ -59,3 +59,7 @@ class IdentityVertex(namedtuple('IdentityVertex', [IDENTITY])):
     """
     def __new__(cls, identity):
         return super(IdentityVertex, cls).__new__(cls, identity)
+
+    @property
+    def modality(self):
+        return 'identity'
