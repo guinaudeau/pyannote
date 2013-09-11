@@ -19,54 +19,17 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import numpy as np
-import networkx as nx
-from pyannote.algorithm.pig.pig import PROBABILITY
 from pyannote.base.annotation import Annotation, Unknown
-from pyannote.algorithm.clustering.ilp.ilp import ILPClustering
+from pyannote.algorithm.clustering.ilp.ilp import ILPClustering, InOutObjectiveMixin
 from pyannote.algorithm.pig.vertex import IdentityVertex, InstanceVertex
 
 
-class ILPPIGMining(ILPClustering):
+class PIGMiningILP(ILPClustering):
 
     def __init__(self, solver='pulp'):
-        super(ILPPIGMining, self).__init__(solver=solver)
+        super(PIGMiningILP, self).__init__(solver=solver)
 
-    def get_get_similarity(self, pig):
-
-        def get_similarity(v, w):
-            if pig.has_edge(v, w):
-                return pig[v][w][PROBABILITY]
-            return np.nan
-
-        return get_similarity
-
-    # Unique identity constraints
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    def add_unique_identity_constraints(self, pig):
-        """Add unique identity constraints
-
-        Any person instance can be connected to at most one identity.
-        """
-
-        instances = pig.get_instance_vertices()
-        identities = pig.get_identity_vertices()
-        self.add_exclusivity_constraints(instances, identities)
-
-        return self
-
-    def get_annotations(self, pig, solution):
-
-        c = nx.Graph()
-
-        for (I, J), same_cluster in solution.iteritems():
-            c.add_node(I),
-            c.add_node(J)
-            if same_cluster:
-                c.add_edge(I, J)
-
-        clusters = nx.connected_components(c)
+    def get_annotations(self, pig, clusters):
 
         annotations = {}
         uris = pig.get_uris()
@@ -105,53 +68,30 @@ class ILPPIGMining(ILPClustering):
 
         return annotations
 
+    def __call__(self, pig, **kwargs):
+
+        self.set_problem(pig)
+        self.set_constraints(pig)
+        self.set_objective(pig, pig.get_similarity, **kwargs)
+        solution = self.solve()
+        clusters = self.get_clusters(pig, solution)
+        return self.get_annotations(pig, clusters)
 
 # =====================================================================
 # Objective functions
 # =====================================================================
 
-class UnweightedObjectiveFunction(object):
 
-    """
-    δ = argmax α ∑ δij.pij + (1-α) ∑ (1-δij).(1-pij)
-                 i-j                i-j
-    """
+class PIGWeightedObjectiveMixin(object):
 
-    def get_objective(self, pig, alpha=0.5, **kwargs):
-        """
-        δ = argmax α ∑ δij.pij + (1-α) ∑ (1-δij).(1-pij)
-                     i∈I                i∈I
-                     j∈I                j∈I
-
-        Parameters
-        ----------
-        pig : PersonInstanceGraph
-        alpha : float, optional
-            0 ≤ α ≤ 1. Defaults to 0.5
-        """
-        get_similarity = self.get_get_similarity(pig)
-
-        intra, N = self.get_intra_cluster_similarity(pig, get_similarity)
-        inter, _ = self.get_inter_cluster_dissimilarity(pig, get_similarity)
-
-        N = max(1, N)
-        objective = 1./N*(alpha*intra+(1-alpha)*inter)
-
-        return objective
-
-
-class WeightedObjectiveMixin(object):
-
-    def get_objective(self, pig, weights=None, **kwargs):
-
-        get_similarity = self.get_get_similarity(pig)
+    def get_objective(self, pig, get_similarity, weights=None, **kwargs):
 
         objective = None
 
         for (modality1, modality2), weight in weights.iteritems():
 
-            items1 = [i for i in self.items if i.modality == modality1]
-            items2 = [i for i in self.items if i.modality == modality2]
+            items1 = [i for i in pig if i.modality == modality1]
+            items2 = [i for i in pig if i.modality == modality2]
 
             intra, N = self.get_bipartite_similarity(
                 items1, items2, get_similarity)
@@ -176,11 +116,9 @@ class WeightedObjectiveMixin(object):
 # Constraints
 # =====================================================================
 
-class StrictTransitivityConstraints(object):
+class PIGStrictTransitivityConstraints(object):
 
     def set_constraints(self, pig):
-
-        get_similarity = self.get_get_similarity(pig)
 
         # Reflexivity constraints
         self.add_reflexivity_constraints(pig)
@@ -192,19 +130,19 @@ class StrictTransitivityConstraints(object):
         self.add_transitivity_constraints(pig)
 
         # Identity unicity constraints
-        self.add_unique_identity_constraints(pig)
+        instances = pig.get_instance_vertices()
+        identities = pig.get_identity_vertices()
+        self.add_exclusivity_constraints(instances, identities)
 
         # Hard constraints
-        self.add_hard_constraints(pig, get_similarity)
+        self.add_hard_constraints(pig, pig.get_similarity)
 
         return self
 
 
-class RelaxedTransitivityConstraints(object):
+class PIGRelaxedTransitivityConstraints(object):
 
     def set_constraints(self, pig):
-
-        get_similarity = self.get_get_similarity(pig)
 
         # Reflexivity constraints
         self.add_reflexivity_constraints(pig)
@@ -212,16 +150,16 @@ class RelaxedTransitivityConstraints(object):
         # Symmetry constraints
         self.add_symmetry_constraints(pig)
 
-        # Relaxed transitivity constraints
-        identities = pig.get_identity_vertices()
         instances = pig.get_instance_vertices()
+        identities = pig.get_identity_vertices()
+
+        # Relaxed transitivity constraints
         self.add_asymmetric_transitivity_constraints(instances, identities)
 
         # Identity unicity constraints
-        self.add_unique_identity_constraints(pig)
+        self.add_exclusivity_constraints(instances, identities)
 
         # Hard constraints
-        self.add_hard_constraints(pig, get_similarity)
+        self.add_hard_constraints(pig, pig.get_similarity)
 
         return self
-
