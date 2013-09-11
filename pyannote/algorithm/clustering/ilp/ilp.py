@@ -47,7 +47,6 @@ class ILPClustering(object):
     def __init__(self, solver='pulp'):
 
         super(ILPClustering, self).__init__()
-
         self.solver = solver
 
     # =================================================================
@@ -57,52 +56,42 @@ class ILPClustering(object):
     def add_pair_variables(self, items):
         """Add one variable per pair of items"""
 
+        self.x = {}
+
+        # -- gurobi --
         if self.solver == 'gurobi':
-            self._gurobi_add_pair_variables(items)
 
+            for I, J in itertools.product(items, repeat=2):
+                self.x[I, J] = self.problem.addVar(vtype=grb.GRB.BINARY)
+
+            self.problem.update()
+
+        # -- pulp --
         if self.solver == 'pulp':
-            self._pulp_add_pair_variables(items)
+
+            for I, J in itertools.product(items, repeat=2):
+                name = "%s / %s" % (I, J)
+                self.x[I, J] = pulp.LpVariable(name, cat=pulp.constants.LpBinary)
 
         return self
 
-    def _gurobi_add_pair_variables(self, items):
-        """Add one variable per pair of items"""
-
-        self.x = {}
-
-        for I, J in itertools.product(items, repeat=2):
-            self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
-
-        self.model.update()
-
-        return self
-
-    def _pulp_add_pair_variables(self, items):
-        """Add one variable per pair of items"""
-
-        self.x = {}
-
-        for I, J in itertools.product(items, repeat=2):
-            name = "%s / %s" % (I, J)
-            self.x[I, J] = pulp.LpVariable(name, cat=pulp.constants.LpBinary)
-
-        return self
-
-    def reset_problem(self, items):
+    def set_problem(self, items):
         """
         items : iterable
 
         """
 
-        # empty (silent) model
-        if self.solver == 'gurobi':
-            self.model = grb.Model('Person instance graph clustering')
-            self.model.setParam(grb.GRB.Param.OutputFlag, False)
+        name = 'Person instance graph'
 
+        # -- gurobi --
+        if self.solver == 'gurobi':
+            self.problem = grb.Model(name)
+            self.problem.setParam(grb.GRB.Param.OutputFlag, False)
+
+        # -- pulp --
         if self.solver == 'pulp':
-            # empty problem
             self.problem = pulp.LpProblem(
-                name='Person instance graph clustering',
+                name=name,
                 sense=pulp.constants.LpMaximize
             )
 
@@ -110,42 +99,32 @@ class ILPClustering(object):
 
         return self
 
-    # =================================================================
+    # =========================================================================
     # CONSTRAINTS
-    # =================================================================
+    # =========================================================================
 
-    # Reflexivity constraints
-    # ~~~~~~~~~~~~~~~~~~~~~~~
+    # Reflexivity
+    # ~~~~~~~~~~~
 
     def add_reflexivity_constraints(self, items):
         """Add reflexivity constraints (I~I, for all I)"""
 
         if self.solver == 'gurobi':
-            return self._gurobi_add_reflexivity_constraints(items)
+            for I in items:
+                constr = self.x[I, I] == 1
+                self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            return self._pulp_add_reflexivity_constraints(items)
-
-    def _gurobi_add_reflexivity_constraints(self, items):
-
-        for I in items:
-            constr = self.x[I, I] == 1
-            self.model.addConstr(constr)
-
-        self.model.update()
+            for I in items:
+                name = "Reflexivity (%s)" % (repr(I))
+                self.problem += self.x[I, I] == 1, name
 
         return self
 
-    def _pulp_add_reflexivity_constraints(self, items):
-
-        for I in items:
-            name = "Reflexivity constraint (%s)" % (repr(I))
-            self.problem += self.x[I, I] == 1, name
-
-        return self
-
-    # Symmetry constraints
-    # ~~~~~~~~~~~~~~~~~~~~
+    # Symmetry
+    # ~~~~~~~~
 
     def add_symmetry_constraints(self, items):
         """Add symmetry constratins
@@ -153,31 +132,21 @@ class ILPClustering(object):
         For any pair (I, J), I~J implies J~I
         """
         if self.solver == 'gurobi':
-            return self._gurobi_add_symmetry_constraints(items)
+            for I, J in itertools.combinations(items, 2):
+                constr = self.x[I, J] == self.x[J, I]
+                self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            return self._pulp_add_symmetry_constraints(items)
-
-    def _pulp_add_symmetry_constraints(self, items):
-
-        for I, J in itertools.combinations(items, 2):
-            name = "Symmetry constraint (%s / %s)" % (I, J)
-            self.problem += self.x[I, J] - self.x[J, I] == 0, name
+            for I, J in itertools.combinations(items, 2):
+                name = "Symmetry (%s / %s)" % (I, J)
+                self.problem += self.x[I, J] - self.x[J, I] == 0, name
 
         return self
 
-    def _gurobi_add_symmetry_constraints(self, items):
-
-        for I, J in itertools.combinations(items, 2):
-            constr = self.x[I, J] == self.x[J, I]
-            self.model.addConstr(constr)
-
-        self.model.update()
-
-        return self
-
-    # Transitivity constraints
-    # ~~~~~~~~~~~~~~~~~~~~~~~~
+    # Transitivity
+    # ~~~~~~~~~~~~
 
     def add_transitivity_constraints(self, items):
         """Add transitivity contraints
@@ -186,55 +155,34 @@ class ILPClustering(object):
         """
 
         if self.solver == 'gurobi':
-            self._gurobi_add_transitivity_constraints(items)
+
+            for I, J, K in itertools.combinations(items, 3):
+
+                constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
+                self.problem.addConstr(constr)
+
+                constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
+                self.problem.addConstr(constr)
+
+                constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
+                self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            self._pulp_add_transitivity_constraints(items)
+
+            for I, J, K in itertools.combinations(items, 3):
+
+                name = "Transitivity (%s / %s / %s)" % (I, K, J)
+                self.problem += self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1, name
+
+                name = "Transitivity (%s / %s / %s)" % (I, J, K)
+                self.problem += self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1, name
+
+                name = "Transitivity (%s / %s / %s)" % (J, I, K)
+                self.problem += self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1, name
 
         return self
-
-    def _pulp_add_transitivity_constraints(self, items):
-        """Add transitivity contraints
-
-        For any triplet (I,J,K), I~J and J~K implies I~K
-        """
-
-        for I, J, K in itertools.combinations(items, 3):
-
-            name = "Transitivity constraint (%s / %s / %s)" % (I, K, J)
-            self.problem += self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1, name
-
-            name = "Transitivity constraint (%s / %s / %s)" % (I, J, K)
-            self.problem += self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1, name
-
-            name = "Transitivity constraint (%s / %s / %s)" % (J, I, K)
-            self.problem += self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1, name
-
-        return self
-
-    def _gurobi_add_transitivity_constraints(self, items):
-        """Add transitivity contraints
-
-        For any triplet (I,J,K), I~J and J~K implies I~K
-        """
-
-        for I, J, K in itertools.combinations(items, 3):
-
-            constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
-            self.model.addConstr(constr)
-
-            constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
-            self.model.addConstr(constr)
-
-            constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
-            self.model.addConstr(constr)
-
-        self.model.update()
-
-        return self
-
-    # Asymmetric transitivity constraints
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def add_asymmetric_transitivity_constraints(self, tracks, identities):
         """Add asymmetric transitivity constraints
@@ -246,60 +194,32 @@ class ILPClustering(object):
         """
 
         if self.solver == 'gurobi':
-            self._gurobi_add_asymmetric_transitivity_constraints(tracks, identities)
+
+            for I in identities:
+
+                for T, S in itertools.combinations(tracks, 2):
+
+                    constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
+                    self.problem.addConstr(constr)
+
+                    constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
+                    self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            self._pulp_add_asymmetric_transitivity_constraints(tracks, identities)
 
-        return self
+            for I in identities:
 
-    def _pulp_add_asymmetric_transitivity_constraints(
-        self, tracks, identities
-    ):
-        """Add asymmetric transitivity constraints
+                for T, S in itertools.combinations(tracks, 2):
 
-        For any pair of tracks (T, S) and any identity I,
-            T~I and T~S implies S~I
+                    name = "Asymmetric transitivity (%s / %s / %s)" % (I, S, T)
+                    constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
+                    self.problem += constr, name
 
-        However, T~I and S~I does not imply T~S
-        """
-
-        for I in identities:
-
-            for T, S in itertools.combinations(tracks, 2):
-
-                name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, S, T)
-                constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
-                self.problem += constr, name
-
-                name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, T, S)
-                constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
-                self.problem += constr, name
-
-        return self
-
-    def _gurobi_add_asymmetric_transitivity_constraints(
-        self, tracks, identities
-    ):
-        """Add asymmetric transitivity constraints
-
-        For any pair of tracks (T, S) and any identity I,
-            T~I and T~S implies S~I
-
-        However, T~I and S~I does not imply T~S
-        """
-
-        for I in identities:
-
-            for T, S in itertools.combinations(tracks, 2):
-
-                constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
-                self.model.addConstr(constr)
-
-                constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
-                self.model.addConstr(constr)
-
-        self.model.update()
+                    name = "Asymmetric transitivity (%s / %s / %s)" % (I, T, S)
+                    constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
+                    self.problem += constr, name
 
         return self
 
@@ -314,52 +234,32 @@ class ILPClustering(object):
         """
 
         if self.solver == 'gurobi':
-            self._gurobi_add_hard_constraints(items, get_similarity)
+
+            for I, J in itertools.combinations(items, 2):
+
+                s = get_similarity(I, J)
+                if s in [0, 1]:
+
+                    constr = self.x[I, J] == s
+                    self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            self._pulp_add_hard_constraints(items, get_similarity)
+
+            for I, J in itertools.combinations(items, 2):
+
+                s = get_similarity(I, J)
+                if s in [0, 1]:
+
+                    name = "Hard (%s / %s)" % (I, J)
+                    constr = self.x[I, J] == s
+                    self.problem += constr, name
 
         return self
 
-    def _pulp_add_hard_constraints(self, items, get_similarity):
-        """Add hard constraints
-
-        If sim(I, J) = 0, then I|J.
-        If sim(I, J) = 1, then I~J.
-        """
-
-        for I, J in itertools.combinations(items, 2):
-
-            s = get_similarity(I, J)
-            if s in [0, 1]:
-
-                name = "Hard constraint (%s / %s)" % (I, J)
-                constr = self.x[I, J] == s
-                self.problem += constr, name
-
-        return self
-
-    def _gurobi_add_hard_constraints(self, items, get_similarity):
-        """Add hard constraints
-
-        If sim(I, J) = 0, then I|J.
-        If sim(I, J) = 1, then I~J.
-        """
-
-        for I, J in itertools.combinations(items, 2):
-
-            s = get_similarity(I, J)
-            if s in [0, 1]:
-
-                constr = self.x[I, J] == s
-                self.model.addConstr(constr)
-
-        self.model.update()
-
-        return self
-
-    # Exclusivity constraints
-    # ~~~~~~~~~~~~~~~~~~~~~~~
+    # Exclusivity
+    # ~~~~~~~~~~~
 
     def add_exclusivity_constraints(self, sources, targets):
         """Add exclusivity constraints
@@ -368,32 +268,22 @@ class ILPClustering(object):
         """
 
         if self.solver == 'gurobi':
-            self._gurobi_add_exclusivity_constraints(sources, targets)
+
+            if targets:
+                for T in sources:
+                    constr = grb.quicksum([self.x[T, I] for I in targets]) <= 1
+                    self.problem.addConstr(constr)
+
+            self.problem.update()
 
         if self.solver == 'pulp':
-            self._pulp_add_exclusivity_constraints(sources, targets)
 
-        return self
+            if targets:
+                for T in sources:
 
-    def _pulp_add_exclusivity_constraints(self, sources, targets):
-
-        if targets:
-            for T in sources:
-
-                name = "Exclusivity constraint (%s)" % T
-                constr = sum([self.x[T, I] for I in targets]) <= 1
-                self.problem += constr, name
-
-        return self
-
-    def _gurobi_add_exclusivity_constraints(self, sources, targets):
-
-        if targets:
-            for T in sources:
-                constr = grb.quicksum([self.x[T, I] for I in targets]) <= 1
-                self.model.addConstr(constr)
-
-        self.model.update()
+                    name = "Exclusivity constraint (%s)" % T
+                    constr = sum([self.x[T, I] for I in targets]) <= 1
+                    self.problem += constr, name
 
         return self
 
@@ -401,11 +291,13 @@ class ILPClustering(object):
     # OBJECTIVE FUNCTIONS
     # =================================================================
 
-    def set_objective(self, objective):
+    def set_objective(self, items, get_similarity, **kwargs):
+
+        objective = self.get_objective(items, get_similarity, **kwargs)
 
         if self.solver == 'gurobi':
-            self.model.setObjective(objective, grb.GRB.MAXIMIZE)
-            self.model.update()
+            self.problem.setObjective(objective, grb.GRB.MAXIMIZE)
+            self.problem.update()
 
         if self.solver == 'pulp':
             self.problem.setObjective(objective)
@@ -415,129 +307,65 @@ class ILPClustering(object):
     # Bipartite similarity
     # ~~~~~~~~~~~~~~~~~~~~
 
-    def get_bipartite_similarity(
-        self, items, otherItems, get_similarity
-    ):
+    def get_bipartite_similarity(self, items, otherItems, get_similarity):
         """Bi-partite similarity: ∑  xij.pij
                                  i∈I
                                  j∈J
         """
-        if self.solver == 'gurobi':
 
-            objective, N = self._gurobi_get_bipartite_similarity(
-                items, otherItems, get_similarity)
+        values = [get_similarity(I, J)*self.x[I, J]
+                  for I, J in itertools.product(items, otherItems)
+                  if not np.isnan(get_similarity(I, J))]
+        N = len(values)
+
+        if self.solver == 'gurobi':
+            objective = grb.quicksum(values)
 
         if self.solver == 'pulp':
-
-            objective, N = self._pulp_get_bipartite_similarity(
-                items, otherItems, get_similarity)
+            objective = sum(values)
 
         return objective, N
 
-    def _pulp_get_bipartite_similarity(
-        self, items, otherItems, get_similarity
-    ):
-
-        """Bi-partite similarity: ∑  xij.pij
-                                 i∈I
-                                 j∈J
-        """
-
-        values = [get_similarity(I, J)*self.x[I, J]
-                  for I, J in itertools.product(items, otherItems)
-                  if not np.isnan(get_similarity(I, J))]
-        return sum(values), len(values)
-
-    def _gurobi_get_bipartite_similarity(
-        self, items, otherItems, get_similarity
-    ):
-
-        """Bi-partite similarity: ∑  xij.pij
-                                 i∈I
-                                 j∈J
-        """
-
-        values = [get_similarity(I, J)*self.x[I, J]
-                  for I, J in itertools.product(items, otherItems)
-                  if not np.isnan(get_similarity(I, J))]
-
-        return grb.quicksum(values), len(values)
 
     # Bipartite dissimilarity
     # ~~~~~~~~~~~~~~~~~~~~~~~
 
-    def get_bipartite_dissimilarity(
-        self, items, otherItems, get_similarity
-    ):
-
+    def get_bipartite_dissimilarity(self, items, otherItems, get_similarity):
         """Bi-partite dissimilarity: ∑ (1-xij).(1-pij)
                                     i∈I
                                     j∈J
         """
 
-        if self.solver == 'gurobi':
+        values = [(1-get_similarity(I, J))*(1-self.x[I, J])
+                  for I, J in itertools.product(items, otherItems)
+                  if not np.isnan(get_similarity(I, J))]
+        N = len(values)
 
-            objective, N = self._gurobi_get_bipartite_dissimilarity(
-                items, otherItems, get_similarity)
+        if self.solver == 'gurobi':
+            objective = grb.quicksum(values)
 
         if self.solver == 'pulp':
-
-            objective, N = self._pulp_get_bipartite_dissimilarity(
-                items, otherItems, get_similarity)
+            objective = sum(values)
 
         return objective, N
 
-    def _pulp_get_bipartite_dissimilarity(
-        self, items, otherItems, get_similarity
-    ):
-        """Bi-partite dissimilarity: ∑ (1-xij).(1-pij)
-                                    i∈I
-                                    j∈J
-        """
-
-        values = [(1-get_similarity(I, J))*(1-self.x[I, J])
-                  for I, J in itertools.product(items, otherItems)
-                  if not np.isnan(get_similarity(I, J))]
-        return sum(values), len(values)
-
-    def _gurobi_get_bipartite_dissimilarity(
-        self, items, otherItems, get_similarity
-    ):
-
-        """Bi-partite dissimilarity: ∑ (1-xij).(1-pij)
-                                    i∈I
-                                    j∈J
-        """
-
-        values = [(1-get_similarity(I, J))*(1-self.x[I, J])
-                  for I, J in itertools.product(items, otherItems)
-                  if not np.isnan(get_similarity(I, J))]
-
-        return grb.quicksum(values), len(values)
-
-    def get_inter_cluster_dissimilarity(
-        self, items, get_similarity
-    ):
+    def get_inter_cluster_dissimilarity(self, items, get_similarity):
 
         """Inter-cluster dissimilarity:  ∑ (1-xij).(1-pij)
                                         i∈I
                                         j∈I
         """
 
-        return self.get_bipartite_dissimilarity(
-            items, items, get_similarity)
+        return self.get_bipartite_dissimilarity(items, items, get_similarity)
 
-    def get_intra_cluster_similarity(
-        self, items, get_similarity
-    ):
+    def get_intra_cluster_similarity(self, items, get_similarity):
 
         """Intra-cluster similarity: ∑  xij.pij
                                     i∈I
                                     j∈I
         """
 
-        return self.get_bipartite_similarity(
-            items, items, get_similarity)
+        return self.get_bipartite_similarity(items, items, get_similarity)
 
     # =================================================================
     # SOLUTION
@@ -611,25 +439,25 @@ class ILPClustering(object):
 
         # Gurobi behavior
         if method:
-            self.model.setParam(grb.GRB.Param.Method, method)
+            self.problem.setParam(grb.GRB.Param.Method, method)
         if mip_focus:
-            self.model.setParam(grb.GRB.Param.MIPFocus, mip_focus)
+            self.problem.setParam(grb.GRB.Param.MIPFocus, mip_focus)
         if heuristics:
-            self.model.setParam(grb.GRB.Param.Heuristics, heuristics)
+            self.problem.setParam(grb.GRB.Param.Heuristics, heuristics)
 
         # Stopping criteria
         if mip_gap:
-            self.model.setParam(grb.GRB.Param.MIPGap, mip_gap)
+            self.problem.setParam(grb.GRB.Param.MIPGap, mip_gap)
         if time_limit:
-            self.model.setParam(grb.GRB.Param.TimeLimit, time_limit)
+            self.problem.setParam(grb.GRB.Param.TimeLimit, time_limit)
 
         if threads:
-            self.model.setParam(grb.GRB.Param.Threads, threads)
+            self.problem.setParam(grb.GRB.Param.Threads, threads)
 
-        self.model.setParam(grb.GRB.Param.OutputFlag, verbose)
+        self.problem.setParam(grb.GRB.Param.OutputFlag, verbose)
 
         # Gurobi powaaaaa!
-        self.model.optimize()
+        self.problem.optimize()
 
         # read solution
         solution = {}
@@ -638,6 +466,17 @@ class ILPClustering(object):
 
         return solution
 
+    def get_clusters(self, items, solution):
+
+        c = nx.Graph()
+
+        for (I, J), same_cluster in solution.iteritems():
+            c.add_node(I),
+            c.add_node(J)
+            if same_cluster:
+                c.add_edge(I, J)
+
+        return nx.connected_components(c)
 
 # =====================================================================
 # Objective functions
