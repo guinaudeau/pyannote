@@ -19,6 +19,7 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import itertools
 import numpy as np
 import networkx as nx
 try:
@@ -29,6 +30,7 @@ try:
     import pulp
 except:
     pass
+
 
 class ILPClustering(object):
 
@@ -59,7 +61,7 @@ class ILPClustering(object):
             self._gurobi_add_pair_variables(items)
 
         if self.solver == 'pulp':
-            self.pulp_add_pair_variables(items)
+            self._pulp_add_pair_variables(items)
 
         return self
 
@@ -68,9 +70,8 @@ class ILPClustering(object):
 
         self.x = {}
 
-        for I in items:
-            for J in items:
-                self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
+        for I, J in itertools.product(items, repeat=2):
+            self.x[I, J] = self.model.addVar(vtype=grb.GRB.BINARY)
 
         self.model.update()
 
@@ -80,11 +81,10 @@ class ILPClustering(object):
         """Add one variable per pair of items"""
 
         self.x = {}
-        for i, I in enumerate(items):
-            for j, J in enumerate(items):
-                name = "%s / %s" % (I, J)
-                self.x[I, J] = pulp.LpVariable(
-                    name, cat=pulp.constants.LpBinary)
+
+        for I, J in itertools.product(items, repeat=2):
+            name = "%s / %s" % (I, J)
+            self.x[I, J] = pulp.LpVariable(name, cat=pulp.constants.LpBinary)
 
         return self
 
@@ -133,6 +133,7 @@ class ILPClustering(object):
             self.model.addConstr(constr)
 
         self.model.update()
+
         return self
 
     def _pulp_add_reflexivity_constraints(self, items):
@@ -159,27 +160,20 @@ class ILPClustering(object):
 
     def _pulp_add_symmetry_constraints(self, items):
 
-        N = len(items)
-        for i in range(N):
-            I = items[i]
-            for j in range(i+1, N):
-                J = items[j]
-                name = "Symmetry constraint (%s / %s)" % (I, J)
-                self.problem += self.x[I, J] - self.x[J, I] == 0, name
+        for I, J in itertools.combinations(items, 2):
+            name = "Symmetry constraint (%s / %s)" % (I, J)
+            self.problem += self.x[I, J] - self.x[J, I] == 0, name
 
         return self
 
     def _gurobi_add_symmetry_constraints(self, items):
 
-        N = len(items)
-        for i in range(N):
-            I = items[i]
-            for j in range(i+1, N):
-                J = items[j]
-                constr = self.x[I, J] == self.x[J, I]
-                self.model.addConstr(constr)
+        for I, J in itertools.combinations(items, 2):
+            constr = self.x[I, J] == self.x[J, I]
+            self.model.addConstr(constr)
 
         self.model.update()
+
         return self
 
     # Transitivity constraints
@@ -205,25 +199,16 @@ class ILPClustering(object):
         For any triplet (I,J,K), I~J and J~K implies I~K
         """
 
-        N = len(items)
+        for I, J, K in itertools.combinations(items, 3):
 
-        for i in range(N):
-            I = items[i]
+            name = "Transitivity constraint (%s / %s / %s)" % (I, K, J)
+            self.problem += self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1, name
 
-            for j in range(i+1, N):
-                J = items[j]
+            name = "Transitivity constraint (%s / %s / %s)" % (I, J, K)
+            self.problem += self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1, name
 
-                for k in range(j+1, N):
-                    K = items[k]
-
-                    name = "Transitivity constraint (%s / %s / %s)" % (I, K, J)
-                    self.problem += self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1, name
-
-                    name = "Transitivity constraint (%s / %s / %s)" % (I, J, K)
-                    self.problem += self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1, name
-
-                    name = "Transitivity constraint (%s / %s / %s)" % (J, I, K)
-                    self.problem += self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1, name
+            name = "Transitivity constraint (%s / %s / %s)" % (J, I, K)
+            self.problem += self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1, name
 
         return self
 
@@ -233,25 +218,18 @@ class ILPClustering(object):
         For any triplet (I,J,K), I~J and J~K implies I~K
         """
 
-        N = len(items)
+        for I, J, K in itertools.combinations(items, 3):
 
-        for i in range(N):
-            I = items[i]
+            constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
+            self.model.addConstr(constr)
 
-            for j in range(i+1, N):
-                J = items[j]
+            constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
+            self.model.addConstr(constr)
 
-                for k in range(j+1, N):
-                    K = items[k]
+            constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
+            self.model.addConstr(constr)
 
-                    constr = self.x[J, K]+self.x[I, K]-self.x[I, J] <= 1
-                    self.model.addConstr(constr)
-
-                    constr = self.x[I, J]+self.x[I, K]-self.x[J, K] <= 1
-                    self.model.addConstr(constr)
-
-                    constr = self.x[I, J]+self.x[J, K]-self.x[I, K] <= 1
-                    self.model.addConstr(constr)
+        self.model.update()
 
         return self
 
@@ -286,25 +264,17 @@ class ILPClustering(object):
         However, T~I and S~I does not imply T~S
         """
 
-        Nt = len(tracks)
-        Ni = len(identities)
+        for I in identities:
 
-        for i in range(Ni):
-            I = identities[i]
+            for T, S in itertools.combinations(tracks, 2):
 
-            for t in range(Nt):
-                T = tracks[t]
+                name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, S, T)
+                constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
+                self.problem += constr, name
 
-                for s in range(t+1, Nt):
-                    S = tracks[s]
-
-                    name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, S, T)
-                    constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
-                    self.problem += constr, name
-
-                    name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, T, S)
-                    constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
-                    self.problem += constr, name
+                name = "Asymmetric transitivity constraint (%s / %s / %s)" % (I, T, S)
+                constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
+                self.problem += constr, name
 
         return self
 
@@ -319,23 +289,17 @@ class ILPClustering(object):
         However, T~I and S~I does not imply T~S
         """
 
-        Nt = len(tracks)
-        Ni = len(identities)
+        for I in identities:
 
-        for i in range(Ni):
-            I = identities[i]
+            for T, S in itertools.combinations(tracks, 2):
 
-            for t in range(Nt):
-                T = tracks[t]
+                constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
+                self.model.addConstr(constr)
 
-                for s in range(t+1, Nt):
-                    S = tracks[s]
+                constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
+                self.model.addConstr(constr)
 
-                    constr = self.x[T, I]+self.x[T, S]-self.x[S, I] <= 1
-                    self.model.addConstr(constr)
-
-                    constr = self.x[S, I]+self.x[T, S]-self.x[T, I] <= 1
-                    self.model.addConstr(constr)
+        self.model.update()
 
         return self
 
@@ -364,20 +328,14 @@ class ILPClustering(object):
         If sim(I, J) = 1, then I~J.
         """
 
-        N = len(items)
+        for I, J in itertools.combinations(items, 2):
 
-        for i in range(N):
-            I = items[i]
+            s = get_similarity(I, J)
+            if s in [0, 1]:
 
-            for j in range(i+1, N):
-                J = items[j]
-
-                s = get_similarity(I, J)
-                if s in [0, 1]:
-
-                    name = "Hard constraint (%s / %s)" % (I, J)
-                    constr = self.x[I, J] == s
-                    self.problem += constr, name
+                name = "Hard constraint (%s / %s)" % (I, J)
+                constr = self.x[I, J] == s
+                self.problem += constr, name
 
         return self
 
@@ -388,19 +346,15 @@ class ILPClustering(object):
         If sim(I, J) = 1, then I~J.
         """
 
-        N = len(items)
+        for I, J in itertools.combinations(items, 2):
 
-        for i in range(N):
-            I = items[i]
+            s = get_similarity(I, J)
+            if s in [0, 1]:
 
-            for j in range(i+1, N):
-                J = items[j]
+                constr = self.x[I, J] == s
+                self.model.addConstr(constr)
 
-                s = get_similarity(I, J)
-                if s in [0, 1]:
-
-                    constr = self.x[I, J] == s
-                    self.model.addConstr(constr)
+        self.model.update()
 
         return self
 
@@ -439,11 +393,24 @@ class ILPClustering(object):
                 constr = grb.quicksum([self.x[T, I] for I in targets]) <= 1
                 self.model.addConstr(constr)
 
+        self.model.update()
+
         return self
 
     # =================================================================
     # OBJECTIVE FUNCTIONS
     # =================================================================
+
+    def set_objective(self, objective):
+
+        if self.solver == 'gurobi':
+            self.model.setObjective(objective, grb.GRB.MAXIMIZE)
+            self.model.update()
+
+        if self.solver == 'pulp':
+            self.problem.setObjective(objective)
+
+        return self
 
     # Bipartite similarity
     # ~~~~~~~~~~~~~~~~~~~~
@@ -477,7 +444,7 @@ class ILPClustering(object):
         """
 
         values = [get_similarity(I, J)*self.x[I, J]
-                  for I in items for J in otherItems
+                  for I, J in itertools.product(items, otherItems)
                   if not np.isnan(get_similarity(I, J))]
         return sum(values), len(values)
 
@@ -491,7 +458,7 @@ class ILPClustering(object):
         """
 
         values = [get_similarity(I, J)*self.x[I, J]
-                  for I in items for J in otherItems
+                  for I, J in itertools.product(items, otherItems)
                   if not np.isnan(get_similarity(I, J))]
 
         return grb.quicksum(values), len(values)
@@ -529,7 +496,7 @@ class ILPClustering(object):
         """
 
         values = [(1-get_similarity(I, J))*(1-self.x[I, J])
-                  for I in items for J in otherItems
+                  for I, J in itertools.product(items, otherItems)
                   if not np.isnan(get_similarity(I, J))]
         return sum(values), len(values)
 
@@ -543,7 +510,7 @@ class ILPClustering(object):
         """
 
         values = [(1-get_similarity(I, J))*(1-self.x[I, J])
-                  for I in items for J in otherItems
+                  for I, J in itertools.product(items, otherItems)
                   if not np.isnan(get_similarity(I, J))]
 
         return grb.quicksum(values), len(values)
@@ -678,31 +645,32 @@ class ILPClustering(object):
 
 class InOutObjectiveMixin(object):
 
-    def set_objective(self, items, get_similarity, alpha=0.5, **kwargs):
+    """
+    δ = argmax α ∑ δij.pij + (1-α) ∑ (1-δij).(1-pij)
+                 i∈I                i∈I
+                 j∈I                j∈I
+    """
+
+    def get_objective(self, items, get_similarity, alpha=0.5, **kwargs):
         """
-        Set objective function
+        δ = argmax α ∑ δij.pij + (1-α) ∑ (1-δij).(1-pij)
+                     i∈I                i∈I
+                     j∈I                j∈I
 
         Parameters
         ----------
+        items : list
+            I
+        get_similarity : func
+            f(i, j) --> pij
         alpha : float, optional
-            Set α in above equation (0 < α < 1)
-
+            0 ≤ α ≤ 1. Defaults to 0.5
         """
 
         intra, N = self.get_intra_cluster_similarity(items, get_similarity)
+        inter, _ = self.get_inter_cluster_dissimilarity(items, get_similarity)
 
-        inter, N = self.get_inter_cluster_dissimilarity(items, get_similarity)
+        N = max(1, N)
+        objective = 1./N*(alpha*intra+(1-alpha)*inter)
 
-        if N:
-            objective = 1./N*(alpha*intra+(1-alpha)*inter)
-        else:
-            objective = alpha*intra+(1-alpha)*inter
-
-        if self.solver == 'gurobi':
-            self.model.setObjective(objective, grb.GRB.MAXIMIZE)
-            self.model.update()
-
-        if self.solver == 'pulp':
-            self.problem.setObjective(objective)
-
-        return self
+        return objective
