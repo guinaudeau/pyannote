@@ -18,6 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import networkx as nx
 from vertex import InstanceVertex, IdentityVertex
 
@@ -31,6 +32,11 @@ class PersonInstanceGraph(nx.Graph):
 
     def __init__(self):
         super(PersonInstanceGraph, self).__init__()
+
+    def get_similarity(self, v, w):
+        if self.has_edge(v, w):
+            return self[v][w][PROBABILITY]
+        return np.nan
 
     def get_instance_vertices(self):
         return [v for v in self if isinstance(v, InstanceVertex)]
