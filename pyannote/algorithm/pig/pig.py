@@ -166,8 +166,34 @@ class PersonInstanceGraph(nx.Graph):
 
         return self
 
+    def add_track_similarity_matrix(
+        self, matrix, uri, modality, calibration=None
+    ):
+
+        """
+        Parameters
+        ----------
+        matrix : LabelMatrix
+            (segment, track_name)-indexed matrix
+        uri : str
+        modality : str
+        calibration : ClusteringCalibration, optional
+        """
+
+        if calibration is not None:
+            matrix = calibration.apply(matrix)
+
+        for (s1, t1), (s2, t2), p in matrix.itervalues():
+            v1 = InstanceVertex(
+                segment=s1, track=t1, modality=modality, uri=uri)
+            v2 = InstanceVertex(
+                segment=s2, track=t2, modality=modality, uri=uri)
+            self.add_edge(v1, v2, {PROBABILITY: p})
+
+        return self
+
     def add_matrix(self, matrix):
-        """Add track similarity matrix
+        """Add instance vertex similarity matrix
 
         Parameters
         ----------
@@ -185,7 +211,7 @@ class PersonInstanceGraph(nx.Graph):
         )
 
         # Add affinity edges between instance vertices
-        for v, w, probability in matrix.itervalues():
-            self.add_edge(v, w, {PROBABILITY: probability})
+        for v, w, p in matrix.itervalues():
+            self.add_edge(v, w, {PROBABILITY: p})
 
         return self
