@@ -22,7 +22,7 @@ import itertools
 import numpy as np
 from pyannote.base.matrix import LabelMatrix
 from pyannote.base.annotation import Unknown
-from pyannote.stats.likelihood_ratio import LogLikelihoodRatioLinearRegression
+from pyannote.stats.llr import LLRLinearRegression, LLRIsotonicRegression
 
 
 # Helper function for speaker diarization (i.e. speech turns clustering)
@@ -51,20 +51,38 @@ class ClusteringCalibration(object):
 
     Parameters
     ----------
-    method : {'LinReg'}, optional
+    method : {'linear', 'isotonic'}, optional
         Default is linear regression of log-likelihood ratio
     """
 
-    def __init__(self, method=None, **kwargs):
+    @classmethod
+    def from_file(cls, path):
+        import pickle
+        with open(path, mode='r') as f:
+            calibration = pickle.load(f)
+        return calibration
+
+    def to_file(self, path):
+        import pickle
+        with open(path, mode='w') as f:
+            pickle.dump(self, f)
+
+    def __init__(self, method='linear'):
         super(ClusteringCalibration, self).__init__()
 
-        if method is None:
-            self.method = 'LinReg'
+        self.method = method
 
-        if self.method == 'LinReg':
-            self.calibration = LogLikelihoodRatioLinearRegression(**kwargs)
+        if method == 'linear':
+            self.llr = LLRLinearRegression()
 
-    def get_training_data(self, groundtruth_iterator, similarity_iterator):
+        elif method == 'isotonic':
+            self.llr = LLRIsotonicRegression()
+
+        else:
+            raise NotImplementedError(
+                'unknown calibration method (%s)' % method)
+
+    def _get_training_data(self, groundtruth_iterator, similarity_iterator):
         """
 
         Parameters
@@ -135,7 +153,7 @@ class ClusteringCalibration(object):
 
         """
 
-        x, y = self.get_training_data(
+        x, y = self._get_training_data(
             groundtruth_iterator, similarity_iterator
         )
 
@@ -143,14 +161,11 @@ class ClusteringCalibration(object):
         x = x[ok]
         y = y[ok]
 
-        positive = x[np.where(y == 1)]
-        negative = x[np.where(y == 0)]
-
-        self.calibration.fit(positive, negative, **kwargs)
+        self.llr.fit(x, y)
 
         return self
 
-    def apply(self, similarity, **kwargs):
+    def apply(self, similarity, prior=None):
         """
         Parameters
         ----------
@@ -158,8 +173,8 @@ class ClusteringCalibration(object):
             Similarity matrix
         """
         return LabelMatrix(
-            data=self.calibration.toPosteriorProbability(
-                similarity.df.values, **kwargs
+            data=self.llr.toPosteriorProbability(
+                similarity.df.values, prior=prior
             ),
             rows=similarity.get_rows(),
             columns=similarity.get_columns())
