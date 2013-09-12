@@ -45,9 +45,9 @@ setup(
                       'pandas >=0.12.0',
                       'munkres >=1.0.5.4',
                       'decorator >=3.4.0',
-                      'networkx >=1.8.1'],
+                      'networkx >=1.8.1',
+                      'scikit-learn >=0.14'],
                       # 'lxml >=2.3.4'],
-                      # 'scikit-learn >=0.12',
                       #'prettytable >=0.6',
                       #'python-Levenshtein >=0.10.2'],
     classifiers=[
