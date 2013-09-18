@@ -255,7 +255,7 @@ class ArgMaxDirectTagger(BaseTagger):
         tagged = annotation.copy()
 
         # tag each segment of target annotation, one after the other
-        for segment in tagged:
+        for segment in tagged.itersegments():
 
             # extract the part of source annotation
             # intersecting current target segment
@@ -268,7 +268,7 @@ class ArgMaxDirectTagger(BaseTagger):
 
             # tag each track one after the other
             # always choose label with greatest intersection duration
-            for track in tagged.tracks(segment):
+            for track in tagged.get_tracks(segment):
 
                 # find current best label
                 label = t.argmax(segment, known_first=self.known_first)
