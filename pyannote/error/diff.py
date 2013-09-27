@@ -59,7 +59,7 @@ class Diff(object):
         """
 
         # common (up-sampled) timeline
-        common_timeline = reference.get_timeline() + hypothesis.get_timeline()
+        common_timeline = reference.get_timeline().union(hypothesis.get_timeline())
         common_timeline = common_timeline.segmentation()
 
         # align reference on common timeline
@@ -115,7 +115,8 @@ class Diff(object):
         new_hypothesis = new_hypothesis.smooth()
         old_diff = self.compare(reference, old_hypothesis, correct=True).smooth()
         new_diff = self.compare(reference, new_hypothesis, correct=True).smooth()
-        common_timeline = (old_diff.timeline + new_diff.timeline).segmentation()
+        common_timeline = old_diff.get_timeline().union(new_diff.get_timeline())
+        common_timeline = common_timeline.segmentation()
         old_diff = old_diff >> common_timeline
         new_diff = new_diff >> common_timeline
 
