@@ -27,6 +27,7 @@ http://www.defi-repere.fr
 """
 
 from pyannote.base.segment import Segment
+from pyannote.base.annotation import Unknown
 from pyannote.base import URI, MODALITY, LABEL, SCORE
 from base import \
     BaseTextualAnnotationParser, \
@@ -74,7 +75,7 @@ def is_unknown(identifier):
         True if `identifier` is unknow ('Inconnu_XXX' or 'speakerXXX')
 
     """
-    return identifier[:8] == 'Inconnu_' or identifier[:7] == 'speaker'
+    return isinstance(identifier, Unknown) or identifier[:8] == 'Inconnu_' or identifier[:7] == 'speaker'
 
 
 class REPEREMixin(BaseTextualFormat):
