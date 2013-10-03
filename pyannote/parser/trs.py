@@ -33,7 +33,7 @@ try:
 except:
     pass
 
-from pyannote.base.segment import Segment, SEGMENT_PRECISION
+from pyannote.base.segment import Segment
 from base import BaseAnnotationParser
 
 
@@ -76,9 +76,11 @@ class TRSParser(BaseAnnotationParser):
 
     def read(self, path, uri=None, **kwargs):
 
+
         # objectify xml file and get root
         root = objectify.parse(path).getroot()
 
+        # if uri is not provided, infer (part of) it from .trs file
         if uri is None:
             uri = root.get('audio_filename')
 
@@ -89,55 +91,60 @@ class TRSParser(BaseAnnotationParser):
             name[speaker.get('id')] = speaker.get('name')
             gender[speaker.get('id')] = speaker.get('type')
 
-        # incomplete segments
-        # ie without an actual end time
-        self._incomplete = []
+        # # incomplete segments
+        # # ie without an actual end time
+        # self._incomplete = []
+
+        # speech turn number
+        track = 0
 
         for section in root.Episode.iterchildren():
 
-            # transcription status
+            # transcription status (report or nontrans)
             section_start = float(section.get('startTime'))
             section_end = float(section.get('endTime'))
             section_segment = Segment(start=section_start, end=section_end)
             label = section.get('type')
             self._add(section_segment, None, label, uri, 'status')
 
-            # sync
-            self._sync = section_start
-            self._complete()
+            # # sync
+            # self._sync = section_start
+            # self._complete()
 
             for turn in section.iterchildren():
 
+                # get speech turn start/end time
                 turn_start = float(turn.get('startTime'))
                 turn_end = float(turn.get('endTime'))
                 turn_segment = Segment(start=turn_start, end=turn_end)
 
                 labels = self._parse_speakers(turn)
                 for label in labels:
-                    self._add(turn_segment, None, name[label], uri, 'speaker')
+                    self._add(turn_segment, track, name[label], uri, 'speaker')
+                    track = track + 1
 
-                self._sync = turn_start
-                self._complete()
+                # self._sync = turn_start
+                # self._complete()
 
-                for element in turn.iterchildren():
+                # for element in turn.iterchildren():
 
-                    if element.tag == 'Sync':
-                        self._sync = float(element.get('time'))
-                        self._complete()
+                #     if element.tag == 'Sync':
+                #         self._sync = float(element.get('time'))
+                #         self._complete()
 
-                    element_segment = Segment(
-                        start=self._sync,
-                        end=self._sync+2*SEGMENT_PRECISION)
-                    self._incomplete.append(element_segment)
-                    labels = self._parse_spoken(element)
-                    for label in labels:
-                        self._add(element_segment, None, label, uri, 'spoken')
+                #     element_segment = Segment(
+                #         start=self._sync,
+                #         end=self._sync+2*SEGMENT_PRECISION)
+                #     self._incomplete.append(element_segment)
+                #     labels = self._parse_spoken(element)
+                #     for label in labels:
+                #         self._add(element_segment, None, label, uri, 'spoken')
 
-                self._sync = turn_end
-                self._complete()
+                # self._sync = turn_end
+                # self._complete()
 
-            self._sync = section_end
-            self._complete()
+            # self._sync = section_end
+            # self._complete()
 
         return self
 
