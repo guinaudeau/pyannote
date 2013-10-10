@@ -43,6 +43,8 @@ class SRTParser(BaseTimelineParser):
 
     def read(self, path, uri=None, **kwargs):
 
+        self.reset()
+
         items = pysrt.SubRipFile.open(path, encoding='utf8')
         for item in items:
 
