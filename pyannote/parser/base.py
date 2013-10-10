@@ -25,7 +25,7 @@ from pyannote.base.segment import Segment
 from pyannote.base.timeline import Timeline
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.base.scores import Scores
-from pyannote.base.feature import PeriodicPrecomputedFeature
+from pyannote.base.feature import SlidingWindowFeature
 from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
 
 
@@ -710,7 +710,7 @@ class BasePeriodicFeatureParser(object):
 
         Returns
         -------
-        feature : :class:`pyannote.base.feature.PeriodicPrecomputedFeature`
+        feature : :class:`pyannote.base.feature.SlidingWindowFeature`
 
 
         """
@@ -727,8 +727,8 @@ class BasePeriodicFeatureParser(object):
             uri = str(path)
 
         # create feature object
-        feature = PeriodicPrecomputedFeature(data, sliding_window,
-                                             uri=uri)
+        feature = SlidingWindowFeature(data, sliding_window)
+
         # close binary file
         fp.close()
 
