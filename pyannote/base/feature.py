@@ -321,6 +321,9 @@ class SlidingWindowFeature(object):
         """Dimension of feature vectors"""
         return self.data.shape[1]
 
+    def getExtent(self):
+        return self.sliding_window.rangeToSegment(0, self.getNumber())
+
     def __getitem__(self, i):
         """Get ith feature vector"""
         return self.data[i]
@@ -355,16 +358,24 @@ class SlidingWindowFeature(object):
             (nSamples, nFeatures) numpy array
         """
 
+        n = self.getNumber()
+
         if isinstance(focus, Segment):
             firstFrame, frameNumber = self.sliding_window.segmentToRange(focus)
-            indices = range(firstFrame, firstFrame + frameNumber)
+            indices = range(
+                min(n, max(0, firstFrame)),
+                min(n, max(0, firstFrame+frameNumber))
+            )
 
         if isinstance(focus, Timeline):
             indices = []
             for segment in focus.coverage():
                 firstFrame, frameNumber = self.sliding_window.segmentToRange(
                     segment)
-                indices += range(firstFrame, firstFrame + frameNumber)
+                indices += range(
+                    min(n, max(0, firstFrame)),
+                    min(n, max(0, firstFrame+frameNumber))
+                )
 
         return np.take(self.data, indices, axis=0, out=None, mode='clip')
 
