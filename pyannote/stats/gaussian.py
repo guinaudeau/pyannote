@@ -144,3 +144,12 @@ class Gaussian(object):
 
         # return delta bic & merged gaussian
         return delta_bic, g
+
+    def divergence(self, g):
+        """
+        Gaussian divergence
+        """
+        dmean = self.mean - g.mean
+        return np.float(
+            dmean.dot(np.sqrt(self.inv_covar * g.inv_covar)).dot(dmean.T)
+        )
