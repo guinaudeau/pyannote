@@ -402,12 +402,13 @@ class SlidingWindow(object):
         # start -= .5 * self.step
         start = self.__start + (i0-.5)*self.__step + .5*self.__duration
         duration = n*self.__step
+        end = start+duration
 
         # extend segment to the beginning of the timeline
         if i0 == 0:
             start = self.start
 
-        return Segment(start, start+duration)
+        return Segment(start, end)
 
     def __getitem__(self, i):
         """
