@@ -212,7 +212,7 @@ class ArgMaxDirectTagger(BaseTagger):
             # tag N tracks with those N labels
 
             # find largest number of simultaneous tracks (n_tracks)
-            n_tracks = max([len(t.tracks(s)) for s in t])
+            n_tracks = max([len(t.get_tracks(s)) for s in t.itersegments()])
 
             # find n_tracks labels with greatest intersection duration
             # and add them to the segment
