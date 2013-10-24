@@ -19,12 +19,13 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 import uem
-
+import srt
 
 class TimelineParser(object):
 
     supported = {
         '.uem': uem.UEMParser,
+        '.srt': srt.SRTParser,
     }
 
     def __guess(self, extension):
