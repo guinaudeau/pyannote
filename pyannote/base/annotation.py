@@ -113,7 +113,7 @@ class Annotation(object):
     def __init__(self, uri=None, modality=None):
         super(Annotation, self).__init__()
 
-        self.uri = uri
+        self._uri = uri
         self.modality = modality
 
         # sorted dictionary
@@ -128,7 +128,20 @@ class Annotation(object):
         self._labels = {}
         self._labelNeedsUpdate = {}
 
+        # timeline meant to store all annotated segments
+        self._timeline = Timeline(uri=uri)
         self._timelineNeedsUpdate = True
+
+    def _get_uri(self):
+        return self._uri
+
+    def _set_uri(self, uri):
+        # update uri for all internal timelines
+        for _, timeline in self._labels.iteritems():
+            timeline.uri = uri
+        self._uri = uri
+
+    uri = property(_get_uri, fset=_set_uri, doc="Resource identifier")
 
     def _updateLabels(self):
 
@@ -595,6 +608,9 @@ class Annotation(object):
             Timeline made of all segments annotated with `label`
 
         """
+        if label not in self.labels():
+            return Timeline(uri=self.uri)
+
         if self._labelNeedsUpdate[label]:
             self._updateLabels()
 
@@ -611,9 +627,26 @@ class Annotation(object):
         return self._labels[label]
 
     def label_coverage(self, label):
+        """
+
+        Parameters
+        ----------
+        label :
+
+        Returns
+        -------
+
+        """
+        if label not in self.labels():
+            return Timeline(uri=self.uri)
+
         return self.label_timeline(label).coverage()
 
     def label_duration(self, label):
+
+        if label not in self.labels():
+            return 0.
+
         return self.label_timeline(label).duration()
 
     def label_chart(self, percent=False):
