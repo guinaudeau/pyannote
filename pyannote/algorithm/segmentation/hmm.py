@@ -23,6 +23,7 @@ from sklearn.mixture import GMM
 from sklearn.hmm import GMMHMM
 from pyannote import Segment, Annotation
 from joblib import Parallel, delayed
+from scipy.ndimage.filters import median_filter
 
 
 # this function is defined here in order to be able
@@ -63,18 +64,24 @@ class HMMSegmentation(object):
         Number of gaussians per HMM state (default is 1).
     covariance_type : {'diag', 'full'}
         Type of gaussian covariance matrices
+    min_duration : float, optional
+        Filter out segments shorter than `min_duration` seconds
     n_jobs : int
         Number of parallel jobs for GMM estimation
         (default is all available cores)
 
     """
 
-    def __init__(self, n_components=1, covariance_type='diag', n_jobs=1):
+    def __init__(
+        self, n_components=1, covariance_type='diag',
+        min_duration=None, n_jobs=-1
+    ):
 
         super(HMMSegmentation, self).__init__()
         self.n_components = n_components
         self.covariance_type = covariance_type
         self.n_jobs = n_jobs
+        self.min_duration = min_duration
 
     def fit(self, annotation_and_feature_iterable):
         """Train HMM segmentation
@@ -136,6 +143,11 @@ class HMMSegmentation(object):
 
         # predict state sequences
         sequence = self.hmm.predict(features.data)
+
+        if self.min_duration:
+            dummy = Segment(0, self.min_duration)
+            _, n = features.sliding_window.segmentToRange(dummy)
+            sequence = median_filter(sequence, size=2*n+1)
 
         # start initial segment
         start = 0
