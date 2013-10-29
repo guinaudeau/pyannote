@@ -22,16 +22,227 @@ import numpy as np
 import sklearn
 from sklearn.mixture import GMM
 from joblib import Parallel, delayed
-from pyannote import Scores
+from pyannote import Scores, Unknown
 import itertools
+import scipy.misc
 
 
-class UBM(GMM):
+class LBG_GMM(GMM):
+    """
 
-    def adapt(self, X, params='m'):
+    Parameters
+    ----------
+    n_components : int, optional
+        Number of mixture components. Defaults to 1.
+
+    covariance_type : string, optional
+        String describing the type of covariance parameters to
+        use.  Must be one of 'spherical', 'tied', 'diag', 'full'.
+        Defaults to 'diag' (the only one supported for now...)
+
+    random_state: RandomState or an int seed (0 by default)
+        A random number generator instance
+
+    min_covar : float, optional
+        Floor on the diagonal of the covariance matrix to prevent
+        overfitting.  Defaults to 1e-3.
+
+    thresh : float, optional
+        Convergence threshold. Defaults to 1e-2.
+
+    n_iter : int, optional
+        Number of EM iterations per split. Defaults to 10.
+
+    sampling : int, optional
+        Reduce the number of samples used for the initialization steps to
+        `sampling` samples per component. A few hundreds samples per component
+        should be a reasonable rule of thumb.
+        The final estimation steps always use the whole sample set.
+
+    disturb : float, optional
+        Weight applied to variance when splitting Gaussians. Defaults to 0.05.
+        mu+ = mu + disturb * sqrt(var)
+        mu- = mu - disturb * sqrt(var)
+
+    Attributes
+    ----------
+    `weights_` : array, shape (`n_components`,)
+        This attribute stores the mixing weights for each mixture component.
+
+    `means_` : array, shape (`n_components`, `n_features`)
+        Mean parameters for each mixture component.
+
+    `covars_` : array
+        Covariance parameters for each mixture component.  The shape
+        depends on `covariance_type`::
+
+            (n_components, n_features)             if 'spherical',
+            (n_features, n_features)               if 'tied',
+            (n_components, n_features)             if 'diag',
+            (n_components, n_features, n_features) if 'full'
+
+    `converged_` : bool
+        True when convergence was reached in fit(), False otherwise.
+
+    """
+
+    def __init__(self, n_components=1, covariance_type='diag',
+                 random_state=None, thresh=1e-2, min_covar=1e-3,
+                 n_iter=10, disturb=0.05, sampling=0):
+
+        if covariance_type != 'diag':
+            raise NotImplementedError(
+                'Only diagonal covariances are supported.')
+
+        super(LBG_GMM, self).__init__(
+            n_components=n_components, covariance_type=covariance_type,
+            random_state=random_state, thresh=thresh, min_covar=min_covar,
+            n_iter=n_iter, n_init=1, params='wmc', init_params='')
+
+        self.disturb = disturb
+        self.sampling = sampling
+
+    def _subsample(self, X, n_components):
+        """Down-sample data points according to current number of components
+
+        Successive calls will return different sample sets, based on the
+        internal _counter which is incremented after each call.
+
+        Parameters
+        ----------
+        X : array_like, shape (N, n_features)
+            List of n_features-dimensional data points.  Each row
+            corresponds to a single data point.
+
+        Returns
+        -------
+        x : array_like, shape (n < N, n_features)
+            Subset of X, with n close to n_components x sampling
         """
-        Create a new GMM adapted from UBM with the
-        expectation-maximization algorithm
+
+        x = X
+        step = len(X) / (self.sampling * n_components)
+        if step >= 2:
+            x = X[(self._counter % step)::step]
+            self._counter += 1
+        return x
+
+    def _split(self, gmm, n_components):
+        """Split gaussians and return new mixture.
+
+        Parameters
+        ----------
+        gmm : sklearn.mixture.GMM
+        n_components : int
+            Number of components in new mixture with the following constraint:
+            gmm.n_components < n_components <= 2 x gmm.n_components
+
+        Returns
+        -------
+        new_gmm : sklearn.mixture.GMM
+            New mixture with n_components components.
+
+        """
+
+        # TODO: sort gmm components in importance order so that the most
+        # important ones are the one actually split...
+
+        new_gmm = GMM(n_components=n_components,
+                      covariance_type=self.covariance_type,
+                      random_state=self.random_state,
+                      thresh=self.thresh,
+                      min_covar=self.min_covar,
+                      n_iter=1,
+                      params=self.params,
+                      n_init=self.n_init,
+                      init_params='')
+
+        # number of new components to be added
+        k = n_components - gmm.n_components
+
+        # split weights
+        new_gmm.weights_[:k] = gmm.weights_[:k] / 2
+        new_gmm.weights_[k:2*k] = gmm.weights_[:k] / 2
+
+        # initialize means_ with new number of components
+        shape = list(gmm.means_.shape)
+        shape[0] = n_components
+        new_gmm.means_ = np.zeros(shape, dtype=gmm.means_.dtype)
+        # TODO: add support for other covariance_type
+        # TODO: for now it only supports 'diag'
+        noise = self.disturb * np.sqrt(gmm.covars_[:k, :])
+        new_gmm.means_[:k, :] = gmm.means_[:k, :] + noise
+        new_gmm.means_[k:2*k, :] = gmm.means_[:k, :] - noise
+
+        # initialize covars_ with new number of components
+        shape = list(gmm.covars_.shape)
+        shape[0] = n_components
+        new_gmm.covars_ = np.zeros(shape, dtype=gmm.covars_.dtype)
+        # TODO: add support for other covariance_type
+        # TODO: for now it only supports 'diag'
+        new_gmm.covars_[:k, :] = gmm.covars_[:k, :]
+        new_gmm.covars_[k:2*k, :] = gmm.covars_[:k, :]
+
+        # copy remaining unsplit gaussians
+        if k < gmm.n_components:
+            new_gmm.weights_[2*k:] = gmm.weights_[k:]
+            new_gmm.means_[2*k:, :] = gmm.means_[k:, :]
+            new_gmm.covars_[2*k:, :] = gmm.covars_[k:, :]
+
+        return new_gmm
+
+    def fit(self, X):
+        """Estimate model parameters with LBG initialization and
+        the expectation-maximization algorithm.
+
+        Parameters
+        ----------
+        X : array_like, shape (n, n_features)
+            List of n_features-dimensional data points.  Each row
+            corresponds to a single data point.
+        """
+
+        self._counter = 0
+
+        # init with one gaussian
+        gmm = GMM(n_components=1, covariance_type=self.covariance_type,
+                  random_state=self.random_state, thresh=self.thresh,
+                  min_covar=self.min_covar, n_iter=1,
+                  n_init=1, params=self.params,
+                  init_params='')
+
+        while gmm.n_components < self.n_components:
+
+            # fit GMM on a rolling subset of training data
+            if self.sampling > 0:
+                for i in range(self.n_iter):
+                    x = self._subsample(X, gmm.n_components)
+                    gmm.fit(x)
+            else:
+                gmm.n_iter = self.n_iter
+                gmm.fit(X)
+
+            # increase number of components (x 2)
+            n_components = min(self.n_components, 2*gmm.n_components)
+            gmm = self._split(gmm, n_components)
+
+        # final fit with all the data
+        gmm.n_iter = self.n_iter
+        gmm.fit(X)
+
+        # copy fitted parameters
+        self.weights_ = gmm.weights_
+        self.means_ = gmm.means_
+        self.covars_ = gmm.covars_
+        self.converged_ = gmm.converged_
+
+        return self
+
+    def adapt(self, X, params='m', n_iter=10):
+        """Adapt mixture to new data using the EM algorithm
+
+        This is an implementation of the Universal Background Model adaptation
+        technique usually applied in the speaker identification community.
 
         Parameters
         ----------
@@ -39,9 +250,11 @@ class UBM(GMM):
             List of n_features-dimensional data points.  Each row
             corresponds to a single data point.
         params : string, optional
-            Controls which parameters are updated in the adaptation
-            process.  Can contain any combination of 'w' for weights,
-           'm' for means, and 'c' for covars.  Defaults to 'm'.
+            Controls which parameters are adapted.  Can contain any combination
+            of 'w' for weights, 'm' for means, and 'c' for covars.
+            Defaults to 'm'.
+        n_iter : int, optional
+            Number of EM iterations to perform.
 
         Returns
         -------
@@ -54,7 +267,7 @@ class UBM(GMM):
         gmm = sklearn.clone(self)
 
         # DO NOT re-initialize weights, means and covariances
-        gmm.init_params = ""
+        gmm.init_params = ''
         gmm.weights_ = self.weights_
         gmm.means_ = self.means_
         gmm.covars_ = self.covars_
@@ -62,6 +275,7 @@ class UBM(GMM):
 
         # only adapt requested parameters
         gmm.params = params
+        gmm.n_iter = n_iter
         gmm.fit(X)
 
         return gmm
@@ -72,47 +286,55 @@ def _get_adapted_gmm(ubm, X, params):
 
 
 class GMMUBM(object):
-    """
+    """GMM/UBM speaker identification
 
     Parameters
     ----------
-    ubm : UBM, optional
-    n_components : int, optional
-    covariance_type : str, optional
+    ubm : LBG_GMM
+        Universal Background Model
+    targets : iterable, optional
+        When provided, targets contain the list of target to be recognized.
+        All other labels encountered during training are considered as unknown.
+    params : string, optional
+        Controls which parameters are adapted.  Can contain any combination
+        of 'w' for weights, 'm' for means, and 'c' for covars.
+        Defaults to 'm'.
+    n_iter : int, optional
+        Number of EM iterations to perform during adaptation.
     n_jobs : int, optional
         Number of parallel jobs for GMM adaptation
         (default is one core). Use -1 for all cores.
-    params : string, optional
-        Controls which parameters are updated in the adaptation
-        process.  Can contain any combination of 'w' for weights,
-       'm' for means, and 'c' for covars.  Defaults to 'm'.
     """
 
-    def __init__(
-        self, ubm=None, n_components=256, covariance_type='diag',
-        params='m', n_jobs=1
-    ):
+    def __init__(self, ubm, targets=None, params='m', n_iter=10, n_jobs=1):
+
         super(GMMUBM, self).__init__()
 
-        if ubm is None:
-            self.ubm = UBM(
-                n_components=n_components, covariance_type=covariance_type)
-        else:
-            self.ubm = ubm
-
+        self.ubm = ubm
         self.params = params
+        self.n_iter = n_iter
         self.n_jobs = n_jobs
+        self.targets = targets
 
     def fit(self, annotation_and_feature_iterable):
         """
+
+        Parameters
+        ----------
+        annotation_and_feature_iterable :
+            Annotation may contain `Unknown` instance labels.
         """
 
+        # == build training sets for each class
+
+        # set of classes
         classes = set()
 
-        # x[k] contains a list of features for class k
+        # list of features for each class
+        # k --> [ features, features, features, ]
         x = {}
 
-        # gather training data
+        # loop over training set
         for a, f in annotation_and_feature_iterable:
 
             # add previously unseen classes
@@ -120,58 +342,184 @@ class GMMUBM(object):
 
             # gather features for each class
             for k in classes:
+
+                # initialize list of features
+                # if class `k` was not seen before
                 if k not in x:
                     x[k] = []
-                x[k].append(f.crop(a.label_coverage(k)))
 
-        classes = sorted(classes)
+                # if class `k` is represented in current annotation
+                # and corresponding features
+                coverage = a.label_coverage(k)
+                if coverage:
+                    x[k].append(f.crop(coverage))
 
+        # concatenate features for each class
         for k in classes:
             x[k] = np.vstack(x[k])
-            print k, x[k].shape
 
-        if not self.ubm.converged_:
-            # gather balanced training data
-            # rule of thumb:
-            # 200 samples by gaussians equally split between all classes
-            # X = ...
-            # traing UBM
-            X = np.vstack(x.itervalues())
-            n = self.ubm.n_components * 200
-            N = len(X)
-            step = N / float(n)
-            self.ubm.fit(X[::step])
+        # == estimate priors
 
-        # adapt UBM for to each class
+        if self.targets is None:
+            self.targets_ = sorted([
+                k for k in classes if not isinstance(k, Unknown)])
+        else:
+            self.targets_ = sorted(
+                set(classes) & set(self.targets))
+
+        self.priors_ = {}
+        total = np.sum([len(x[k]) for k in classes])
+        unknown = 0
+        for k in classes:
+            if k in self.targets_:
+                self.priors_[k] = len(x[k]) / float(total)
+            else:
+                unknown += len(x[k])
+        self.priors_[Unknown] = unknown / float(total)
+
+        # == adapt UBM to training set for each class
+
+        # order classes for later use
+
+        # sequential adaptation
         if self.n_jobs == 1:
             gmms = [
-                _get_adapted_gmm(self.ubm, x[k], self.params)
-                for k in classes
+                self.ubm.adapt(x[k], params=self.params, n_iter=self.n_iter)
+                for k in self.targets_
             ]
+
+        # parallel adaptation
         else:
             gmms = Parallel(n_jobs=self.n_jobs, verbose=5)(
                 delayed(_get_adapted_gmm)(self.ubm, x[k], self.params)
-                for k in classes
+                for k in self.targets_
             )
 
-        self.gmms = {k: gmm for k, gmm in itertools.izip(classes, gmms)}
+        # save adapted GMMs to gmms_ attribute
+        self.gmms_ = {k: gmm for k, gmm in itertools.izip(self.targets_, gmms)}
 
         return self
 
     def scores(self, annotation, features):
+        """Compute GMM/UBM log-likelihood ratios
+
+        Parameters
+        ----------
+        annotation : pyannote.Annotation
+            Pre-computed segmentation.
+        features : pyannote.SlidingWindowFeature
+            Pre-computed features.
+
+        Returns
+        -------
+        scores : pyannote.Scores
+            For each (segment, track) in `annotation`, `scores` provides
+            the average GMM/UBM log-likelihood ratio for each class.
+
+        """
 
         s = Scores(uri=annotation.uri, modality=annotation.modality)
 
         # UBM log-likelihood
         ubm_ll = self.ubm.score(features.data)
 
-        for k, gmm in self.gmms.iteritems():
+        # TODO: restriction to top-scoring UBM gaussians
 
+        # compute GMM/UBM log-likelihood ratio for each class
+        for k in self.targets_:
+
+            gmm = self.gmms_[k]
+
+            # compute log-likelihood for all data points
+            # even if they do not correspond to any track
+            # TODO: would it really be faster to focus only on track features?
             gmm_ll = gmm.score(features.data)
+
+            # compute log-likelihood ratio
             llr = gmm_ll - ubm_ll
 
+            # average log-likelihood ratio over the duration of each track
             for segment, track in annotation.itertracks():
+
                 i0, n = features.sliding_window.segmentToRange(segment)
                 s[segment, track, k] = np.mean(llr[i0:i0+n])
 
         return s
+
+    def predict_proba(self, annotation, features, equal_priors=False):
+        """Compute posterior probabilities
+
+        Parameters
+        ----------
+        annotation : pyannote.Annotation
+            Pre-computed segmentation.
+        features : pyannote.SlidingWindowFeature
+            Pre-computed features.
+        equal_priors : bool, optional
+            If True, set equal priors to targets.
+            Defaults to False (i.e. use learned priors)
+
+        Returns
+        -------
+        probs : pyannote.Scores
+            For each (segment, track) in `annotation`, `scores` provides
+            the posterior probability for each class.
+
+        """
+
+        # get raw log-likelihood ratio
+        scores = self.scores(annotation, features)
+
+        # get ordered target priors
+        if equal_priors:
+            n = len(self.targets_)
+            p = self.priors_[Unknown]
+            priors = (1-p) * np.ones(n) / n
+        else:
+            priors = np.array([self.priors_[t] for t in self.targets_])
+
+        # initialize empty structure to store posterior probabilities
+        probs = Scores(uri=annotation.uri, modality=annotation.modality)
+
+        # process each track separately
+        for segment, track in scores.itertracks():
+
+            # get all scores for current track
+            s = scores.get_track_scores(segment, track)
+
+            # compute denominator of posterior probability formula
+            llr = [s[t] for t in self.targets_]
+            D = (
+                self.priors_[Unknown] +
+                np.exp(scipy.misc.logsumexp(llr, b=priors))
+            )
+
+            # compute posterior probability for each target
+            for t, p in itertools.izip(self.targets_, priors):
+                probs[segment, track, t] = p * np.exp(s[t]) / D
+
+        return probs
+
+    def predict(self, annotation, features, equal_priors=False):
+        """Predict label of each track (open-set speaker identification)
+
+        Parameters
+        ----------
+        annotation : pyannote.Annotation
+            Pre-computed segmentation.
+        features : pyannote.SlidingWindowFeature
+            Pre-computed features.
+        equal_priors : bool, optional
+            If True, set equal priors to targets.
+            Defaults to False (i.e. use learned priors)
+
+        Returns
+        -------
+        prediction : pyannote.Annotation
+            Copy of `annotation` with predicted labels (or Unknown).
+
+        """
+
+        probs = self.predict_proba(
+            annotation, features, equal_priors=equal_priors)
+        return probs.to_annotation(posterior=True)
