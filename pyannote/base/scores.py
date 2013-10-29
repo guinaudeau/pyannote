@@ -543,7 +543,6 @@ class Scores(AnnotationMixin, object):
 
         return A
 
-
     def to_annotation(self, threshold=-np.inf, posterior=False):
         """
 
@@ -554,9 +553,10 @@ class Scores(AnnotationMixin, object):
             Yet, if the latter is smaller than `threshold`, label is replaced
             with an `Unknown` instance.
         posterior : bool, optional
-            If True, scores are posterior probabilities in open-set identification.
-            If top model posterior is higher than unknown posterior, it is selected.
-            Otherwise, label is replaced with an `Unknown` instance.
+            If True, scores are posterior probabilities in open-set
+            identification. If top model posterior is higher than unknown
+            posterior, it is selected. Otherwise, label is replaced with an
+            `Unknown` instance.
         """
 
         A = Annotation(uri=self.uri, modality=self.modality)
@@ -564,6 +564,7 @@ class Scores(AnnotationMixin, object):
             return A
 
         if posterior:
+
             best = self.nbest(1, invert=False)
             for segment, track in self.itertracks():
                 all_scores = self.get_track_scores(segment, track)
