@@ -189,7 +189,8 @@ class PeriodicPrecomputedFeature(BasePrecomputedSegmentFeature):
     Parameters
     ----------
     data : numpy array
-        Feature vectors stored in such a way that data[i] is ith feature vector.
+        Feature vectors stored in such a way that data[i] is
+        ith feature vector.
     sliding_window : :class:`SlidingWindow`
         Sliding window. Its length must correspond to `data` length
         (or it can be infinite -- ie. sliding_window.end = None)
