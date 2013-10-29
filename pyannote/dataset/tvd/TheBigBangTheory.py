@@ -20,6 +20,7 @@
 
 
 from pyannote.dataset.tvd import TVD, Season
+from pyannote import Unknown
 
 
 class TheBigBangTheory(TVD):
@@ -57,6 +58,10 @@ class TheBigBangTheory(TVD):
 
     def get_reference_speaker_identification(self, episode):
 
+        # load raw manual audio annotation
         kit = self.get_annotation(episode, 'KIT_sid_manual', 'mdtm')
-
-        return kit.subset(set(self.MANUAL_MAIN_CHAR + self.MANUAL_OTHR_CHAR))
+        # only keep speaker-related labels (5 mains characters + other)
+        kit = kit.subset(set(self.MANUAL_MAIN_CHAR + self.MANUAL_OTHR_CHAR))
+        # rename other to Unknown
+        kit = kit % {'other': Unknown()}
+        return kit
