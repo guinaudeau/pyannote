@@ -269,7 +269,7 @@ class LBG_GMM(GMM):
             n_components=self.n_components,
             covariance_type=self.covariance_type,
             params=params, n_iter=10,  # only adapt requested parameters
-            n_init=0, init_params='',  # initialize with UBM attributes
+            n_init=1, init_params='',  # initialize with UBM attributes
             random_state=self.random_state,
             thresh=self.thresh, min_covar=self.min_covar,
         )
