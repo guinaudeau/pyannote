@@ -265,17 +265,21 @@ class LBG_GMM(GMM):
 
         # copy UBM parameters
         gmm = sklearn.clone(self)
+        gmm = GMM(
+            n_components=self.n_components,
+            covariance_type=self.covariance_type,
+            params=params, n_iter=10,  # only adapt requested parameters
+            n_init=0, init_params='',  # initialize with UBM attributes
+            random_state=self.random_state,
+            thresh=self.thresh, min_covar=self.min_covar,
+        )
 
-        # DO NOT re-initialize weights, means and covariances
-        gmm.init_params = ''
+        # initialize with UBM attributes
         gmm.weights_ = self.weights_
         gmm.means_ = self.means_
         gmm.covars_ = self.covars_
-        gmm.converged_ = self.converged_
 
-        # only adapt requested parameters
-        gmm.params = params
-        gmm.n_iter = n_iter
+        # adaptation
         gmm.fit(X)
 
         return gmm
