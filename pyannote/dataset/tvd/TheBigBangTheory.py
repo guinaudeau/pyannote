@@ -27,16 +27,16 @@ class TheBigBangTheory(TVD):
 
     SERIES = 'TheBigBangTheory'
 
+    # ==== Labels provided by KIT manual annotations =========
     # Main characters
     MANUAL_MAIN_CHAR = [
         'leonard', 'sheldon', 'penny', 'howard', 'raj']
-
     # Other characters
     MANUAL_OTHR_CHAR = ['other']
-
-    # Other labels
+    # Other audio labels
     MANUAL_OTHR_LBLS = [
         'laugh', 'sil', 'titlesong', 'ns', 'laughclap', 'mix']
+    # ========================================================
 
     def __init__(self, tvd_dir=None):
         super(TheBigBangTheory, self).__init__(tvd_dir=tvd_dir)
@@ -45,6 +45,19 @@ class TheBigBangTheory(TVD):
         return Season(self.__class__.__name__, season)
 
     def get_reference_speech_nonspeech(self, episode, language=None):
+        """Get reference (manual, KIT) speech activity detection
+
+        Parameters
+        ----------
+        episode : pyannote.dataset.tvd.Episode
+        language : str, optional, not supported
+
+        Returns
+        -------
+        sad : Annotation
+            Speech activity detection. Contains 2 labels
+            ('speech' and 'non_speech')
+        """
 
         kit = self.get_annotation(episode, 'KIT_sid_manual', 'mdtm')
 
@@ -56,7 +69,20 @@ class TheBigBangTheory(TVD):
 
         return kit % translation
 
-    def get_reference_speaker_identification(self, episode):
+    def get_reference_speaker_identification(self, episode, language=None):
+        """Get reference (manual, KIT) speaker identification
+
+        Parameters
+        ----------
+        episode : pyannote.dataset.tvd.Episode
+        language : str, optional, not supported
+
+        Returns
+        -------
+        sid : Annotation
+            Annotated speech turns. Contains 6 different labels
+            (5 main characters + one Unknown instance for all other characters)
+        """
 
         # load raw manual audio annotation
         kit = self.get_annotation(episode, 'KIT_sid_manual', 'mdtm')
@@ -65,3 +91,19 @@ class TheBigBangTheory(TVD):
         # rename other to Unknown
         kit = kit % {'other': Unknown()}
         return kit
+
+    def get_reference_speaker_segmentation(self, episode, language=None):
+        """Get reference (manual, KIT) speech turn segmentation
+
+        Parameters
+        ----------
+        episode : pyannote.dataset.tvd.Episode
+        language : str, optional, not supported
+
+        Returns
+        -------
+        segmentation : Annotation
+            Speech turns with one Unknown instance label per track.
+        """
+        sid = self.get_reference_speaker_identification(episode)
+        return sid.anonymize_tracks()
