@@ -45,7 +45,7 @@ setup(
     #           'pyannote.parser.nist'],
     install_requires=[
         'numpy >=1.7.1',
-        'scipy >=0.12.0',
+        'scipy >=0.13.0',
         'banyan >=0.1.5',
         'pandas >=0.12.0',
         'munkres >=1.0.5.4',
