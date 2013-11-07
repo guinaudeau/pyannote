@@ -139,13 +139,41 @@ class TVD(object):
 
         return timeline
 
-    def get_episode_extent_from_wav(self, episode):
+    def get_wav(self, episode, language=None):
+        """Get path to .wav file
+
+        Parameters
+        ----------
+        episode : Episode
+        language : str, optional
+            Defaults to series original language.
+
+        Returns
+        -------
+        path : str
+            Path to .wav file
+        """
 
         series = episode.series
-        language = DATASET[series]['language']
+        if language is None:
+            language = DATASET[series]['language']
         filename = '%s.%s.wav' % (str(episode), language)
 
-        wav = os.path.join(self.tvd_dir, series, 'wav', filename)
+        return os.path.join(self.tvd_dir, series, 'wav', filename)
+
+    def get_episode_extent_from_wav(self, episode):
+        """Get episode duration from .wav file
+
+        Parameters
+        ----------
+        episode : Episode
+
+        Returns
+        -------
+        extent : Segment
+            Episode extent [0, duration] in seconds.
+        """
+        wav = self.get_wav(episode)
 
         with contextlib.closing(wave.open(wav, 'r')) as f:
             frames = f.getnframes()
@@ -155,17 +183,20 @@ class TVD(object):
         return extent
 
     def get_features_from_wav(self, featureExtractor, episode, language=None):
+        """Apply feature extraction on .wav file
 
-        series = episode.series
-        if language is None:
-            language = DATASET[series]['language']
-        filename = '%s.%s.wav' % (str(episode), language)
-
-        wav = os.path.join(self.tvd_dir, series, 'wav', filename)
-
+        Parameters
+        ----------
+        featureExtractor :
+        episode : Episode
+        language : str, optional
+            Defaults to series original language.
+        """
+        wav = self.get_wav(episode, language=language)
         return featureExtractor.extract(wav)
 
     def get_subtitles_speech_nonspeech(self, episode, language=None):
+        """"""
 
         series = episode.series
 
