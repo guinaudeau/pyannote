@@ -55,10 +55,10 @@ class Unknown(object):
     def __init__(self, format='Inconnu_%05d'):
         super(Unknown, self).__init__()
         self.ID = Unknown.next()
-        self.format = format
+        self._format = format
 
     def __str__(self):
-        return self.format % self.ID
+        return self._format % self.ID
 
     def __repr__(self):
         return str(self)
