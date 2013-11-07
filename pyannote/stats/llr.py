@@ -167,3 +167,22 @@ class LLRLinearRegression(LLR):
             Log-likelihood ratio array with same shape as input `scores`
         """
         return self.lr.transform(scores)
+
+
+def logsumexp(a, b=None, axis=0):
+    """{Over|under}flow-robust computation of log(sum(b*exp(a)))
+
+    Parameters
+    ----------
+    a : numpy array
+    b :
+    """
+    a = np.rollaxis(a, axis)
+    vmax = np.nanmax(a, axis=0)
+    if b is None:
+        out = np.log(np.sum(np.exp(a - vmax), axis=0))
+    else:
+        b = np.atleast_2d(b).T
+        out = np.log(np.sum(b * np.exp(a - vmax), axis=0))
+    out += vmax
+    return out
