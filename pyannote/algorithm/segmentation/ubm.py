@@ -22,9 +22,9 @@ import numpy as np
 import sklearn
 from sklearn.mixture import GMM
 from joblib import Parallel, delayed
-from pyannote import Scores, Unknown
+from pyannote import Timeline, Annotation, Scores, Unknown
+from pyannote.stats.llr import logsumexp
 import itertools
-import scipy.misc
 
 
 class LBG_GMM(GMM):
@@ -310,7 +310,9 @@ class GMMUBM(object):
         (default is one core). Use -1 for all cores.
     """
 
-    def __init__(self, ubm, targets=None, params='m', n_iter=10, n_jobs=1):
+    def __init__(
+        self, ubm, targets=None, params='m', n_iter=10, n_jobs=1
+    ):
 
         super(GMMUBM, self).__init__()
 
@@ -404,12 +406,12 @@ class GMMUBM(object):
 
         return self
 
-    def scores(self, annotation, features):
+    def scores(self, segmentation, features):
         """Compute GMM/UBM log-likelihood ratios
 
         Parameters
         ----------
-        annotation : pyannote.Annotation
+        segmentation : Timeline or Annotation
             Pre-computed segmentation.
         features : pyannote.SlidingWindowFeature
             Pre-computed features.
@@ -417,12 +419,22 @@ class GMMUBM(object):
         Returns
         -------
         scores : pyannote.Scores
-            For each (segment, track) in `annotation`, `scores` provides
+            For each (segment, track) in `segmentation`, `scores` provides
             the average GMM/UBM log-likelihood ratio for each class.
 
         """
 
-        s = Scores(uri=annotation.uri, modality=annotation.modality)
+        # replace input timeline by annotation with
+        # one track per segment and one label per track
+        if isinstance(segmentation, Timeline):
+            scores = Scores(uri=segmentation.uri)
+            _segmentation = Annotation(uri=segmentation.uri, modality=None)
+            for s in segmentation:
+                _segmentation[s, '_'] = Unknown()
+            segmentation = _segmentation
+
+        # create empty scores to hold all scores
+        scores = Scores(uri=segmentation.uri, modality=segmentation.modality)
 
         # UBM log-likelihood
         ubm_ll = self.ubm.score(features.data)
@@ -442,13 +454,23 @@ class GMMUBM(object):
             # compute log-likelihood ratio
             llr = gmm_ll - ubm_ll
 
+            # TODO: segment-wise or cluster-wise scoring
+
             # average log-likelihood ratio over the duration of each track
-            for segment, track in annotation.itertracks():
+            for segment, track in segmentation.itertracks():
 
                 i0, n = features.sliding_window.segmentToRange(segment)
-                s[segment, track, k] = np.mean(llr[i0:i0+n])
+                scores[segment, track, k] = np.mean(llr[i0:i0+n])
 
-        return s
+        return scores
+
+    def _llr2posterior(self, llr, priors, unknown_prior):
+        denominator = (
+            unknown_prior +
+            np.exp(logsumexp(llr, b=priors, axis=1))
+        )
+        posteriors = ((priors * np.exp(llr)).T / denominator).T
+        return posteriors
 
     def predict_proba(self, annotation, features, equal_priors=False):
         """Compute posterior probabilities
@@ -474,35 +496,18 @@ class GMMUBM(object):
         # get raw log-likelihood ratio
         scores = self.scores(annotation, features)
 
+        unknown_prior = self.priors_[Unknown]
+
         # get ordered target priors
         if equal_priors:
             n = len(self.targets_)
-            p = self.priors_[Unknown]
-            priors = (1-p) * np.ones(n) / n
+            priors = (1-unknown_prior) * np.ones(n) / n
         else:
             priors = np.array([self.priors_[t] for t in self.targets_])
 
-        # initialize empty structure to store posterior probabilities
-        probs = Scores(uri=annotation.uri, modality=annotation.modality)
-
-        # process each track separately
-        for segment, track in scores.itertracks():
-
-            # get all scores for current track
-            s = scores.get_track_scores(segment, track)
-
-            # compute denominator of posterior probability formula
-            llr = [s[t] for t in self.targets_]
-            D = (
-                self.priors_[Unknown] +
-                np.exp(scipy.misc.logsumexp(llr, b=priors))
-            )
-
-            # compute posterior probability for each target
-            for t, p in itertools.izip(self.targets_, priors):
-                probs[segment, track, t] = p * np.exp(s[t]) / D
-
-        return probs
+        # compute posterior from LLR directly on the internal numpy array
+        func = lambda llr: self._llr2posterior(llr, priors, unknown_prior)
+        return scores.apply(func)
 
     def predict(self, annotation, features, equal_priors=False):
         """Predict label of each track (open-set speaker identification)
