@@ -559,30 +559,36 @@ class Scores(AnnotationMixin, object):
             `Unknown` instance.
         """
 
-        A = Annotation(uri=self.uri, modality=self.modality)
+        annotation = Annotation(uri=self.uri, modality=self.modality)
         if not self:
-            return A
+            return annotation
+
+        best = self.nbest(1, invert=False)
 
         if posterior:
 
-            best = self.nbest(1, invert=False)
-            for segment, track in self.itertracks():
-                all_scores = self.get_track_scores(segment, track)
-                Pu = 1.-np.sum([v for l,v in all_scores.iteritems() if not np.isnan(v)])
-                best_scores = best.get_track_scores(segment, track)
-                label, Pid = [(l,v) for l,v in best_scores.iteritems() if not np.isnan(v)][0]
-                if Pid > Pu:
-                    A[segment, track] = label
-                else:
-                    A[segment, track] = Unknown()
+            # compute unknown posterior
+            func = lambda p: 1. - np.nansum(p, axis=1)
+            Pu = self.apply(func, new_columns=['_'])
+
+            # threshold best target posterior
+            # with unknown posterior and threshold
+            for segment, track, label, value in best.itervalues():
+
+                if value < Pu[segment, track, '_'] or value < threshold:
+                    label = Unknown()
+
+                annotation[segment, track] = label
+
         else:
-            best = self.nbest(1, invert=False)
+
+            # threshold best target score with threshold
             for segment, track, label, value in best.itervalues():
                 if value < threshold:
                     label = Unknown()
-                A[segment, track] = label
+                annotation[segment, track] = label
 
-        return A
+        return annotation
 
     def map(self, func):
         """Apply function to all values"""
@@ -590,8 +596,37 @@ class Scores(AnnotationMixin, object):
         A._df = func(self._df)
         return A
 
+    def apply(self, data_func, new_index=None, new_columns=None):
+        """Apply `data_func` on internal numpy array
+
+        Parameters
+        ----------
+        data_func : func
+            Function expecting (index x columns) numpy array as input
+        new_index : iterable, optional
+            When provided, these will be the index of returned array.
+        new_columns : iterable, optional
+            When provided, these will be the columns of returned array.
+        """
+        new_data = data_func(self._df.values)
+
+        if new_index is None:
+            new_index = self._df.index
+
+        if new_columns is None:
+            new_columns = self._df.columns
+
+        df = DataFrame(
+            data=new_data,
+            index=new_index,
+            columns=new_columns)
+
+        new_scores = self.__class__(uri=self.uri, modality=self.modality)
+        new_scores._df = df
+
+        return new_scores
+
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
