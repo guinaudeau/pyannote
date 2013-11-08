@@ -24,6 +24,7 @@ from sklearn.hmm import GMMHMM
 from pyannote import Segment, Annotation
 from joblib import Parallel, delayed
 from scipy.ndimage.filters import median_filter
+import itertools
 
 
 # this function is defined here in order to be able
@@ -83,17 +84,17 @@ class HMMSegmentation(object):
         self.n_jobs = n_jobs
         self.min_duration = min_duration
 
-    def fit(self, annotation_and_feature_iterable):
+    def fit(self, reference, features):
         """Train HMM segmentation
 
         The resulting HMM will contain one state per labels in training set.
 
         Parameters
         ----------
-        annotation_and_feature_iterable : iterable -> [(a1, f1), (a2, f2), ...]
-            Yield a list of (a, f) pairs where `a` is an `Annotation` whose
-            labels will be HMM states and `f` is the associated `Features`.
-
+        reference : `Annotation` generator
+            Generates annotations whose labels will be HMM states
+        features : `Feature` generator
+            Generates features synchronized with `reference`
         """
 
         K = set()
@@ -105,7 +106,7 @@ class HMMSegmentation(object):
         X = []
 
         # gather training data
-        for a, f in annotation_and_feature_iterable:
+        for a, f in itertools.izip(reference, features):
 
             # keep track of utterance
             X.append(f.data)
@@ -127,7 +128,7 @@ class HMMSegmentation(object):
                 np.vstack(x[k]), self.n_components, self.covariance_type)
                 for k in self.states]
         else:
-            self.gmms = Parallel(n_jobs=self.n_jobs, verbose=5)(
+            self.gmms = Parallel(n_jobs=self.n_jobs, verbose=0)(
                 delayed(_gmm_helper)(
                     np.vstack(x[k]), self.n_components, self.covariance_type
                 ) for k in self.states
@@ -139,12 +140,26 @@ class HMMSegmentation(object):
         )
         self.hmm.fit(X)
 
+        return self
+
     def apply(self, features):
+        """
+        Parameters
+        ----------
+        features : SlidingWindowFeatures
+        """
 
         # predict state sequences
         sequence = self.hmm.predict(features.data)
 
+        # median filtering to get rid of short segments
         if self.min_duration:
+
+            if len(self.states) > 2:
+                raise NotImplementedError(
+                    'min_duration is not supported with more than 2 states.'
+                )
+
             dummy = Segment(0, self.min_duration)
             _, n = features.sliding_window.segmentToRange(dummy)
             sequence = median_filter(sequence, size=2*n+1)
