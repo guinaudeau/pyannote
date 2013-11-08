@@ -54,7 +54,70 @@ class YaafeFrame(SlidingWindow):
         )
 
 
-class YaafeMFCC(object):
+class YaafeFeatureExtractor(object):
+    """
+
+    Parameters
+    ----------
+    sample_rate : int, optional
+        Defaults to 16000 (i.e. 16kHz)
+    block_size : int, optional
+        Defaults to 512.
+    step_size : int, optional
+        Defaults to 256.
+
+    """
+
+    def __init__(
+        self, sample_rate=16000, block_size=512, step_size=256, **kwargs
+    ):
+
+        super(YaafeFeatureExtractor, self).__init__()
+
+        self.sample_rate = sample_rate
+        self.block_size = block_size
+        self.step_size = step_size
+
+        self.data_flow, self.stack = self.get_flow_and_stack(**kwargs)
+
+    def get_flow_and_stack(self, **kwargs):
+        raise NotImplementedError(
+            'data_flow method must be implemented'
+        )
+
+    def extract(self, wav):
+        """Extract features
+
+        Parameters
+        ----------
+        wav : string
+            Path to wav file.
+
+        Returns
+        -------
+        features : SlidingWindowFeature
+
+        """
+
+        engine = yaafelib.Engine()
+        engine.load(self.data_flow)
+
+        sample_rate, raw_audio = scipy.io.wavfile.read(wav)
+        assert sample_rate == self.sample_rate, "sample rate mismatch"
+
+        audio = np.array(raw_audio, dtype=np.float64, order='C').reshape(1, -1)
+
+        features = engine.processAudio(audio)
+        data = np.hstack([features[name] for name in self.stack])
+
+        sliding_window = YaafeFrame(
+            blockSize=self.block_size, stepSize=self.step_size,
+            sampleRate=self.sample_rate)
+
+        return SlidingWindowFeature(data, sliding_window)
+
+
+class YaafeMFCC(YaafeFeatureExtractor):
 
     """
         | e    |  energy
@@ -76,12 +139,14 @@ class YaafeMFCC(object):
 
     Parameters
     ----------
+
     sample_rate : int, optional
         Defaults to 16000 (i.e. 16kHz)
     block_size : int, optional
         Defaults to 512.
     step_size : int, optional
         Defaults to 256.
+
     e : bool, optional
         Energy. Defaults to True.
     coefs : int, optional
@@ -110,12 +175,18 @@ class YaafeMFCC(object):
         e=True, coefs=11, De=False, DDe=False, D=False, DD=False,
     ):
 
-        super(YaafeMFCC, self).__init__()
+        super(YaafeMFCC, self).__init__(
+            sample_rate=sample_rate,
+            block_size=block_size,
+            step_size=step_size,
+            e=e, coefs=coefs, De=De, DDe=DDe, D=D, DD=DD
+        )
 
-        self.sample_rate = sample_rate
-        self.block_size = block_size
-        self.step_size = step_size
+    def get_flow_and_stack(
+        self, e=True, coefs=11, De=False, DDe=False, D=False, DD=False
+    ):
 
+        # ====
         self.coefs = coefs
         self.e = e
 
@@ -124,10 +195,10 @@ class YaafeMFCC(object):
 
         self.DD = DD
         self.DDe = DDe
+        # ====
 
         feature_plan = yaafelib.FeaturePlan(sample_rate=self.sample_rate)
-
-        self.stack = []
+        stack = []
 
         # --- coefficients
         # 0 if energy is kept
@@ -142,7 +213,7 @@ class YaafeMFCC(object):
             )
         )
         assert feature_plan.addFeature(definition)
-        self.stack.append('mfcc')
+        stack.append('mfcc')
 
         # --- 1st order derivatives
         if self.D or self.De:
@@ -156,7 +227,7 @@ class YaafeMFCC(object):
                 )
             )
             assert feature_plan.addFeature(definition)
-            self.stack.append('mfcc_d')
+            stack.append('mfcc_d')
 
         # --- 2nd order derivatives
         if self.DD or self.DDe:
@@ -170,38 +241,9 @@ class YaafeMFCC(object):
                 )
             )
             assert feature_plan.addFeature(definition)
-            self.stack.append('mfcc_dd')
+            stack.append('mfcc_dd')
 
         # --- prepare the Yaafe engine
         data_flow = feature_plan.getDataFlow()
 
-        self.engine = yaafelib.Engine()
-        assert self.engine.load(data_flow)
-
-    def extract(self, wav):
-        """Extract MFCCs
-
-        Parameters
-        ----------
-        wav : string
-            Path to wav file.
-
-        Returns
-        -------
-        features : SlidingWindowFeature
-
-        """
-
-        sample_rate, raw_audio = scipy.io.wavfile.read(wav)
-        assert sample_rate == self.sample_rate, "sample rate mismatch"
-
-        audio = np.array(raw_audio, dtype=np.float64, order='C').reshape(1, -1)
-
-        features = self.engine.processAudio(audio)
-        data = np.hstack([features[name] for name in self.stack])
-
-        sliding_window = YaafeFrame(
-            blockSize=self.block_size, stepSize=self.step_size,
-            sampleRate=self.sample_rate)
-
-        return SlidingWindowFeature(data, sliding_window)
+        return data_flow, stack
