@@ -18,13 +18,16 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-from sklearn.mixture import GMM
-from sklearn.hmm import GMMHMM
-from pyannote import Segment, Annotation
-from joblib import Parallel, delayed
-from scipy.ndimage.filters import median_filter
 import itertools
+
+import numpy as np
+from scipy.ndimage.filters import median_filter
+from sklearn.hmm import GMMHMM
+
+from pyannote.stats.lbg import LBG
+from pyannote import Segment, Annotation
+
+from joblib import Parallel, delayed
 
 
 # this function is defined here in order to be able
@@ -47,12 +50,15 @@ def _gmm_helper(data, n_components, covariance_type):
         Gaussian mixture model estimated from `data`
     """
 
-    gmm = GMM(
+    lbg = LBG(
         n_components=n_components,
-        covariance_type=covariance_type,
-        params='wmc')
-    gmm.fit(data)
-    return gmm
+        covariance_type='diag',
+        sampling=1000,
+        n_iter=10,
+        disturb=0.05
+    )
+
+    return lbg.apply(data)
 
 
 class HMMSegmentation(object):
