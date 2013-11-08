@@ -69,6 +69,10 @@ class TheBigBangTheory(TVD):
 
         return kit % translation
 
+    def get_reference_speech_activity_detection(self, episode, language=None):
+        sns = self.get_reference_speech_nonspeech(episode, language=language)
+        return sns.subset(set(['speech'])).get_timeline()
+
     def get_reference_speaker_identification(self, episode, language=None):
         """Get reference (manual, KIT) speaker identification
 
