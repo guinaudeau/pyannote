@@ -21,11 +21,8 @@
 from segment import Segment
 from timeline import Timeline
 from annotation import Annotation, Unknown
-from mapping import Mapping, ManyToOneMapping
-from collections import Hashable
-import operator
 import numpy as np
-from pyannote.base import URI, MODALITY, SEGMENT, TRACK, LABEL, SCORE
+from pyannote.base import SEGMENT, TRACK, LABEL, SCORE
 from pandas import MultiIndex, DataFrame, pivot_table
 from pyannote.util import deprecated
 
