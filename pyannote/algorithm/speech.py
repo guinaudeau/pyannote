@@ -23,7 +23,8 @@ import sys
 import pickle
 import datetime
 import itertools
-from pyannote.algorithm.segmentation.hmm import HMMSegmentation
+from pyannote.algorithm.segmentation import \
+    HMMSegmentation, GaussianDivergenceSegmentation
 
 
 class SpeechActivityDetection(object):
@@ -217,6 +218,160 @@ class SpeechActivityDetection(object):
 
         return cls(
             hmm=data[cls.HMM],
+            feature=data[cls.FEATURE],
+            cache=cache
+        )
+
+
+
+
+class SpeechTurnSegmentation(object):
+    """Divergence-based speech turn segmentation
+
+
+    Example
+    -------
+
+    >>> seg = SpeechTurnSegmentation()
+    >>> seg.fit()
+    >>> pathToWavFile = ''
+    >>> annotation = seg.apply(pathToWavFile)
+
+    Parameters
+    ----------
+    segmentation : GaussianDivergenceSegmentation, optional
+    duration : float, optional
+    step : float, optional
+    gap : float, optional
+    threshold : float, optional
+    feature : optional
+        Defaults to MFCC with 12 coefficients, their delta, and delta energy.
+    cache : bool, optional
+        Whether to cache feature extraction (True) or not (False).
+        Defaults to False.
+    """
+
+    def __init__(
+        self,
+        segmentation=None,
+        duration=1., step=0.1, gap=0., threshold=0.,
+        feature=None, cache=False
+    ):
+
+        super(SpeechTurnSegmentation, self).__init__()
+
+        if segmentation is None:
+
+            self.segmentation = GaussianDivergenceSegmentation(
+                duration=duration, step=step, gap=gap,
+                threshold=threshold
+            )
+
+        else:
+
+            self.segmentation = segmentation
+
+        # default features for segmentation
+        # are MFCC (energy + 12 coefficients)
+        if feature is None:
+            from pyannote.feature.yaafe import YaafeMFCC
+            feature = YaafeMFCC(
+                e=True, De=False, DDe=False,
+                coefs=12, D=False, DD=False
+            )
+        self.feature = feature
+
+        if cache:
+
+            # initialize cache
+            from joblib import Memory
+            from tempfile import mkdtemp
+            memory = Memory(cachedir=mkdtemp(), verbose=0)
+
+            # cache feature extraction method
+            self.get_features = memory.cache(self.get_features)
+
+    def get_features(self, wav):
+        return self.feature.extract(wav)
+
+    def apply(self, wav=None, feature=None, speech=None):
+        """Perform speech turn segmentation
+
+        Parameters
+        ----------
+        wav : str, optional
+            Path to processed .wav file.
+        feature : SlidingWindowFeature, optional
+            When provided, use precomputed `feature`.
+        speech : Timeline, optional
+            Speech segments.
+        Returns
+        -------
+        speech : Timeline
+            Speech segments.
+
+        """
+        if feature is None and wav is None:
+            raise ValueError('Either wav or feature must be provided.')
+
+        if feature is None:
+            features = self.get_features(wav)
+
+        segmentation = self.segmentation.apply(features)
+        if speech is not None:
+            segmentation = segmentation.crop(speech, mode='intersection')
+
+        return segmentation
+
+    # Input/Output
+
+    SEGMENTATION = 'segmentation'
+    FEATURE = 'feature'
+    CREATED = 'created'
+    DESCRIPTION = 'description'
+
+    def save(self, path, description=''):
+        """Save model to file
+
+        Parameters
+        ----------
+        path : str
+        description : str, optional
+            Optional description (e.g. of the training set)
+
+        """
+
+        data = {
+            self.SEGMENTATION: self.segmentation,
+            self.FEATURE: self.feature,
+            self.CREATED: datetime.datetime.today(),
+            self.DESCRIPTION: description,
+        }
+
+        with open(path, mode='w') as f:
+            pickle.dump(data, f)
+
+    @classmethod
+    def load(cls, path, cache=False):
+        """Load model from file
+
+        Parameters
+        ----------
+        path : str
+        cache : bool, optional
+            Whether to cache feature extraction (True) or not (False).
+            Defaults to False.
+        """
+
+        with open(path, mode='r') as f:
+            data = pickle.load(f)
+
+        sys.stdout.write('Created: %s\n' % data[cls.CREATED].isoformat())
+        if data[cls.DESCRIPTION]:
+            sys.stdout.write('Description: %s\n' % data[cls.DESCRIPTION])
+
+        return cls(
+            segmentation=data[cls.SEGMENTATION],
             feature=data[cls.FEATURE],
             cache=cache
         )
