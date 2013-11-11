@@ -18,13 +18,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 
-from pyannote.base.segment import Segment, SlidingWindow
-from pyannote import Timeline
-from pyannote.stats.gaussian import Gaussian
 import numpy as np
 import scipy.signal
-import itertools
+
+from pyannote import Timeline
+from pyannote.base.segment import Segment, SlidingWindow
+from pyannote.stats.gaussian import Gaussian
 
 
 def pairwise(iterable):
@@ -140,9 +141,14 @@ class SlidingWindowsSegmentation(object):
 
 class GaussianDivergenceSegmentation(SlidingWindowsSegmentation):
 
-    def __init__(self, duration=1., step=0.1, gap=0., threshold=0.):
+    def __init__(
+        self,
+        duration=1., step=0.1, gap=0., threshold=0.
+    ):
+
         super(GaussianDivergenceSegmentation, self).__init__(
-            duration=duration, step=step, gap=gap, threshold=threshold)
+            duration=duration, step=step, gap=gap, threshold=threshold
+        )
 
     def diff(self, left, right, feature):
 
