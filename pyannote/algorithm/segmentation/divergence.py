@@ -139,14 +139,14 @@ class SlidingWindowsSegmentation(object):
         return Timeline(segments=segments, uri=None)
 
 
-class GaussianDivergenceSegmentation(SlidingWindowsSegmentation):
+class SegmentationGaussianDivergence(SlidingWindowsSegmentation):
 
     def __init__(
         self,
         duration=1., step=0.1, gap=0., threshold=0.
     ):
 
-        super(GaussianDivergenceSegmentation, self).__init__(
+        super(SegmentationGaussianDivergence, self).__init__(
             duration=duration, step=step, gap=gap, threshold=threshold
         )
 

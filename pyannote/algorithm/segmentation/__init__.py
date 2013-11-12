@@ -19,12 +19,12 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from divergence import GaussianDivergenceSegmentation
-from hmm import HMMSegmentation
+from divergence import SegmentationGaussianDivergence
+from hmm import SegmentationHMM
 
 __all__ = [
-    'GaussianDivergenceSegmentation',
-    'HMMSegmentation'
+    'SegmentationGaussianDivergence',
+    'SegmentationHMM'
 ]
 
 if __name__ == "__main__":

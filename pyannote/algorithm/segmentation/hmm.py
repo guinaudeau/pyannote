@@ -18,6 +18,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+
+import logging
 import itertools
 
 import numpy as np
@@ -25,7 +27,7 @@ from scipy.ndimage.filters import median_filter
 from sklearn.hmm import GMMHMM
 
 from pyannote.stats.lbg import LBG
-from pyannote import Segment, Annotation
+from pyannote import Segment, Annotation, Unknown
 
 from joblib import Parallel, delayed
 
@@ -61,7 +63,7 @@ def _gmm_helper(data, n_components, covariance_type):
     return lbg.apply(data)
 
 
-class HMMSegmentation(object):
+class SegmentationHMM(object):
 
     """HMM-based segmentation with Viterbi decoding
 
@@ -75,20 +77,66 @@ class HMMSegmentation(object):
         Filter out segments shorter than `min_duration` seconds
     n_jobs : int
         Number of parallel jobs for GMM estimation
-        (default is all available cores)
+        (default is one core)
 
     """
 
     def __init__(
         self, n_components=1, covariance_type='diag',
-        min_duration=None, n_jobs=-1
+        min_duration=None, n_jobs=1
     ):
 
-        super(HMMSegmentation, self).__init__()
+        super(SegmentationHMM, self).__init__()
         self.n_components = n_components
         self.covariance_type = covariance_type
         self.n_jobs = n_jobs
         self.min_duration = min_duration
+        self.gmm = {}
+
+    def _get_targets(self, reference):
+        """Get list of targets from training data
+
+        Parameters
+        ----------
+        reference : `Annotation` iterable
+
+        Returns
+        -------
+        targets : list
+            Sorted list of 'known' targets
+
+        """
+        # empty target set
+        targets = set()
+
+        for annotation in reference:
+            labels = [
+                L for L in annotation.labels()
+                if not isinstance(L, Unknown)
+            ]
+            targets.update(labels)
+
+        return sorted(targets)
+
+    def _get_gmm(self, reference, features, target):
+
+        # gather target data
+        data = np.vstack([
+            f.crop(r.label_coverage(target))  # use target regions only
+            for r, f in itertools.izip(reference, features)
+        ])
+
+        lbg = LBG(
+            n_components=self.n_components,
+            covariance_type=self.covariance_type,
+            sampling=1000,
+            n_iter=10,
+            disturb=0.05
+        )
+
+        gmm = lbg.apply(data)
+
+        return gmm
 
     def fit(self, reference, features):
         """Train HMM segmentation
@@ -103,48 +151,26 @@ class HMMSegmentation(object):
             Generates features synchronized with `reference`
         """
 
-        K = set()
-
-        # x[k] contains a list of features for class k
-        x = {}
-
-        # X contains list of utterances
-        X = []
-
         # gather training data
-        for a, f in itertools.izip(reference, features):
+        reference = list(reference)
+        features = list(features)
 
-            # keep track of utterance
-            X.append(f.data)
+        # gather target list
+        self.targets = self._get_targets(reference)
 
-            # add previously unseen classes
-            K.update(a.labels())
+        # train each state
+        for target in self.targets:
+            logging.info('Training %s GMM' % str(target))
+            self.gmm[target] = self._get_gmm(reference, features, target)
 
-            # gather features for each class
-            for k in K:
-                if k not in x:
-                    x[k] = []
-                x[k].append(f.crop(a.label_coverage(k)))
-
-        # keep track of HMM states order
-        self.states = sorted(K)
-
-        if self.n_jobs == 1:
-            self.gmms = [_gmm_helper(
-                np.vstack(x[k]), self.n_components, self.covariance_type)
-                for k in self.states]
-        else:
-            self.gmms = Parallel(n_jobs=self.n_jobs, verbose=0)(
-                delayed(_gmm_helper)(
-                    np.vstack(x[k]), self.n_components, self.covariance_type
-                ) for k in self.states
-            )
-
+        # train HMM
+        logging.info('Training %d-states HMM' % len(self.targets))
         self.hmm = GMMHMM(
-            n_components=len(self.states), gmms=self.gmms,
+            n_components=len(self.targets),
+            gmms=[self.gmm[target] for target in self.targets],
             init_params='st', params='st'
         )
-        self.hmm.fit(X)
+        self.hmm.fit([f.data for f in features])
 
         return self
 
@@ -161,7 +187,7 @@ class HMMSegmentation(object):
         # median filtering to get rid of short segments
         if self.min_duration:
 
-            if len(self.states) > 2:
+            if len(self.targets) > 2:
                 raise NotImplementedError(
                     'min_duration is not supported with more than 2 states.'
                 )
@@ -172,7 +198,7 @@ class HMMSegmentation(object):
 
         # start initial segment
         start = 0
-        label = self.states[sequence[0]]
+        label = self.targets[sequence[0]]
 
         segmentation = Annotation()
 
@@ -187,7 +213,7 @@ class HMMSegmentation(object):
             segmentation[segment, '_'] = label
 
             # start of a new segment
-            label = self.states[sequence[i+1]]
+            label = self.targets[sequence[i+1]]
             start = end
 
         segment = Segment(segment.end, features.getExtent().end)
