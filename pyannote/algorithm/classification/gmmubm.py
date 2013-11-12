@@ -171,20 +171,28 @@ class ClassificationGMMUBM(object):
 
         # copy UBM structure and parameters
         gmm = sklearn.clone(self.ubm)
-        gmm = GMM(
-            params=self.params,  # only adapt requested parameters
-            n_iter=self.n_iter,
-            n_init=1,
-            init_params=''       # initialize with UBM attributes
-        )
+        gmm.params = self.params  # only adapt requested parameters
+        gmm.n_iter = self.n_iter
+        gmm.n_init = 1
+        gmm.init_params = ''      # initialize with UBM attributes
 
         # initialize with UBM attributes
         gmm.weights_ = self.ubm.weights_
         gmm.means_ = self.ubm.means_
         gmm.covars_ = self.ubm.covars_
 
+        # --- logging ---------------------------------------------------------
+        _llr = np.mean(gmm.score(X))
+        logging.info("llr before adaptation = %f" % _llr)
+        # ---------------------------------------------------------------------
+
         # adaptation
         gmm.fit(X)
+
+        # --- logging ---------------------------------------------------------
+        llr = np.mean(gmm.score(X))
+        logging.info("llr after adaptation = %f, gain = %f" % (llr, llr-_llr))
+        # ---------------------------------------------------------------------
 
         return gmm
 
@@ -325,7 +333,7 @@ class ClassificationGMMUBM(object):
 
         # if needed, train UBM
         if self.ubm is None:
-            logging.info('Training UBM')
+            logging.info('--- Universal background model ---')
             self.ubm = self._get_ubm(reference, features, chart=chart)
 
         # learn target model from training data
@@ -333,7 +341,7 @@ class ClassificationGMMUBM(object):
             if target in self.gmm:
                 pass
             else:
-                logging.info('Adapting UBM to target %s' % str(target))
+                logging.info('--- {%s} adapted model ---' % str(target))
                 self.gmm[target] = self._get_gmm(reference, features, target)
 
         return self
