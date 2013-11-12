@@ -69,7 +69,7 @@ class YaafeFeatureExtractor(object):
     """
 
     def __init__(
-        self, sample_rate=16000, block_size=512, step_size=256, **kwargs
+        self, sample_rate=16000, block_size=512, step_size=256
     ):
 
         super(YaafeFeatureExtractor, self).__init__()
@@ -78,11 +78,9 @@ class YaafeFeatureExtractor(object):
         self.block_size = block_size
         self.step_size = step_size
 
-        self.data_flow, self.stack = self.get_flow_and_stack(**kwargs)
-
     def get_flow_and_stack(self, **kwargs):
         raise NotImplementedError(
-            'data_flow method must be implemented'
+            'get_flow_and_stack method must be implemented'
         )
 
     def extract(self, wav):
@@ -99,8 +97,11 @@ class YaafeFeatureExtractor(object):
 
         """
 
+        # hack
+        data_flow, stack = self.get_flow_and_stack()
+
         engine = yaafelib.Engine()
-        engine.load(self.data_flow)
+        engine.load(data_flow)
 
         sample_rate, raw_audio = scipy.io.wavfile.read(wav)
         assert sample_rate == self.sample_rate, "sample rate mismatch"
@@ -108,7 +109,7 @@ class YaafeFeatureExtractor(object):
         audio = np.array(raw_audio, dtype=np.float64, order='C').reshape(1, -1)
 
         features = engine.processAudio(audio)
-        data = np.hstack([features[name] for name in self.stack])
+        data = np.hstack([features[name] for name in stack])
 
         sliding_window = YaafeFrame(
             blockSize=self.block_size, stepSize=self.step_size,
@@ -178,24 +179,17 @@ class YaafeMFCC(YaafeFeatureExtractor):
         super(YaafeMFCC, self).__init__(
             sample_rate=sample_rate,
             block_size=block_size,
-            step_size=step_size,
-            e=e, coefs=coefs, De=De, DDe=DDe, D=D, DD=DD
+            step_size=step_size
         )
 
-    def get_flow_and_stack(
-        self, e=True, coefs=11, De=False, DDe=False, D=False, DD=False
-    ):
-
-        # ====
-        self.coefs = coefs
         self.e = e
-
-        self.D = D
+        self.coefs = coefs
         self.De = De
-
-        self.DD = DD
         self.DDe = DDe
-        # ====
+        self.D = D
+        self.DD = DD
+
+    def get_flow_and_stack(self):
 
         feature_plan = yaafelib.FeaturePlan(sample_rate=self.sample_rate)
         stack = []
