@@ -24,7 +24,7 @@ import pickle
 import datetime
 import itertools
 from pyannote.algorithm.segmentation import \
-    HMMSegmentation, GaussianDivergenceSegmentation
+    SegmentationHMM, SegmentationGaussianDivergence
 
 
 class SpeechActivityDetection(object):
@@ -35,20 +35,18 @@ class SpeechActivityDetection(object):
     Example
     -------
 
-    >>> sad = SpeechActivityDetection()
-    >>> sad.fit()
-    >>> pathToWavFile = ''
-    >>> annotation = sad.apply(pathToWavFile)
+    >>> hmm = SegmentationHMM(n_components=16, covariance_type='diag')
+    >>> sad = SpeechActivityDetection(hmm)
+    >>> reference = [...]
+    >>> wav = [...]
+    >>> sad.fit(reference, wav=wav)
+    >>> new_wav = '...'
+    >>> annotation = sad.apply(new_wav)
 
     Parameters
     ----------
-    hmm : HMMSegmentation, optional
-    n_components : int, optional
-    covariance_type : {'diag', 'full'}, optional
-        In case `hmm` is not provided, `n_components` and `covariance_type` are
-        used to initialize HMM segmentation. `n_components` is the number of
-        Gaussians per state (defaults to 16) and `covariance_type` describes
-        the type of Gaussian covariance matrices (defaults to 'diag')
+    hmm : SegmentationHMM
+        HMM (pre-trained or not)
     min_duration, float, optional
         Set minimum duration of speech/non-speech segments to `min_duration`
         (in seconds). Defaults to 250ms.
@@ -72,18 +70,8 @@ class SpeechActivityDetection(object):
 
         super(SpeechActivityDetection, self).__init__()
 
-        if hmm is None:
-
-            self.hmm = HMMSegmentation(
-                n_components=n_components,
-                covariance_type=covariance_type,
-                min_duration=min_duration,
-                n_jobs=1)
-
-        else:
-
-            self.hmm = hmm
-            self.hmm.min_duration = min_duration
+        self.hmm = hmm
+        self.hmm.min_duration = min_duration
 
         # default features for speech activity detection
         # are MFCC (12 coefficients + delta coefficient + delta energy)
@@ -167,7 +155,7 @@ class SpeechActivityDetection(object):
 
         detection = self.hmm.apply(features)
 
-        return detection.subset(set(['speech'])).get_timeline()
+        return detection
 
     # Input/Output
 
@@ -223,8 +211,6 @@ class SpeechActivityDetection(object):
         )
 
 
-
-
 class SpeechTurnSegmentation(object):
     """Divergence-based speech turn segmentation
 
@@ -239,7 +225,7 @@ class SpeechTurnSegmentation(object):
 
     Parameters
     ----------
-    segmentation : GaussianDivergenceSegmentation, optional
+    segmentation : SegmentationGaussianDivergence, optional
     duration : float, optional
     step : float, optional
     gap : float, optional
@@ -262,7 +248,7 @@ class SpeechTurnSegmentation(object):
 
         if segmentation is None:
 
-            self.segmentation = GaussianDivergenceSegmentation(
+            self.segmentation = SegmentationGaussianDivergence(
                 duration=duration, step=step, gap=gap,
                 threshold=threshold
             )
@@ -372,6 +358,191 @@ class SpeechTurnSegmentation(object):
 
         return cls(
             segmentation=data[cls.SEGMENTATION],
+            feature=data[cls.FEATURE],
+            cache=cache
+        )
+
+
+class SpeakerIdentification(object):
+    """Speaker identification based on GMM-UBM approach
+
+    Example
+    -------
+
+    >>> sid = SpeakerIdentification(gmm_ubm)
+    >>> sid.fit()
+    >>> pathToWavFile = ''
+    >>> annotation = sid.apply(pathToWavFile)
+
+    Parameters
+    ----------
+    gmm_ubm : ClassificationGMMUBM
+        GMM/UBM (pre-trained or not)
+    feature : optional
+        Defaults to MFCC with 13 coefficients, their delta, delta delta,
+        delta energy and delta delta energy
+    cache : bool, optional
+        Whether to cache feature extraction (True) or not (False).
+        Defaults to False.
+    """
+
+    def __init__(
+        self,
+        gmm_ubm,
+        feature=None, cache=False
+    ):
+
+        super(SpeakerIdentification, self).__init__()
+
+        self.gmm_ubm = gmm_ubm
+
+        # default features for speaker identification are MFCC
+        # 13 coefs + delta coefs  + delta delta coefs
+        #          + delta energy + delta delta energy
+        if feature is None:
+            from pyannote.feature.yaafe import YaafeMFCC
+            feature = YaafeMFCC(
+                e=False, De=True, DDe=True,
+                coefs=13, D=True, DD=True
+            )
+        self.feature = feature
+
+        if cache:
+
+            # initialize cache
+            from joblib import Memory
+            from tempfile import mkdtemp
+            memory = Memory(cachedir=mkdtemp(), verbose=0)
+
+            # cache feature extraction method
+            self.get_features = memory.cache(self.get_features)
+
+    @property
+    def equal_priors(self):
+        return self.gmm_ubm.equal_priors
+
+    @equal_priors.setter
+    def equal_priors(self, value):
+        self.gmm_ubm.equal_priors = value
+
+    @property
+    def open_set(self):
+        return self.gmm_ubm.open_set
+
+    @open_set.setter
+    def open_set(self, value):
+        self.gmm_ubm.open_set = value
+
+    def get_features(self, wav):
+        return self.feature.extract(wav)
+
+    def fit(self, reference, wav=None, features=None):
+        """
+        reference : iterator
+            If `wav` is provided, reference and wav
+        wav : iterator, optional
+
+        """
+
+        # === ready input data
+
+        if wav is None and features is None:
+            raise ValueError(
+                'either `wav` or `features` must be provided.')
+
+        # make a list from reference iterator
+        # as it will be iterated at least twice
+        reference = list(reference)
+
+        # if features are not precomputed
+        # create an iterator that does just that
+        if features is None:
+            features = itertools.imap(self.get_features, wav)
+
+        # === actual GMM/UBM training
+
+        self.gmm_ubm.fit(reference, features)
+
+        return self
+
+    def apply(self, speech_turns, wav=None, feature=None):
+        """Perform speaker identification on .wav file
+
+        Parameters
+        ----------
+        speech_turns : Timeline or Annotation
+            Pre-computed segmentation
+        wav : str, optional
+            Path to processed .wav file.
+        feature : SlidingWindowFeature, optional
+            When provided, use precomputed `feature`.
+
+        Returns
+        -------
+        speech : Timeline
+            Speech segments.
+
+        """
+
+        if feature is None and wav is None:
+            raise ValueError('Either wav or feature must be provided.')
+
+        if feature is None:
+            features = self.get_features(wav)
+
+        identity = self.gmm_ubm.predict(speech_turns, features)
+
+        return identity
+
+    # Input/Output
+
+    GMMUBM = 'gmm_ubm'
+    FEATURE = 'feature'
+    CREATED = 'created'
+    DESCRIPTION = 'description'
+
+    def save(self, path, description=''):
+        """Save model to file
+
+        Parameters
+        ----------
+        path : str
+        description : str, optional
+            Optional description (e.g. of the training set)
+
+        """
+
+        data = {
+            self.GMMUBM: self.gmm_ubm,
+            self.FEATURE: self.feature,
+            self.CREATED: datetime.datetime.today(),
+            self.DESCRIPTION: description,
+        }
+
+        with open(path, mode='w') as f:
+            pickle.dump(data, f)
+
+    @classmethod
+    def load(cls, path, cache=False):
+        """Load model from file
+
+        Parameters
+        ----------
+        path : str
+        cache : bool, optional
+            Whether to cache feature extraction (True) or not (False).
+            Defaults to False.
+        """
+
+        with open(path, mode='r') as f:
+            data = pickle.load(f)
+
+        sys.stdout.write('Created: %s\n' % data[cls.CREATED].isoformat())
+        if data[cls.DESCRIPTION]:
+            sys.stdout.write('Description: %s\n' % data[cls.DESCRIPTION])
+
+        return cls(
+            data[cls.GMMUBM],
             feature=data[cls.FEATURE],
             cache=cache
         )
