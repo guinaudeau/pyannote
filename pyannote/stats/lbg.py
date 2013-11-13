@@ -21,6 +21,8 @@
 
 """Linde–Buzo–Gray algorithm"""
 
+
+import logging
 import numpy as np
 from sklearn.mixture import GMM
 
@@ -212,23 +214,51 @@ class LBG(object):
                   n_init=1, params='wmc',
                   init_params='')
 
+        _llr = -np.inf
         while gmm.n_components < self.n_components:
 
             # fit GMM on a rolling subset of training data
             if self.sampling > 0:
+
                 for i in range(self.n_iter):
+
                     x = self._subsample(X, gmm.n_components)
                     gmm.fit(x)
+
+                    # --- logging ---------------------------------------------
+                    llr = np.mean(gmm.score(X))
+                    logging.debug(
+                        "%d Gaussians %d frames iter %d llr = %f gain %f" %
+                        (gmm.n_components, len(x), i+1, llr, llr-_llr))
+                    _llr = llr
+                    # ---------------------------------------------------------
+
             else:
+
                 gmm.n_iter = self.n_iter
                 gmm.fit(X)
+
+                # --- logging -------------------------------------------------
+                llr = np.mean(gmm.score(X))
+                logging.debug(
+                    "%d Gaussians %d frames llr = %f gain %f" %
+                    (gmm.n_components, len(X), llr, llr-_llr))
+                _llr = llr
+                # -------------------------------------------------------------
 
             # increase number of components (x 2)
             n_components = min(self.n_components, 2*gmm.n_components)
             gmm = self._split(gmm, n_components)
 
-        # final fit with all the data
         gmm.n_iter = self.n_iter
         gmm.fit(X)
+
+        # --- logging ---------------------------------------------------------
+        llr = np.mean(gmm.score(X))
+        logging.debug(
+            "%d Gaussians %d frames llr = %f gain %f" %
+            (gmm.n_components, len(X), llr, llr-_llr))
+        _llr = llr
+        # ---------------------------------------------------------------------
 
         return gmm
