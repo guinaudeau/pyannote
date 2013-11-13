@@ -23,7 +23,6 @@ import logging
 
 import numpy as np
 import sklearn
-from sklearn.mixture import GMM
 
 from pyannote import Timeline, Annotation, Scores, Unknown
 from pyannote.stats.llr import logsumexp
@@ -183,7 +182,7 @@ class ClassificationGMMUBM(object):
 
         # --- logging ---------------------------------------------------------
         _llr = np.mean(gmm.score(X))
-        logging.info("llr before adaptation = %f" % _llr)
+        logging.debug("llr before adaptation = %f" % _llr)
         # ---------------------------------------------------------------------
 
         # adaptation
@@ -191,7 +190,7 @@ class ClassificationGMMUBM(object):
 
         # --- logging ---------------------------------------------------------
         llr = np.mean(gmm.score(X))
-        logging.info("llr after adaptation = %f, gain = %f" % (llr, llr-_llr))
+        logging.debug("llr after adaptation = %f, gain = %f" % (llr, llr-_llr))
         # ---------------------------------------------------------------------
 
         return gmm
@@ -333,7 +332,7 @@ class ClassificationGMMUBM(object):
 
         # if needed, train UBM
         if self.ubm is None:
-            logging.info('--- Universal background model ---')
+            logging.info('training UBM GMM')
             self.ubm = self._get_ubm(reference, features, chart=chart)
 
         # learn target model from training data
@@ -341,7 +340,7 @@ class ClassificationGMMUBM(object):
             if target in self.gmm:
                 pass
             else:
-                logging.info('--- {%s} adapted model ---' % str(target))
+                logging.info('adapting UBM to target {%s}' % str(target))
                 self.gmm[target] = self._get_gmm(reference, features, target)
 
         return self
