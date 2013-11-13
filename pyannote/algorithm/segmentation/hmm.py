@@ -29,39 +29,6 @@ from sklearn.hmm import GMMHMM
 from pyannote.stats.lbg import LBG
 from pyannote import Segment, Annotation, Unknown
 
-from joblib import Parallel, delayed
-
-
-# this function is defined here in order to be able
-# to use it later with joblib.Parallel
-def _gmm_helper(data, n_components, covariance_type):
-    """Estimate Gaussian Mixture Model
-
-    Parameters
-    ----------
-    data : (N, D) numpy array
-        Array of N feature vectors of dimension D
-    n_components : int
-        Number of gaussians
-    covariance_type : {'diag', 'full'}
-        Type of gaussian covariance matrices
-
-    Returns
-    -------
-    gmm : `sklearn.mixture.GMM`
-        Gaussian mixture model estimated from `data`
-    """
-
-    lbg = LBG(
-        n_components=n_components,
-        covariance_type='diag',
-        sampling=1000,
-        n_iter=10,
-        disturb=0.05
-    )
-
-    return lbg.apply(data)
-
 
 class SegmentationHMM(object):
 
@@ -73,6 +40,11 @@ class SegmentationHMM(object):
         Number of gaussians per HMM state (default is 1).
     covariance_type : {'diag', 'full'}
         Type of gaussian covariance matrices
+    sampling : int, optional
+        Reduce the number of samples used for the initialization steps to
+        `sampling` samples per component. A few hundreds samples per component
+        should be a reasonable rule of thumb.
+        The final estimation steps always use the whole sample set.
     min_duration : float, optional
         Filter out segments shorter than `min_duration` seconds
     n_jobs : int
@@ -82,13 +54,14 @@ class SegmentationHMM(object):
     """
 
     def __init__(
-        self, n_components=1, covariance_type='diag',
+        self, n_components=1, covariance_type='diag', sampling=0,
         min_duration=None, n_jobs=1
     ):
 
         super(SegmentationHMM, self).__init__()
         self.n_components = n_components
         self.covariance_type = covariance_type
+        self.sampling = sampling
         self.n_jobs = n_jobs
         self.min_duration = min_duration
         self.gmm = {}
@@ -129,7 +102,7 @@ class SegmentationHMM(object):
         lbg = LBG(
             n_components=self.n_components,
             covariance_type=self.covariance_type,
-            sampling=1000,
+            sampling=self.sampling,
             n_iter=10,
             disturb=0.05
         )
@@ -160,11 +133,11 @@ class SegmentationHMM(object):
 
         # train each state
         for target in self.targets:
-            logging.info('Training %s GMM' % str(target))
+            logging.info('training {%s} GMM' % str(target))
             self.gmm[target] = self._get_gmm(reference, features, target)
 
         # train HMM
-        logging.info('Training %d-states HMM' % len(self.targets))
+        logging.info('training %d-states HMM' % len(self.targets))
         self.hmm = GMMHMM(
             n_components=len(self.targets),
             gmms=[self.gmm[target] for target in self.targets],
