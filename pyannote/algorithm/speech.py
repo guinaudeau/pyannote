@@ -465,7 +465,7 @@ class SpeakerIdentification(object):
 
         return self
 
-    def apply(self, speech_turns, wav=None, feature=None):
+    def apply(self, speech_turns, wav=None, feature=None, probability=False):
         """Perform speaker identification on .wav file
 
         Parameters
@@ -476,11 +476,14 @@ class SpeakerIdentification(object):
             Path to processed .wav file.
         feature : SlidingWindowFeature, optional
             When provided, use precomputed `feature`.
+        probability : bool, optional
+            If True, return posteriors (Scores) instead hard decision
 
         Returns
         -------
-        speech : Timeline
-            Speech segments.
+        results : `Annotation` or `Scores`
+            If probability is True, return posterior probabilities.
+            If probability is False (default), return identity annotation.
 
         """
 
@@ -490,9 +493,10 @@ class SpeakerIdentification(object):
         if feature is None:
             features = self.get_features(wav)
 
-        identity = self.gmm_ubm.predict(speech_turns, features)
-
-        return identity
+        if probability:
+            return self.gmm_ubm.predict_proba(speech_turns, features)
+        else:
+            return self.gmm_ubm.predict(speech_turns, features)
 
     # Input/Output
 
