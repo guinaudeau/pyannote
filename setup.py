@@ -19,12 +19,20 @@
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import versioneer
+versioneer.versionfile_source = 'pyannote/_version.py'
+versioneer.versionfile_build = 'pyannote/_version.py'
+versioneer.tag_prefix = ''  # tags are like 1.2.0
+versioneer.parentdir_prefix = 'pyannote-'  # dirname like 'myproject-1.2.0'
+
+
 # from setuptools import setup, find_packages
 from setuptools import setup
 
 setup(
     name='PyAnnote',
-    version='0.3',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description=(
         'Python module for collaborative annotation '
         'of multimedia content'
