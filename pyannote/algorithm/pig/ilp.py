@@ -20,7 +20,7 @@
 
 import itertools
 from pyannote.base.annotation import Annotation, Unknown
-from pyannote.algorithm.clustering.ilp.ilp import ILPClustering, InOutObjectiveMixin
+from pyannote.algorithm.clustering.ilp.ilp import ILPClustering
 from pyannote.algorithm.pig.vertex import IdentityVertex, InstanceVertex
 
 
@@ -36,6 +36,7 @@ class PIGMiningILP(ILPClustering):
         modalities = pig.get_modalities()
 
         for uri, modality in itertools.product(uris, modalities):
+
             annotation = Annotation(uri=uri, modality=modality)
 
             for cluster in clusters:
