@@ -240,8 +240,8 @@ class IdentificationPrecision(Precision):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True (default) to take `Unknown` instances into
-        account. Set it to False to get rid of them before evaluation.
+        Set `unknown` to True to take `Unknown` instances into account.
+        Set it to False (default) to get rid of them before evaluation.
     """
 
     def __init__(self, matcher=None, unknown=False, **kwargs):
@@ -295,8 +295,8 @@ class IdentificationRecall(Recall):
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
     unknown : bool, optional
-        Set `unknown` to True (default) to take `Unknown` instances into
-        account. Set it to False to get rid of them before evaluation.
+        Set `unknown` to True to take `Unknown` instances into account.
+        Set it to False (default) to get rid of them before evaluation.
     """
 
     def __init__(self, matcher=None, unknown=False, **kwargs):
