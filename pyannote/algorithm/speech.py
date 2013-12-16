@@ -23,8 +23,7 @@ import sys
 import pickle
 import datetime
 import itertools
-from pyannote.algorithm.segmentation import \
-    SegmentationHMM, SegmentationGaussianDivergence
+from pyannote.algorithm.segmentation import SegmentationGaussianDivergence
 
 
 class SpeechActivityDetection(object):
@@ -231,7 +230,7 @@ class SpeechTurnSegmentation(object):
     gap : float, optional
     threshold : float, optional
     feature : optional
-        Defaults to MFCC with 12 coefficients, their delta, and delta energy.
+        Defaults to MFCC with 12 coefficients + energy.
     cache : bool, optional
         Whether to cache feature extraction (True) or not (False).
         Defaults to False.
