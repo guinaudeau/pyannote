@@ -23,6 +23,9 @@ from pyannote.base.annotation import Annotation, Unknown
 from pyannote.algorithm.clustering.ilp.ilp import ILPClustering
 from pyannote.algorithm.pig.vertex import IdentityVertex, InstanceVertex
 
+ALPHA = 'alpha'
+BETA = 'beta'
+
 
 class PIGMiningILP(ILPClustering):
 
@@ -86,7 +89,17 @@ class PIGMiningILP(ILPClustering):
 class PIGWeightedObjectiveMixin(object):
 
     def get_objective(self, pig, get_similarity, weights=None, **kwargs):
+        """
 
+        Parameters
+        ----------
+        pig : PersonInstanceGraph
+        get_similarity
+        weights : dict, optional
+            (m1, m2) --> {'alpha': alpha, 'beta': beta}
+
+
+        """
         objective = None
 
         for (modality1, modality2), weight in weights.iteritems():
@@ -100,8 +113,8 @@ class PIGWeightedObjectiveMixin(object):
             inter, _ = self.get_bipartite_dissimilarity(
                 items1, items2, get_similarity)
 
-            alpha = weight['alpha']
-            beta = weight['beta']
+            alpha = weight[ALPHA]
+            beta = weight[BETA]
 
             if objective is None:
                 if N:
