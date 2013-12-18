@@ -97,27 +97,40 @@ class Gaussian(object):
         n2 = other.n_samples
         n = n1 + n2
 
-        # mean
-        m1 = self.mean.reshape((1, -1))
-        m2 = other.mean.reshape((1, -1))
-        m = (n1*m1+n2*m2)/n
-
-        # covariance
-        k1 = self.covar
-        k2 = other.covar
-        k = 1./n * (n1*(k1+np.dot(m1.T, m1)) +
-                    n2*(k2+np.dot(m2.T, m2))) \
-            - np.dot(m.T, m)
-
-        # make it diagonal if needed
-        if self.covariance_type == 'diag':
-            k = np.diag(np.diag(k, k=0))
-
         # global gaussian
         g = Gaussian(covariance_type=self.covariance_type)
-        g.mean = m
-        g.covar = k
         g.n_samples = n
+
+        if n1 == 0:
+
+            g.mean = other.mean
+            g.covar = other.covar
+
+        elif n2 == 0:
+
+            g.mean = self.mean
+            g.covar = self.covar
+
+        else:
+
+            # mean
+            m1 = self.mean.reshape((1, -1))
+            m2 = other.mean.reshape((1, -1))
+            m = (n1*m1+n2*m2)/n
+            g.mean = m
+
+            # covariance
+            k1 = self.covar
+            k2 = other.covar
+            k = 1./n * (n1*(k1+np.dot(m1.T, m1)) +
+                        n2*(k2+np.dot(m2.T, m2))) \
+                - np.dot(m.T, m)
+
+            # make it diagonal if needed
+            if self.covariance_type == 'diag':
+                k = np.diag(np.diag(k, k=0))
+
+            g.covar = k
 
         return g
 
@@ -137,9 +150,23 @@ class Gaussian(object):
         n = g.n_samples
         n1 = self.n_samples
         n2 = other.n_samples
-        ldc = g.log_det_covar
-        ldc1 = self.log_det_covar
-        ldc2 = other.log_det_covar
+
+
+        if n == 0:
+            ldc = 0.
+        else:
+            ldc = g.log_det_covar
+
+        if n1 == 0:
+            ldc1 = 0.
+        else:
+            ldc1 = self.log_det_covar
+
+        if n2 == 0:
+            ldc2 = 0.
+        else:
+            ldc2 = other.log_det_covar
+
         delta_bic = n*ldc - n1*ldc1 - n2*ldc2 - penalty_coef*N*np.log(n)
 
         # return delta bic & merged gaussian
