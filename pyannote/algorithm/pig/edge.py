@@ -25,18 +25,189 @@ import itertools
 import numpy as np
 from pyannote import Segment
 
-from pyannote.algorithm.pig.pig import PROBABILITY
 from pyannote.algorithm.pig.pig import PersonInstanceGraph
 from pyannote.algorithm.pig.vertex import InstanceVertex
 
+from pyannote.base.annotation import Unknown
+from pyannote.base.matrix import LabelMatrix
+from pyannote.algorithm.calibration.clustering import ClusteringCalibration
+
 
 class PIGIntraModalEdges(object):
+    """Intra-modal edges generator
 
-    def __init__(self, model=None):
+    Parameters
+    ----------
+    prior : float, optional
+        prior probability that two instance vertices are from the same person.
+        By default, `prior` is set to the one estimated using fit.
+    calibration : {'linear', 'isotonic'}
+    model : HACModel, optional
+        This model is used only in case
+
+    """
+
+    def __init__(self, calibration='linear', model=None, prior=None):
+
         super(PIGIntraModalEdges, self).__init__()
+        self.model = model
+        self.calibration = ClusteringCalibration(method=calibration)
+        self.prior = prior
 
-    def fit(self, reference, feature):
-        pass
+    def get_groundtruth_matrix(self, annotation):
+        """
+
+        Parameters
+        ----------
+        annotation : `Annotation`
+
+        Returns
+        -------
+        matrix : LabelMatrix
+            Square matrix indexed by instance vertices (one for each track)
+            . 1 if instance vertices are the same person
+            . 0 if instance vertices are two different persons
+            . np.NaN if unsure
+        """
+
+        tracks = [
+            (segment, track)
+            for segment, track in annotation.itertracks()
+        ]
+
+        groundtruth = LabelMatrix(
+            rows=tracks, columns=tracks,
+            dtype=np.float
+        )
+
+        for s, t, l in annotation.itertracks(label=True):
+
+            v = (s, t)
+
+            for s_, t_, l_ in annotation.itertracks(label=True):
+
+                v_ = (s_, t_)
+
+                if isinstance(l, Unknown) or isinstance(l_, Unknown):
+                    g = np.NaN
+                else:
+                    g = 1 if l == l_ else 0
+
+                groundtruth[v, v_] = g
+
+        return groundtruth
+
+    def fit(self, reference, similarity=None, features=None):
+        """
+
+        Parameters
+        ----------
+
+        reference : iterator
+            Generates labeled annotations
+        similarity : iterator, optional
+            Generates track similarity matrices
+        features : iterator, optional
+
+        """
+
+        if similarity is None and features is None:
+            raise ValueError(
+                'either `similarity` or `features` must be provided.')
+
+        # make reference a list because it will be iterated at least twice
+        reference = list(reference)
+
+        # if track similarity matrices are not provided,
+        # try to compute it on the fly using provided model
+        if similarity is None:
+            similarity = [
+                self.model.get_track_similarity_matrix(r, f)
+                for r, f in itertools.izip(reference, features)
+            ]
+
+        # groundtruth instance vertices clustering matrices
+        groundtruth = itertools.imap(
+            self.get_groundtruth_matrix,
+            reference
+        )
+
+        self.calibration.fit(groundtruth, similarity)
+
+        return self
+
+    def __call__(self, annotation, similarity=None, features=None):
+
+        modality = annotation.modality
+        uri = annotation.uri
+
+        if similarity is None:
+            similarity = self.model.get_track_similarity_matrix(
+                annotation, features)
+
+        probs = self.calibration.apply(similarity, prior=self.prior)
+
+        for (s1, t1), (s2, t2), p in probs.itervalues():
+            v1 = InstanceVertex(
+                segment=s1, track=t1, modality=modality, uri=uri)
+            v2 = InstanceVertex(
+                segment=s2, track=t2, modality=modality, uri=uri)
+            yield v1, v2, p
+
+    CALIBRATION = 'calibration'
+    MODEL = 'model'
+    PRIOR = 'prior'
+    CREATED = 'created'
+    DESCRIPTION = 'description'
+
+    def save(self, path, description=''):
+        """Save to file
+
+        Parameters
+        ----------
+        path : str
+        description : str, optional
+            Optional description (e.g. of the training set)
+        """
+
+        data = {
+            self.CALIBRATION: self.calibration,
+            self.MODEL: self.model,
+            self.PRIOR: self.prior,
+            self.CREATED: datetime.datetime.today(),
+            self.DESCRIPTION: description,
+        }
+
+        with open(path, mode='w') as f:
+            pickle.dump(data, f)
+
+    @classmethod
+    def load(cls, path):
+        """Load from file
+
+        Parameters
+        ----------
+        path : str
+        """
+
+        with open(path, mode='r') as f:
+            data = pickle.load(f)
+
+        # --- logging -----------------------------------------------------
+        logging.info('Created: %s' % data[cls.CREATED].isoformat())
+        if data[cls.DESCRIPTION]:
+            logging.info('Description: %s' % data[cls.DESCRIPTION])
+        # -----------------------------------------------------------------
+
+        intraModelEdges = cls(
+            model=data[cls.MODEL],
+            prior=data[cls.PRIOR]
+        )
+
+        intraModelEdges.calibration = data[cls.CALIBRATION]
+
+        return intraModelEdges
+
 
 
 class PIGCrossModalEdges(object):
@@ -157,15 +328,13 @@ class PIGCrossModalEdges(object):
 
         return np.average(self.probability, weights=counts)
 
-    def apply(self, modality1, modality2):
+    def __call__(self, modality1, modality2):
 
         assert modality1.uri == modality2.uri
         assert modality1.modality == self.modality1
         assert modality2.modality == self.modality2
 
         uri = modality1.uri
-
-        pig = PersonInstanceGraph()
 
         for segment1, track1 in modality1.itertracks():
 
@@ -189,9 +358,8 @@ class PIGCrossModalEdges(object):
 
                 p = self.get_probability(segment1, segment2)
 
-                pig.add_edge(v1, v2, {PROBABILITY: p})
+                yield v1, v2, p
 
-        return pig
 
     RESOLUTION = 'resolution'
     NEIGHBOURHOOD = 'neighbourhood'
