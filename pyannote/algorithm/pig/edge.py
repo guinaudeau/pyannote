@@ -252,6 +252,12 @@ class PIGCrossModalEdges(object):
             assert annotation1.modality == self.modality1
             assert annotation2.modality == self.modality2
 
+            # focus on known persons
+            labels1 = annotation1.labels(unknown=False)
+            labels2 = annotation2.labels(unknown=False)
+            annotation1 = annotation1.subset(set(labels1))
+            annotation2 = annotation2.subset(set(labels2))
+
             if not annotation1 or not annotation2:
                 continue
 
