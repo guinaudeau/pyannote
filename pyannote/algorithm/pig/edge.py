@@ -42,15 +42,12 @@ class PIGIntraModalEdges(object):
         prior probability that two instance vertices are from the same person.
         By default, `prior` is set to the one estimated using fit.
     calibration : {'linear', 'isotonic'}
-    model : HACModel, optional
-        This model is used only in case
 
     """
 
-    def __init__(self, calibration='linear', model=None, prior=None):
+    def __init__(self, calibration='linear', prior=None):
 
         super(PIGIntraModalEdges, self).__init__()
-        self.model = model
         self.calibration = ClusteringCalibration(method=calibration)
         self.prior = prior
 
@@ -70,23 +67,32 @@ class PIGIntraModalEdges(object):
             . np.NaN if unsure
         """
 
-        tracks = [
-            (segment, track)
+        uri = annotation.uri
+        modality = annotation.modality
+
+        vertices = [
+            InstanceVertex(
+                segment=segment, track=track,
+                uri=uri, modality=modality)
             for segment, track in annotation.itertracks()
         ]
 
         groundtruth = LabelMatrix(
-            rows=tracks, columns=tracks,
+            rows=vertices, columns=vertices,
             dtype=np.float
         )
 
         for s, t, l in annotation.itertracks(label=True):
 
-            v = (s, t)
+            v = InstanceVertex(
+                segment=s, track=t,
+                uri=uri, modality=modality)
 
             for s_, t_, l_ in annotation.itertracks(label=True):
 
-                v_ = (s_, t_)
+                v_ = InstanceVertex(
+                    segment=s_, track=t_,
+                    uri=uri, modality=modality)
 
                 if isinstance(l, Unknown) or isinstance(l_, Unknown):
                     g = np.NaN
@@ -97,7 +103,7 @@ class PIGIntraModalEdges(object):
 
         return groundtruth
 
-    def fit(self, reference, similarity=None, features=None):
+    def fit(self, reference, similarity):
         """
 
         Parameters
@@ -105,26 +111,10 @@ class PIGIntraModalEdges(object):
 
         reference : iterator
             Generates labeled annotations
-        similarity : iterator, optional
-            Generates track similarity matrices
-        features : iterator, optional
+        similarity : iterator
+            Generates instance vertices similarity matrices
 
         """
-
-        if similarity is None and features is None:
-            raise ValueError(
-                'either `similarity` or `features` must be provided.')
-
-        # make reference a list because it will be iterated at least twice
-        reference = list(reference)
-
-        # if track similarity matrices are not provided,
-        # try to compute it on the fly using provided model
-        if similarity is None:
-            similarity = [
-                self.model.get_track_similarity_matrix(r, f)
-                for r, f in itertools.izip(reference, features)
-            ]
 
         # groundtruth instance vertices clustering matrices
         groundtruth = itertools.imap(
@@ -136,26 +126,12 @@ class PIGIntraModalEdges(object):
 
         return self
 
-    def __call__(self, annotation, similarity=None, features=None):
-
-        modality = annotation.modality
-        uri = annotation.uri
-
-        if similarity is None:
-            similarity = self.model.get_track_similarity_matrix(
-                annotation, features)
+    def __call__(self, similarity):
 
         probs = self.calibration.apply(similarity, prior=self.prior)
-
-        for (s1, t1), (s2, t2), p in probs.itervalues():
-            v1 = InstanceVertex(
-                segment=s1, track=t1, modality=modality, uri=uri)
-            v2 = InstanceVertex(
-                segment=s2, track=t2, modality=modality, uri=uri)
-            yield v1, v2, p
+        return probs.itervalues()
 
     CALIBRATION = 'calibration'
-    MODEL = 'model'
     PRIOR = 'prior'
     CREATED = 'created'
     DESCRIPTION = 'description'
@@ -172,7 +148,6 @@ class PIGIntraModalEdges(object):
 
         data = {
             self.CALIBRATION: self.calibration,
-            self.MODEL: self.model,
             self.PRIOR: self.prior,
             self.CREATED: datetime.datetime.today(),
             self.DESCRIPTION: description,
@@ -199,10 +174,7 @@ class PIGIntraModalEdges(object):
             logging.info('Description: %s' % data[cls.DESCRIPTION])
         # -----------------------------------------------------------------
 
-        intraModelEdges = cls(
-            model=data[cls.MODEL],
-            prior=data[cls.PRIOR]
-        )
+        intraModelEdges = cls(prior=data[cls.PRIOR])
 
         intraModelEdges.calibration = data[cls.CALIBRATION]
 
