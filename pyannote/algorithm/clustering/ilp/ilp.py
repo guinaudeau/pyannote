@@ -22,14 +22,6 @@
 import itertools
 import numpy as np
 import networkx as nx
-try:
-    import gurobipy as grb
-except:
-    pass
-try:
-    import pulp
-except:
-    pass
 
 
 class ILPClustering(object):
@@ -61,6 +53,8 @@ class ILPClustering(object):
         # -- gurobi --
         if self.solver == 'gurobi':
 
+            import gurobipy as grb
+
             for I, J in itertools.product(items, repeat=2):
                 self.x[I, J] = self.problem.addVar(vtype=grb.GRB.BINARY)
 
@@ -68,6 +62,8 @@ class ILPClustering(object):
 
         # -- pulp --
         if self.solver == 'pulp':
+
+            import pulp
 
             for I, J in itertools.product(items, repeat=2):
                 name = "%s / %s" % (I, J)
@@ -85,11 +81,17 @@ class ILPClustering(object):
 
         # -- gurobi --
         if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
             self.problem = grb.Model(name)
             self.problem.setParam(grb.GRB.Param.OutputFlag, False)
 
         # -- pulp --
         if self.solver == 'pulp':
+
+            import pulp
+
             self.problem = pulp.LpProblem(
                 name=name,
                 sense=pulp.constants.LpMaximize
@@ -110,6 +112,7 @@ class ILPClustering(object):
         """Add reflexivity constraints (I~I, for all I)"""
 
         if self.solver == 'gurobi':
+
             for I in items:
                 constr = self.x[I, I] == 1
                 self.problem.addConstr(constr)
@@ -117,6 +120,7 @@ class ILPClustering(object):
             self.problem.update()
 
         if self.solver == 'pulp':
+
             for I in items:
                 name = "Reflexivity (%s)" % (repr(I))
                 self.problem += self.x[I, I] == 1, name
@@ -132,6 +136,7 @@ class ILPClustering(object):
         For any pair (I, J), I~J implies J~I
         """
         if self.solver == 'gurobi':
+
             for I, J in itertools.combinations(items, 2):
                 constr = self.x[I, J] == self.x[J, I]
                 self.problem.addConstr(constr)
@@ -139,6 +144,7 @@ class ILPClustering(object):
             self.problem.update()
 
         if self.solver == 'pulp':
+
             for I, J in itertools.combinations(items, 2):
                 name = "Symmetry (%s / %s)" % (I, J)
                 self.problem += self.x[I, J] - self.x[J, I] == 0, name
@@ -269,6 +275,8 @@ class ILPClustering(object):
 
         if self.solver == 'gurobi':
 
+            import gurobipy as grb
+
             if targets:
                 for T in sources:
                     constr = grb.quicksum([self.x[T, I] for I in targets]) <= 1
@@ -296,10 +304,14 @@ class ILPClustering(object):
         objective = self.get_objective(items, get_similarity, **kwargs)
 
         if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
             self.problem.setObjective(objective, grb.GRB.MAXIMIZE)
             self.problem.update()
 
         if self.solver == 'pulp':
+
             self.problem.setObjective(objective)
 
         return self
@@ -319,6 +331,9 @@ class ILPClustering(object):
         N = len(values)
 
         if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
             objective = grb.quicksum(values)
 
         if self.solver == 'pulp':
@@ -342,9 +357,13 @@ class ILPClustering(object):
         N = len(values)
 
         if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
             objective = grb.quicksum(values)
 
         if self.solver == 'pulp':
+
             objective = sum(values)
 
         return objective, N
@@ -431,6 +450,8 @@ class ILPClustering(object):
 
 
         """
+
+        import gurobipy as grb
 
         # initial solution
         if init:
