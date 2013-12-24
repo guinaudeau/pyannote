@@ -33,6 +33,11 @@ class PersonInstanceGraph(nx.Graph):
     def __init__(self):
         super(PersonInstanceGraph, self).__init__()
 
+    def update(self, pig):
+        self.add_edges_from(pig.edges_iter(data=True))
+        self.add_nodes_from(pig.nodes_iter(data=True))
+        return self
+
     def get_similarity(self, v, w):
         if self.has_edge(v, w):
             return self[v][w][PROBABILITY]
@@ -54,6 +59,11 @@ class PersonInstanceGraph(nx.Graph):
                        instance_vertex=False, identity_vertex=False,
                        identification_edge=False, cooccurrence_edge=False):
         """Add `annotation` to graph
+
+        Instance vertices: v
+        Identity vertices: i
+        Identification edges: v === i
+        Cooccurrence edges: v =/= v'
 
         Parameters
         ----------
@@ -146,6 +156,10 @@ class PersonInstanceGraph(nx.Graph):
     def add_scores(self, scores):
         """Add `scores` to graph
 
+        Instance vertices: v
+        Identity vertices: i
+        Identification edges: v --- i
+
         Parameters
         ----------
         scores : `Scores`
@@ -175,8 +189,11 @@ class PersonInstanceGraph(nx.Graph):
     def add_track_similarity_matrix(
         self, matrix, uri, modality, calibration=None
     ):
-
         """
+
+        Instance vertices: v
+        Instance similarity edges: v --- v'
+
         Parameters
         ----------
         matrix : LabelMatrix
@@ -217,7 +234,33 @@ class PersonInstanceGraph(nx.Graph):
         )
 
         # Add affinity edges between instance vertices
+        # (note: LabelMatrix.itervalues() does not yiel NaN values)
         for v, w, p in matrix.itervalues():
             self.add_edge(v, w, {PROBABILITY: p})
 
         return self
+
+    def crop(self, focus, mode='loose'):
+        """
+        Parameters
+        ----------
+        focus : Segment or Timeline
+        mode : {'loose', 'strict'}
+        """
+
+        if mode not in ['loose', 'strict']:
+            raise ValueError('unsupported mode')
+
+        instances = self.get_instance_vertices()
+
+        # get segments in focus
+        timeline = [i.segment for i in instances]
+        cropped = timeline.crop(focus, mode=mode)
+
+        # remove all instances not in focus
+        remove = [i for i in instances if i.segment not in cropped]
+
+        sub_pig = self.copy()
+        sub_pig.remove_nodes_from(remove)
+
+        return sub_pig
