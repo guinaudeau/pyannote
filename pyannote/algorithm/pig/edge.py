@@ -45,11 +45,11 @@ class PIGIntraModalEdges(object):
 
     """
 
-    def __init__(self, calibration='linear', prior=None):
+    def __init__(self, calibration='linear', equal_priors=False):
 
         super(PIGIntraModalEdges, self).__init__()
         self.calibration = ClusteringCalibration(method=calibration)
-        self.prior = prior
+        self.equal_priors = equal_priors
 
     def get_groundtruth_matrix(self, annotation):
         """
@@ -128,11 +128,11 @@ class PIGIntraModalEdges(object):
 
     def __call__(self, similarity):
 
-        probs = self.calibration.apply(similarity, prior=self.prior)
-        return probs.itervalues()
+        self.calibration.equal_priors = self.equal_priors
+        return self.calibration.apply(similarity).itervalues()
 
     CALIBRATION = 'calibration'
-    PRIOR = 'prior'
+    EQUAL_PRIORS = 'equal_priors'
     CREATED = 'created'
     DESCRIPTION = 'description'
 
@@ -148,7 +148,7 @@ class PIGIntraModalEdges(object):
 
         data = {
             self.CALIBRATION: self.calibration,
-            self.PRIOR: self.prior,
+            self.EQUAL_PRIORS: self.equal_priors,
             self.CREATED: datetime.datetime.today(),
             self.DESCRIPTION: description,
         }
@@ -174,12 +174,11 @@ class PIGIntraModalEdges(object):
             logging.info('Description: %s' % data[cls.DESCRIPTION])
         # -----------------------------------------------------------------
 
-        intraModelEdges = cls(prior=data[cls.PRIOR])
+        intraModelEdges = cls(equal_priors=data[cls.EQUAL_PRIORS])
 
         intraModelEdges.calibration = data[cls.CALIBRATION]
 
         return intraModelEdges
-
 
 
 class PIGCrossModalEdges(object):
