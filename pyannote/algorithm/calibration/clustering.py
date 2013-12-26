@@ -53,6 +53,8 @@ class ClusteringCalibration(object):
     ----------
     method : {'linear', 'isotonic'}, optional
         Default is linear regression of log-likelihood ratio
+    equal_priors : boolean, optional
+        Defaults to False.
     """
 
     @classmethod
@@ -67,7 +69,8 @@ class ClusteringCalibration(object):
         with open(path, mode='w') as f:
             pickle.dump(self, f)
 
-    def __init__(self, method='linear'):
+    def __init__(self, method='linear', equal_priors=False):
+
         super(ClusteringCalibration, self).__init__()
 
         self.method = method
@@ -81,6 +84,8 @@ class ClusteringCalibration(object):
         else:
             raise NotImplementedError(
                 'unknown calibration method (%s)' % method)
+
+        self.equal_priors = equal_priors
 
     def _get_training_data(self, groundtruth_iterator, similarity_iterator):
         """
@@ -130,32 +135,30 @@ class ClusteringCalibration(object):
 
         return x, y
 
-    def fit(self, groundtruth_iterator, similarity_iterator, **kwargs):
+    def fit(self, groundtruth, similarity, **kwargs):
         """
 
         Parameters
         ----------
-        groundtruth_iterator, similarity_iterator : `LabelMatrix` iterators
+        groundtruth, similarity : `LabelMatrix` iterators
 
         Notes
         -----
-        `groundtruth_iterator` should yield G matrices such that for each row r
+        `groundtruth` should yield G matrices such that for each row r
         and each column c, G[r, c] = {0, 1, np.NaN}:
          - '1' indicates that elements r and c are in the same cluster
            according to the groundtruth.
          - '0' indicates that they are in two different clusters.
          - 'np.NaN' is used when no information is available
 
-        `similarity_iterator` should yield S matrices with same rows and
+        `similarity` should yield S matrices with same rows and
         columns as G matrices, such that S[r, c] provides a number describing
         how similar (or dissimilar) elements r and c are to each other.
         Use np.NaN in case similarity is not available.
 
         """
 
-        x, y = self._get_training_data(
-            groundtruth_iterator, similarity_iterator
-        )
+        x, y = self._get_training_data(groundtruth, similarity)
 
         ok = np.where(~np.isnan(x))
         x = x[ok]
@@ -165,159 +168,22 @@ class ClusteringCalibration(object):
 
         return self
 
-    def apply(self, similarity, prior=None):
+    def apply(self, similarity):
         """
         Parameters
         ----------
         similarity : LabelMatrix
             Similarity matrix
         """
+
+        if self.equal_priors:
+            prior = 0.5
+        else:
+            prior = None
+
         return LabelMatrix(
             data=self.llr.toPosteriorProbability(
                 similarity.df.values, prior=prior
             ),
             rows=similarity.get_rows(),
             columns=similarity.get_columns())
-
-
-# if __name__ == "__main__":
-
-#     import pickle
-#     import sys
-#     from argparse import ArgumentParser
-#     import pyannote.cli
-
-#     parser = ArgumentParser(description='Calibration of clustering metrics')
-#     subparsers = parser.add_subparsers(help='mode')
-
-#     # ==============
-#     # TRAIN mode
-#     # ==============
-
-#     def trainCalibration(args):
-#         uris = pyannote.cli.get_uris()
-#         if not uris:
-#             raise IOError('Empty list of resources. Please use --uris option.')
-
-#         def _get_tracks(uri):
-#             tracks = args.tracks(uri)
-#             if hasattr(args, 'uem'):
-#                 uem = args.uem(uri)
-#                 tracks = tracks.crop(uem, mode='loose')
-#             return tracks
-
-#         if hasattr(args, 'reference'):
-#             data = [
-#                 (args.reference(uri), _get_tracks(uri), args.similarity(uri))
-#                 for uri in uris
-#             ]
-#         else:
-#             data = [
-#                 (None, _get_tracks(uri), args.similarity(uri))
-#                 for uri in uris
-#             ]
-#         calibration = ClusteringCalibration().fit(data)
-#         with args.output() as f:
-#             pickle.dump(calibration, f)
-
-#     train_parser = subparsers.add_parser(
-#         'train', help='Train calibration',
-#         parents=[pyannote.cli.parentArgumentParser()]
-#     )
-
-#     train_parser.set_defaults(func=trainCalibration)
-
-#     description = 'path to input similarity metric matrices.'
-#     train_parser.add_argument(
-#         'similarity', help=description,
-#         type=pyannote.cli.InputGetMatrix()
-#     )
-
-#     description = 'path to input tracks.'
-#     initArgs = {'load_ids': True}
-#     train_parser.add_argument(
-#         'tracks', help=description,
-#         type=pyannote.cli.InputGetAnnotation(initArgs=initArgs)
-#     )
-
-#     description = 'path to output calibration.'
-#     train_parser.add_argument(
-#         'output', help=description,
-#         type=pyannote.cli.OutputFileHandle()
-#     )
-
-#     description = 'path to input reference annotation.'
-#     train_parser.add_argument(
-#         '--reference', help=description,
-#         default=pyannote.cli.SUPPRESS,
-#         type=pyannote.cli.InputGetAnnotation()
-#     )
-
-#     # ==============
-#     # APPLY mode
-#     # ==============
-#     def applyCalibration(args):
-#         uris = pyannote.cli.get_uris()
-#         if not uris:
-#             raise IOError('Empty list of resources. Please use --uris option.')
-
-#         with args.calibration() as f:
-#             calibration = pickle.load(f)
-
-#         prior = args.prior if hasattr(args, 'prior') else None
-
-#         for uri in uris:
-
-#             similarity = args.similarity(uri)
-
-#             calibrated = calibration.apply(similarity, prior=prior)
-#             with args.calibrated(uri=uri) as f:
-#                 pickle.dump(calibrated, f)
-
-#     apply_parser = subparsers.add_parser(
-#         'apply', help='Apply calibration',
-#         parents=[pyannote.cli.parentArgumentParser()]
-#     )
-#     apply_parser.set_defaults(func=applyCalibration)
-
-#     description = 'path to input similarity metric matrices.'
-#     apply_parser.add_argument(
-#         'similarity', help=description,
-#         type=pyannote.cli.InputGetMatrix()
-#     )
-
-#     description = 'optional path to input tracks.'
-#     apply_parser.add_argument(
-#         '--tracks', help=description,
-#         default=pyannote.cli.SUPPRESS,
-#         type=pyannote.cli.InputGetAnnotation()
-#     )
-
-#     description = 'path to input calibration.'
-#     apply_parser.add_argument(
-#         'calibration', help=description,
-#         type=pyannote.cli.InputFileHandle()
-#     )
-
-#     description = 'path to output calibrated similarity metric matrices.'
-#     apply_parser.add_argument(
-#         'calibrated', help=description,
-#         type=pyannote.cli.OutputFileHandle()
-#     )
-
-#     description = 'set prior manually (default is to use estimated priors).'
-#     apply_parser.add_argument(
-#         '--prior', help=description, type=float,
-#         default=pyannote.cli.SUPPRESS
-#     )
-
-#     # =====================
-#     # ARGUMENT parsing
-#     # =====================
-
-#     try:
-#         args = parser.parse_args()
-#         args.func(args)
-#     except IOError as e:
-#         sys.stderr.write('%s' % e)
-#         sys.exit(-1)
