@@ -18,6 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import itertools
 from pyannote.base.annotation import Annotation, Unknown
 from pyannote.algorithm.clustering.ilp.ilp import ILPClustering
@@ -49,14 +50,17 @@ class PIGMiningILP(ILPClustering):
                     v for v in cluster if isinstance(v, IdentityVertex)
                 ]
 
-                if len(identity_vertices) > 1:
-                    raise ValueError(
-                        'Cluster contains more than one identity.')
+                if len(identity_vertices) == 0:
+                    identity = Unknown()
 
-                if identity_vertices:
+                elif len(identity_vertices) == 1:
                     identity = identity_vertices[0].identity
+
                 else:
                     identity = Unknown()
+                    logging.error('cluster contains more than one identity')
+                    logging.error('uri = %s / modality = %s' % (uri, modality))
+                    logging.error(cluster)
 
                 # obtain cluster tracks
                 instance_vertices = [
@@ -77,7 +81,7 @@ class PIGMiningILP(ILPClustering):
         self.set_problem(pig)
         self.set_constraints(pig)
         self.set_objective(pig, pig.get_similarity, **kwargs)
-        solution = self.solve()
+        solution = self.solve(verbose=True)
         clusters = self.get_clusters(pig, solution)
         return self.get_annotations(pig, clusters)
 
