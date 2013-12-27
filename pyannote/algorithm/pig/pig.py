@@ -21,6 +21,7 @@
 import numpy as np
 import networkx as nx
 from vertex import InstanceVertex, IdentityVertex
+from pyannote.base.timeline import Timeline
 
 PROBABILITY = 'probability'
 PROBABILITY_ONE = 1
@@ -254,7 +255,7 @@ class PersonInstanceGraph(nx.Graph):
         instances = self.get_instance_vertices()
 
         # get segments in focus
-        timeline = [i.segment for i in instances]
+        timeline = Timeline(segments=[i.segment for i in instances])
         cropped = timeline.crop(focus, mode=mode)
 
         # remove all instances not in focus
