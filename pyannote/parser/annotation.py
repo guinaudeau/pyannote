@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright 2012 Herve BREDIN (bredin@limsi.fr)
+# Copyright 2012-2014 Herve BREDIN (bredin@limsi.fr)
 
 # This file is part of PyAnnote.
 #
@@ -18,6 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import ann
 import mdtm
 import seg
 import repere
@@ -31,6 +32,7 @@ import facetracks
 class AnnotationParser(object):
 
     supported = {
+        '.ann': ann.ANNParser,
         '.mdtm': mdtm.MDTMParser,
         '.seg': seg.SEGParser,
         '.repere': repere.REPEREParser,
