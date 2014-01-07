@@ -303,7 +303,13 @@ class PIGCrossModalEdges(object):
 
             counts[width+s2-t1:width+e2-t1] += 1
 
-        return np.average(self.probability, weights=counts)
+        # in some rare cases, counts is zero everywhere
+        if np.sum(counts) > 0:
+            p = np.average(self.probability, weights=counts)
+        else:
+            p = np.nan
+
+        return p
 
     def __call__(self, modality1, modality2):
 
@@ -334,6 +340,10 @@ class PIGCrossModalEdges(object):
                 )
 
                 p = self.get_probability(segment1, segment2)
+
+                # in some rare cases, get_probability returns NaN
+                if np.isnan(p):
+                    continue
 
                 yield v1, v2, p
 
