@@ -172,6 +172,7 @@ class PIGRelaxedTransitivityConstraints(object):
         identities = pig.get_identity_vertices()
 
         # Relaxed transitivity constraints
+        self.add_transitivity_constraints(instances)
         self.add_asymmetric_transitivity_constraints(instances, identities)
 
         # Identity unicity constraints
