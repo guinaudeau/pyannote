@@ -288,7 +288,17 @@ class PIGCrossModalEdges(object):
 
         return self
 
-    def get_probability(self, segment1, segment2):
+    def _get_counts(self, segment1, segment2):
+        """
+        Parameters
+        ----------
+        segment1, segment2 : Segment
+
+        Returns
+        -------
+        counts : self.probability-like array
+            Distribution of time difference between `segment1` and `segment2`
+        """
 
         width = int(self.neighbourhood/self.resolution)
         counts = np.zeros(2*width+1, dtype=np.float)
@@ -301,11 +311,31 @@ class PIGCrossModalEdges(object):
             s2 = int(segment2.start/self.resolution)
             e2 = int(segment2.end/self.resolution)
 
-            counts[width+s2-t1:width+e2-t1] += 1
+            i = width + max(-width, min(width, s2-t1))
+            j = width + max(-width, min(width, e2-t1))
+            counts[i:j] += 1
+
+        return counts
+
+    def get_average_probability(self, segment1, segment2):
+
+        counts = self._get_counts(segment1, segment2)
 
         # in some rare cases, counts is zero everywhere
         if np.sum(counts) > 0:
             p = np.average(self.probability, weights=counts)
+        else:
+            p = np.nan
+
+        return p
+
+    def get_maximum_probability(self, segment1, segment2):
+
+        counts = self._get_counts(segment1, segment2)
+
+        # in some rare cases, counts is zero everywhere
+        if np.sum(counts) > 0:
+            p = np.max(self.probability[counts > 0])
         else:
             p = np.nan
 
@@ -339,9 +369,9 @@ class PIGCrossModalEdges(object):
                     modality=self.modality2, uri=uri
                 )
 
-                p = self.get_probability(segment1, segment2)
+                p = self.get_maximum_probability(segment1, segment2)
 
-                # in some rare cases, get_probability returns NaN
+                # in some rare cases, get_maximum_probability returns NaN
                 if np.isnan(p):
                     continue
 
