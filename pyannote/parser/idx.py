@@ -24,7 +24,8 @@ IDX file format
 
 import numpy as np
 from pyannote.base.segment import Segment
-import sys
+from sklearn.isotonic import IsotonicRegression
+from pandas import read_table
 
 
 class IDXParser(object):
@@ -34,55 +35,36 @@ class IDXParser(object):
 
     def read(self, path):
 
-        # frame number to timestamp conversion
-        self.__time = {}
+        # load .idx file using pandas
+        df = read_table(
+            path, sep='\s+',
+            names=['frame_number', 'frame_type', 'bytes', 'seconds']
+        )
+        x = np.array(df['frame_number'], dtype=np.float)
+        y = np.array(df['seconds'], dtype=np.float)
 
-        # open .idx file
-        f = open(path, 'r')
-        for line in f:
-            # 13 P     125911    0.384
-            # idx type byte seconds
-            fields = line.strip().split()
-            idx = int(fields[0])
-            # type = fields[1]
-            # byte = int(fields[2])
-            seconds = float(fields[3])
-            self.__time[idx] = seconds
+        # train isotonic regression
+        self.ir = IsotonicRegression(y_min=np.min(y), y_max=np.max(y))
+        self.ir.fit(x, y)
 
-        # close .idx file
-        f.close()
+        # store info frame support
+        self.xmin = np.min(x)
+        self.xmax = np.max(x)
 
-        # fix it.
-        # average delta between two consecutive frames
-        m = min(self.__time)
-        M = max(self.__time)
-        deltas = [self.__time[idx]-self.__time[idx-1]
-                  for idx in range(m+1, M)
-                  if idx in self.__time and (idx-1) in self.__time]
-        self.__delta = float(np.median(deltas))
-
-        # if idx is missing, fill in the gaps based on previous frame
-        for idx in range(m+1, M):
-            if idx not in self.__time:
-                self.__time[idx] = self.__time[idx-1] + self.__delta
-
-        for idx in range(m+1, M):
-            if abs(self.__time[idx] - self.__time[idx-1]) > 100 * self.__delta:
-                sys.stderr.write("Fixing aberrant timestamp for frame %d (%g --> %g)\n" % (idx, self.__time[idx], self.__time[idx-1] + self.__delta))
-                sys.stderr.flush()
-                self.__time[idx] = self.__time[idx-1] + self.__delta
+        # store median frame duration
+        self.delta = np.median(np.diff(y))
 
         return self
 
     def __call__(self, i):
         """Get timestamp"""
-        return self.__time[i]
+        return self.ir.transform([min(self.xmax, max(self.xmin, i))])[0]
 
     def __getitem__(self, i):
         """Get frame"""
-        frame_middle = self.__time[i]
-        segment = Segment(start=frame_middle-.5*self.__delta,
-                          end=frame_middle+.5*self.__delta)
+        frame_middle = self(i)
+        segment = Segment(start=frame_middle-.5*self.delta,
+                          end=frame_middle+.5*self.delta)
         return segment
 
 if __name__ == "__main__":
