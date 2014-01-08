@@ -31,7 +31,7 @@ try:
     from lxml import objectify
 except:
     pass
-from pyannote.base.segment import Segment
+from pyannote import Segment, Timeline, Annotation
 from base import BaseAnnotationParser
 from idx import IDXParser
 
@@ -53,7 +53,7 @@ class XGTFParser(BaseAnnotationParser):
         return self.__idx[int(m.group(1))]
 
     def _parse_head(self, vpr):
-        return [vpr.getchildren()[0].get('value')]
+        return vpr.getchildren()[0].get('value')
 
     def _parse_time(self, vpr):
         return self.__idx(int(vpr.getchildren()[0].get('value')))
@@ -111,65 +111,116 @@ class XGTFParser(BaseAnnotationParser):
         if uri is None:
             uri = root.get('filename')
 
-        head = []
-        written = []
-        written_alone = []
+        # head = []
+        # written = []
+        # written_alone = []
+
+        # annotated = Timeline(
+        #     segments=[
+        #         self._parse_frame(element)
+        #         for element in root.iterchildren()
+        #     ]
+        # )
+
+        # return annotated
+
+        annotated = Annotation(uri=uri, modality='annotated')
+        head = Annotation(uri=uri, modality='head')
+
+        head_set = set([])
 
         for element in root.iterchildren():
 
             frame_segment = self._parse_frame(element)
-            if frame_segment and frame_segment not in self(uri, "annotated"):
-                self._add(frame_segment, "_", "_", uri, "annotated")
+            annotated[frame_segment, '_'] = '_'
 
-            if element.get('name') in ['PERSONNE', 'TEXTE']:
+            if element.get('name') != 'PERSONNE':
+                continue
 
-                written = set([])
-                written_alone = set([])
-                written_intro = set([])
-                head = set([])
-                cartouche = False
+            label = None
 
-                for vpr in element.iterchildren():
+            for vpr in element.iterchildren():
 
-                    attr_name = vpr.get('name')
-                    if attr_name == 'STARTFRAME':
-                        element_start = self._parse_time(vpr)
-                    elif attr_name == 'ENDFRAME':
-                        element_end = self._parse_time(vpr)
-                    elif attr_name == 'TRANSCRIPTION':
-                        written_alone = self._parse_written(vpr, alone=True)
-                        written = self._parse_written(vpr, alone=False)
-                    elif attr_name == 'NOM':
-                        head = self._parse_head(vpr)
-                    elif attr_name == 'CARTOUCHE':
-                        cartouche = self._parse_cartouche(vpr)
+                attr_name = vpr.get('name')
 
-                if cartouche:
-                    written_intro = set(written)
+                if attr_name == 'STARTFRAME':
+                    element_start = self._parse_time(vpr)
 
+                elif attr_name == 'ENDFRAME':
+                    element_end = self._parse_time(vpr)
+
+                elif attr_name == 'NOM':
+                    label = self._parse_head(vpr)
+
+                else:
+                    continue
+
+            if label is not None:
                 element_segment = Segment(start=element_start, end=element_end)
+                head_set.add((element_segment, label))
 
-                try:
-                    modalities = {
-                        'written (alone)': written_alone,
-                        'written (intro)': written_intro,
-                        'written': written,
-                        'head': head}
+        for segment, label in head_set:
+            head[segment, head.new_track(segment)] = label
 
-                    for modality, new_lbls in modalities.iteritems():
+        head = head.smooth()
 
-                        for lbl in new_lbls:
-                            lbls = self(uri,
-                                        modality).get_labels(element_segment)
-                            if lbl not in lbls:
-                                self._add(element_segment, None, lbl,
-                                          uri, modality)
-                except Exception, e:
-                    print "Error @ %s %f %f" % (uri, element_start,
-                                                element_end)
-                    raise e
+        self._loaded[(uri, 'head')] = head
+        self._loaded[(uri, 'annotated')] = annotated
 
         return self
+
+        # for element in root.iterchildren():
+
+        #     frame_segment = self._parse_frame(element)
+        #     if frame_segment:
+        #         self._add(frame_segment, "_", "_", uri, "annotated")
+
+        #     if element.get('name') == 'PERSONNE'
+
+        #         head = set([])
+        #         cartouche = False
+
+        #         for vpr in element.iterchildren():
+
+        #             attr_name = vpr.get('name')
+        #             if attr_name == 'STARTFRAME':
+        #                 element_start = self._parse_time(vpr)
+        #             elif attr_name == 'ENDFRAME':
+        #                 element_end = self._parse_time(vpr)
+        #             elif attr_name == 'TRANSCRIPTION':
+        #                 written_alone = self._parse_written(vpr, alone=True)
+        #                 written = self._parse_written(vpr, alone=False)
+        #             elif attr_name == 'NOM':
+        #                 head = self._parse_head(vpr)
+        #             elif attr_name == 'CARTOUCHE':
+        #                 cartouche = self._parse_cartouche(vpr)
+
+        #         if cartouche:
+        #             written_intro = set(written)
+
+        #         element_segment = Segment(start=element_start, end=element_end)
+
+        #         try:
+        #             modalities = {
+        #                 'written (alone)': written_alone,
+        #                 'written (intro)': written_intro,
+        #                 'written': written,
+        #                 'head': head}
+
+        #             for modality, new_lbls in modalities.iteritems():
+
+        #                 for lbl in new_lbls:
+        #                     lbls = self(uri,
+        #                                 modality).get_labels(element_segment)
+        #                     if lbl not in lbls:
+        #                         self._add(element_segment, None, lbl,
+        #                                   uri, modality)
+        #         except Exception, e:
+        #             print "Error @ %s %f %f" % (uri, element_start,
+        #                                         element_end)
+        #             raise e
+
+        # return self
 
     def _get_transcription(self, vpr):
         string = vpr.getchildren()[0].get('value')
