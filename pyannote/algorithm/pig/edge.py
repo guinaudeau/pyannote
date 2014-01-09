@@ -356,12 +356,14 @@ class PIGCrossModalEdges(object):
                 modality=self.modality1, uri=uri
             )
 
+            # add edges only to neighboring tracks
+            # (no need to look elsewhere)
             roi = Segment(
                 start=segment1.start - self.neighbourhood,
                 end=segment1.end + self.neighbourhood
             )
+            neighbourhood = modality2.crop(roi, mode='loose')
 
-            neighbourhood = modality2.crop(roi, mode='strict')
             for segment2, track2 in neighbourhood.itertracks():
 
                 v2 = InstanceVertex(
