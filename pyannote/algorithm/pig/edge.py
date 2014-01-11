@@ -290,7 +290,7 @@ class PIGIntraModalEdges(ClusteringCalibration, PIGEdgeIOMixin):
         posterior = self.apply(matrix)
 
         for (s1, t1), (s2, t2) in itertools.combinations(
-            annotation.itertracks()
+            annotation.itertracks(), 2
         ):
 
             probability = matrix[(s1, t1), (s2, t2)]
