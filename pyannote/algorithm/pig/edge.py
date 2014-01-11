@@ -293,7 +293,7 @@ class PIGIntraModalEdges(ClusteringCalibration, PIGEdgeIOMixin):
             annotation.itertracks(), 2
         ):
 
-            probability = matrix[(s1, t1), (s2, t2)]
+            probability = posterior[(s1, t1), (s2, t2)]
 
             if np.isnan(probability):
                 continue
