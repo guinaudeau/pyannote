@@ -60,7 +60,7 @@ class LLR(object):
         negative = X[np.where(Y == 0)]
         return 1. * len(positive) / (len(positive) + len(negative))
 
-    def toPosteriorProbability(self, scores, prior=None):
+    def toPosteriorProbability(self, scores):
         """Get posterior probability given scores
 
         Parameters
@@ -82,8 +82,11 @@ class LLR(object):
         llr = self.toLogLikelihoodRatio(scores)
 
         # Get prior
-        if prior is None:
+        if self.equal_priors:
+            prior = 0.5
+        else:
             prior = self.prior
+
         priorRatio = (1.-prior) / prior
 
         # Compute posterior probability
@@ -93,8 +96,9 @@ class LLR(object):
 class LLRIsotonicRegression(LLR):
     """Log-likelihood ratio estimation by isotonic regression"""
 
-    def __init__(self):
+    def __init__(self, equal_priors=False):
         super(LLRIsotonicRegression, self).__init__()
+        self.equal_priors = equal_priors
 
     def fit(self, X, Y):
 
@@ -139,8 +143,9 @@ class LLRIsotonicRegression(LLR):
 class LLRLinearRegression(LLR):
     """Log-likelihood ratio estimation by linear regression"""
 
-    def __init__(self):
+    def __init__(self, equal_priors=False):
         super(LLRLinearRegression, self).__init__()
+        self.equal_priors = equal_priors
 
     def fit(self, X, Y):
 
