@@ -85,105 +85,53 @@ class ClusteringCalibration(object):
             raise NotImplementedError(
                 'unknown calibration method (%s)' % method)
 
+        self.llr.equal_priors = equal_priors
         self.equal_priors = equal_priors
 
-    def _get_training_data(self, groundtruth_iterator, similarity_iterator):
-        """
 
-        Parameters
-        ----------
-        groundtruth_iterator, similarity_iterator : `LabelMatrix` iterators
+    def fit(self, matrices, annotations):
+        
+        X = []
+        Y = []
 
-        Returns
-        -------
-        x, y : numpy array
+        for m, a in itertools.izip(matrices, annotations):
 
-        Notes
-        -----
-        `groundtruth_iterator` should yield G matrices such that for each row r
-        and each column c, G[r, c] = {0, 1, np.NaN}:
-         - '1' indicates that elements r and c are in the same cluster
-           according to the groundtruth.
-         - '0' indicates that they are in two different clusters.
-         - 'np.NaN' is used when no information is available
+            for (segment1, track1), (segment2, track2), x in m.itervalues():
 
-        `similarity_iterator` should yield S matrices with same rows and
-        columns as G matrices, such that S[r, c] provides a number describing
-        how similar (or dissimilar) elements r and c are to each other.
-        Use np.NaN in case similarity is not available.
-
-        """
-        x = []
-        y = []
-
-        for groundtruth, similarity in itertools.izip(
-            groundtruth_iterator, similarity_iterator
-        ):
-
-            for row, column, gt in groundtruth.itervalues():
-                sim = similarity[row, column]
-
-                # skip self similarity
-                if row == column:
+                if (segment1, track1) == (segment2, track2):
                     continue
 
-                x.append(sim)
-                y.append(gt)
+                label1 = a[segment1, track1]
+                label2 = a[segment2, track2]
 
-        x = np.array(x)
-        y = np.array(y)
+                if isinstance(label1, Unknown) or isinstance(label2, Unknown):
+                    y = np.nan
+                else:
+                    y = np.float(label1 == label2)
 
-        return x, y
 
-    def fit(self, groundtruth, similarity, **kwargs):
-        """
+                X.append(x)
+                Y.append(y)
 
-        Parameters
-        ----------
-        groundtruth, similarity : `LabelMatrix` iterators
+        self._X = np.array(X)
+        self._Y = np.array(Y)
 
-        Notes
-        -----
-        `groundtruth` should yield G matrices such that for each row r
-        and each column c, G[r, c] = {0, 1, np.NaN}:
-         - '1' indicates that elements r and c are in the same cluster
-           according to the groundtruth.
-         - '0' indicates that they are in two different clusters.
-         - 'np.NaN' is used when no information is available
-
-        `similarity` should yield S matrices with same rows and
-        columns as G matrices, such that S[r, c] provides a number describing
-        how similar (or dissimilar) elements r and c are to each other.
-        Use np.NaN in case similarity is not available.
-
-        """
-
-        x, y = self._get_training_data(groundtruth, similarity)
-
-        ok = np.where(~np.isnan(x))
-        x = x[ok]
-        y = y[ok]
-
-        self.llr.fit(x, y)
+        self.llr.fit(self._X, self._Y)
 
         return self
 
-    def apply(self, similarity):
+
+    def apply(self, matrix):
         """
         Parameters
         ----------
-        similarity : LabelMatrix
+        matrix : LabelMatrix
             Similarity matrix
         """
 
-        if self.equal_priors:
-            prior = 0.5
-        else:
-            prior = None
+        self.llr.equal_priors = self.equal_priors
 
         return LabelMatrix(
-            data=self.llr.toPosteriorProbability(
-                similarity.df.values, prior=prior
-            ),
-            rows=similarity.get_rows(),
-            columns=similarity.get_columns())
+            data=self.llr.toPosteriorProbability(matrix.df.values),
+            rows=matrix.get_rows(),
+            columns=matrix.get_columns())
