@@ -115,7 +115,8 @@ class AnnotationMixin(object):
             timeline = self.get_timeline()
 
             # focus coverage
-            coverage = focus.coverage()
+            # coverage = focus.coverage()
+            coverage = focus.segmentation()
 
             if mode in ['strict', 'loose']:
 
@@ -312,9 +313,10 @@ class Scores(AnnotationMixin, object):
 
     """
     @classmethod
-    def from_df(cls, df, uri=None,
-                         modality=None,
-                         aggfunc=np.mean):
+    def from_df(
+        cls, df,
+        uri=None, modality=None, aggfunc=np.mean
+    ):
         """
 
         Parameters
@@ -335,37 +337,41 @@ class Scores(AnnotationMixin, object):
 
         """
         A = cls(uri=uri, modality=modality)
-        A._df = pivot_table(df, values=SCORE,
-                                rows=[SEGMENT, TRACK],
-                                cols=LABEL,
-                                aggfunc=aggfunc)
+        A._df = pivot_table(
+            df, values=SCORE,
+            rows=[SEGMENT, TRACK], cols=LABEL,
+            aggfunc=aggfunc
+        )
         return A
 
     def __init__(self, uri=None, modality=None):
         super(Scores, self).__init__()
 
-        index = MultiIndex(levels=[[],[]],
-                           labels=[[],[]],
-                           names=[SEGMENT, TRACK])
+        index = MultiIndex(
+            levels=[[], []], labels=[[], []],
+            names=[SEGMENT, TRACK]
+        )
 
         self._df = DataFrame(index=index, dtype=np.float64)
         self.modality = modality
         self.uri = uri
         self._timelineHasChanged = True
 
-
     # del scores[segment]
     # del scores[segment, :]
     # del scores[segment, track]
     def __delitem__(self, key):
+
         if isinstance(key, Segment):
             segment = key
             self._df = self._df.drop(segment, axis=0)
             self._timelineHasChanged = True
+
         elif isinstance(key, tuple) and len(key) == 2:
             segment, track = key
             self._df = self._df.drop((segment, track), axis=0)
             self._timelineHasChanged = True
+
         else:
             raise KeyError('')
 
