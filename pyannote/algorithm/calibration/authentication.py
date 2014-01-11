@@ -18,264 +18,202 @@
 #     You should have received a copy of the GNU General Public License
 #     along with PyAnnote.  If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import numpy as np
 from pyannote.base.annotation import Unknown
-import sc2llr
+from pyannote.stats.llr import LLRLinearRegression, LLRIsotonicRegression
+from pyannote.stats.llr import logsumexp
 
 
 class AuthenticationCalibration(object):
+    """
 
-    def __init__(self, tagger=None):
+    Parameters
+    ----------
+    method : {'linear', 'isotonic'}, optional
+        Default is linear regression of log-likelihood ratio
+    equal_priors : boolean, optional
+        Defaults to False
+    open_set : boolean, optional
+        Defaults to False
+    """
+
+    @classmethod
+    def from_file(cls, path):
+        import pickle
+        with open(path, mode='r') as f:
+            calibration = pickle.load(f)
+        return calibration
+
+    def to_file(self, path):
+        import pickle
+        with open(path, mode='w') as f:
+            pickle.dump(self, f)
+
+    def __init__(
+        self,
+        method='linear',
+        equal_priors=False, open_set=False
+    ):
         super(AuthenticationCalibration, self).__init__()
-        if tagger is None:
-            import pyannote.algorithm.tagging
-            self.tagger = pyannote.algorithm.tagging.ConservativeDirectTagger()
+
+        self.method = method
+
+        if method == 'linear':
+            self.llr = LLRLinearRegression()
+
+        elif method == 'isotonic':
+            self.llr = LLRIsotonicRegression()
+
         else:
-            self.tagger = tagger
+            raise NotImplementedError(
+                'unknown calibration method (%s)' % method)
 
-    def xy(self, reference, scores, labels=None, **kwargs):
-        """
+        self.llr.equal_priors = True
 
-        Parameters
-        ----------
-        reference : `Annotation`
+        self.equal_priors = equal_priors
+        self.open_set = open_set
 
-        scores : `Scores`
-        labels : list
-            List of labels whose scores must be considered.
-            In case labels is None (default), use all available labels.
 
-        Returns
-        -------
-        x,y : (nTracks, nLabels)-shaped numpy arrays
-            `nTracks` is the number of tracks in `scores`.
-            `nLabels` is the number of labels.
-            x[t,l] contains the scores for track #t and label #l.
-            y[t,l] contains the groundtruth (i.e. 1 if track #t has label #l,
-            0 if it has a different label and -1 if label is not known)
-        kw : dict
+    def _fit_priors(self, annotations):
+        # assumes self.targets is already set
 
-        """
+        # chart[target] = accumulated duration of target  
+        chart = {}
 
-        if labels is None:
-            labels = scores.labels()
-            kwargs['labels'] = labels
+        # total = total duration of all targets
+        total = 0.
 
-        nLabels = len(labels)
+        for a in annotations:
+            
+            # accumulate 
+            for target, duration in a.chart():
 
-        # get all tracks (anonymous for now)
-        tracks = scores.to_annotation().anonymize_tracks()
-        nTracks = len([_ for _ in tracks.itertracks()])
+                # group all Unknowns into one unique Unknown target
+                if isinstance(target, Unknown) or target not in self.targets:
+                    target = Unknown
 
-        x = np.zeros((nTracks, nLabels), dtype=float)
-        y = np.zeros((nTracks, nLabels), dtype=int)
+                # increment target duration
+                chart[target] = chart.get(target, 0) + duration
 
-        # tag tracks than can be tagged
-        tagged = self.tagger(reference, tracks)
+                # increment total duration
+                total = total + duration
 
-        for t, (segment, track) in enumerate(tracks.itertracks()):
-            label = tagged[segment, track]
-            track_scores = scores.get_track_scores(segment, track)
-            for l, other_label in enumerate(labels):
-                x[t, l] = track_scores[other_label]
-                if isinstance(label, Unknown):
-                    y[t, l] = -1
-                elif label == other_label:
-                    y[t, l] = 1
-                else:
-                    y[t, l] = 0
-
-        return x, y, kwargs
-
-    def train_mapping(self, X, Y, **kwargs):
-
-        # remove NaNs
-        ok = np.where(~np.isnan(X))
-        x = X[ok]
-        y = Y[ok]
-
-        # positive & negative samples
-        positive = x[np.where(y == 1)]
-        negative = x[np.where(y == 0)]
-
-        #
-        s2llr = sc2llr.computeLinearMapping(negative, positive)
-        prior = 1. * len(positive) / (len(positive) + len(negative))
-
-        return (s2llr, prior)
-
-    def fit(self, training_data, **kwargs):
-        """
-        Fit calibration to training data
-
-        Parameters
-        ----------
-        training_data : list
-            List of (annotation, scores) tuples where each tuple is made of
-            - groundtruth `annotation` for a given resource
-            - authentication `scores` for the same resource
-        kwargs : dict
-            See .xy() method
-        """
-
-        X = []
-        Y = []
-
-        for data in training_data:
-            x, y, kwargs = self.xy(*data, **kwargs)
-            X.append(x)
-            Y.append(y)
-
-        self.kwargs = kwargs
-        self.X = np.vstack(X)
-        self.Y = np.vstack(Y)
-
-        self.mapping = self.train_mapping(self.X, self.Y, **(self.kwargs))
+        # normalize duration into probabilities
+        self.priors = {
+            target: duration/total 
+            for target, duration in chart.iteritems()
+        }
 
         return self
 
-    def apply(self, scores, prior=None):
-        """
-        Apply score calibration
+    def _fit_llr(self, annotations, scores):
+        
+        X = []
+        Y = []
+
+        self.targets = None
+
+        for a, s in itertools.izip(annotations, scores):
+
+            # assumes that all scores s share the same set of labels
+            if self.targets is None:
+                self.targets = s.labels()
+
+            for segment, track, label in a.itertracks(label=True):
+
+                for target in self.targets:
+
+                    x = s[segment, track, target]
+
+                    if isinstance(label, Unknown):
+                        y = np.nan
+                    else:
+                        y = np.float(label == target)
+
+                    X.append(x)
+                    Y.append(y)
+
+        self._X = np.array(X)
+        self._Y = np.array(Y)
+
+        self.llr.fit(self._X, self._Y)
+
+        return self
+
+    def fit(self, scores, annotations):
+        
+        # tee annotations iterator
+        # one iterator is for estimation of priors
+        # the other one is for log-likelihood ratio estimation
+        annotations_1, annotations_2 = itertools.tee(annotations)
+
+        # estimate log-likelihood ratio 
+        # and set self.targets
+        self._fit_llr(annotations_2, scores)
+
+        # estimate target priors
+        # assumes self.targets is already set
+        self._fit_priors(annotations_1)
+
+        return self
+
+    def _llr2posterior(self, llr, priors, unknown_prior):
+        """Convert log-likelihood ratios to posterior probabilities
 
         Parameters
         ----------
-        scores : `Scores`
-            Uncalibrated scores.
-        prior : float, optional
-            When provide, set manual prior p(x|H) to `prior`
-            Uses estimated prior by default.
-
-        Returns
-        -------
-        calibrated : `Scores`
-            Calibrated scores
+        llr : 
 
         """
+        denominator = (
+            unknown_prior +
+            np.exp(logsumexp(llr, b=priors, axis=1))
+        )
+        
+        posteriors = ((priors * np.exp(llr)).T / denominator).T
+        
+        return posteriors
 
-        (a, b), estimated_prior = self.mapping
-        if not prior:
-            prior = estimated_prior
+    def apply(self, scores):
+        """
+        Parameters
+        ----------
+        scores : `Scores`
+        """
 
-        def s2p(x):
-            # p(x|¬H)/p(x|H)
-            lr = 1./np.exp(a*x+b)
-            # p(¬H)/p(H)
-            rho = (1.-prior)/prior
-            return 1./(1.+rho*lr)
+        # targets must be the same and ordered the same way
+        assert scores.labels() == self.targets
 
-        return scores.map(s2p)
+        # get log-likelihood ratio from raw scores
+        llr = scores.apply(self.llr.toLogLikelihoodRatio)
 
+        # reduce Unknown prior to 0. in case of close-set classification
+        unknown_prior = self.priors.get(Unknown, 0.)
+        if self.open_set is False:
+            unknown_prior = 0.
 
-if __name__ == "__main__":
+        # number of known targets
+        n_targets = len(self.targets)
 
-    import pickle
-    from argparse import ArgumentParser
-    import pyannote.cli
+        if self.equal_priors:
 
-    parser = ArgumentParser(description='Calibration of authentication scores')
-    subparsers = parser.add_subparsers(help='mode')
+            # equally distribute known prior between known targets
+            priors = (1-unknown_prior) * np.ones(n_targets) / n_targets
 
-    # ==============
-    # TRAIN mode
-    # ==============
-
-    def trainCalibration(args):
-
-        import pyannote.cli
-        uris = pyannote.cli.get_uris()
-        data = [(args.reference(uri), args.scores(uri)) for uri in uris]
-        if args.argmax:
-            import pyannote.algorithm.tagging.segment
-            tagger = pyannote.algorithm.tagging.segment.ArgMaxDirectTagger()
         else:
-            tagger = None
-        calibration = AuthenticationCalibration(tagger=tagger)
 
-        calibration.fit(data)
-        with args.output() as f:
-            pickle.dump(calibration, f)
+            # ordered known target priors
+            priors = np.array(
+                [self.priors[target] 
+                for target in self.targets]
+            )
 
-    train_parser = subparsers.add_parser(
-        'train', help='Train calibration',
-        parents=[pyannote.cli.parentArgumentParser()])
-    train_parser.set_defaults(func=trainCalibration)
+            # in case of close-set classification
+            # equally distribute unknown prior to known targets
+            if self.open_set is False:
+                priors = priors + self.priors.get(Unknown, 0.)/n_targets
 
-    description = 'path to input authentication scores.'
-    train_parser.add_argument('scores', help=description,
-                              type=pyannote.cli.InputGetAnnotation())
-
-    description = 'path to input reference annotation.'
-    train_parser.add_argument(
-        'reference', help=description,
-        type=pyannote.cli.InputGetAnnotation())
-
-    description = 'path to output calibration.'
-    train_parser.add_argument(
-        'output', help=description,
-        type=pyannote.cli.OutputFileHandle())
-
-    description = 'use argmax tagger instead of conservative one.'
-    train_parser.add_argument(
-        '--argmax', help=description, action='store_true')
-
-    # ==============
-    # APPLY mode
-    # ==============
-
-    def applyCalibration(args):
-
-        uris = pyannote.cli.get_uris()
-
-        with args.calibration() as f:
-            calibration = pickle.load(f)
-
-        prior = args.prior if hasattr(args, 'prior') else None
-
-        for u, uri in enumerate(uris):
-
-            if args.verbose:
-                import sys
-                sys.stdout.write('[%d/%d] %s\n' % (u+1, len(uris), uri))
-                sys.stdout.flush()
-
-            scores = args.scores(uri)
-            args.calibrated(calibration.apply(scores, prior=prior))
-
-    apply_parser = subparsers.add_parser(
-        'apply', help='Apply calibration',
-        parents=[pyannote.cli.parentArgumentParser()])
-
-    apply_parser.set_defaults(func=applyCalibration)
-
-    description = 'path to input authentication scores.'
-    apply_parser.add_argument(
-        'scores', help=description,
-        type=pyannote.cli.InputGetAnnotation())
-
-    description = 'path to input calibration.'
-    apply_parser.add_argument(
-        'calibration', help=description,
-        type=pyannote.cli.InputFileHandle())
-
-    description = 'path to output calibrated scores.'
-    apply_parser.add_argument(
-        'calibrated', help=description,
-        type=pyannote.cli.OutputWriteAnnotation())
-
-    description = 'set prior manually (default is to use estimated priors).'
-    apply_parser.add_argument(
-        '--prior', help=description, type=float,
-        default=pyannote.cli.SUPPRESS)
-
-    # =====================
-    # ARGUMENT parsing
-    # =====================
-
-    try:
-        args = parser.parse_args()
-        args.func(args)
-    except IOError as e:
-        import sys
-        sys.stderr.write('%s' % e)
-        sys.exit(-1)
+        # compute posterior from LLR directly on the internal numpy array
+        func = lambda x: self._llr2posterior(x, priors, unknown_prior)
+        return llr.apply(func)
