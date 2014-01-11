@@ -246,7 +246,7 @@ class ClassificationGMMUBM(object):
         return chart
 
     def _get_ubm(self, reference, features, chart):
-        """
+        """Train universal background model
 
         Parameters
         ----------
@@ -290,6 +290,7 @@ class ClassificationGMMUBM(object):
         return ubm
 
     def _get_gmm(self, reference, features, target):
+        """Train target GMM by adaptation of UBM"""
 
         # gather target data
         data = np.vstack([
