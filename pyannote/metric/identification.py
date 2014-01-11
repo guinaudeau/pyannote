@@ -132,22 +132,26 @@ class IdentificationErrorRate(BaseMetric):
     """
 
 
-        ``ier = (confusion + false_alarm + miss) / total``
+        ``ier = (wc x confusion + wf x false_alarm + wm x miss) / total``
 
     where
-        - ``confusion`` is the total confusion duration in seconds
-        - ``false_alarm`` is the total hypothesis duration where there are
-        - ``miss`` is
-        - ``total`` is the total duration of all tracks
+        - `confusion` is the total confusion duration in seconds
+        - `false_alarm` is the total hypothesis duration where there are
+        - `miss` is
+        - `total` is the total duration of all tracks
+        - wc, wf and wm are optional weights (default to 1)
 
     Parameters
     ----------
     matcher : `IDMatcher`, optional
         Defaults to `UnknownIDMatcher` instance
+        i.e. two Unknowns are always considered as correct.
     unknown : bool, optional
         Set `unknown` to True (default) to take `Unknown` instances into
         account. Set it to False to get rid of them before evaluation.
-
+    confusion, miss, false_alarm: float, optional
+        Optional weights for confusion, miss and false alarm respectively.
+        Default to 1. (no weight)
 
     """
 
@@ -160,7 +164,12 @@ class IdentificationErrorRate(BaseMetric):
         return [IER_CONFUSION, IER_FALSE_ALARM, IER_MISS,
                 IER_TOTAL, IER_CORRECT]
 
-    def __init__(self, matcher=None, unknown=True, **kwargs):
+    def __init__(
+        self,
+        matcher=None, unknown=True,
+        confusion=1., miss=1., false_alarm=1.,
+        **kwargs
+    ):
 
         super(IdentificationErrorRate, self).__init__()
 
@@ -169,6 +178,10 @@ class IdentificationErrorRate(BaseMetric):
         else:
             self.matcher = UnknownIDMatcher()
         self.unknown = unknown
+
+        self.confusion = confusion
+        self.miss = miss
+        self.false_alarm = false_alarm
 
     def _get_details(self, reference, hypothesis, **kwargs):
 
@@ -208,9 +221,11 @@ class IdentificationErrorRate(BaseMetric):
 
     def _get_rate(self, detail):
 
-        numerator = 1. * (detail[IER_CONFUSION] +
-                          detail[IER_FALSE_ALARM] +
-                          detail[IER_MISS])
+        numerator = 1. * (
+            self.confusion * detail[IER_CONFUSION] +
+            self.false_alarm * detail[IER_FALSE_ALARM] +
+            self.miss * detail[IER_MISS]
+        )
         denominator = 1. * detail[IER_TOTAL]
         if denominator == 0.:
             if numerator == 0:
