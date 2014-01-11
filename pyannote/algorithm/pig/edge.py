@@ -26,113 +26,18 @@ import numpy as np
 from pyannote import Segment
 
 from pyannote.algorithm.pig.pig import PersonInstanceGraph
-from pyannote.algorithm.pig.vertex import InstanceVertex
+from pyannote.algorithm.pig.vertex import InstanceVertex, IdentityVertex
 
 from pyannote.base.annotation import Unknown
+from pyannote.base.scores import Scores
 from pyannote.base.matrix import LabelMatrix
 from pyannote.algorithm.calibration.clustering import ClusteringCalibration
+from pyannote.algorithm.calibration.authentication import AuthenticationCalibration
 
 
-class PIGIntraModalEdges(object):
-    """Intra-modal edges generator
+class PIGEdgeIOMixin:
 
-    Parameters
-    ----------
-    prior : float, optional
-        prior probability that two instance vertices are from the same person.
-        By default, `prior` is set to the one estimated using fit.
-    calibration : {'linear', 'isotonic'}
-
-    """
-
-    def __init__(self, calibration='linear', equal_priors=False):
-
-        super(PIGIntraModalEdges, self).__init__()
-        self.calibration = ClusteringCalibration(method=calibration)
-        self.equal_priors = equal_priors
-
-    def get_groundtruth_matrix(self, annotation):
-        """
-
-        Parameters
-        ----------
-        annotation : `Annotation`
-
-        Returns
-        -------
-        matrix : LabelMatrix
-            Square matrix indexed by instance vertices (one for each track)
-            . 1 if instance vertices are the same person
-            . 0 if instance vertices are two different persons
-            . np.NaN if unsure
-        """
-
-        uri = annotation.uri
-        modality = annotation.modality
-
-        vertices = [
-            InstanceVertex(
-                segment=segment, track=track,
-                uri=uri, modality=modality)
-            for segment, track in annotation.itertracks()
-        ]
-
-        groundtruth = LabelMatrix(
-            rows=vertices, columns=vertices,
-            dtype=np.float
-        )
-
-        for s, t, l in annotation.itertracks(label=True):
-
-            v = InstanceVertex(
-                segment=s, track=t,
-                uri=uri, modality=modality)
-
-            for s_, t_, l_ in annotation.itertracks(label=True):
-
-                v_ = InstanceVertex(
-                    segment=s_, track=t_,
-                    uri=uri, modality=modality)
-
-                if isinstance(l, Unknown) or isinstance(l_, Unknown):
-                    g = np.NaN
-                else:
-                    g = 1 if l == l_ else 0
-
-                groundtruth[v, v_] = g
-
-        return groundtruth
-
-    def fit(self, reference, similarity):
-        """
-
-        Parameters
-        ----------
-
-        reference : iterator
-            Generates labeled annotations
-        similarity : iterator
-            Generates instance vertices similarity matrices
-
-        """
-
-        # groundtruth instance vertices clustering matrices
-        groundtruth = itertools.imap(
-            self.get_groundtruth_matrix,
-            reference
-        )
-
-        self.calibration.fit(groundtruth, similarity)
-
-        return self
-
-    def __call__(self, similarity):
-
-        self.calibration.equal_priors = self.equal_priors
-        return self.calibration.apply(similarity).itervalues()
-
-    CALIBRATION = 'calibration'
-    EQUAL_PRIORS = 'equal_priors'
+    SELF = 'self'
     CREATED = 'created'
     DESCRIPTION = 'description'
 
@@ -147,8 +52,7 @@ class PIGIntraModalEdges(object):
         """
 
         data = {
-            self.CALIBRATION: self.calibration,
-            self.EQUAL_PRIORS: self.equal_priors,
+            self.SELF: self,
             self.CREATED: datetime.datetime.today(),
             self.DESCRIPTION: description,
         }
@@ -174,14 +78,10 @@ class PIGIntraModalEdges(object):
             logging.info('Description: %s' % data[cls.DESCRIPTION])
         # -----------------------------------------------------------------
 
-        intraModelEdges = cls(equal_priors=data[cls.EQUAL_PRIORS])
-
-        intraModelEdges.calibration = data[cls.CALIBRATION]
-
-        return intraModelEdges
+        return data[cls.SELF]
 
 
-class PIGCrossModalEdges(object):
+class PIGCrossModalEdges(PIGEdgeIOMixin):
     """
 
     Parameters
@@ -380,80 +280,47 @@ class PIGCrossModalEdges(object):
                 yield v1, v2, p
 
 
-    RESOLUTION = 'resolution'
-    NEIGHBOURHOOD = 'neighbourhood'
-    PROB = 'probability'
-    MODALITY1 = 'modality1'
-    MODALITY2 = 'modality2'
-    CREATED = 'created'
-    DESCRIPTION = 'description'
+class PIGIntraModalEdges(ClusteringCalibration, PIGEdgeIOMixin):
 
-    def save(self, path, description=''):
-        """Save to file
+    def __call__(self, matrix, annotation):
 
-        Parameters
-        ----------
-        path : str
-        description : str, optional
-            Optional description (e.g. of the training set)
-        """
+        uri = annotation.uri
+        modality = annotation.modality
 
-        data = {
-            self.RESOLUTION: self.resolution,
-            self.NEIGHBOURHOOD: self.neighbourhood,
-            self.PROB: self.probability,
-            self.MODALITY1: self.modality1,
-            self.MODALITY2: self.modality2,
-            self.CREATED: datetime.datetime.today(),
-            self.DESCRIPTION: description,
-        }
+        posterior = self.apply(matrix)
 
-        with open(path, mode='w') as f:
-            pickle.dump(data, f)
-
-    @classmethod
-    def load(cls, path):
-        """Load from file
-
-        Parameters
-        ----------
-        path : str
-        """
-
-        with open(path, mode='r') as f:
-            data = pickle.load(f)
-
-        # --- logging -----------------------------------------------------
-        logging.info('Created: %s' % data[cls.CREATED].isoformat())
-        if data[cls.DESCRIPTION]:
-            logging.info('Description: %s' % data[cls.DESCRIPTION])
-        # -----------------------------------------------------------------
-
-        crossModalEdges = cls(
-            resolution=data[cls.RESOLUTION],
-            neighbourhood=data[cls.NEIGHBOURHOOD],
-            modality1=data[cls.MODALITY1],
-            modality2=data[cls.MODALITY2]
-        )
-
-        crossModalEdges.probability = data[cls.PROB]
-
-        return crossModalEdges
-
-
-class PIGIdentificationEdges(object):
-
-    def __init__(self):
-        super(PIGIdentificationEdges, self).__init__()
-
-    def fit(self, scores_iterator, reference_iterator):
-        for scores, reference in itertools.izip(
-            scores_iterator, reference_iterator
+        for (s1, t1), (s2, t2) in itertools.combinations(
+            annotation.itertracks()
         ):
-            pass
 
-    def apply(self, scores):
+            probability = matrix[(s1, t1), (s2, t2)]
 
-        pig = PersonInstanceGraph()
-        pig.add_scores(self.calibration.apply(scores))
-        return pig
+            if np.isnan(probability):
+                continue
+
+            instance1 = InstanceVertex(
+                segment=s1, track=t1, modality=modality, uri=uri)
+            instance2 = InstanceVertex(
+                segment=s2, track=t2, modality=modality, uri=uri)
+
+            yield instance1, instance2, probability
+
+
+class PIGIdentificationEdges(AuthenticationCalibration, PIGEdgeIOMixin):
+
+    def __call__(self, scores, nbest=0):
+
+        uri = scores.uri
+        modality = scores.modality
+
+        posterior = self.apply(scores)
+        if nbest > 0:
+            posterior = posterior.nbest(nbest)
+
+        for segment, track, target, probability in posterior.itervalues():
+
+            instance = InstanceVertex(
+                segment=segment, track=track, modality=modality, uri=uri)
+            identity = IdentityVertex(identity=target)
+
+            yield instance, identity, probability
