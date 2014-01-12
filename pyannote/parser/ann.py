@@ -31,7 +31,7 @@ from base import BaseTextualFormat, BaseTextualAnnotationParser
 class ANNMixin(BaseTextualFormat):
 
     START = 'start'
-    END = 'end'
+    DURATION = 'duration'
 
     def get_comment(self):
         return '#'
@@ -44,13 +44,13 @@ class ANNMixin(BaseTextualFormat):
             URI,
             MODALITY,
             self.START,
-            self.END,
+            self.DURATION,
             TRACK,
             LABEL
         ]
 
     def get_segment(self, row):
-        return Segment(row[self.START], row[self.END])
+        return Segment(row[self.START], row[self.START]+row[self.DURATION])
 
     def _append(self, annotation, f, uri, modality):
 
