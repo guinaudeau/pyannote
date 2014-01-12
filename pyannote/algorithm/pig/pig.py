@@ -253,6 +253,7 @@ class PersonInstanceGraph(nx.Graph):
             raise ValueError('unsupported mode')
 
         instances = self.get_instance_vertices()
+        identities = self.get_identity_vertices()
 
         # get segments in focus
         timeline = Timeline(segments=[i.segment for i in instances])
@@ -261,7 +262,25 @@ class PersonInstanceGraph(nx.Graph):
         # remove all instances not in focus
         remove = [i for i in instances if i.segment not in cropped]
 
-        sub_pig = self.copy()
-        sub_pig.remove_nodes_from(remove)
+        pig = self.copy()
+        pig.remove_nodes_from(remove)
 
-        return sub_pig
+        # remove isolated identity vertices
+        # i.e. identity vertices with no edge
+        # to any remaining instance vertices
+
+        # remaining instance vertices
+        instances = pig.get_instance_vertices()
+
+        # identity vertices with edges to instance vertices
+        connected = set([
+            I for I in pig[i] if isinstance(I, IdentityVertex)
+            for i in instances
+        ])
+
+        # identity vertices with no edge to instance vertices
+        isolated = set(identities) - connected
+
+        pig.remove_nodes_from(isolated)
+
+        return pig
