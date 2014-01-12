@@ -74,19 +74,18 @@ class AuthenticationCalibration(object):
         self.equal_priors = equal_priors
         self.open_set = open_set
 
-
     def _fit_priors(self, annotations):
         # assumes self.targets is already set
 
-        # chart[target] = accumulated duration of target  
+        # chart[target] = accumulated duration of target
         chart = {}
 
         # total = total duration of all targets
         total = 0.
 
         for a in annotations:
-            
-            # accumulate 
+
+            # accumulate
             for target, duration in a.chart():
 
                 # group all Unknowns into one unique Unknown target
@@ -101,14 +100,14 @@ class AuthenticationCalibration(object):
 
         # normalize duration into probabilities
         self.priors = {
-            target: duration/total 
+            target: duration/total
             for target, duration in chart.iteritems()
         }
 
         return self
 
     def _fit_llr(self, annotations, scores):
-        
+
         X = []
         Y = []
 
@@ -142,13 +141,13 @@ class AuthenticationCalibration(object):
         return self
 
     def fit(self, scores, annotations):
-        
+
         # tee annotations iterator
         # one iterator is for estimation of priors
         # the other one is for log-likelihood ratio estimation
         annotations_1, annotations_2 = itertools.tee(annotations)
 
-        # estimate log-likelihood ratio 
+        # estimate log-likelihood ratio
         # and set self.targets
         self._fit_llr(annotations_2, scores)
 
@@ -163,16 +162,16 @@ class AuthenticationCalibration(object):
 
         Parameters
         ----------
-        llr : 
+        llr :
 
         """
         denominator = (
             unknown_prior +
             np.exp(logsumexp(llr, b=priors, axis=1))
         )
-        
+
         posteriors = ((priors * np.exp(llr)).T / denominator).T
-        
+
         return posteriors
 
     def apply(self, scores):
@@ -205,7 +204,7 @@ class AuthenticationCalibration(object):
 
             # ordered known target priors
             priors = np.array(
-                [self.priors[target] 
+                [self.priors[target]
                 for target in self.targets]
             )
 
