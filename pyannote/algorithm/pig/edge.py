@@ -81,7 +81,7 @@ class PIGEdgeIOMixin:
         return data[cls.SELF]
 
 
-class PIGCrossModalEdges(PIGEdgeIOMixin):
+class PIGCrossModalEdges(object, PIGEdgeIOMixin):
     """
 
     Parameters
