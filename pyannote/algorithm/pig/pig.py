@@ -274,8 +274,8 @@ class PersonInstanceGraph(nx.Graph):
 
         # identity vertices with edges to instance vertices
         connected = set([
-            I for I in pig[i] if isinstance(I, IdentityVertex)
-            for i in instances
+            I for i in instances for I in pig[i]
+            if isinstance(I, IdentityVertex)
         ])
 
         # identity vertices with no edge to instance vertices
