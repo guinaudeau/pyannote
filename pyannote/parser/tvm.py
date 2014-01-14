@@ -50,7 +50,8 @@ class TVMMixin(BaseTextualFormat):
 
     def get_converters(self):
         # 'head_52' ==> '52'
-        return {TRACK: lambda x: x.split('_')[1]}
+        #return {TRACK: lambda x: x.split('_')[1]}
+        return None
 
     def _append(self, scores, f, uri, modality):
         try:

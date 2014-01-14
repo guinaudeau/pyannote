@@ -23,9 +23,9 @@ from pyannote import LabelMatrix
 from pyannote import Segment
 
 
-# convert head_XXX to XXX
-def _get_track(field):
-    return field.split('_')[1]
+# # convert head_XXX to XXX
+# def _get_track(field):
+#     return field.split('_')[1]
 
 
 class TVTParser(object):
@@ -44,10 +44,11 @@ class TVTParser(object):
         # load text file at `path`
         # uri start_time duration track other_track distance
         names = ['u', 'start', 'duration', 't1', 't2', 'distance']
-        converters = {
-            't1': _get_track,
-            't2': _get_track
-        }
+        # converters = {
+        #     't1': _get_track,
+        #     't2': _get_track
+        # }
+        converters = None
         table = pandas.read_table(
             path, sep='[\t ]+', header=None,
             names=names, converters=converters)
