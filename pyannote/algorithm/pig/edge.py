@@ -289,13 +289,12 @@ class PIGIntraModalEdges(ClusteringCalibration, PIGEdgeIOMixin):
 
         posterior = self.apply(matrix)
 
-        for (s1, t1), (s2, t2) in itertools.combinations(
-            annotation.itertracks(), 2
-        ):
+        for (s1, t1), (s2, t2), probability in posterior.itervalues():
 
-            probability = posterior[(s1, t1), (s2, t2)]
-
-            if np.isnan(probability):
+            if (
+                (not annotation.has_track(s1, t1)) or
+                (not annotation.has_track(s2, t2))
+            ):
                 continue
 
             instance1 = InstanceVertex(
@@ -308,7 +307,7 @@ class PIGIntraModalEdges(ClusteringCalibration, PIGEdgeIOMixin):
 
 class PIGIdentificationEdges(AuthenticationCalibration, PIGEdgeIOMixin):
 
-    def __call__(self, scores, nbest=0):
+    def __call__(self, scores, annotation, nbest=0):
 
         uri = scores.uri
         modality = scores.modality
@@ -318,6 +317,9 @@ class PIGIdentificationEdges(AuthenticationCalibration, PIGEdgeIOMixin):
             posterior = posterior.nbest(nbest)
 
         for segment, track, target, probability in posterior.itervalues():
+
+            if not annotation.has_track(segment, track):
+                continue
 
             instance = InstanceVertex(
                 segment=segment, track=track, modality=modality, uri=uri)
