@@ -121,6 +121,9 @@ class AuthenticationCalibration(object):
 
             for segment, track, label in a.itertracks(label=True):
 
+                if not s.has_track(segment, track):
+                    continue
+
                 for target in self.targets:
 
                     x = s[segment, track, target]
