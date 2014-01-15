@@ -88,9 +88,8 @@ class ClusteringCalibration(object):
         self.llr.equal_priors = equal_priors
         self.equal_priors = equal_priors
 
-
     def fit(self, matrices, annotations):
-        
+
         X = []
         Y = []
 
@@ -101,6 +100,12 @@ class ClusteringCalibration(object):
                 if (segment1, track1) == (segment2, track2):
                     continue
 
+                if (
+                    (not a.has_track(segment1, track1)) or
+                    (not a.has_track(segment2, track2))
+                ):
+                    continue
+
                 label1 = a[segment1, track1]
                 label2 = a[segment2, track2]
 
@@ -108,7 +113,6 @@ class ClusteringCalibration(object):
                     y = np.nan
                 else:
                     y = np.float(label1 == label2)
-
 
                 X.append(x)
                 Y.append(y)
@@ -119,7 +123,6 @@ class ClusteringCalibration(object):
         self.llr.fit(self._X, self._Y)
 
         return self
-
 
     def apply(self, matrix):
         """
