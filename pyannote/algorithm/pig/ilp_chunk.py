@@ -128,14 +128,14 @@ class PIGMiningILPByChunk(PIGMiningILP):
 
                 # in case it's the first time we encounter this track
                 # make sure its hypotheses dictionary is initialized
-                if (s, t) not in hypotheses[s, t]:
+                if (s, t) not in hypotheses:
                     hypotheses[s, t] = {}
 
                 hypotheses[s, t][mid_time] = l
 
         # do the actual merging based on all available hypotheses
         annotation = Annotation(uri=uri, modality=modality)
-        for (segment, track), H in hypotheses:
+        for (segment, track), H in hypotheses.iteritems():
             annotation[segment, track] = self._decide(segment, track, H)
 
         return annotation
