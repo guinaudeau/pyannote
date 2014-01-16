@@ -185,7 +185,8 @@ class AuthenticationCalibration(object):
         """
 
         # targets must be the same and ordered the same way
-        assert scores.labels() == self.targets
+        assert scores.labels() == self.targets, "\n%s\n%s" % (
+            scores.labels(), self.target)
 
         # get log-likelihood ratio from raw scores
         llr = scores.apply(self.llr.toLogLikelihoodRatio)
@@ -206,10 +207,8 @@ class AuthenticationCalibration(object):
         else:
 
             # ordered known target priors
-            priors = np.array(
-                [self.priors[target]
-                for target in self.targets]
-            )
+            priors = np.array([
+                self.priors[target] for target in self.targets])
 
             # in case of close-set classification
             # equally distribute unknown prior to known targets
