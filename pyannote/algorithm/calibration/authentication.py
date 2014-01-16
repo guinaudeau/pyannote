@@ -186,7 +186,7 @@ class AuthenticationCalibration(object):
 
         # targets must be the same and ordered the same way
         assert scores.labels() == self.targets, "\n%s\n%s" % (
-            scores.labels(), self.target)
+            scores.labels(), self.targets)
 
         # get log-likelihood ratio from raw scores
         llr = scores.apply(self.llr.toLogLikelihoodRatio)
