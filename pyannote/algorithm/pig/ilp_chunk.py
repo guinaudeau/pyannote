@@ -140,7 +140,12 @@ class PIGMiningILPByChunk(PIGMiningILP):
 
         return annotation
 
-    def __call__(self, pig, **kwargs):
+    def __call__(
+        self,
+        pig,
+        threads=None, mip_gap=None, time_limit=None,
+        verbose=False, **kwargs
+    ):
 
         # this is used to store results of optimization
         # on each subgraph. dict is indexed by middle time
@@ -154,7 +159,11 @@ class PIGMiningILPByChunk(PIGMiningILP):
             self.set_problem(g)
             self.set_constraints(g)
             self.set_objective(g, g.get_similarity, **kwargs)
-            solution = self.solve(verbose=True)
+            solution = self.solve(
+                threads=threads,
+                mip_gap=mip_gap,
+                time_limit=time_limit,
+                verbose=verbose)
             clusters = self.get_clusters(g, solution)
             sub_annotations[mid_time] = self.get_annotations(g, clusters)
 
