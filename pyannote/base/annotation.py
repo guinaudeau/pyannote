@@ -29,7 +29,7 @@ warnings.filterwarnings(
 
 from pyannote.util import deprecated
 
-
+import itertools
 from segment import Segment
 from timeline import Timeline
 from banyan import SortedDict
@@ -321,7 +321,6 @@ class Annotation(object):
             Set of tracks for query segment
         """
         return set(self._tracks.get(segment, {}))
-
 
     def has_track(self, segment, track):
         """Check whether a given track exists
@@ -899,6 +898,23 @@ class Annotation(object):
                 n = n+1
 
         return smoothed
+
+    def co_iter(self, other):
+        """
+        Parameters
+        ----------
+        other : Annotation
+
+        Generates
+        ---------
+        (segment, track), (other_segment, other_track)
+        """
+
+        for s, S in self.get_timeline().co_iter(other.get_timeline()):
+            tracks = self.get_tracks(s)
+            other_tracks = other.get_tracks(S)
+            for t, T in itertools.product(tracks, other_tracks):
+                yield (s, t), (S, T)
 
     def to_json(self):
         annotation = [{SEGMENT: s.to_json(), TRACK: t, LABEL: l}
