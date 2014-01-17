@@ -57,7 +57,7 @@ class PIGMiningILPByChunk(PIGMiningILP):
                 ]
             ).extent()
 
-            yield pig.crop(focus, mode='strict'), focus.middle
+            yield pig.crop(focus, mode='loose'), focus.middle
 
             if right >= N:
                 break
