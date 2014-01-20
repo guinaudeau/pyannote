@@ -341,6 +341,48 @@ class ILPClustering(object):
 
         return objective, N
 
+    def get_bipartite_weighted_similarity(
+        self, items, otherItems, get_similarity, get_weight=None
+    ):
+        """Bi-partite similarity: ∑  wij.xij.pij
+                                 i∈I
+                                 j∈J
+        """
+
+        if get_weight is None:
+            get_weight = lambda i, j: 1.
+
+        values = [
+            get_similarity(I, J) * self.x[I, J]
+            for I, J in itertools.product(items, otherItems)
+            if not np.isnan(get_similarity(I, J))
+        ]
+
+        weights = [
+            get_weight(I, J)
+            for I, J in itertools.product(items, otherItems)
+            if not np.isnan(get_similarity(I, J))
+        ]
+
+        total = np.sum(weights)
+
+        if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
+            objective = grb.quicksum([
+                w * v
+                for w, v in itertools.izip(weights, values)
+            ])
+
+        if self.solver == 'pulp':
+
+            objective = sum([
+                w * v
+                for w, v in itertools.izip(weights, values)
+            ])
+
+        return objective, total
 
     # Bipartite dissimilarity
     # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -354,6 +396,7 @@ class ILPClustering(object):
         values = [(1-get_similarity(I, J))*(1-self.x[I, J])
                   for I, J in itertools.product(items, otherItems)
                   if not np.isnan(get_similarity(I, J))]
+
         N = len(values)
 
         if self.solver == 'gurobi':
@@ -367,6 +410,49 @@ class ILPClustering(object):
             objective = sum(values)
 
         return objective, N
+
+    def get_bipartite_weighted_dissimilarity(
+        self, items, otherItems, get_similarity, get_weight=None
+    ):
+        """Bi-partite dissimilarity: ∑ wij.(1-xij).(1-pij)
+                                    i∈I
+                                    j∈J
+        """
+
+        if get_weight is None:
+            get_weight = lambda i, j: 1.
+
+        values = [
+            (1-get_similarity(I, J)) * (1-self.x[I, J])
+            for I, J in itertools.product(items, otherItems)
+            if not np.isnan(get_similarity(I, J))
+        ]
+
+        weights = [
+            get_weight(I, J)
+            for I, J in itertools.product(items, otherItems)
+            if not np.isnan(get_similarity(I, J))
+        ]
+
+        total = np.sum(weights)
+
+        if self.solver == 'gurobi':
+
+            import gurobipy as grb
+
+            objective = grb.quicksum([
+                w * v
+                for w, v in itertools.izip(weights, values)
+            ])
+
+        if self.solver == 'pulp':
+
+            objective = sum([
+                w * v
+                for w, v in itertools.izip(weights, values)
+            ])
+
+        return objective, total
 
     def get_inter_cluster_dissimilarity(self, items, get_similarity):
 

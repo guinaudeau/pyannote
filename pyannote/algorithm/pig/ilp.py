@@ -130,6 +130,48 @@ class PIGWeightedObjectiveMixin(object):
         return objective
 
 
+class PIGWeightedWeightedObjectiveMixin(object):
+
+    def get_objective(
+        self, pig, get_similarity, weights=None, get_weight=None, **kwargs
+    ):
+        """
+
+        Parameters
+        ----------
+        pig : PersonInstanceGraph
+        get_similarity
+        weights : dict, optional
+            (m1, m2) --> {'alpha': alpha, 'beta': beta}
+
+
+        """
+        objective = None
+
+        for (modality1, modality2), weight in weights.iteritems():
+
+            items1 = [i for i in pig if i.modality == modality1]
+            items2 = [i for i in pig if i.modality == modality2]
+
+            intra, total = self.get_bipartite_weighted_similarity(
+                items1, items2, get_similarity, get_weight=get_weight)
+
+            inter, _ = self.get_bipartite_weighted_dissimilarity(
+                items1, items2, get_similarity, get_weight=get_weight)
+
+            alpha = weight[ALPHA]
+            beta = weight[BETA]
+
+            if objective is None:
+                if total:
+                    objective = beta/total * (alpha*intra + (1-alpha)*inter)
+            else:
+                if total:
+                    objective += beta/total * (alpha*intra + (1-alpha)*inter)
+
+        return objective
+
+
 # =====================================================================
 # Constraints
 # =====================================================================
