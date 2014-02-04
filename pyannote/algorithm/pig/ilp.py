@@ -123,6 +123,8 @@ class PIGWeightedObjectiveMixin(object):
             if objective is None:
                 if N:
                     objective = beta/N * (alpha*intra + (1-alpha)*inter)
+                else:
+                    objective = 0.
             else:
                 if N:
                     objective += beta/N * (alpha*intra + (1-alpha)*inter)
@@ -165,6 +167,8 @@ class PIGWeightedWeightedObjectiveMixin(object):
             if objective is None:
                 if total:
                     objective = beta/total * (alpha*intra + (1-alpha)*inter)
+                else:
+                    objective = 0.
             else:
                 if total:
                     objective += beta/total * (alpha*intra + (1-alpha)*inter)
