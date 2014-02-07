@@ -25,9 +25,7 @@ versioneer.versionfile_build = 'pyannote/_version.py'
 versioneer.tag_prefix = ''  # tags are like 1.2.0
 versioneer.parentdir_prefix = 'pyannote-'  # dirname like 'myproject-1.2.0'
 
-
-# from setuptools import setup, find_packages
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='PyAnnote',
@@ -40,17 +38,7 @@ setup(
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
     url='http://packages.python.org/PyAnnote',
-    # packages= find_packages(),
-    packages=['pyannote',
-              'pyannote.algorithm.mapping'],
-    #           'pyannote.base',
-    #           'pyannote.algorithm',
-    #           'pyannote.algorithm.mapping',
-    #           'pyannote.algorithm.tagging',
-    #           'pyannote.metric',
-    #           'pyannote.parser',
-    #           'pyannote.parser.repere',
-    #           'pyannote.parser.nist'],
+    packages=find_packages(),
     install_requires=[
         'numpy >=1.7.1',
         'scipy >=0.13.0',
@@ -62,9 +50,6 @@ setup(
         'scikit-learn >=0.14',
         'joblib >=0.7.1',
         'pysrt >=0.5.0'
-        # 'lxml >=2.3.4'],
-        #'prettytable >=0.6',
-        #'python-Levenshtein >=0.10.2'],
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
