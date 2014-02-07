@@ -28,9 +28,9 @@ Several mapping algorithms are available in the ``pyannote.algorithm.mapping`` m
 """
 
 from hungarian import HungarianMapper
-from argmax import ArgMaxMapper
+from argmax import ArgMaxMapper, ConservativeDirectMapper
 
-__all__ = ['HungarianMapper', 'ArgMaxMapper']
+__all__ = ['HungarianMapper', 'ArgMaxMapper', 'ConservativeDirectMapper']
 
 if __name__ == "__main__":
     import doctest

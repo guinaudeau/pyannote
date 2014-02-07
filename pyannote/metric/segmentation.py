@@ -43,7 +43,7 @@ class SegmentationPrecision(Precision):
         collar.end =   segment.start + .5 * self.tolerance 
         return collar
         
-    def get_details(self, reference, hypothesis, **kwargs):
+    def _get_details(self, reference, hypothesis, **kwargs):
         
         if not reference.is_partition():
             raise ValueError('Provided reference is not a partition.')
@@ -52,7 +52,7 @@ class SegmentationPrecision(Precision):
         if reference.extent() != hypothesis.extent():
             raise ValueError('Reference and hypothesis extents do not match.')
                 
-        detail = self.init_details()        
+        detail = self._init_details()        
         
         detail[PRECISION_RETRIEVED] = len(hypothesis) - 1
         R = reference.copy(map_func=self.__segment_to_collar)
@@ -61,7 +61,7 @@ class SegmentationPrecision(Precision):
         del H[0]
         
         for collar in H:
-            if R(collar, mode='loose'):
+            if R.crop(collar, mode='loose'):
                 detail[PRECISION_RELEVANT_RETRIEVED] += 1
         
         return detail
@@ -84,7 +84,7 @@ class SegmentationRecall(Recall):
         collar.end =   segment.start + .5 * self.tolerance 
         return collar
         
-    def get_details(self, reference, hypothesis, **kwargs):
+    def _get_details(self, reference, hypothesis, **kwargs):
         
         if not reference.is_partition():
             raise ValueError('Provided reference is not a segmentation.')
@@ -93,7 +93,7 @@ class SegmentationRecall(Recall):
         if reference.extent() != hypothesis.extent():
             raise ValueError('Reference and hypothesis extents do not match.')
                 
-        detail = self.init_details()        
+        detail = self._init_details()        
         
         detail[RECALL_RELEVANT] = len(reference) - 1
         R = reference.copy(map_func=self.__segment_to_collar)
@@ -102,7 +102,7 @@ class SegmentationRecall(Recall):
         del H[0]
         
         for collar in R:
-            if H(collar, mode='loose'):
+            if H.crop(collar, mode='loose'):
                 detail[RECALL_RELEVANT_RETRIEVED] += 1
         
         return detail

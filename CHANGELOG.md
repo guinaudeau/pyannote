@@ -1,0 +1,8 @@
+CHANGELOG
+=========
+
+PyAnnote 0.2.2 (2012/05/11)
+---------------------------
+
+- use 'setuptools' instead of 'distutils'
+- bug fix in 'CoTFIDF' (DivisionByZero)

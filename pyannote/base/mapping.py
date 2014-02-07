@@ -394,6 +394,9 @@ class Mapping(object):
         else:
             return expected_dict
     
+    def __getitem__(self, key):
+        return self._left_to_right[key]
+    
     def __str__(self):
         """Human-readable representation
         
@@ -412,6 +415,8 @@ class Mapping(object):
         
         string = "(\n"
         for left, right in self:
+            left = [str(i) for i in left]
+            right = [str(i) for i in right]
             string += '   %s <--> %s\n' % (' '.join(sorted(left)), \
                                            ' '.join(sorted(right)))
         string += ")"
