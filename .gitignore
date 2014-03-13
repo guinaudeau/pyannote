@@ -39,3 +39,6 @@ nosetests.xml
 *.sublime-workspace
 
 wip
+
+
+MANIFEST
