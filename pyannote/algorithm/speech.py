@@ -130,15 +130,15 @@ class SpeechActivityDetection(object):
 
         return self
 
-    def apply(self, wav=None, feature=None):
+    def apply(self, wav=None, features=None):
         """Perform speech activity detection on .wav file
 
         Parameters
         ----------
         wav : str, optional
             Path to processed .wav file.
-        feature : SlidingWindowFeature, optional
-            When provided, use precomputed `feature`.
+        features : SlidingWindowFeature, optional
+            When provided, use precomputed `features`.
 
         Returns
         -------
@@ -146,10 +146,10 @@ class SpeechActivityDetection(object):
             Speech segments.
 
         """
-        if feature is None and wav is None:
-            raise ValueError('Either wav or feature must be provided.')
+        if features is None and wav is None:
+            raise ValueError('Either wav or features must be provided.')
 
-        if feature is None:
+        if features is None:
             features = self.get_features(wav)
 
         detection = self.hmm.apply(features)
@@ -279,15 +279,15 @@ class SpeechTurnSegmentation(object):
     def get_features(self, wav):
         return self.feature.extract(wav)
 
-    def apply(self, wav=None, feature=None, speech=None):
+    def apply(self, wav=None, features=None, speech=None):
         """Perform speech turn segmentation
 
         Parameters
         ----------
         wav : str, optional
             Path to processed .wav file.
-        feature : SlidingWindowFeature, optional
-            When provided, use precomputed `feature`.
+        features : SlidingWindowFeature, optional
+            When provided, use precomputed `features`.
         speech : Timeline, optional
             Speech segments.
         Returns
@@ -296,10 +296,10 @@ class SpeechTurnSegmentation(object):
             Speech segments.
 
         """
-        if feature is None and wav is None:
-            raise ValueError('Either wav or feature must be provided.')
+        if features is None and wav is None:
+            raise ValueError('Either wav or features must be provided.')
 
-        if feature is None:
+        if features is None:
             features = self.get_features(wav)
 
         segmentation = self.segmentation.apply(features)
@@ -464,7 +464,7 @@ class SpeakerIdentification(object):
 
         return self
 
-    def apply(self, speech_turns, wav=None, feature=None, probability=False):
+    def apply(self, speech_turns, wav=None, features=None, probability=False):
         """Perform speaker identification on .wav file
 
         Parameters
@@ -473,8 +473,8 @@ class SpeakerIdentification(object):
             Pre-computed segmentation
         wav : str, optional
             Path to processed .wav file.
-        feature : SlidingWindowFeature, optional
-            When provided, use precomputed `feature`.
+        features : SlidingWindowFeature, optional
+            When provided, use precomputed `features`.
         probability : bool, optional
             If True, return posteriors (Scores) instead hard decision
 
@@ -486,10 +486,10 @@ class SpeakerIdentification(object):
 
         """
 
-        if feature is None and wav is None:
-            raise ValueError('Either wav or feature must be provided.')
+        if features is None and wav is None:
+            raise ValueError('Either wav or features must be provided.')
 
-        if feature is None:
+        if features is None:
             features = self.get_features(wav)
 
         if probability:
