@@ -187,7 +187,10 @@ class ClassificationGMMUBM(object):
         # ---------------------------------------------------------------------
 
         # adaptation
-        gmm.fit(data)
+        try:
+            gmm.fit(data)
+        except ValueError, e:
+            logging.error(e)
 
         # --- logging ---------------------------------------------------------
         llr = np.mean(gmm.score(data))
