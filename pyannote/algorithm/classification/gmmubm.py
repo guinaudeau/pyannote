@@ -103,7 +103,7 @@ class ClassificationGMMUBM(object):
     == Scoring ==
 
     equal_priors : bool, optional
-        When True, use equal priors. Defaults to False (learned priors).
+        When False, use learned priors. Defaults to True (equal priors).
 
     open_set : bool, optional
         When True, perform open-set classification
@@ -119,26 +119,27 @@ class ClassificationGMMUBM(object):
         n_iter=10, disturb=0.05, sampling=0, balance=False,
         targets=None, gmm=None,
         params='m',
-        equal_priors=False, open_set=False,
+        equal_priors=True, open_set=False,
         n_jobs=1
     ):
 
         super(ClassificationGMMUBM, self).__init__()
 
-        # pre-computed UBM
         self.ubm = ubm
 
-        # UBM training
-        self.n_components = n_components
-        self.covariance_type = covariance_type
-        self.random_state = random_state
-        self.thresh = thresh
-        self.min_covar = min_covar
-        self.n_iter = n_iter
-        self.disturb = disturb
-        self.sampling = sampling
-        self.balance = balance
+        # pre-computed UBM
+        if ubm is None:
+            # UBM training
+            self.n_components = n_components
+            self.covariance_type = covariance_type
+            self.random_state = random_state
+            self.thresh = thresh
+            self.min_covar = min_covar
+            self.disturb = disturb
+            self.sampling = sampling
+            self.balance = balance
 
+        self.n_iter = n_iter
         self.targets = targets
 
         self.gmm = gmm
@@ -152,12 +153,12 @@ class ClassificationGMMUBM(object):
         self.equal_priors = equal_priors
         self.open_set = open_set
 
-    def adapt(self, X):
+    def adapt(self, data):
         """Adapt UBM to new data using the EM algorithm
 
         Parameters
         ----------
-        X : array_like, shape (n, n_features)
+        data : array_like, shape (n, n_features)
             List of n_features-dimensional data points.  Each row
             corresponds to a single data point.
 
@@ -181,15 +182,15 @@ class ClassificationGMMUBM(object):
         gmm.covars_ = self.ubm.covars_
 
         # --- logging ---------------------------------------------------------
-        _llr = np.mean(gmm.score(X))
+        _llr = np.mean(gmm.score(data))
         logging.debug("llr before adaptation = %f" % _llr)
         # ---------------------------------------------------------------------
 
         # adaptation
-        gmm.fit(X)
+        gmm.fit(data)
 
         # --- logging ---------------------------------------------------------
-        llr = np.mean(gmm.score(X))
+        llr = np.mean(gmm.score(data))
         logging.debug("llr after adaptation = %f, gain = %f" % (llr, llr-_llr))
         # ---------------------------------------------------------------------
 
