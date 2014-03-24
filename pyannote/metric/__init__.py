@@ -46,6 +46,7 @@ __all__ = [
 from detection import DetectionErrorRate
 from diarization import DiarizationErrorRate
 from identification import IdentificationErrorRate
+from segmentation import SegmentationPurity, SegmentationCoverage
 from base import f_measure
 
 if __name__ == "__main__":
