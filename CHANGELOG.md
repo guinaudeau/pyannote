@@ -1,8 +1,8 @@
-CHANGELOG
-=========
 
-PyAnnote 0.2.2 (2012/05/11)
----------------------------
+### Version 0.4 (2014-04-04)
 
-- use 'setuptools' instead of 'distutils'
-- bug fix in 'CoTFIDF' (DivisionByZero)
+  - segmentation evaluation metrics
+  - segmentation error analysis
+
+
+
