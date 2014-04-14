@@ -24,8 +24,12 @@ from pyannote.base.annotation import Annotation
 
 PTY_NAME = 'segmentation purity'
 CVG_NAME = 'segmentation coverage'
+PK_NAME ='segmentation pk'
+WD_NAME = 'segmentation windowdiff'
 TOTAL = 'total'
 INTER = 'intersection' 
+SIM = 'similarity'
+SIZE = 'size'
 
 class SegmentationCoverage(BaseMetric):
     """Segmentation coverage
@@ -136,6 +140,153 @@ class SegmentationPurity(SegmentationCoverage):
         return super(SegmentationPurity, self)._get_details(
             hypothesis, reference, **kwargs
         )
+
+
+class SegmentationPK(BaseMetric):
+    """Segmentation pk
+
+    >>> from pyannote import Timeline, Segment
+    >>> from pyannote.metric.segmentation import SegmentationCoverage
+    >>> pk = SegmentationPK()
+
+    >>> reference = Timeline()
+    >>> reference.add(Segment(0, 1))
+    >>> reference.add(Segment(1, 2))
+    >>> reference.add(Segment(2, 4))
+
+    >>> hypothesis = Timeline()
+    >>> hypothesis.add(Segment(0, 4))
+    >>> pk(reference, hypothesis)
+    1.0
+
+    >>> hypothesis = Timeline()
+    >>> hypothesis.add(Segment(0, 3))
+    >>> hypothesis.add(Segment(3, 4))
+    >>> pk(reference, hypothesis)
+    0.75
+    """
+
+    @classmethod
+    def metric_name(cls):
+        return PK_NAME
+
+    @classmethod
+    def metric_components(cls):
+        return [SIM, SIZE]
+
+    def _get_details(self, reference, hypothesis, **kwargs):
+
+        if isinstance(reference, Annotation):
+            reference = reference.get_timeline()
+
+        if isinstance(hypothesis, Annotation):
+            hypothesis = hypothesis.get_timeline()
+
+        detail = self._init_details()
+        k = (hypothesis.duration()/len(hypothesis)) / 2
+
+        step = 10
+        similarite = 0.
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k):
+
+            sim_ref = 0
+            if reference.index(reference.overlapping(i)[0]) == reference.index(reference.overlapping(i+k)[0]):
+                sim_ref = 1
+
+            sim_hyp = 0
+            if hypothesis.index(hypothesis.overlapping(i)[0]) == hypothesis.index(hypothesis.overlapping(i+k)[0]):
+                sim_hyp = 1
+        
+            if sim_ref == sim_hyp:
+                similarite += 1
+
+        detail[SIM] += similarite
+        detail[SIZE] += hypothesis.extent().end - k
+        
+        return detail
+
+    def _get_rate(self, detail):
+
+        return 1. * detail[SIM] / detail[SIZE]
+
+    def _pretty(self, detail):
+        string = ""
+        string += "  - similariy: %.2f segments\n" % (detail[SIM])
+        string += "  - size: %.2f seconds\n" % (detail[SIZE])        
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
+
+class SegmentationWindowdiff(BaseMetric):
+    """Segmentation windowdiff
+
+    >>> from pyannote import Timeline, Segment
+    >>> from pyannote.metric.segmentation import SegmentationCoverage
+    >>> wd = SegmentationWindowdiff()
+
+    >>> reference = Timeline()
+    >>> reference.add(Segment(0, 1))
+    >>> reference.add(Segment(1, 2))
+    >>> reference.add(Segment(2, 4))
+
+    >>> hypothesis = Timeline()
+    >>> hypothesis.add(Segment(0, 4))
+    >>> wd(reference, hypothesis)
+    1.0
+
+    >>> hypothesis = Timeline()
+    >>> hypothesis.add(Segment(0, 3))
+    >>> hypothesis.add(Segment(3, 4))
+    >>> wd(reference, hypothesis)
+    0.75
+    """
+
+    @classmethod
+    def metric_name(cls):
+        return WD_NAME
+
+    @classmethod
+    def metric_components(cls):
+        return [SIM, SIZE]
+
+    def _get_details(self, reference, hypothesis, **kwargs):
+
+        if isinstance(reference, Annotation):
+            reference = reference.get_timeline()
+
+        if isinstance(hypothesis, Annotation):
+            hypothesis = hypothesis.get_timeline()
+
+        detail = self._init_details()
+        k = (hypothesis.duration()/len(hypothesis)) / 2
+
+        step = 10
+        similarite = 0.
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k):
+
+            diff_ref = reference.index(reference.overlapping(i+k)[0]) - reference.index(reference.overlapping(i)[0])
+            diff_hyp = hypothesis.index(hypothesis.overlapping(i+k)[0]) - hypothesis.index(hypothesis.overlapping(i)[0])
+       
+            if diff_ref == diff_hyp:
+                similarite += 1
+            i += step
+
+        detail[SIM] += similarite
+        detail[SIZE] += hypothesis.extent().end - k
+        
+        return detail
+
+    def _get_rate(self, detail):
+
+        return detail[SIM] / detail[SIZE]
+
+    def _pretty(self, detail):
+        string = ""
+        string += "  - similariy: %.2f segments\n" % (detail[SIM])
+        string += "  - size: %.2f seconds\n" % (detail[SIZE])        
+        string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
+        return string
+
 
 
 if __name__ == "__main__":
