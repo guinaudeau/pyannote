@@ -146,7 +146,7 @@ class SegmentationPK(BaseMetric):
     """Segmentation pk
 
     >>> from pyannote import Timeline, Segment
-    >>> from pyannote.metric.segmentation import SegmentationCoverage
+    >>> from pyannote.metric.segmentation import SegmentationPK
     >>> pk = SegmentationPK()
 
     >>> reference = Timeline()
@@ -185,9 +185,9 @@ class SegmentationPK(BaseMetric):
         detail = self._init_details()
         k = (hypothesis.duration()/len(hypothesis)) / 2
 
-        step = 10
         similarite = 0.
-        for i in range(hypothesis.extent().start, hypothesis.extent().end-k):
+        step = 2
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, step):
 
             sim_ref = 0
             if reference.index(reference.overlapping(i)[0]) == reference.index(reference.overlapping(i+k)[0]):
@@ -201,7 +201,7 @@ class SegmentationPK(BaseMetric):
                 similarite += 1
 
         detail[SIM] += similarite
-        detail[SIZE] += hypothesis.extent().end - k
+        detail[SIZE] += (hypothesis.extent().end - hypothesis.extent().start) - k
         
         return detail
 
@@ -221,7 +221,7 @@ class SegmentationWindowdiff(BaseMetric):
     """Segmentation windowdiff
 
     >>> from pyannote import Timeline, Segment
-    >>> from pyannote.metric.segmentation import SegmentationCoverage
+    >>> from pyannote.metric.segmentation import SegmentationWindowdiff
     >>> wd = SegmentationWindowdiff()
 
     >>> reference = Timeline()
@@ -260,9 +260,9 @@ class SegmentationWindowdiff(BaseMetric):
         detail = self._init_details()
         k = (hypothesis.duration()/len(hypothesis)) / 2
 
-        step = 10
+        step = 2
         similarite = 0.
-        for i in range(hypothesis.extent().start, hypothesis.extent().end-k):
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, step):
 
             diff_ref = reference.index(reference.overlapping(i+k)[0]) - reference.index(reference.overlapping(i)[0])
             diff_hyp = hypothesis.index(hypothesis.overlapping(i+k)[0]) - hypothesis.index(hypothesis.overlapping(i)[0])
@@ -272,7 +272,7 @@ class SegmentationWindowdiff(BaseMetric):
             i += step
 
         detail[SIM] += similarite
-        detail[SIZE] += hypothesis.extent().end - k
+        detail[SIZE] += (hypothesis.extent().end - hypothesis.extent().start) - k
         
         return detail
 
