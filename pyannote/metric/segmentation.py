@@ -29,7 +29,7 @@ WD_NAME = 'segmentation windowdiff'
 TOTAL = 'total'
 INTER = 'intersection' 
 SIM = 'similarity'
-SIZE = 'size'
+COMP = 'comparison'
 
 class SegmentationCoverage(BaseMetric):
     """Segmentation coverage
@@ -166,16 +166,20 @@ class SegmentationPK(BaseMetric):
     0.75
     """
 
+    def __init__(self, step=1):
+
+        super(SegmentationPK, self).__init__()
+        self.step = step
+
     @classmethod
     def metric_name(cls):
         return PK_NAME
 
     @classmethod
     def metric_components(cls):
-        return [SIM, SIZE]
+        return [SIM, COMP]
 
     def _get_details(self, reference, hypothesis, **kwargs):
-
         if isinstance(reference, Annotation):
             reference = reference.get_timeline()
 
@@ -185,9 +189,9 @@ class SegmentationPK(BaseMetric):
         detail = self._init_details()
         k = (hypothesis.duration()/len(hypothesis)) / 2
 
+        nb_comparison = 0.
         similarite = 0.
-        step = 2
-        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, step):
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, self.step):
 
             sim_ref = 0
             if reference.index(reference.overlapping(i)[0]) == reference.index(reference.overlapping(i+k)[0]):
@@ -199,20 +203,21 @@ class SegmentationPK(BaseMetric):
         
             if sim_ref == sim_hyp:
                 similarite += 1
+            nb_comparison += 1
 
         detail[SIM] += similarite
-        detail[SIZE] += (hypothesis.extent().end - hypothesis.extent().start) - k
+        detail[COMP] += nb_comparison
         
         return detail
 
     def _get_rate(self, detail):
 
-        return 1. * detail[SIM] / detail[SIZE]
+        return 1. * detail[SIM] / detail[COMP]
 
     def _pretty(self, detail):
         string = ""
         string += "  - similariy: %.2f segments\n" % (detail[SIM])
-        string += "  - size: %.2f seconds\n" % (detail[SIZE])        
+        string += "  - number of comparisons: %.2f\n" % (detail[COMP])        
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
 
@@ -241,13 +246,18 @@ class SegmentationWindowdiff(BaseMetric):
     0.75
     """
 
+    def __init__(self, step=1):
+
+        super(SegmentationWindowdiff, self).__init__()
+        self.step = step
+
     @classmethod
     def metric_name(cls):
         return WD_NAME
 
     @classmethod
     def metric_components(cls):
-        return [SIM, SIZE]
+        return [SIM, COMP]
 
     def _get_details(self, reference, hypothesis, **kwargs):
 
@@ -260,30 +270,30 @@ class SegmentationWindowdiff(BaseMetric):
         detail = self._init_details()
         k = (hypothesis.duration()/len(hypothesis)) / 2
 
-        step = 2
+        nb_comparison = 0.
         similarite = 0.
-        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, step):
+        for i in range(hypothesis.extent().start, hypothesis.extent().end-k, self.step):
 
             diff_ref = reference.index(reference.overlapping(i+k)[0]) - reference.index(reference.overlapping(i)[0])
             diff_hyp = hypothesis.index(hypothesis.overlapping(i+k)[0]) - hypothesis.index(hypothesis.overlapping(i)[0])
        
             if diff_ref == diff_hyp:
                 similarite += 1
-            i += step
+            nb_comparison += 1
 
         detail[SIM] += similarite
-        detail[SIZE] += (hypothesis.extent().end - hypothesis.extent().start) - k
+        detail[COMP] += nb_comparison
         
         return detail
 
     def _get_rate(self, detail):
 
-        return detail[SIM] / detail[SIZE]
+        return 1. * detail[SIM] / detail[COMP]
 
     def _pretty(self, detail):
         string = ""
-        string += "  - similariy: %.2f segments\n" % (detail[SIM])
-        string += "  - size: %.2f seconds\n" % (detail[SIZE])        
+        string += "  - similarity: %.2f segments\n" % (detail[SIM])
+        string += "  - number of comparisons: %.2f\n" % (detail[COMP])        
         string += "  - %s: %.2f %%\n" % (self.name, 100*detail[self.name])
         return string
 
